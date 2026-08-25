@@ -6,7 +6,6 @@ pkgs.mkShell {
   packages = [
     # Dependências do ambiente backend
     pkgs.python3
-    pkgs.git
   ];
 
   shellHook = ''
