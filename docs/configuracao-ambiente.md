@@ -35,7 +35,7 @@ Independentemente de utilizar o Linux instalado nativamente ou através do WSL n
 Para iniciar a instalação, abra o terminal do Linux e digite o seguinte comando:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon
+sudo curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon
 ```
 
 Para mais informações sobre o Nix: https://nixos.org/learn/
