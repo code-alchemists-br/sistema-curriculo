@@ -1,7 +1,5 @@
 # Configuração do ambiente de desenvolvimento
 
-## Sumário
-
 - [Instalando o Linux no Windows com o WSL](#instalando-o-linux-no-windows-com-o-wsl)
 - [Instalando o Nix](#instalando-o-nix)
 - [Instalando o GitHub CLI](#instalando-o-github-cli)
