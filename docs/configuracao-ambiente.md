@@ -1,46 +1,54 @@
 # Configuração do ambiente de desenvolvimento
 
-- [Instalando o Linux no Windows com o WSL](#instalando-o-linux-no-windows-com-o-wsl)
-- [Instalando o Nix](#instalando-o-nix)
-- [Instalando o GitHub CLI](#instalando-o-github-cli)
-- [Clonando o repositório do projeto](#clonando-o-repositório-do-projeto)
-- [Utilizando um ambiente Nix do projeto](#utilizando-um-ambiente-nix-do-projeto)
+## Sumário
 
-**Todos os integrantes do projeto devem utilizar o Nix como ambiente de desenvolvimento**, garantindo que as ferramentas, dependências e versões utilizadas sejam padronizadas para toda a equipe.
+* [Instalando o Linux no Windows com o WSL](#instalando-o-linux-no-windows-com-o-wsl)
+* [Instalando o Nix](#instalando-o-nix)
+* [Instalando o GitHub CLI](#instalando-o-github-cli)
+* [Clonando o repositório do projeto](#clonando-o-repositório-do-projeto)
+* [Utilizando um ambiente Nix do projeto](#utilizando-um-ambiente-nix-do-projeto)
 
-O Nix deve ser utilizado em um ambiente Linux, seja por meio de uma instalação nativa ou através do WSL no Windows. Essa padronização reduz problemas relacionados a diferenças entre sistemas operacionais e configurações individuais.
+**Todos os integrantes do projeto devem utilizar o Nix como ambiente de desenvolvimento**, garantindo a padronização das ferramentas, dependências e versões utilizadas pela equipe.
+
+O Nix deve ser utilizado em um ambiente Linux, seja por meio de uma instalação nativa ou do WSL no Windows. Essa padronização reduz problemas causados por diferenças entre sistemas operacionais, ferramentas instaladas e configurações individuais.
 
 ## Instalando o Linux no Windows com o WSL
 
-O Subsistema do Windows para Linux (WSL) permite que os desenvolvedores instalem uma distribuição do Linux (como Ubuntu, OpenSUSE, Kali, Debian, Arch Linux etc) e usem aplicativos Linux, utilitários e ferramentas de linha de comando bash diretamente no Windows, sem modificação, sem a sobrecarga de uma máquina virtual tradicional ou configuração dualboot.
+O **Subsistema do Windows para Linux (WSL)** permite executar uma distribuição Linux diretamente no Windows, incluindo ferramentas de linha de comando e aplicações compatíveis com Linux, sem a necessidade de configurar dual boot ou utilizar uma máquina virtual tradicional.
 
-Abra o PowerShell no modo de administrador clicando com o botão direito do mouse e selecionando "Executar como administrador", insira o comando `wsl --install` e reinicie o computador.
+Para instalar o WSL, abra o **PowerShell como administrador**. Para isso, clique com o botão direito no PowerShell e selecione **Executar como administrador**.
+
+Em seguida, execute:
 
 ```powershell
 wsl --install
 ```
 
-Esse comando habilitará os recursos necessários para executar o WSL e instalar a distribuição do Ubuntu do Linux.
+Reinicie o computador após a conclusão da instalação.
 
-Na primeira vez que você iniciar uma distribuição do Linux recém-instalada, uma janela do console será aberta e você será solicitado a aguardar que os arquivos sejam descompactados e armazenados em seu computador. Todos os lançamentos futuros devem levar menos de um segundo.
+Esse comando habilita os recursos necessários para executar o WSL e, por padrão, instala uma distribuição Linux compatível, normalmente o Ubuntu.
 
-**Observação:** O comando acima só funcionará se o WSL não estiver instalado.
+Na primeira inicialização da distribuição, será necessário aguardar a configuração inicial do sistema e criar um nome de usuário e uma senha para o ambiente Linux.
 
-Para mais informações sobre o WSL: https://learn.microsoft.com/pt-br/windows/wsl/
+> **Observação:** O comando `wsl --install` é destinado principalmente à instalação inicial do WSL. Caso o WSL já esteja instalado, podem ser necessários outros comandos para instalar ou configurar distribuições adicionais.
+
+Para mais informações sobre o WSL, consulte a documentação da Microsoft:
+
+[Documentação do WSL](https://learn.microsoft.com/pt-br/windows/wsl/)
 
 ## Instalando o Nix
 
-Independentemente de utilizar o Linux instalado nativamente ou através do WSL no Windows, a instalação do Nix deve ser realizada dentro do ambiente Linux.
+Independentemente de o Linux estar instalado nativamente ou sendo utilizado por meio do WSL, a instalação do Nix deve ser realizada **dentro do ambiente Linux**.
 
-Para iniciar a instalação, abra o terminal do Linux e digite o seguinte comando:
+Abra o terminal Linux e execute:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemoncurl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon
+curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon
 ```
 
-Os comandos utilizados pelo projeto dependem dos recursos experimentais `nix-command` e `flakes`.
+Após a instalação, feche e abra novamente o terminal para carregar o ambiente do Nix.
 
-Crie a pasta de configuração, caso ela ainda não exista:
+Os ambientes utilizados pelo projeto dependem dos recursos experimentais `nix-command` e `flakes`. Para habilitá-los, crie a pasta de configuração, caso ela ainda não exista:
 
 ```bash
 mkdir -p ~/.config/nix
@@ -66,13 +74,15 @@ Enter
 Ctrl + X
 ```
 
-Feche e abra novamente o terminal ou recarregue o ambiente do Nix.
+Depois, feche e abra novamente o terminal para garantir que a configuração seja carregada.
 
-Para mais informações sobre o Nix: https://nixos.org/learn/
+Para mais informações sobre o Nix, consulte:
+
+[Documentação do Nix](https://nixos.org/learn/)
 
 ## Instalando o GitHub CLI
 
-O GitHub CLI, identificado pelo comando `gh`, será utilizado para realizar a autenticação no GitHub e facilitar o acesso ao repositório.
+O **GitHub CLI**, acessado pelo comando `gh`, será utilizado para realizar a autenticação no GitHub e facilitar o acesso ao repositório do projeto.
 
 Com o Nix instalado, execute:
 
@@ -80,13 +90,13 @@ Com o Nix instalado, execute:
 nix profile install nixpkgs#gh
 ```
 
-Para fazer login no GitHub, execute:
+Para autenticar sua conta do GitHub, execute:
 
 ```bash
 gh auth login
 ```
 
-Durante o processo, selecione as opções adequadas para sua conta. Para a maioria dos casos:
+Durante o processo, para a maioria dos casos, selecione:
 
 ```text
 GitHub.com
@@ -94,22 +104,20 @@ HTTPS
 Login with a web browser
 ```
 
-O terminal fornecerá um código e solicitará a confirmação do login pelo navegador. Caso a página não seja aberta, acesse o seguinte link no navegador:
+O terminal exibirá um código e solicitará a confirmação do login no navegador. Caso a página não seja aberta automaticamente, acesse:
 
-```text
-https://github.com/login/device
-```
+[GitHub Device Login](https://github.com/login/device)
 
 ## Clonando o repositório do projeto
 
-Escolha uma pasta para armazenar seus projetos, por exemplo:
+Escolha uma pasta para armazenar seus projetos. Por exemplo:
 
 ```bash
 mkdir -p ~/projetos
 cd ~/projetos
 ```
 
-Depois, clone o repositório utilizando:
+Em seguida, clone o repositório:
 
 ```bash
 gh repo clone code-alchemists-br/sistema-curriculo
@@ -121,13 +129,17 @@ Entre na pasta criada:
 cd sistema-curriculo
 ```
 
-O repositório não precisa ser clonado novamente nas próximas vezes. Basta acessar a pasta onde ele já está armazenado.
+O repositório não precisa ser clonado novamente nas próximas utilizações. Basta acessar a pasta onde ele já está armazenado:
+
+```bash
+cd ~/projetos/sistema-curriculo
+```
 
 ## Utilizando um ambiente Nix do projeto
 
-Os ambientes encontram-se na pasta **nix** de **sistema-curriculo**.
+Os ambientes de desenvolvimento estão definidos na pasta `nix` do repositório `sistema-curriculo`.
 
-Dentro da pasta do repositório, execute o ambiente necessário para a tarefa.
+Dentro da pasta do projeto, execute o ambiente necessário para a tarefa que será realizada.
 
 Por exemplo, para utilizar o ambiente de backend:
 
@@ -135,16 +147,20 @@ Por exemplo, para utilizar o ambiente de backend:
 nix develop .#backend
 ```
 
-O comando `nix develop` lê o arquivo `flake.nix` do projeto e disponibiliza temporariamente as ferramentas definidas para aquele ambiente.
+O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
-Por exemplo, caso o ambiente `backend` inclua python3, mesmo que o Python não esteja instalado globalmente no sistema, ele poderá ser utilizado enquanto o ambiente Nix estiver ativo. Você pode conferir usando o seguinte comando:
+Por exemplo, caso o ambiente `backend` inclua o `python3`, não é necessário que o Python esteja instalado globalmente no sistema. Enquanto o ambiente Nix estiver ativo, o comando estará disponível.
+
+Para verificar a versão instalada no ambiente:
 
 ```bash
 python3 --version
 ```
 
-Para sair do ambiente:
+Para sair do ambiente Nix, execute:
 
 ```bash
 exit
 ```
+
+Ao sair, as ferramentas disponibilizadas exclusivamente pelo ambiente deixam de estar disponíveis no terminal atual.
