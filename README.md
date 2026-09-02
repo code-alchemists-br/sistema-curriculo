@@ -21,7 +21,8 @@ Muitos alunos encontram dificuldade para:
 - Organizar informações pessoais e profissionais;
 - Planejar a estrutura do currículo;
 - Descrever projetos acadêmicos com objetividade;
-- Construir um currículo com layout profissional.
+- Construir um currículo com layout profissional;
+- Busca de vagas.
 
 ## Proposta de solução
 
@@ -31,7 +32,10 @@ A plataforma poderá centralizar as informações do estudante e guiá-lo na cri
 - Assistente para descrição de projetos acadêmicos;
 - Modelos de currículo com layouts profissionais;
 - Revisão guiada de conteúdo e organização;
-- Exportação do currículo para compartilhamento com recrutadores.
+- Exportação do currículo para compartilhamento com recrutadores;
+- O sistema deve acessar uma engine de busca via API para coletar uam lista de vagas via json;
+- Deve mostrar os resutados da busca de vagas numa página web;
+- A associação entre currículo e vagas deve ser guardada num banco de dados.
 
 ## Impacto esperado
 
@@ -44,6 +48,7 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 
 | Pessoa | Função |
 | --- | --- |
+| André Luiz da Silva Lima | Scrum Master |
 | Ricardo Galdino de Sampaio | Front End/UI/UX |
 | Nathan Campos Nagano | Front End/UI/UX |
 | Kelly Daiane Miranda Mendes | CI&CD/Ambientes e Cross-Cutting |
