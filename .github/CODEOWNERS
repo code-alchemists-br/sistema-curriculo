@@ -3,3 +3,8 @@
 
 # Por padrão, todo o projeto
 * @Rodolpho-Pueyrredon
+
+# Ambiente Nix
+/flake.nix @kellyDMmendes
+/flake.lock @kellyDMmendes
+/nix/ @kellyDMmendes
