@@ -5,6 +5,7 @@ pkgs.mkShell {
 
   packages = [
     # Dependências do ambiente frontend
+    pkgs.git
   ];
 
   shellHook = ''
