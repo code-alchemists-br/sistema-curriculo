@@ -1,0 +1,7 @@
+interface:
+  display_name: "Backend Adapters and Drivers v2"
+  short_description: "Implementa externos e apenas testes unitarios"
+  default_prompt: "Use $backend-adapters-drivers-v2 com uma analise para implementar adapters e drivers e somente seus testes unitarios."
+
+policy:
+  allow_implicit_invocation: false

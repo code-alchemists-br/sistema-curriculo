@@ -59,6 +59,19 @@ para realizar atividades de desenvolvimento deste repositório.
 execute um comando pontual com
 `nix develop .#<ambiente> --command <comando>`.
 
+## Exceção — Operações de repositório
+
+[REQUIRED] Operações de repositório realizadas com `git` ou com a GitHub CLI
+(`gh`) DEVEM ser executadas fora do ambiente Nix.
+
+[REQUIRED] Esta exceção se aplica a consultas e alterações de estado no Git e
+no GitHub, como inspeção de remotos, commits, branches, permissões,
+colaboradores, issues, pull requests e projetos.
+
+[REQUIRED] O Nix continua obrigatório para ferramentas de desenvolvimento,
+instalação, execução de dependências, builds, testes, linters, formatadores e
+verificações do código.
+
 ## Ambientes disponíveis
 
 - **Backend:** use `nix develop .#backend` para atividades em `src/backend`.

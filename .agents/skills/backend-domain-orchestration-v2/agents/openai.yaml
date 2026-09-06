@@ -1,0 +1,7 @@
+interface:
+  display_name: "Backend Domain and Orchestration v2"
+  short_description: "Implementa nucleo e apenas testes unitarios"
+  default_prompt: "Use $backend-domain-orchestration-v2 com uma analise para implementar o nucleo do backend e somente seus testes unitarios."
+
+policy:
+  allow_implicit_invocation: false
