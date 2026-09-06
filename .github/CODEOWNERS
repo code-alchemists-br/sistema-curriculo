@@ -8,3 +8,7 @@
 /flake.nix @kellyDMmendes
 /flake.lock @kellyDMmendes
 /nix/ @kellyDMmendes
+
+# Agents
+/.agents/skills @Rodolpho-Pueyrredon
+/AGENTS.md @Rodolpho-Pueyrredon
