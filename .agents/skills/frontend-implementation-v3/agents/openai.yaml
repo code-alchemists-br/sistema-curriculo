@@ -1,0 +1,7 @@
+interface:
+  display_name: "Frontend Implementation v3"
+  short_description: "Implementa telas e apenas testes unitarios"
+  default_prompt: "Use $frontend-implementation-v3 com uma analise para implementar telas do negocio e somente seus testes unitarios."
+
+policy:
+  allow_implicit_invocation: false

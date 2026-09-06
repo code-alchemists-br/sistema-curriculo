@@ -1,0 +1,7 @@
+interface:
+  display_name: "Decision Analysis v4"
+  short_description: "Analisa decisões, arquivos e roteamento"
+  default_prompt: "Use $decision-analysis-v4 para analisar uma demanda ou artefato e registrar a decisão."
+
+policy:
+  allow_implicit_invocation: false

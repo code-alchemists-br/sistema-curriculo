@@ -1,0 +1,7 @@
+interface:
+  display_name: "Cross-Cutting Implementation v1"
+  short_description: "Avalia e implementa concerns transversais"
+  default_prompt: "Use $cross-cutting-implementation-v1 com uma analise para avaliar ou implementar observabilidade, resiliencia, seguranca ou autorizacao."
+
+policy:
+  allow_implicit_invocation: false

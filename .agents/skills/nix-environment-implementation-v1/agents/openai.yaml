@@ -1,0 +1,7 @@
+interface:
+  display_name: "Nix Environment Implementation v1"
+  short_description: "Implementa exclusivamente ambientes Nix"
+  default_prompt: "Use $nix-environment-implementation-v1 com uma analise para implementar ou modificar somente artefatos Nix."
+
+policy:
+  allow_implicit_invocation: false

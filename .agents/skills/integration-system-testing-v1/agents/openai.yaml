@@ -1,0 +1,7 @@
+interface:
+  display_name: "Integration and System Testing v1"
+  short_description: "Implementa testes integrados e nao funcionais"
+  default_prompt: "Use $integration-system-testing-v1 com uma analise para implementar testes de integracao, sistema ou nao funcionais."
+
+policy:
+  allow_implicit_invocation: false

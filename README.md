@@ -52,10 +52,10 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 | Ricardo Galdino de Sampaio | Front End/UI/UX |
 | Nathan Campos Nagano | Front End/UI/UX |
 | Kelly Daiane Miranda Mendes | CI&CD/Ambientes e Cross-Cutting |
-| Maria Carolina Cardozo Yamamoto | Backend - camada 'use cases' e 'ports para user inteface'. |
-| Vinicius Regazio Farias | Backend - camada 'use cases' e 'ports para user inteface'. |
-| Yasmin Victoria Bernardes Silva | Backend - camada domain e repositories |
-| Matheus Gnann Cardoso | Backend - camada domain e repositories |
+| Maria Carolina Cardozo Yamamoto | Backend - camada 'interface adapters' e 'frameworks and drives'. |
+| Vinicius Regazio Farias | Backend - camada 'interface adapters' e 'frameworks and drives'. |
+| Yasmin Victoria Bernardes Silva | Backend - camada domain e 'use cases' |
+| Matheus Gnann Cardoso | Backend - camada domain e 'use cases' |
 | Daniel Lacerda Xavier | Testes/Controle de qualidade |
 | Gustavo Minoru Haga |  Testes/Controle de qualidade|
 | Thiago Jose Miranda Matias | Documentação |
@@ -71,9 +71,9 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 
 - **CI&CD/Ambientes**: Responsável pelo estabelecimento, mudança e manutenção de ambientes de desenvolvimento, testes e produção. Controla o repositório e seus acessos e outros mecanismos de automação de implantação.
 
-- **Backend - camada 'use cases' e 'ports para user inteface'**: Responsáveis pelas camadas mais externas do sistema como interfaces de comunição voltadas para o usuário (web) e orquestração.
+- **Backend - camada 'interface adapters' e 'frameworks and drives'**: Responsáveis pelas camadas mais externas do sistema como interfaces de comunição voltadas para o usuário (web) e orquestração.
 
-- **Backend - camada domain e repositories**: Responsáveis pelo núcleo e pelas camadas externas que lidam com banco de dados.
+- **Backend - camada domain e 'use cases'**: Responsáveis pelo núcleo e pela camada de orquestração.
 
 - **Documentação**: Documentação geral. Verificação de comentários no código. Pode documentar tanto por comentários como por documentos externos. Verifica se a documentação e o código ou arquitetura estão compatíveis e sincronizados.
 
