@@ -8,6 +8,8 @@ As skills deste projeto são usadas por invocação explícita. Escreva o nome d
 2. Revise a análise, se necessário, usando novamente `$decision-analysis-v4` e informando o arquivo anterior.
 3. Passe o caminho exato da análise aprovada para a skill de implementação apropriada.
 
+REGRA DE OURO: ao analisar um problema comece por usar `$decision-analysis-v4` pedindo para decompor o problema em partes menores que possam ser mais facilmente revisadas por humanos. Usem tais partes para gerar análises e prompts estruturados menores.
+
 As skills de implementação validam o contexto e obedecem à hierarquia de `AGENTS.md` antes de alterar arquivos. Use sempre as versões mais recentes listadas abaixo.
 
 ## Skills

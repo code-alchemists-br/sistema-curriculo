@@ -94,7 +94,7 @@ local apropriado do projeto.
 Repository, Factory, Strategy, Specification, Adapter e Dependency Injection,
 quando o problema justificar seu uso.
 
-[FORBIDDEN] NEVER introduza abstrações ou padrões apenas para antecipar uma
+[FORBIDDEN] NUNCA introduza abstrações ou padrões apenas para antecipar uma
 necessidade hipotética. Patterns NÃO DEVE adicionar complexidade sem benefício
 demonstrável para o caso atual.
 
@@ -106,9 +106,9 @@ invocar um caso de uso.
 [REQUIRED] Formato, tipo e campos obrigatórios da entrada DEVE ser validados na
 fronteira; invariantes e regras de negócio DEVE ser validadas pelo domínio.
 
-[FORBIDDEN] NEVER exponha entidades de domínio diretamente pela API.
+[FORBIDDEN] NUNCA exponha entidades de domínio diretamente pela API.
 
-[FORBIDDEN] NEVER acesse banco de dados, sistema de arquivos ou API externa
+[FORBIDDEN] NUNCA acesse banco de dados, sistema de arquivos ou API externa
 diretamente a partir de controllers ou casos de uso.
 
 [PREFERRED] Casos de uso devem representar uma intenção do usuário e possuir

@@ -195,7 +195,7 @@ local apropriado do projeto.
 substituíveis, Factory para construções complexas e Facade para simplificar uma
 API interna extensa, quando o contexto justificar.
 
-[FORBIDDEN] NEVER introduza abstrações ou patterns para necessidades apenas
+[FORBIDDEN] NUNCA introduza abstrações ou patterns para necessidades apenas
 hipotéticas. A complexidade adicionada DEVE ter benefício demonstrável para o
 problema atual.
 
