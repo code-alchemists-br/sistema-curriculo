@@ -5,6 +5,7 @@ pkgs.mkShell {
 
   packages = [
     # Dependências e ferramentas de testes
+    pkgs.git
   ];
 
   shellHook = ''

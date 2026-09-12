@@ -1,0 +1,16 @@
+# CODEOWNERS
+# Define responsáveis obrigatórios pela revisão das alterações.
+
+# Por padrão, todo o projeto
+* @Rodolpho-Pueyrredon
+
+# Ambiente Nix
+/nix/ @kellyDMmendes
+/flake.lock @kellyDMmendes
+/flake.nix @kellyDMmendes
+
+# Agents
+/.agents/skills @Rodolpho-Pueyrredon
+/src/backend/AGENTS.md @Rodolpho-Pueyrredon
+/src/frontend/AGENTS.md @Rodolpho-Pueyrredon
+/AGENTS.md @Rodolpho-Pueyrredon

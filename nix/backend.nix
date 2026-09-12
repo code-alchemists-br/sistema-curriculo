@@ -5,6 +5,7 @@ pkgs.mkShell {
 
   packages = [
     # Dependências do ambiente backend
+    pkgs.git
     pkgs.python3
   ];
 
