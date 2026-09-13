@@ -9,6 +9,9 @@ Use em `implementation-only` e `evaluation-and-implementation` após `valid`.
 3. Preserve arquitetura e comportamento de negócio existentes.
 4. Escolha o menor mecanismo coerente que cubra os pontos aprovados.
 5. Confirme o `AGENTS.md` específico antes de editar cada caminho.
+6. Adicione a cada arquivo ou trecho de código criado o comentário de
+   proveniência exigido pela skill, com o caminho e `artifact_version` da análise
+   de entrada.
 
 ## Implementar por concern
 
@@ -52,4 +55,4 @@ Revise o diff e confirme:
 
 ## Relatar
 
-Informe análise e versão, modo, baseline, critérios avaliados, delta implementado, pontos de integração, testes unitários, verificações, riscos residuais e handoffs para `$integration-system-testing-v1` ou áreas funcionais.
+Informe análise e versão, o identificador de proveniência inserido, modo, baseline, critérios avaliados, delta implementado, pontos de integração, testes unitários, verificações, riscos residuais e handoffs para `$integration-system-testing-v1` ou áreas funcionais.

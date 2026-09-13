@@ -21,6 +21,15 @@ Exija uma referência inequívoca a exatamente um arquivo de análise de decisã
 
 Até concluir o gate, permita somente inspeções e comandos não mutáveis. Pasta, linguagem ou nome de arquivo não são prova suficiente de aderência.
 
+## Rastreabilidade do código
+
+Para cada arquivo de código criado, ou trecho de código novo inserido em arquivo
+existente, inclua um comentário compatível com a linguagem que identifique a
+análise de decisão exata que o originou no formato
+`Proveniência: decision-analysis <caminho-relativo>#<artifact_version>`. Use o
+caminho fornecido na invocação e a versão lida do artefato; não infira, omita ou
+substitua essa referência.
+
 ## Escopo permitido
 
 - páginas, formulários, tabelas, filtros, navegação e interações de um caso de uso de negócio;

@@ -9,6 +9,9 @@ Use somente após o gate resultar em `valid`.
 3. Identifique runner, convenções, helpers e isolamento já usados pelo projeto.
 4. Escolha o menor conjunto de testes que cubra os riscos aprovados sem duplicação entre níveis.
 5. Confirme o `AGENTS.md` mais específico antes de editar cada caminho.
+6. Adicione a cada arquivo ou trecho de código de teste criado o comentário de
+   proveniência exigido pela skill, com o caminho e `artifact_version` da análise
+   de entrada.
 
 ## Implementar
 
@@ -53,11 +56,12 @@ Inspecione o diff e confirme:
 Informe:
 
 1. análise e versão aplicadas;
-2. evidências do veredito `valid`;
-3. níveis, cenários e atributos cobertos;
-4. artefatos alterados, dados e harnesses usados;
-5. comandos executados, ambiente, resultados e limiares;
-6. defeitos do produto encontrados sem correção;
-7. instruções adicionais e handoffs.
+2. identificador de proveniência inserido;
+3. evidências do veredito `valid`;
+4. níveis, cenários e atributos cobertos;
+5. artefatos alterados, dados e harnesses usados;
+6. comandos executados, ambiente, resultados e limiares;
+7. defeitos do produto encontrados sem correção;
+8. instruções adicionais e handoffs.
 
 Diferencie claramente teste aprovado, teste vermelho esperado, teste não executado e teste bloqueado.

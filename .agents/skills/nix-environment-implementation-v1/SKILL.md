@@ -25,6 +25,14 @@ Permita somente inspeções e comandos não mutáveis até concluir, nesta ordem
 
 Não considere uma tarefa Nix apenas porque ela trata de ambiente, dependências, desenvolvimento ou infraestrutura.
 
+## Rastreabilidade do código
+
+Para cada arquivo Nix criado, ou expressão Nix nova inserida em arquivo
+existente, inclua um comentário compatível com Nix que identifique a análise de
+decisão exata que o originou no formato `Proveniência: decision-analysis
+<caminho-relativo>#<artifact_version>`. Use o caminho fornecido na invocação e
+a versão lida do artefato; não infira, omita ou substitua essa referência.
+
 ## Escopo permitido
 
 Implemente ou modifique somente:
