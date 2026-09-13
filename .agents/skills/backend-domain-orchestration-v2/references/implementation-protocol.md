@@ -10,6 +10,9 @@ Use somente após `valid`.
 4. Expresse invariantes perto do estado e coordene portas sem duplicar regras.
 5. Não implemente adapters nem preocupação transversal.
 6. Confirme o `AGENTS.md` específico antes de editar.
+7. Adicione a cada arquivo ou trecho de código criado o comentário de
+   proveniência exigido pela skill, com o caminho e `artifact_version` da análise
+   de entrada.
 
 ## Testes permitidos
 
@@ -27,4 +30,4 @@ Revise o diff: cada teste criado deve ser unitário; nenhuma camada externa ou p
 
 ## Relatar
 
-Informe análise e versão, veredito, regras/casos de uso, unidades testadas, arquivos, verificações e handoffs para `$integration-system-testing-v1`. Diferencie teste criado de suíte apenas executada.
+Informe análise e versão, o identificador de proveniência inserido, veredito, regras/casos de uso, unidades testadas, arquivos, verificações e handoffs para `$integration-system-testing-v1`. Diferencie teste criado de suíte apenas executada.
