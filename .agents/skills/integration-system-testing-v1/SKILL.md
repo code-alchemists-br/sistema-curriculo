@@ -25,6 +25,15 @@ Permita somente inspeções e comandos não mutáveis até concluir, nesta ordem
 
 O nome da pasta, a presença da palavra “test” ou a possibilidade de escrever uma asserção não bastam para validar a atividade.
 
+## Rastreabilidade do código
+
+Para cada arquivo de código de teste criado, ou trecho de código novo inserido
+em arquivo existente, inclua um comentário compatível com a linguagem que
+identifique a análise de decisão exata que o originou no formato
+`Proveniência: decision-analysis <caminho-relativo>#<artifact_version>`. Use o
+caminho fornecido na invocação e a versão lida do artefato; não infira, omita ou
+substitua essa referência.
+
 ## Escopo permitido
 
 Implemente somente:

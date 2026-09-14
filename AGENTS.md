@@ -34,7 +34,7 @@ regras da raiz. Em caso de conflito, a instrução mais específica DEVE ser
 seguida, exceto quando ela reduzir uma restrição `[CRITICAL]` ou `[FORBIDDEN]`
 de um nível superior; nesse caso, prevalece a regra mais restritiva.
 
-[FORBIDDEN] NEVER presuma que apenas este arquivo contém todas as instruções do
+[FORBIDDEN] NUNCA presuma que apenas este arquivo contém todas as instruções do
 projeto. A ausência de leitura de um `AGENTS.md` aplicável não isenta o agente
 de cumprir suas regras.
 

@@ -29,6 +29,15 @@ Se referência ou modo estiverem ausentes, ambíguos ou inacessíveis, peça a i
 
 Até concluir o gate, permita somente inspeções e comandos não mutáveis. Classifique pela finalidade e pelo efeito, não pelo nome da pasta, tecnologia ou dispersão dos arquivos.
 
+## Rastreabilidade do código
+
+Quando o modo incluir implementação, para cada arquivo de código criado, ou
+trecho de código novo inserido em arquivo existente, inclua um comentário
+compatível com a linguagem que identifique a análise de decisão exata que o
+originou no formato `Proveniência: decision-analysis
+<caminho-relativo>#<artifact_version>`. Use o caminho fornecido na invocação e
+a versão lida do artefato; não infira, omita ou substitua essa referência.
+
 ## Escopo permitido
 
 - observabilidade: logging estruturado, métricas, tracing, correlação, propagação de contexto, telemetria, error reporting e auditoria técnica;
