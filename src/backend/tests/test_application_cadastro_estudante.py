@@ -12,12 +12,13 @@ from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
 class RepositorioUsuarioSpy:
-    """Substitui a porta de repositório e registra as interações do caso de uso.
+    """Substitui assincronamente a porta e registra interações do caso de uso.
 
-    O double responde a consultas por uma coleção de e-mails existentes e guarda
-    os agregados enviados a ``salvar`` em memória. Ele existe para observar o
-    fluxo de cadastro sem usar adaptador real, banco ou filesystem.
+    O double responde por coroutines a uma coleção em memória e guarda agregados
+    enviados a ``salvar``. Ele existe para testar o fluxo aguardável sem usar
+    adapter real, banco ou filesystem.
     """
 
     def __init__(self, emails_existentes: set[Email] | None = None) -> None:
@@ -30,17 +31,17 @@ class RepositorioUsuarioSpy:
         self._emails_existentes = emails_existentes or set()
         self.usuarios_salvos: list[Usuario] = []
 
-    def existe_por_email(self, email: Email) -> bool:
-        """Informa se o e-mail aparece no estado simulado do repositório.
+    async def existe_por_email(self, email: Email) -> bool:
+        """Informa por coroutine se o e-mail aparece no estado simulado.
 
-        O método compara value objects em memória e devolve um booleano conforme
-        o contrato da porta. Ele existe para controlar a decisão de duplicidade
-        do caso de uso sem consultar armazenamento externo.
+        O método compara value objects em memória e devolve o booleano do
+        contrato aguardável. Ele existe para controlar duplicidade sem consultar
+        armazenamento externo.
         """
         return email in self._emails_existentes
 
-    def salvar(self, usuario: Usuario) -> None:
-        """Registra o agregado que o caso de uso solicitou persistir.
+    async def salvar(self, usuario: Usuario) -> None:
+        """Registra por coroutine o agregado solicitado para persistência.
 
         O método adiciona o usuário à lista de observação sem executar I/O. Ele
         existe para que os testes confirmem se o fluxo solicitou ou evitou o
@@ -80,7 +81,8 @@ class GeradorUsuarioIdStub:
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
-class CadastrarEstudanteTestCase(unittest.TestCase):
+# Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
+class CadastrarEstudanteTestCase(unittest.IsolatedAsyncioTestCase):
     """Verifica a orquestração de cadastro sem framework ou persistência real.
 
     A classe usa os doubles locais de repositório e gerador de ID para exercitar
@@ -88,7 +90,7 @@ class CadastrarEstudanteTestCase(unittest.TestCase):
     interrupção de duplicidade como comportamentos observáveis da Application.
     """
 
-    def test_cadastra_usuario_e_solicita_salvamento_quando_email_e_novo(self) -> None:
+    async def test_cadastra_usuario_e_solicita_salvamento_quando_email_e_novo(self) -> None:
         """Confirma a construção e o salvamento de um usuário com e-mail inédito.
 
         O teste fornece entrada válida e doubles controlados, então compara o
@@ -101,7 +103,7 @@ class CadastrarEstudanteTestCase(unittest.TestCase):
         caso_de_uso = CadastrarEstudante(repositorio, gerador)
         entrada = _criar_entrada()
 
-        usuario = caso_de_uso.executar(entrada)
+        usuario = await caso_de_uso.executar(entrada)
 
         self.assertEqual(usuario.id, usuario_id)
         self.assertEqual(usuario.nome, entrada.nome)
@@ -109,7 +111,7 @@ class CadastrarEstudanteTestCase(unittest.TestCase):
         self.assertEqual(repositorio.usuarios_salvos, [usuario])
         self.assertEqual(gerador.chamadas, 1)
 
-    def test_rejeita_email_ja_cadastrado_sem_gerar_id_ou_salvar(self) -> None:
+    async def test_rejeita_email_ja_cadastrado_sem_gerar_id_ou_salvar(self) -> None:
         """Confirma que duplicidade interrompe o fluxo antes de qualquer salvamento.
 
         O teste configura o repositório para reconhecer o e-mail da entrada e
@@ -122,7 +124,7 @@ class CadastrarEstudanteTestCase(unittest.TestCase):
         caso_de_uso = CadastrarEstudante(repositorio, gerador)
 
         with self.assertRaises(EmailJaCadastrado):
-            caso_de_uso.executar(entrada)
+            await caso_de_uso.executar(entrada)
 
         self.assertEqual(repositorio.usuarios_salvos, [])
         self.assertEqual(gerador.chamadas, 0)

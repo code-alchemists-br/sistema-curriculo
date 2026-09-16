@@ -41,13 +41,13 @@ class CadastrarEstudanteEntrada:
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
 class CadastrarEstudante:
-    """Cria e persiste um usuário quando seu e-mail ainda não está cadastrado.
+    """Cria e persiste assincronamente usuário com e-mail ainda inédito.
 
-    O caso de uso consulta a porta de repositório, solicita uma identidade à
-    porta de geração, constrói o aggregate root existente e então pede o
-    salvamento. Ele existe para centralizar a regra de duplicidade sem importar
-    adapter, banco, API ou comportamento de autenticação.
+    O caso de uso aguarda a consulta e o salvamento no repositório, gera a
+    identidade localmente e constrói o aggregate root. Ele existe para aplicar
+    a regra de duplicidade sem importar adapter, banco, API ou autenticação.
     """
 
     def __init__(
@@ -65,16 +65,16 @@ class CadastrarEstudante:
         self._repositorio_usuario = repositorio_usuario
         self._gerador_usuario_id = gerador_usuario_id
 
-    def executar(self, entrada: CadastrarEstudanteEntrada) -> Usuario:
-        """Cadastra um estudante e devolve o agregado persistido pelo fluxo.
+    async def executar(self, entrada: CadastrarEstudanteEntrada) -> Usuario:
+        """Cadastra assincronamente estudante e devolve o agregado persistido.
 
-        O método consulta primeiro a existência do e-mail; se houver duplicidade,
+        O método aguarda primeiro a consulta de e-mail; se houver duplicidade,
         lança ``EmailJaCadastrado`` e não salva nada. Caso contrário, gera a
-        identidade, constrói ``Usuario`` com os value objects recebidos e delega
-        o salvamento à porta. Ele existe para realizar UC01 sem efetuar login,
+        identidade, constrói ``Usuario`` e aguarda o salvamento pela porta. Ele
+        existe para realizar UC01 durante I/O concorrente sem efetuar login,
         processar senha ou conceder acesso.
         """
-        if self._repositorio_usuario.existe_por_email(entrada.email):
+        if await self._repositorio_usuario.existe_por_email(entrada.email):
             raise EmailJaCadastrado("Já existe uma conta cadastrada com este e-mail.")
 
         usuario = Usuario(
@@ -83,5 +83,5 @@ class CadastrarEstudante:
             email=entrada.email,
             hash_senha=entrada.hash_senha,
         )
-        self._repositorio_usuario.salvar(usuario)
+        await self._repositorio_usuario.salvar(usuario)
         return usuario

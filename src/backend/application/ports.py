@@ -13,28 +13,30 @@ from backend.domain.value_objects import Email, UsuarioId
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
 class RepositorioUsuario(Protocol):
-    """Define a capacidade interna de consultar e persistir usuários.
+    """Define a capacidade assíncrona de consultar e persistir usuários.
 
-    A porta recebe e devolve conceitos de domínio, e expõe apenas a consulta por
-    e-mail e o salvamento necessários ao cadastro. Ela existe para impedir que
-    o caso de uso conheça um banco ou implementação concreta de repositório.
+    A porta recebe e devolve conceitos de domínio e torna aguardáveis somente a
+    consulta e o salvamento, que serão I/O em adapters futuros. Ela existe para
+    que o caso de uso libere o fluxo durante a persistência sem conhecer banco,
+    ORM ou implementação concreta.
     """
 
-    def existe_por_email(self, email: Email) -> bool:
-        """Informa se já existe um usuário com o e-mail normalizado fornecido.
+    async def existe_por_email(self, email: Email) -> bool:
+        """Informa assincronamente se existe usuário com o e-mail fornecido.
 
-        Implementações consultam o mecanismo de armazenamento apropriado, mas
-        preservam o contrato booleano do núcleo. O método existe para que o caso
-        de uso interrompa cadastros duplicados antes de solicitar persistência.
+        Implementações aguardam o mecanismo de armazenamento e preservam o
+        contrato booleano do núcleo. O método existe para que o caso de uso
+        interrompa cadastros duplicados antes de solicitar persistência.
         """
 
-    def salvar(self, usuario: Usuario) -> None:
-        """Solicita a persistência de um agregado de usuário válido.
+    async def salvar(self, usuario: Usuario) -> None:
+        """Solicita assincronamente a persistência de usuário válido.
 
-        Implementações escolhem como armazenar o agregado sem alterar sua regra
-        de negócio. O método existe para separar a decisão de cadastro da
-        infraestrutura Code First que será implementada em outro card.
+        Implementações aguardam o armazenamento sem alterar regra de negócio.
+        O método existe para separar a decisão de cadastro da infraestrutura
+        Code First que será implementada por adapter externo.
         """
 
 
