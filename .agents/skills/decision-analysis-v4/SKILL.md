@@ -82,7 +82,10 @@ Leia também:
 ## Saída e versionamento
 
 - Gere exatamente um novo `.md` diretamente na subpasta selecionada de `prompts`.
-- Use `<YYYYMMDD>-<slug>-vNNN.md`, salvo regra mais específica do `AGENTS.md` do destino.
+- Use `<YYYYMMDD>-<HHMMSS>-<slug>-vNNN.md`, com hora no formato de 24 horas, salvo regra mais específica do `AGENTS.md` do destino.
+- Ao concluir cada análise ou revisão, consulte o relógio e use o mesmo instante no nome do arquivo e em `created_at`, com precisão de segundos. Use o fuso informado no contexto; se não houver, use UTC. Não invente o horário nem reutilize o da versão anterior.
+- Registre `created_at` em ISO 8601 com fuso explícito, conforme o esquema do artefato. Exemplo: `20260916-143052-<slug>-v001.md` e `created_at: "2026-09-16T14:30:52-03:00"`.
+- Preserve nomes e datas de análises existentes. Ao identificar a linhagem, reconheça também o formato anterior `<YYYYMMDD>-<slug>-vNNN.md`; a inclusão do horário não reinicia o versionamento.
 - Nunca sobrescreva. Comece em `v001`; em revisão, incremente a maior versão da linhagem, mesmo ao mudar de pasta.
 - Use o esquema completo e escreva `Nenhum identificado` em seções inaplicáveis.
 - Ao terminar, informe modo, classificação, objeto analisado, decisão, impacto da revisão e principal incerteza.

@@ -5,10 +5,13 @@
 O backend deve ser construído como uma API REST com **FastAPI**,
 **SQLAlchemy 2.x**, **Alembic** e **PostgreSQL**.
 
-- O FastAPI fornece a interface HTTP, validação de entradas e composição de
-  dependências.
+- O FastAPI fornece a interface HTTP ASGI, validação de entradas e composição
+  de dependências. Os handlers que realizam I/O devem ser assíncronos e
+  aguardar essas operações sem bloquear o fluxo de requisições.
 - O SQLAlchemy fornece o mapeamento objeto-relacional, as sessões, transações e
-  acesso ao PostgreSQL.
+  acesso assíncrono ao PostgreSQL por meio de `AsyncEngine` e `AsyncSession`.
+- O Psycopg fornece o driver PostgreSQL e sua interface assíncrona, usada pelos
+  adaptadores de persistência com a URL de conexão compatível com SQLAlchemy.
 - O Alembic mantém migrations versionadas para criar e evoluir o schema a partir
   dos modelos e mapeamentos do backend.
 
@@ -34,6 +37,14 @@ entidades de domínio existentes às tabelas.
 Os DTOs de entrada e saída da API devem ser definidos separadamente das
 entidades de domínio e dos modelos de persistência.
 
+A assincronia é uma responsabilidade das fronteiras que realizam I/O. A API,
+os casos de uso que orquestram portas assíncronas e os adaptadores de
+persistência podem usar `async` e `await`; entidades, value objects e regras de
+domínio devem continuar independentes desse mecanismo e das bibliotecas de
+infraestrutura. Esse modelo permite concorrência durante esperas por banco de
+dados ou serviços externos, sem tratar trabalho intensivo de CPU como se fosse
+I/O.
+
 ## Persistência e migrations
 
 O modelo e os mapeamentos mantidos no backend são a fonte de verdade do schema.
@@ -44,11 +55,19 @@ evoluir o schema como fonte de verdade.
 Não use criação automática de tabelas no startup da aplicação como mecanismo de
 evolução do banco em ambientes persistentes; use migrations.
 
+As migrations Alembic permanecem obrigatórias no modelo assíncrono. A
+configuração de migrations deve usar o padrão compatível com o engine
+assíncrono quando precisar acessar o banco, sem transformar o startup da API em
+mecanismo de criação ou evolução do schema.
+
 ## Escolhas iniciais
 
-Comece com endpoints e acesso ao banco síncronos, usando `psycopg`. Adote
-acesso assíncrono apenas quando uma necessidade observável justificar a
-complexidade adicional.
+Use endpoints e acesso ao banco assíncronos, com FastAPI/ASGI, SQLAlchemy 2.x e
+a interface assíncrona do `psycopg`. A aplicação terá I/O concorrente e pouco
+trabalho intensivo de CPU; por isso, operações de banco de dados e outros I/O
+devem ser aguardados com `await`, mantendo limites adequados de conexões e
+timeouts. Não adicione outro driver PostgreSQL sem requisito verificável de
+compatibilidade ou desempenho.
 
 As dependências iniciais esperadas são:
 
@@ -71,5 +90,7 @@ projeto.
 
 - [FastAPI — bancos de dados relacionais](https://fastapi.tiangolo.com/tutorial/sql-databases/)
 - [SQLAlchemy ORM 2.0](https://docs.sqlalchemy.org/en/20/orm/)
+- [SQLAlchemy — extensão asyncio](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html)
 - [Estilos de mapeamento do SQLAlchemy](https://docs.sqlalchemy.org/en/20/orm/declarative_styles.html)
 - [Alembic](https://alembic.sqlalchemy.org/en/latest/)
+- [Psycopg — operações assíncronas](https://www.psycopg.org/psycopg3/docs/advanced/async.html)
