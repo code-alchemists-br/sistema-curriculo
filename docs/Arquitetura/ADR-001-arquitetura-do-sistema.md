@@ -1,6 +1,6 @@
 # ADR-001 — Arquitetura do Sistema Currículo
 
-* **Status:** Proposta
+* **Status:** Aceito
 * **Data:** 2026-09-15
 * **Projeto:** Sistema Currículo
 
