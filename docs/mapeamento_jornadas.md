@@ -1,776 +1,296 @@
-# Mapeamento das Jornadas do Usuário --- Sistema Currículo
+# Mapeamento da jornada do aluno — Sistema Currículo
 
 ## 1. Objetivo
 
-Mapear as principais jornadas do usuário no Sistema Currículo, tendo
-como foco o **Aluno** e como fluxo central o envio de um currículo
-existente, sua análise, a apresentação de melhorias e a posterior
-revisão e exportação do currículo.
+Mapear a única jornada principal do aluno no Sistema Currículo: informar seus
+dados de forma guiada por wireframes, revisar o resultado e gerar seu currículo
+para exportação.
 
-O objetivo deste documento é servir como base para a criação dos
-wireframes e, posteriormente, para a definição da identidade visual, dos
-componentes e da implementação do front-end.
+Este documento usa [Casos de uso v2](casos-de-uso-v2.md) como referência. Ele
+orienta a criação dos wireframes e, posteriormente, das telas e componentes.
 
-------------------------------------------------------------------------
+## 2. Decisão de escopo
 
-## 2. Contexto do produto
+O currículo é construído exclusivamente a partir das informações preenchidas
+pelo aluno. A experiência é um único fluxo progressivo; cada tela coleta,
+confirma ou apresenta uma parte desse conteúdo.
 
-O Sistema Currículo tem como protagonista o **Aluno**, que utiliza a
-plataforma para criar, gerenciar, revisar e exportar seu currículo.
+Não fazem parte desta jornada:
 
-A experiência principal deve evitar que o aluno precise montar todo o
-currículo manualmente. O fluxo prioritário é:
+- upload, importação ou processamento de currículo existente;
+- análise automática, IA, diagnóstico, pontuação ou sugestões de melhoria;
+- comparação entre currículo original e currículo melhorado;
+- fluxos paralelos de criação e revisão.
 
-> **Enviar currículo → Processar → Analisar → Receber melhorias →
-> Revisar → Visualizar → Gerar → Exportar**
-
-As funcionalidades de cadastro, formação, experiência, documentos e
-versões continuam fazendo parte do sistema, mas devem apoiar esse fluxo
-principal.
-
-------------------------------------------------------------------------
+Armazenamento de documentos, gerenciamento de versões, integração com o Grupo
+2 e recursos de recrutador permanecem como capacidades descritas nos casos de
+uso, mas não entram no recorte dos wireframes desta jornada.
 
 ## 3. Atores
 
-### 3.1 Aluno
+### Aluno
 
-É o principal usuário do sistema.
+É o ator principal. Cria ou acessa a conta, informa seus dados curriculares,
+revisa o currículo montado pelo sistema e escolhe o formato de exportação.
 
-Responsável por:
+### Sistema Currículo
 
--   Cadastrar uma conta;
--   Fazer login ou recuperar a senha;
--   Enviar e revisar seu currículo;
--   Cadastrar ou corrigir informações curriculares;
--   Armazenar documentos complementares;
--   Gerenciar versões do currículo;
--   Visualizar o currículo;
--   Gerar e exportar o currículo.
+Guia o preenchimento, valida os dados obrigatórios, mantém o rascunho e
+estrutura visualmente o currículo com os dados confirmados pelo aluno.
 
-### 3.2 Sistema Externo --- Grupo 2
+## 4. Casos de uso relacionados
 
-Sistema parceiro que poderá se integrar ao Sistema Currículo por meio de
-API para consumir ou enviar dados relacionados aos candidatos.
+| Código | Caso de uso | Papel na jornada |
+|---|---|---|
+| UC01 | Cadastrar usuário | Permite criar o acesso antes do preenchimento. |
+| UC02 | Fazer login ou recuperar senha | Permite acessar ou recuperar o acesso à jornada. |
+| UC03 | Cadastrar formação acadêmica | Coleta as formações do aluno. |
+| UC04 | Cadastrar experiência profissional | Coleta as experiências do aluno. |
+| UC05 | Editar currículo | Permite revisar e alterar dados e organização. |
+| UC06 | Visualizar currículo | Apresenta a prévia antes da exportação. |
+| UC07 | Gerar PDF | Gera o currículo no formato PDF. |
+| UC08 | Gerar DOCX | Gera o currículo no formato DOCX. |
 
-A integração deve permanecer como uma funcionalidade complementar ao
-fluxo principal do aluno.
+UC09, a integração com o Grupo 2, não integra a jornada guiada do aluno.
 
-### 3.3 Recrutador / Gestor
+## 5. Jornada única: preencher, revisar e gerar o currículo
 
-O documento de casos de uso prevê esse ator para busca, filtragem e
-visualização de currículos.
-
-Entretanto, no contexto do Projeto 01, o foco principal é o Aluno.
-Portanto, as funcionalidades do recrutador não fazem parte da jornada
-principal apresentada neste documento, salvo exigência específica do
-projeto.
-
-------------------------------------------------------------------------
-
-# 4. Casos de uso considerados
-
-As jornadas foram relacionadas aos casos de uso definidos no documento
-do projeto:
-
-  Código   Caso de uso
-  -------- --------------------------------
-  UC01     Cadastrar usuário
-  UC02     Fazer login ou Recuperar senha
-  UC03     Cadastrar formação
-  UC04     Cadastrar experiência
-  UC05     Editar currículo
-  UC06     Visualizar currículo
-  UC07     Gerar PDF
-  UC08     Gerar DOCX
-  UC09     Consultar dados do Grupo 2
-
-Além desses casos de uso, o documento também apresenta funcionalidades
-de **armazenamento de documentos**, **gerenciamento de versões** e
-**integração via API**.
-
-------------------------------------------------------------------------
-
-# 5. Jornada principal do usuário
-
-A jornada principal representa a experiência desejada para o Aluno:
-
-``` text
+```text
 CADASTRO / LOGIN
-       ↓
-ENVIAR CURRÍCULO
-       ↓
-PROCESSAMENTO
-       ↓
-ANÁLISE DO CURRÍCULO
-       ↓
-MELHORIAS SUGERIDAS
-       ↓
-ALUNO REVISA
-       ↓
-APLICAR / EDITAR / IGNORAR
-       ↓
-CURRÍCULO MELHORADO
-       ↓
-VISUALIZAÇÃO FINAL
-       ↓
-GERAR CURRÍCULO
-       ↓
-EXPORTAR PDF / DOCX
-```
-
-Essa jornada deve ser considerada o principal fluxo de experiência do
-produto.
-
-------------------------------------------------------------------------
-
-# 6. Jornada 1 --- Criação / Importação do currículo
-
-## Objetivo
-
-Permitir que o aluno entre no sistema e forneça um currículo existente
-para que a plataforma possa processá-lo e iniciar sua análise.
-
-## Fluxo principal
-
-``` text
-Landing Page
-     ↓
-Criar conta / Login
-     ↓
-Dashboard
-     ↓
-"Enviar meu currículo"
-     ↓
-Upload do arquivo
-     ↓
-Processamento
-     ↓
-Currículo importado
-     ↓
-Análise inicial
-```
-
-## Etapas
-
-### 1. Entrada no sistema
-
-O aluno acessa a plataforma e pode:
-
--   Criar uma conta;
--   Fazer login;
--   Recuperar a senha caso necessário.
-
-**Caso de uso relacionado:** - UC01 --- Cadastrar usuário - UC02 ---
-Fazer login ou Recuperar senha
-
-### 2. Dashboard
-
-Após o login, o aluno deve visualizar o estado atual do seu currículo e
-ter uma ação principal clara:
-
-> **Enviar meu currículo**
-
-O dashboard deve orientar o usuário para a próxima ação sem exigir que
-ele procure a funcionalidade.
-
-### 3. Envio do currículo
-
-O aluno seleciona ou arrasta seu currículo para a área de upload.
-
-Formatos previstos para a experiência:
-
--   PDF;
--   DOCX.
-
-### 4. Processamento
-
-O sistema processa o arquivo enviado.
-
-Durante essa etapa, a interface deve informar ao usuário que o currículo
-está sendo analisado.
-
-### 5. Currículo importado
-
-Após o processamento, as informações identificadas podem ser
-apresentadas para conferência e eventual correção.
-
-A edição manual permanece disponível como suporte ao usuário.
-
-**Casos de uso relacionados:** - UC03 --- Cadastrar formação - UC04 ---
-Cadastrar experiência - UC05 --- Editar currículo
-
-------------------------------------------------------------------------
-
-# 7. Jornada 2 --- Revisão e melhorias
-
-## Objetivo
-
-Permitir que o aluno compreenda os pontos fortes e os pontos que podem
-ser melhorados em seu currículo e decida quais alterações deseja
-aplicar.
-
-Essa é a **jornada central do produto**.
-
-## Fluxo principal
-
-``` text
-Currículo enviado
-       ↓
-Análise
-       ↓
-Resultado da análise
-       ↓
-Pontos fortes / pontos de melhoria
-       ↓
-Sugestões de melhoria
-       ↓
-Aplicar / Editar / Ignorar
-       ↓
-Currículo melhorado
-       ↓
-Visualização final
-```
-
-## Etapas
-
-### 1. Análise
-
-O sistema apresenta o resultado da análise do currículo.
-
-A interface deve permitir que o aluno compreenda rapidamente:
-
--   O que está bom;
--   O que pode ser melhorado;
--   Quais pontos precisam de atenção;
--   Quais melhorias foram identificadas.
-
-### 2. Sugestões
-
-Cada melhoria deve apresentar uma explicação clara.
-
-A estrutura recomendada é:
-
-``` text
-ANTES
-Conteúdo atual do currículo
-
-SUGESTÃO
-Melhoria recomendada
-
-AÇÃO
-[Aplicar] [Editar] [Ignorar]
-```
-
-### 3. Decisão do aluno
-
-O usuário mantém o controle sobre as alterações.
-
-Para cada sugestão, ele poderá:
-
--   Aplicar;
--   Editar;
--   Ignorar.
-
-A IA deve atuar como apoio à revisão, e não substituir silenciosamente o
-conteúdo do usuário.
-
-### 4. Currículo melhorado
-
-Após a aplicação das melhorias, o sistema apresenta uma nova versão do
-currículo.
-
-**Casos de uso relacionados:** - UC05 --- Editar currículo - UC06 ---
-Visualizar currículo
-
-------------------------------------------------------------------------
-
-# 8. Jornada 3 --- Exportação
-
-## Objetivo
-
-Permitir que o aluno transforme o currículo revisado em um documento
-final e faça o download no formato desejado.
-
-## Fluxo
-
-``` text
-Currículo melhorado
         ↓
-Visualização final
+PAINEL INICIAL
         ↓
-Exportar
-       ↙ ↘
-     PDF DOCX
-       ↓
-Gerar currículo
-       ↓
-Download
-```
-
-## Etapas
-
-### 1. Visualização final
-
-O aluno visualiza o currículo antes da exportação.
-
-Isso permite verificar se as informações e alterações estão corretas.
-
-**Caso de uso relacionado:** - UC06 --- Visualizar currículo
-
-### 2. Escolha do formato
-
-O aluno escolhe o formato desejado:
-
--   PDF;
--   DOCX.
-
-### 3. Geração
-
-O sistema processa e gera o documento final.
-
-**Caso de uso relacionado:** - UC07 --- Gerar PDF - UC08 --- Gerar DOCX
-
-### 4. Download
-
-Após a geração, o sistema informa que o currículo está pronto e
-disponibiliza o arquivo para download.
-
-------------------------------------------------------------------------
-
-# 9. Jornada secundária --- Gerenciamento de versões
-
-O sistema permite manter diferentes versões do currículo para áreas ou
-objetivos diferentes.
-
-Exemplo:
-
-``` text
-Currículo principal
-       │
-       ├── Desenvolvedor — Estágio
-       │
-       ├── Gestão / Administração
-       │
-       └── Dados / IA
-```
-
-## Fluxo
-
-``` text
-Meus currículos
-       ↓
-Criar nova versão
-       ↓
-Enviar ou duplicar currículo
-       ↓
-Editar
-       ↓
-Analisar
-       ↓
-Salvar versão
-```
-
-O gerenciamento de versões deve ser apresentado como uma funcionalidade
-de apoio e não como o primeiro passo da experiência.
-
-------------------------------------------------------------------------
-
-# 10. Jornada secundária --- Documentos
-
-O aluno pode armazenar documentos complementares, como certificados e
-portfólio.
-
-## Fluxo
-
-``` text
-Documentos
-     ↓
-Adicionar arquivo
-     ↓
-Selecionar documento
-     ↓
-Upload
-     ↓
-Documento armazenado
-```
-
-Essa funcionalidade deve ficar disponível no sistema sem competir
-visualmente com o fluxo principal de análise do currículo.
-
-------------------------------------------------------------------------
-
-# 11. Jornada secundária --- Perfil e conta
-
-## Cadastro
-
-``` text
-Criar conta
-    ↓
-Informar dados
-    ↓
-Criar acesso
-    ↓
-Dashboard
-```
-
-## Login
-
-``` text
-Login
-  ↓
-Credenciais válidas?
-  ├── Sim → Dashboard
-  └── Não → Mensagem de erro
-```
-
-## Recuperação de senha
-
-``` text
-Recuperar senha
-      ↓
-Informar e-mail
-      ↓
-Solicitação processada
-      ↓
-Orientação enviada ao e-mail
-```
-
-------------------------------------------------------------------------
-
-# 12. Fluxos alternativos
-
-## 12.1 Arquivo inválido
-
-``` text
-Upload
-  ↓
-Arquivo inválido
-  ↓
-Mensagem de erro
-  ↓
-Selecionar outro arquivo
-```
-
-A mensagem deve explicar o problema e orientar o usuário sobre como
-continuar.
-
-------------------------------------------------------------------------
-
-## 12.2 Falha no processamento
-
-``` text
-Upload
-  ↓
-Processamento
-  ↓
-Erro
-  ↓
-Informar usuário
-  ↓
-Tentar novamente
-```
-
-O usuário não deve ficar preso em uma tela de carregamento indefinida.
-
-------------------------------------------------------------------------
-
-## 12.3 Usuário rejeita uma melhoria
-
-``` text
-Sugestão
-   ↓
-Ignorar
-   ↓
-Manter conteúdo original
-   ↓
-Próxima sugestão
-```
-
-------------------------------------------------------------------------
-
-## 12.4 Usuário edita uma sugestão
-
-``` text
-Sugestão
-   ↓
-Editar
-   ↓
-Alterar conteúdo
-   ↓
-Salvar
-   ↓
-Atualizar currículo
-```
-
-------------------------------------------------------------------------
-
-## 12.5 Usuário deseja alterar o currículo depois da análise
-
-``` text
-Currículo analisado
-       ↓
-Editar currículo
-       ↓
-Alteração
-       ↓
-Salvar
-       ↓
-Atualizar visualização
-```
-
-------------------------------------------------------------------------
-
-## 12.6 Erro na geração do arquivo
-
-``` text
-Exportar
-   ↓
-Gerar documento
-   ↓
-Erro
-   ↓
-Informar usuário
-   ↓
-Tentar novamente
-```
-
-------------------------------------------------------------------------
-
-# 13. Pontos de decisão da jornada
-
-Os principais pontos de decisão são:
-
-  Momento         Decisão
-  --------------- -------------------------------------------
-  Cadastro        Usuário já possui conta?
-  Login           Credenciais são válidas?
-  Upload          Arquivo é válido?
-  Processamento   Currículo foi processado corretamente?
-  Análise         Existem melhorias identificadas?
-  Revisão         Usuário aplica, edita ou ignora?
-  Edição          Usuário deseja alterar alguma informação?
-  Exportação      PDF ou DOCX?
-  Geração         Documento foi gerado corretamente?
-
-------------------------------------------------------------------------
-
-# 14. Pontos de interação com a IA
-
-A IA deve aparecer principalmente em três momentos:
-
-### 14.1 Análise
-
-``` text
-Currículo
-   ↓
-IA analisa
-   ↓
-Diagnóstico
-```
-
-### 14.2 Sugestões
-
-``` text
-Problema identificado
+INICIAR CURRÍCULO
         ↓
-IA apresenta sugestão
+DADOS PESSOAIS E CONTATO
         ↓
-Aluno decide
+FORMAÇÃO ACADÊMICA
+        ↓
+EXPERIÊNCIAS PROFISSIONAIS
+        ↓
+INFORMAÇÕES COMPLEMENTARES
+        ↓
+REVISAR E EDITAR
+        ↓
+VISUALIZAR CURRÍCULO
+        ↓
+GERAR PDF OU DOCX
+        ↓
+DOWNLOAD
 ```
 
-### 14.3 Melhoria
+O aluno pode retornar a uma etapa anterior para corrigir ou completar dados.
+Essa volta permanece dentro da mesma jornada: não cria um segundo fluxo nem
+depende de análise externa.
 
-``` text
-Aluno aprova
-      ↓
-Alteração aplicada
-      ↓
-Currículo atualizado
-```
+## 6. Etapas e wireframes necessários
 
-A IA deve ser apresentada de forma transparente, deixando claro ao
-usuário o que foi identificado e o que está sendo sugerido.
+### 6.1 Acesso à conta
 
-------------------------------------------------------------------------
+O aluno cria a conta, faz login ou recupera a senha. Após autenticação, o
+sistema apresenta o painel inicial.
 
-# 15. Mapa geral da experiência
+**Wireframes:** cadastro, login e recuperação de senha.
 
-``` text
+**Casos de uso:** UC01 e UC02.
+
+### 6.2 Painel inicial
+
+O painel mostra o estado do currículo do aluno e uma ação principal clara:
+
+> **Criar meu currículo**
+
+Se houver rascunho, a ação passa a ser **Continuar preenchimento**. Caso o
+currículo já tenha sido concluído, o painel também pode oferecer
+**Visualizar currículo** e **Exportar**, sem desviar da mesma jornada.
+
+**Wireframe:** painel inicial com estado vazio, em preenchimento e concluído.
+
+### 6.3 Dados pessoais e contato
+
+O aluno informa os dados que serão exibidos no cabeçalho do currículo, como
+nome, e-mail, telefone, cidade e meios profissionais de contato aplicáveis.
+
+O wireframe deve indicar campos obrigatórios, validar o preenchimento antes de
+avançar e permitir salvar o progresso.
+
+**Wireframe:** formulário de dados pessoais, ação `Salvar e continuar` e ação
+secundária `Salvar rascunho`.
+
+### 6.4 Formação acadêmica
+
+O aluno inclui uma ou mais formações. Cada item deve permitir informar, no
+mínimo, curso, instituição, período e situação de conclusão quando aplicável.
+
+O usuário pode adicionar, editar ou remover itens antes de prosseguir. A tela
+não interpreta nem recomenda conteúdo; ela apenas torna o cadastro claro.
+
+**Wireframe:** lista de formações cadastradas e formulário para adicionar ou
+editar uma formação.
+
+**Caso de uso:** UC03.
+
+### 6.5 Experiências profissionais
+
+O aluno inclui uma ou mais experiências, com organização, cargo, período e
+descrição das atividades. A interface permite adicionar, editar, remover e
+ordenar os itens conforme a necessidade do currículo.
+
+**Wireframe:** lista de experiências cadastradas e formulário para adicionar
+ou editar uma experiência.
+
+**Caso de uso:** UC04.
+
+### 6.6 Informações complementares
+
+O aluno preenche informações que complementam seu perfil, como habilidades,
+idiomas, cursos, projetos ou links profissionais, conforme os campos definidos
+pelo produto.
+
+Esta etapa organiza os dados fornecidos pelo próprio aluno. Ela não recebe um
+arquivo de currículo nem oferece conteúdo produzido por IA.
+
+**Wireframe:** grupos de campos complementares com inclusão, edição e remoção
+de itens quando necessário.
+
+### 6.7 Revisar e editar
+
+O sistema apresenta uma revisão estruturada de todos os dados preenchidos. O
+aluno confirma a completude e navega diretamente para a etapa que deseja
+alterar.
+
+O foco da tela é a conferência dos dados cadastrados, não a comparação com
+texto importado ou sugestões automáticas.
+
+**Wireframe:** resumo por seção, indicador de pendências obrigatórias e ações
+`Editar`, `Voltar` e `Visualizar currículo`.
+
+**Caso de uso:** UC05.
+
+### 6.8 Visualizar currículo
+
+O sistema estrutura os dados confirmados em um currículo visual. O aluno pode
+ver o resultado antes de gerar o arquivo e voltar à revisão para corrigir
+informações.
+
+**Wireframe:** prévia do currículo e ações `Editar dados`, `Gerar PDF` e
+`Gerar DOCX`.
+
+**Caso de uso:** UC06.
+
+### 6.9 Gerar e exportar
+
+O aluno escolhe PDF ou DOCX. A geração usa os dados confirmados e o layout
+selecionado; quando terminada, o sistema disponibiliza o download.
+
+Exportar sempre inclui gerar o currículo. Se a geração falhar, o aluno recebe
+uma mensagem objetiva e pode tentar novamente sem perder os dados preenchidos.
+
+**Wireframe:** escolha de formato, estado de geração, sucesso e falha.
+
+**Casos de uso:** UC07 e UC08.
+
+## 7. Fluxos alternativos dentro da jornada
+
+| Situação | Resposta esperada da interface | Continuidade |
+|---|---|---|
+| Campo obrigatório ausente ou inválido | Explica o erro junto ao campo e preserva os dados já preenchidos. | O aluno corrige e continua na mesma etapa. |
+| Aluno interrompe o preenchimento | Salva o rascunho quando essa ação for solicitada. | O painel oferece continuar de onde parou. |
+| Aluno precisa corrigir informação na revisão ou prévia | Oferece ação `Editar` para a seção correspondente. | Retorna à etapa necessária e depois à revisão. |
+| Não há formação ou experiência | Explica que a seção pode ser opcional quando a regra de produto permitir. | O aluno avança sem criar item fictício. |
+| Falha ao gerar PDF ou DOCX | Informa a falha e disponibiliza nova tentativa. | Mantém a prévia e os dados confirmados. |
+
+## 8. Pontos de decisão
+
+| Momento | Decisão do aluno | Resultado |
+|---|---|---|
+| Acesso | Criar conta, entrar ou recuperar senha | Chega ao painel inicial. |
+| Painel | Iniciar ou continuar currículo | Entra na próxima etapa pendente. |
+| Cada seção | Adicionar, editar, remover ou salvar rascunho | Mantém os dados sob controle do aluno. |
+| Revisão | Corrigir ou confirmar os dados | Libera a visualização. |
+| Visualização | Editar ou gerar | Retorna à revisão ou inicia a exportação. |
+| Exportação | PDF ou DOCX | Gera o arquivo escolhido para download. |
+
+## 9. Princípios de UX
+
+1. **Uma única trilha clara.** O próximo passo deve ser visível em cada tela,
+   com indicador de progresso e possibilidade de voltar sem perder dados.
+2. **Dados sob controle do aluno.** O conteúdo do currículo provém do que ele
+   preenche, confirma, edita ou remove.
+3. **Progressão por etapas.** Cada wireframe solicita somente as informações
+   necessárias para a seção atual.
+4. **Validação compreensível.** Erros aparecem no contexto do campo e indicam
+   como prosseguir.
+5. **Prévia antes da exportação.** O aluno vê o currículo estruturado antes de
+   gerar PDF ou DOCX.
+6. **Sem IA e sem upload.** A interface não promete análise, recomendação,
+   processamento de arquivo ou transformação automática de conteúdo.
+
+## 10. Mapa geral da experiência
+
+```text
                          SISTEMA CURRÍCULO
                                 │
                                 ▼
                        CADASTRO / LOGIN
                                 │
                                 ▼
-                           DASHBOARD
+                         PAINEL INICIAL
                                 │
                                 ▼
-                       ENVIAR CURRÍCULO
+                        CRIAR CURRÍCULO
                                 │
                                 ▼
-                          PROCESSAMENTO
+                 PREENCHIMENTO GUIADO POR ETAPAS
+       ┌────────────────┬──────────────────┬──────────────────┐
+       ▼                ▼                  ▼                  ▼
+ DADOS PESSOAIS     FORMAÇÃO          EXPERIÊNCIAS      COMPLEMENTARES
+       └────────────────┴──────────────────┴──────────────────┘
                                 │
                                 ▼
-                       ANÁLISE PELA IA
+                         REVISAR / EDITAR
                                 │
-                 ┌──────────────┴──────────────┐
-                 ▼                             ▼
-            PONTOS FORTES                PONTOS DE MELHORIA
-                                               │
-                                               ▼
-                                      SUGESTÕES DA IA
-                                               │
-                              ┌────────────────┼────────────────┐
-                              ▼                ▼                ▼
-                           APLICAR           EDITAR          IGNORAR
-                              │                │                │
-                              └────────────────┼────────────────┘
-                                               ▼
-                                      CURRÍCULO MELHORADO
-                                               │
-                                               ▼
-                                        REVISÃO FINAL
-                                               │
-                                               ▼
-                                      VISUALIZAÇÃO FINAL
-                                               │
-                                               ▼
-                                         GERAR CURRÍCULO
-                                               │
-                                      ┌────────┴────────┐
-                                      ▼                 ▼
-                                     PDF               DOCX
-                                      │                 │
-                                      └────────┬────────┘
-                                               ▼
-                                            DOWNLOAD
+                                ▼
+                       VISUALIZAR CURRÍCULO
+                                │
+                    ┌───────────┴───────────┐
+                    ▼                       ▼
+                GERAR PDF               GERAR DOCX
+                    └───────────┬───────────┘
+                                ▼
+                             DOWNLOAD
 ```
 
-------------------------------------------------------------------------
+## 11. Critério de aceite
 
-# 16. Relação entre jornadas e casos de uso
+O mapeamento estará atendido quando permitir compreender, sem consultar o
+código, como um aluno cria ou acessa a conta, preenche progressivamente os
+dados do currículo, revisa o resultado, visualiza a prévia e exporta o
+documento em PDF ou DOCX.
 
-  Jornada      Etapa                                Caso de uso
-  ------------ ------------------------------------ -------------
-  Criação      Cadastro                             UC01
-  Criação      Login                                UC02
-  Criação      Importação/correção de formação      UC03
-  Criação      Importação/correção de experiência   UC04
-  Revisão      Edição                               UC05
-  Revisão      Visualização                         UC06
-  Exportação   Geração do documento                 UC07 / UC08
-  Exportação   PDF                                  UC07
-  Exportação   DOCX                                 UC08
-  Integração   Dados externos                       UC09
+Nenhuma etapa da jornada deve exigir upload de currículo, análise por IA ou
+sugestões automatizadas de conteúdo.
 
-------------------------------------------------------------------------
+## 12. Próxima atividade
 
-# 17. Princípios de UX derivados das jornadas
+Criar os wireframes na ordem da jornada única:
 
-## 17.1 O envio do currículo deve ser a ação principal
-
-O sistema deve conduzir o aluno rapidamente para:
-
-> **Enviar meu currículo**
-
-Não deve obrigá-lo a preencher dezenas de campos antes de experimentar o
-principal benefício da plataforma.
-
-## 17.2 A IA deve explicar suas sugestões
-
-O usuário deve compreender:
-
--   O que foi identificado;
--   Por que pode ser melhorado;
--   Qual alteração está sendo sugerida;
--   Qual alteração foi aplicada.
-
-## 17.3 O aluno mantém o controle
-
-Nenhuma alteração importante deve acontecer de forma silenciosa.
-
-As ações principais devem ser:
-
-> **Aplicar → Editar → Ignorar**
-
-## 17.4 O fluxo deve ser progressivo
-
-A interface deve mostrar somente as informações necessárias para a etapa
-atual.
-
-## 17.5 O resultado deve ser visível
-
-Depois da análise, o usuário deve conseguir perceber claramente a
-diferença entre:
-
-**Currículo original → Currículo melhorado**
-
-## 17.6 Exportação deve ser simples
-
-Depois de revisar o currículo, o caminho até o download deve ser curto:
-
-> Visualizar → Exportar → PDF/DOCX → Download
-
-------------------------------------------------------------------------
-
-# 18. Entregável desta atividade
-
-Ao finalizar esta atividade, devem estar disponíveis:
-
-1.  **Mapa da jornada principal do aluno**;
-2.  **Jornada de criação/importação**;
-3.  **Jornada de revisão e melhorias**;
-4.  **Jornada de exportação**;
-5.  **Jornada de gerenciamento de versões**;
-6.  **Jornada de documentos**;
-7.  **Fluxos alternativos e tratamento de erros**;
-8.  **Pontos de decisão**;
-9.  **Pontos de interação com a IA**;
-10. **Relação entre jornadas e casos de uso**.
-
-------------------------------------------------------------------------
-
-# 19. Critério de aceite
-
-A atividade será considerada concluída quando as jornadas permitirem
-compreender, sem necessidade de consultar o código:
-
-> **Como um aluno entra no sistema, envia um currículo existente, recebe
-> uma análise, avalia e aplica melhorias, visualiza a versão final e
-> exporta o currículo em PDF ou DOCX.**
-
-As jornadas secundárias de conta, documentos e versões também devem
-estar identificadas e relacionadas aos respectivos casos de uso.
-
-------------------------------------------------------------------------
-
-# 20. Próxima atividade
-
-Com as jornadas definidas, o próximo passo é:
-
-> **Criar os wireframes das páginas principais com base nesses fluxos.**
-
-A prioridade dos wireframes deve seguir o fluxo principal:
-
-``` text
-Login
+```text
+Login / cadastro
   ↓
-Dashboard
+Painel inicial
   ↓
-Enviar currículo
+Dados pessoais
   ↓
-Processamento
+Formação
   ↓
-Análise
+Experiências
   ↓
-Melhorias
+Informações complementares
   ↓
-Comparação / revisão
+Revisão
   ↓
-Currículo final
+Prévia do currículo
   ↓
-Exportação
+Exportação e download
 ```
-
-Esse fluxo deve orientar a estrutura das telas antes da definição da
-identidade visual e dos componentes definitivos.
