@@ -48,7 +48,7 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 
 | Pessoa | Função |
 | --- | --- |
-| André Luiz da Silva Lima | Scrum Master |
+| André Luiz da Silva Lima | Dev |
 | Ricardo Galdino de Sampaio | Front End/UI/UX |
 | Nathan Campos Nagano | Front End/UI/UX |
 | Kelly Daiane Miranda Mendes | CI&CD/Ambientes e Cross-Cutting |
