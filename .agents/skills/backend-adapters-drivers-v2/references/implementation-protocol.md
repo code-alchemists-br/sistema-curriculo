@@ -10,6 +10,9 @@ Use somente após `valid`.
 4. Restrinja ORM, migrations, rotas, bindings e integrações à fatia funcional.
 5. Não adicione regra de negócio nem política transversal.
 6. Confirme o `AGENTS.md` específico antes de editar.
+7. Adicione a cada arquivo ou trecho de código criado o comentário de
+   proveniência exigido pela skill, com o caminho e `artifact_version` da análise
+   de entrada.
 
 ## Testes permitidos
 
@@ -27,4 +30,4 @@ Revise o diff: cada teste criado deve ser unitário; nenhum núcleo, frontend ou
 
 ## Relatar
 
-Informe análise e versão, veredito, adapters/drivers, contratos, unidades testadas, arquivos, verificações e handoffs para `$integration-system-testing-v1` e `$backend-domain-orchestration-v2`. Diferencie teste criado de suíte apenas executada.
+Informe análise e versão, o identificador de proveniência inserido, veredito, adapters/drivers, contratos, unidades testadas, arquivos, verificações e handoffs para `$integration-system-testing-v1` e `$backend-domain-orchestration-v2`. Diferencie teste criado de suíte apenas executada.

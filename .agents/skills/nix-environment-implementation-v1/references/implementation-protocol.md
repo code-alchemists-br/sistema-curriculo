@@ -9,6 +9,8 @@ Use somente após o gate resultar em `valid`.
 3. Identifique estilo, estrutura, sistemas suportados e mecanismo de pinagem já existentes.
 4. Escolha o menor conjunto coeso de alterações Nix necessário à decisão.
 5. Confirme o `AGENTS.md` mais específico antes de editar cada caminho.
+6. Adicione a cada arquivo ou expressão Nix criada o comentário de proveniência
+   exigido pela skill, com o caminho e `artifact_version` da análise de entrada.
 
 ## Implementar
 
@@ -48,11 +50,12 @@ Depois, inspecione o diff e confirme:
 Informe:
 
 1. análise e versão aplicadas;
-2. evidências do veredito `valid`;
-3. ambiente, pacote, módulo ou output Nix entregue;
-4. artefatos alterados e mudanças de pinagem;
-5. verificações e sistemas avaliados;
-6. instruções adicionais incorporadas;
-7. arquivos não Nix e ativações deixados como handoff.
+2. identificador de proveniência inserido;
+3. evidências do veredito `valid`;
+4. ambiente, pacote, módulo ou output Nix entregue;
+5. artefatos alterados e mudanças de pinagem;
+6. verificações e sistemas avaliados;
+7. instruções adicionais incorporadas;
+8. arquivos não Nix e ativações deixados como handoff.
 
 Se somente a fatia Nix foi entregue, diga explicitamente que a análise completa depende dos handoffs.

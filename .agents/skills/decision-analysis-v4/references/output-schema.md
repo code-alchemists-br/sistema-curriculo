@@ -8,7 +8,7 @@ artifact: decision-analysis
 schema_version: "4.0"
 artifact_version: "vNNN"
 status: proposed | pending | no-decision-required
-created_at: YYYY-MM-DD
+created_at: "YYYY-MM-DDTHH:MM:SS±HH:MM"
 lineage:
   mode: initial | revision
   root: null | caminho-do-v001
@@ -140,6 +140,8 @@ Informe conteúdo parcial, indisponibilidade, recorte limitado ou ausência de r
 
 ## Regras
 
+- `created_at` registra o instante de conclusão desta análise ou revisão, obtido do relógio, com horas, minutos, segundos e fuso explícito em ISO 8601. Use o fuso informado no contexto ou UTC quando ausente (`Z` ou `+00:00`). Exemplo: `"2026-09-16T14:30:52-03:00"`.
+- O prefixo `<YYYYMMDD>-<HHMMSS>` do nome do arquivo deve representar o mesmo instante e fuso de `created_at`, salvo convenção de nome imposta por instrução mais específica. Não altere registros históricos para acrescentar horários desconhecidos.
 - A saída deve revelar quando arquivos sustentaram a análise e distinguir objeto principal de apoio.
 - Não alegue análise de conteúdo quando `analysis_scope: metadata-only` ou `availability: unavailable`.
 - Uma revisão deve ser compreensível isoladamente sem esconder linhagem ou mudança nos arquivos.

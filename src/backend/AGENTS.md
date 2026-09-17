@@ -50,6 +50,23 @@ camada interna que necessita delas e implementadas por adaptadores externos.
 [REQUIRED] A composição e a injeção das dependências DEVE ocorrer na camada
 mais externa da aplicação.
 
+## REQUIRED — Persistência relacional com Code First
+
+[REQUIRED] A persistência em banco de dados relacional DEVE utilizar um ORM com
+mapeamento objeto-relacional na abordagem **Code First**. O modelo e seus
+mapeamentos, mantidos no código do backend, DEVEM ser a fonte de verdade do
+schema.
+
+[REQUIRED] Alterações de schema DEVEM ser versionadas e aplicadas por migrations
+gerenciadas pela ferramenta de ORM adotada pelo backend.
+
+[REQUIRED] Mapeamentos do ORM DEVEM permanecer na camada de
+Adapters/Infrastructure, preservando o domínio independente de frameworks e de
+detalhes de persistência.
+
+[FORBIDDEN] Scripts SQL manuais NÃO DEVEM definir ou evoluir o schema como
+fonte de verdade da aplicação.
+
 ## CRITICAL — Domain-Driven Design
 
 [CRITICAL] Toda mudança ou adição de código DEVE seguir as práticas de
