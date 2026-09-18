@@ -10,7 +10,7 @@ from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
 )
-from backend.infrastructure.persistence.sqlalchemy.usuario import para_registro
+from backend.infrastructure.persistence.sqlalchemy.usuario import para_registro, para_usuario
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
 
@@ -56,6 +56,24 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
         )
         self.assertIs(resultado, registro.return_value)
         self.assertEqual(usuario, criar_usuario())
+
+    def test_reconstroi_agregado_a_partir_do_registro_orm(self) -> None:
+        """Confirma que a leitura transforma colunas em value objects de domínio.
+
+        O teste monta o registro somente em memória e compara o agregado gerado.
+        Ele existe para impedir vazamento do modelo ORM às camadas internas.
+        """
+        usuario = criar_usuario()
+        registro = MagicMock(
+            id=usuario.id.valor,
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            hash_senha=usuario.hash_senha.valor,
+        )
+
+        resultado = para_usuario(registro)
+
+        self.assertEqual(resultado, usuario)
 
 
 class RepositorioUsuarioSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
@@ -150,3 +168,41 @@ class RepositorioUsuarioSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         self.session.scalar.assert_awaited_once()
         self.session.add.assert_not_called()
         self.session.rollback.assert_not_called()
+
+    async def test_obtem_registro_por_email_e_o_converte_para_agregado(self) -> None:
+        """Confirma consulta normalizada e mapeamento na leitura de uma conta.
+
+        O teste substitui ORM e mapper, observando a linha devolvida pela sessão
+        sem abrir banco. Ele existe para assegurar que acesso recebe domínio, não
+        modelo SQLAlchemy, ao localizar uma credencial.
+        """
+        with patch(f"{ADAPTER}.select") as select_mock, patch(
+            f"{ADAPTER}.UsuarioRegistro"
+        ) as registro_modelo, patch(
+            f"{ADAPTER}.para_usuario", return_value=sentinel.usuario
+        ) as converter:
+            registro_modelo.email.__eq__.return_value = sentinel.predicado
+            self.session.scalar.return_value = sentinel.registro
+
+            resultado = await self.repositorio.obter_por_email(Email(" ANA@EXAMPLE.COM "))
+
+        registro_modelo.email.__eq__.assert_called_once_with("ana@example.com")
+        select_mock.assert_called_once_with(registro_modelo)
+        select_mock.return_value.where.assert_called_once_with(sentinel.predicado)
+        self.session.scalar.assert_awaited_once_with(select_mock.return_value.where.return_value)
+        converter.assert_called_once_with(sentinel.registro)
+        self.assertIs(resultado, sentinel.usuario)
+
+    async def test_retorna_ausencia_quando_consulta_nao_encontra_registro(self) -> None:
+        """Confirma que falta de linha não tenta construir agregado inválido.
+
+        O teste faz a sessão devolver ausência e observa que o mapper não é
+        chamado. Ele existe para distinguir credencial inexistente de falha de
+        infraestrutura sem acoplar o caso de uso ao ORM.
+        """
+        self.session.scalar.return_value = None
+        with patch(f"{ADAPTER}.para_usuario") as converter:
+            resultado = await self.repositorio.obter_por_email(Email("ana@example.com"))
+
+        self.assertIsNone(resultado)
+        converter.assert_not_called()
