@@ -12,12 +12,21 @@ from backend.application.cadastro_estudante import (
     CadastrarEstudanteEntrada,
     EmailJaCadastrado,
 )
-from backend.application.ports import GeradorUsuarioId, RepositorioUsuario
+from backend.application.acesso_estudante import (
+    AcessarEstudante,
+    AcessarEstudanteEntrada,
+    CredenciaisInvalidas,
+)
+from backend.application.ports import GeradorUsuarioId, RepositorioUsuario, VerificadorSenha
 
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    "AcessarEstudante",
+    "AcessarEstudanteEntrada",
+    "CredenciaisInvalidas",
     "EmailJaCadastrado",
     "GeradorUsuarioId",
     "RepositorioUsuario",
+    "VerificadorSenha",
 ]

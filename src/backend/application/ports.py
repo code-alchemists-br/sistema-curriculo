@@ -39,6 +39,32 @@ class RepositorioUsuario(Protocol):
         Code First que será implementada por adapter externo.
         """
 
+    async def obter_por_email(self, email: Email) -> Usuario | None:
+        """Obtém assincronamente a conta associada ao e-mail, quando ela existir.
+
+        Implementações aguardam a leitura no armazenamento e devolvem somente o
+        agregado do domínio ou ausência, sem revelar detalhes de persistência.
+        O método existe para que o caso de uso de acesso confira credenciais sem
+        acoplar a Application ao banco, ORM ou API.
+        """
+
+
+class VerificadorSenha(Protocol):
+    """Define a comparação segura entre uma senha informada e um hash armazenado.
+
+    A porta deixa o algoritmo criptográfico na infraestrutura e entrega apenas
+    uma decisão booleana ao caso de uso. Ela existe para que autenticação não
+    armazene senha em texto claro nem dependa de uma biblioteca de segurança.
+    """
+
+    def confere(self, senha: str, hash_senha: str) -> bool:
+        """Informa se a senha em texto claro corresponde ao hash persistido.
+
+        Implementações usam uma comparação apropriada ao formato de hash e não
+        expõem dados da credencial. O método existe para separar a decisão de
+        acesso da derivação criptográfica concreta.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 class GeradorUsuarioId(Protocol):
