@@ -9,6 +9,7 @@ from backend.domain.value_objects import Email
 from backend.infrastructure.persistence.sqlalchemy.usuario import (
     UsuarioRegistro,
     para_registro,
+    para_usuario,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
@@ -52,3 +53,14 @@ class RepositorioUsuarioSqlAlchemy(RepositorioUsuario):
         """
         self._session.add(para_registro(usuario))
         await self._session.flush()
+
+    async def obter_por_email(self, email: Email) -> Usuario | None:
+        """Obtém a conta pelo e-mail normalizado e a converte para o domínio.
+
+        A consulta aguarda uma única linha do ORM e chama o mapper externo antes
+        de retornar o agregado ou a ausência. Ela existe para atender o acesso
+        sem fazer a Application conhecer sessão, tabela ou modelo SQLAlchemy.
+        """
+        consulta = select(UsuarioRegistro).where(UsuarioRegistro.email == email.valor)
+        registro = await self._session.scalar(consulta)
+        return para_usuario(registro) if registro is not None else None

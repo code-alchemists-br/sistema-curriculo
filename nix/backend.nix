@@ -17,7 +17,5 @@ pkgs.mkShell {
     ]))
   ];
 
-  shellHook = ''
-    echo "Ambiente de desenvolvimento do backend"
-  '';
+  shellHook = "echo \"Ambiente de desenvolvimento do backend\"";
 }

@@ -6,6 +6,7 @@ from sqlalchemy import Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from backend.domain.entities import Usuario
+from backend.domain.value_objects import Email, HashSenha, Nome, UsuarioId
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
 
@@ -45,4 +46,19 @@ def para_registro(usuario: Usuario) -> UsuarioRegistro:
         nome=usuario.nome.valor,
         email=usuario.email.valor,
         hash_senha=usuario.hash_senha.valor,
+    )
+
+
+def para_usuario(registro: UsuarioRegistro) -> Usuario:
+    """Converte o registro ORM recuperado em agregado imutável do domínio.
+
+    A função recria os value objects a partir das colunas já persistidas, sem
+    devolver o modelo instrumentado do ORM para as camadas internas. Ela existe
+    para preservar a fronteira entre persistência SQLAlchemy e Application.
+    """
+    return Usuario(
+        id=UsuarioId(registro.id),
+        nome=Nome(registro.nome),
+        email=Email(registro.email),
+        hash_senha=HashSenha(registro.hash_senha),
     )
