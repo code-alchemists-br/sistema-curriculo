@@ -1,4 +1,4 @@
-"""Define portas internas necessárias ao cadastro de estudantes.
+"""Define portas internas necessárias às operações de estudantes.
 
 As portas descrevem somente as capacidades de que o caso de uso precisa, sem
 escolher banco, ORM ou estratégia de geração de UUID. Elas existem para que a
@@ -6,6 +6,7 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+from datetime import datetime
 from typing import Protocol
 
 from backend.domain.entities import Usuario
@@ -46,6 +47,41 @@ class RepositorioUsuario(Protocol):
         agregado do domínio ou ausência, sem revelar detalhes de persistência.
         O método existe para que o caso de uso de acesso confira credenciais sem
         acoplar a Application ao banco, ORM ou API.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+    async def obter_por_id(self, usuario_id: UsuarioId) -> Usuario | None:
+        """Obtém assincronamente o perfil identificado, quando ele existir.
+
+        Implementações consultam o armazenamento e devolvem somente o agregado
+        ou ausência, sem expor detalhes externos. O método existe para que os
+        casos de uso editem e excluam o perfil correto por identidade tipada.
+        """
+
+    async def atualizar(self, usuario: Usuario) -> None:
+        """Solicita assincronamente a persistência do novo estado do usuário.
+
+        Implementações atualizam a representação armazenada sem introduzir
+        regras de perfil na infraestrutura. O método existe para persistir as
+        transições de edição e exclusão decididas pelo núcleo.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+class Relogio(Protocol):
+    """Define a obtenção substituível do instante corrente para casos de uso.
+
+    A porta entrega um ``datetime`` sem escolher relógio do sistema ou fuso na
+    Application e pode ser substituída por stub. Ela existe para tornar a data
+    de exclusão determinística em testes e externa ao domínio.
+    """
+
+    def agora(self) -> datetime:
+        """Obtém o instante controlado que será aplicado à exclusão lógica.
+
+        Implementações consultam sua fonte de tempo e retornam o valor sem
+        alterar agregados. O método existe para separar a passagem do tempo da
+        transição pura executada por ``Usuario``.
         """
 
 

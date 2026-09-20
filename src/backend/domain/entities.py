@@ -7,7 +7,10 @@ reutilizar entre versões independentes de currículo.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime
+
+from backend.domain.exceptions import RegraDeDominioViolada
 
 from backend.domain.value_objects import (
     CompetenciaId,
@@ -39,6 +42,41 @@ class Usuario:
     nome: Nome
     email: Email
     hash_senha: HashSenha
+
+    # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+    deleted_at: datetime | None = None
+
+    @property
+    def excluido(self) -> bool:
+        """Informa se o perfil do usuário está logicamente excluído.
+
+        A propriedade deriva o estado exclusivamente da presença de
+        ``deleted_at``, sem consultar relógio ou persistência. Ela existe para
+        que regras e casos de uso interrompam operações em perfis removidos.
+        """
+        return self.deleted_at is not None
+
+    def editar_perfil(self, nome: Nome, email: Email) -> Usuario:
+        """Produz o estado editado do perfil preservando identidade e credencial.
+
+        A transição rejeita perfis excluídos e usa ``replace`` para conservar o
+        agregado original imutável, seu ID e hash de senha. Ela existe para que
+        alterações de nome e e-mail ocorram somente pela raiz do agregado.
+        """
+        if self.excluido:
+            raise RegraDeDominioViolada("Perfil excluído não pode ser editado.")
+        return replace(self, nome=nome, email=email)
+
+    def excluir(self, excluido_em: datetime) -> Usuario:
+        """Produz a exclusão lógica idempotente do perfil do usuário.
+
+        A transição registra o instante recebido somente na primeira chamada e
+        devolve o próprio agregado quando ele já está excluído. Ela existe para
+        bloquear o uso do perfil sem executar purga física ou acessar relógio.
+        """
+        if self.excluido:
+            return self
+        return replace(self, deleted_at=excluido_em)
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
