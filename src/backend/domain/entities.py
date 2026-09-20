@@ -40,6 +40,15 @@ class Usuario:
     email: Email
     hash_senha: HashSenha
 
+    def atualizar_perfil(self, novo_nome: Nome, novo_email: Email) -> None:
+        """Aplica a alteração de dados do perfil protegendo as invariantes."""
+        self.nome = novo_nome
+        self.email = novo_email
+
+    def atualizar_senha(self, novo_hash_senha: HashSenha) -> None:
+        """Atualiza a credencial de segurança do utilizador."""
+        self.hash_senha = novo_hash_senha
+
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)

@@ -15,3 +15,10 @@ class RegraDeDominioViolada(ValueError):
     persistência. Ela existe para tornar essas violações distinguíveis nas
     camadas que futuramente as orquestrarão.
     """
+
+class UsuarioNaoEncontrado(ValueError):
+    """Sinaliza que a operação referenciou um utilizador inexistente."""
+
+
+class EmailJaCadastrado(ValueError):
+    """Sinaliza que o e-mail já está em uso por outra conta."""

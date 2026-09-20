@@ -47,6 +47,9 @@ class RepositorioUsuario(Protocol):
         O método existe para que o caso de uso de acesso confira credenciais sem
         acoplar a Application ao banco, ORM ou API.
         """
+    async def buscar_por_email(self, email: Email) -> Usuario | None: ...
+    async def atualizar(self, usuario: Usuario) -> None: ...
+    async def excluir(self, usuario_id: UsuarioId) -> None: ...
 
 
 class VerificadorSenha(Protocol):
