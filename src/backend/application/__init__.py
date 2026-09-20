@@ -17,7 +17,22 @@ from backend.application.acesso_estudante import (
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
-from backend.application.ports import GeradorUsuarioId, RepositorioUsuario, VerificadorSenha
+from backend.application.ports import (
+    GeradorUsuarioId,
+    Relogio,
+    RepositorioUsuario,
+    VerificadorSenha,
+)
+
+# Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+from backend.application.perfil_estudante import (
+    EditarPerfil,
+    EditarPerfilEntrada,
+    ExcluirPerfil,
+    ExcluirPerfilEntrada,
+    PerfilExcluido,
+    PerfilNaoEncontrado,
+)
 
 __all__ = [
     "CadastrarEstudante",
@@ -26,7 +41,15 @@ __all__ = [
     "AcessarEstudanteEntrada",
     "CredenciaisInvalidas",
     "EmailJaCadastrado",
+    # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+    "EditarPerfil",
+    "EditarPerfilEntrada",
+    "ExcluirPerfil",
+    "ExcluirPerfilEntrada",
     "GeradorUsuarioId",
+    "PerfilExcluido",
+    "PerfilNaoEncontrado",
+    "Relogio",
     "RepositorioUsuario",
     "VerificadorSenha",
 ]
