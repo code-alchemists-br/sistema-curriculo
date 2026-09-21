@@ -1,0 +1,121 @@
+/* Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001 */
+
+:root {
+  color: #1f2937;
+  background: #f8fafc;
+  font-family: Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  padding: 1.5rem;
+  place-items: center;
+}
+
+.app-shell__content {
+  width: min(100%, 42rem);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 0.5rem 1.5rem rgb(15 23 42 / 12%);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin: 2rem 0 1.5rem;
+}
+
+.tabs__button,
+form button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tabs__button {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.tabs__button[aria-selected="true"],
+form button {
+  background: #2563eb;
+  color: #fff;
+}
+
+.account-form form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+}
+
+.field__error,
+.form-message {
+  margin: 0;
+}
+
+.field__error,
+.form-message--error {
+  color: #b91c1c;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 30rem) {
+  .app-shell {
+    padding: 0.75rem;
+  }
+
+  .app-shell__content {
+    padding: 1.25rem;
+  }
+}
