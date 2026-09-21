@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
     CompetenciaId,
     DocumentoId,
@@ -57,6 +59,25 @@ class ExperienciaProfissional:
     cargo: str
     descricao: str
     periodo: Periodo
+
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    def __post_init__(self) -> None:
+        """Garante que a experiência profissional contenha os textos essenciais.
+
+        A validação percorre empresa, cargo e descrição, removendo espaços para
+        identificar valores ausentes antes que a entidade possa ser usada. Ela
+        existe para impedir que o currículo mantenha experiências sem a
+        informação mínima necessária para sua apresentação profissional.
+        """
+        for campo, valor in (
+            ("empresa", self.empresa),
+            ("cargo", self.cargo),
+            ("descrição", self.descricao),
+        ):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(
+                    f"A experiência profissional exige {campo} preenchido."
+                )
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001

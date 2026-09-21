@@ -10,8 +10,11 @@ from datetime import datetime
 from typing import Protocol
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+from backend.domain.itens_perfil import ExperienciaProfissional
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, UsuarioId
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+from backend.domain.value_objects import ExperienciaProfissionalId
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
@@ -118,4 +121,43 @@ class GeradorUsuarioId(Protocol):
         Implementações podem obter um UUID de qualquer fonte compatível, mas
         retornam o value object do domínio. O método existe para manter o fluxo
         de cadastro determinístico em testes e independente da infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+class RepositorioExperienciaProfissional(Protocol):
+    """Define a persistência necessária ao cadastro de uma experiência.
+
+    A porta recebe a entidade já validada e delega seu armazenamento a uma
+    implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
+    para manter o caso de uso independente da tecnologia de persistência.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    async def salvar(self, experiencia: ExperienciaProfissional) -> None:
+        """Armazena uma experiência profissional validada.
+
+        A implementação concreta executa a persistência depois da criação da
+        entidade pelo caso de uso, preservando o contrato assíncrono. O método
+        existe para registrar a nova experiência sem acoplar a aplicação a um
+        mecanismo de armazenamento específico.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+class GeradorExperienciaProfissionalId(Protocol):
+    """Fornece identificadores tipados para novas experiências profissionais.
+
+    A porta separa a política de geração de identificadores da orquestração do
+    cadastro e devolve um value object válido. Ela existe para permitir que o
+    núcleo seja testado de modo determinístico e permaneça livre de infraestrutura.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    def gerar(self) -> ExperienciaProfissionalId:
+        """Gera o identificador da próxima experiência profissional.
+
+        A implementação define a estratégia concreta de geração e retorna o
+        tipo de domínio esperado pelo caso de uso. O método existe para que a
+        criação da entidade sempre receba uma identidade explícita e válida.
         """

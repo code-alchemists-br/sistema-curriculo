@@ -23,6 +23,17 @@ from backend.application.ports import (
     RepositorioUsuario,
     VerificadorSenha,
 )
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+from backend.application.ports import (
+    GeradorExperienciaProfissionalId,
+    RepositorioExperienciaProfissional,
+)
+
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+from backend.application.cadastro_experiencia_profissional import (
+    CadastrarExperienciaProfissional,
+    CadastrarExperienciaProfissionalEntrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 from backend.application.perfil_estudante import (
@@ -37,6 +48,9 @@ from backend.application.perfil_estudante import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    "CadastrarExperienciaProfissional",
+    "CadastrarExperienciaProfissionalEntrada",
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     "CredenciaisInvalidas",
@@ -47,9 +61,13 @@ __all__ = [
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
     "GeradorUsuarioId",
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    "GeradorExperienciaProfissionalId",
     "PerfilExcluido",
     "PerfilNaoEncontrado",
     "Relogio",
     "RepositorioUsuario",
+    # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    "RepositorioExperienciaProfissional",
     "VerificadorSenha",
 ]
