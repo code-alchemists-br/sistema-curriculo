@@ -4,7 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.ports import RepositorioUsuario
-from backend.domain.entities import Usuario
+# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email
 from backend.infrastructure.persistence.sqlalchemy.usuario import (
     UsuarioRegistro,

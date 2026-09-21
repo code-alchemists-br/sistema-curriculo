@@ -9,7 +9,8 @@ from dataclasses import dataclass
 
 from backend.application.cadastro_estudante import EmailJaCadastrado
 from backend.application.ports import Relogio, RepositorioUsuario
-from backend.domain.entities import Usuario
+# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, Nome, UsuarioId
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
