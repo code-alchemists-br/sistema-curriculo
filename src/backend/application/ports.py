@@ -9,7 +9,8 @@ depender do núcleo da aplicação.
 from datetime import datetime
 from typing import Protocol
 
-from backend.domain.entities import Usuario
+# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, UsuarioId
 
 
