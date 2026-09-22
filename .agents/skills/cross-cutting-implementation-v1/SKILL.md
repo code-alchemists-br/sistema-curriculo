@@ -1,11 +1,11 @@
 ---
 name: cross-cutting-implementation-v1
-description: "Avalia e implementa exclusivamente preocupações Cross-Cutting de observabilidade, logging, métricas, tracing, outras telemetrias de código, resiliência, segurança, autenticação e autorização, a partir de uma análise de decisão v4. Valida AGENTS.md, versão, evidência e aderência da demanda; exclui funcionalidade de negócio, implementação própria de frontend/backend, ambientes e testes acima da unidade. Use somente por invocação explícita com a referência da análise e instruções adicionais opcionais."
+description: "Avalia e implementa exclusivamente preocupações Cross-Cutting de observabilidade, logging, métricas, tracing, outras telemetrias de código, resiliência, segurança, autenticação e autorização, a partir de uma análise de decisão v4. Pode alterar arquivos de qualquer camada exclusivamente para integrar mecanismos transversais aprovados, sem modificar sua semântica funcional; exclui funcionalidade de negócio, ambientes e testes acima da unidade. Use somente por invocação explícita com a referência da análise e instruções adicionais opcionais."
 ---
 
 # Cross-Cutting Implementation v1
 
-Avalie ou implemente mecanismos transversais sem assumir a responsabilidade funcional das camadas atravessadas. Uma alteração pode tocar frontend, aplicação, adapters ou drivers apenas no ponto estritamente necessário ao concern aprovado, preservando a semântica de negócio.
+Avalie ou implemente mecanismos transversais sem assumir a responsabilidade funcional das camadas atravessadas. Uma alteração pode tocar arquivos de qualquer camada, inclusive domínio, frontend, aplicação, adapters ou drivers, apenas no ponto estritamente necessário ao concern aprovado e sem modificar sua semântica funcional ou de negócio.
 
 ## Entrada e modos
 
