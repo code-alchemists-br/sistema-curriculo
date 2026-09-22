@@ -35,6 +35,17 @@ from backend.application.cadastro_experiencia_profissional import (
     CadastrarExperienciaProfissionalEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+from backend.application.cadastro_projeto_academico import (
+    CadastrarProjetoAcademico,
+    CadastrarProjetoAcademicoEntrada,
+)
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+from backend.application.ports import (
+    GeradorProjetoAcademicoId,
+    RepositorioProjetoAcademico,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 from backend.application.perfil_estudante import (
     EditarPerfil,
@@ -51,6 +62,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    "CadastrarProjetoAcademico",
+    "CadastrarProjetoAcademicoEntrada",
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     "CredenciaisInvalidas",
@@ -63,11 +77,15 @@ __all__ = [
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    "GeradorProjetoAcademicoId",
     "PerfilExcluido",
     "PerfilNaoEncontrado",
     "Relogio",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    "RepositorioProjetoAcademico",
     "VerificadorSenha",
 ]
