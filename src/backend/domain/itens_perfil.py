@@ -96,6 +96,25 @@ class ProjetoAcademico:
     descricao: str
     tecnologias: str
 
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    def __post_init__(self) -> None:
+        """Garante que o projeto acadêmico contenha os textos essenciais.
+
+        A validação percorre título, descrição e tecnologias, removendo espaços
+        para identificar valores ausentes antes que a entidade seja utilizada.
+        Ela existe para impedir que o perfil mantenha projetos sem informação
+        mínima para apresentação em currículos.
+        """
+        for campo, valor in (
+            ("título", self.titulo),
+            ("descrição", self.descricao),
+            ("tecnologias", self.tecnologias),
+        ):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(
+                    f"O projeto acadêmico exige {campo} preenchido."
+                )
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)

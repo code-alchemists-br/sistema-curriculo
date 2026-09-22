@@ -11,10 +11,14 @@ from typing import Protocol
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.itens_perfil import ExperienciaProfissional
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+from backend.domain.itens_perfil import ProjetoAcademico
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, UsuarioId
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.value_objects import ExperienciaProfissionalId
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+from backend.domain.value_objects import ProjetoAcademicoId
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
@@ -160,4 +164,42 @@ class GeradorExperienciaProfissionalId(Protocol):
         A implementação define a estratégia concreta de geração e retorna o
         tipo de domínio esperado pelo caso de uso. O método existe para que a
         criação da entidade sempre receba uma identidade explícita e válida.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+class RepositorioProjetoAcademico(Protocol):
+    """Define a persistência necessária ao cadastro de um projeto acadêmico.
+
+    A porta recebe a entidade já validada e delega o armazenamento a uma
+    implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
+    para manter o caso de uso independente da tecnologia de persistência.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    async def salvar(self, projeto: ProjetoAcademico) -> None:
+        """Armazena um projeto acadêmico validado.
+
+        A implementação concreta persiste a entidade depois da criação pelo
+        caso de uso, preservando o contrato assíncrono. O método existe para
+        registrar o projeto sem acoplar a Application ao armazenamento.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+class GeradorProjetoAcademicoId(Protocol):
+    """Fornece identificadores tipados para novos projetos acadêmicos.
+
+    A porta separa a geração de identidade da orquestração e devolve um value
+    object válido. Ela existe para tornar os testes determinísticos e manter o
+    núcleo livre da estratégia concreta de geração de UUID.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    def gerar(self) -> ProjetoAcademicoId:
+        """Gera o identificador do próximo projeto acadêmico.
+
+        A implementação escolhe a estratégia concreta e retorna o tipo de
+        domínio esperado. O método existe para que a criação sempre receba uma
+        identidade explícita e válida.
         """
