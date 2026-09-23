@@ -1,0 +1,128 @@
+/* Estilos exclusivos da tela de cadastro de competências. */
+
+.skills-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.skills-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skills-section + .skills-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.skills-section__heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.skills-section__heading h2,
+.skills-section__heading p,
+.skills-suggestions h3 {
+  margin: 0;
+}
+
+.skills-section__heading p {
+  color: #475569;
+}
+
+.skills-section > input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+}
+
+.skills-chips,
+.skills-suggestions__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skills-chips {
+  min-height: 2rem;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.skill-chip__remove {
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #1e3a8a;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.skill-chip__remove:hover {
+  background: #dbeafe;
+}
+
+.skills-suggestions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.skill-suggestion {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.skill-suggestion:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.skill-suggestion:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.skills-form > button[type="submit"] {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.skills-form button:focus-visible,
+.skills-form input:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+  .skills-form {
+    gap: 0.75rem;
+  }
+}
