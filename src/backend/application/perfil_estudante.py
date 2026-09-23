@@ -1,19 +1,28 @@
-"""Orquestra a edição e a exclusão lógica do perfil do estudante/candidato.
+"""Orquestra operações de perfil do estudante/candidato e suas formações.
 
-O módulo coordena o agregado ``Usuario`` com portas assíncronas e um relógio
-substituível, sem conhecer transporte ou persistência. Ele existe para manter
-as intenções de perfil testáveis e separadas de currículos e credenciais.
+O módulo coordena o agregado ``Usuario`` e entidades reutilizáveis de perfil
+com portas assíncronas, sem conhecer transporte ou persistência. Ele existe para
+manter as intenções de perfil testáveis e separadas de currículos e credenciais.
 """
 
 from dataclasses import dataclass
 
 from backend.application.cadastro_estudante import EmailJaCadastrado
-from backend.application.ports import Relogio, RepositorioUsuario
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+from backend.application.ports import (
+    GeradorFormacaoAcademicaId,
+    Relogio,
+    RepositorioFormacaoAcademica,
+    RepositorioUsuario,
+)
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, Nome, UsuarioId
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+from backend.domain.itens_perfil import FormacaoAcademica
+from backend.domain.value_objects import Periodo
 
 
 class PerfilNaoEncontrado(LookupError):
@@ -25,12 +34,13 @@ class PerfilNaoEncontrado(LookupError):
     """
 
 
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 class PerfilExcluido(ValueError):
-    """Sinaliza que um perfil logicamente excluído não aceita edição.
+    """Sinaliza que um perfil logicamente excluído não aceita operações ativas.
 
-    A falha traduz o estado do agregado antes de consultar conflito de e-mail
-    ou atualizar o repositório. Ela existe para impedir a reativação implícita
-    de um estudante/candidato removido.
+    A falha traduz o estado do agregado antes de editar seus dados ou cadastrar
+    uma formação. Ela existe para impedir que operações de perfil reativem ou
+    ampliem implicitamente um estudante/candidato removido.
     """
 
 
@@ -58,6 +68,25 @@ class ExcluirPerfilEntrada:
     """
 
     usuario_id: UsuarioId
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class CadastrarFormacaoAcademicaEntrada:
+    """Agrupa os dados de domínio para cadastrar uma formação de um perfil.
+
+    A entrada transporta o proprietário tipado, textos já recebidos por uma
+    fronteira externa e um ``Periodo`` validado, sem incluir HTTP ou ORM. Ela
+    existe para dar contrato explícito ao caso de uso e preservar as invariantes
+    locais da formação no domínio.
+    """
+
+    usuario_id: UsuarioId
+    instituicao: str
+    curso: str
+    nivel: str
+    periodo: Periodo
+    status: str
 
 
 class EditarPerfil:
@@ -102,6 +131,61 @@ class EditarPerfil:
         usuario_editado = usuario.editar_perfil(entrada.nome, entrada.email)
         await self._repositorio_usuario.atualizar(usuario_editado)
         return usuario_editado
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class CadastrarFormacaoAcademica:
+    """Cria e solicita o salvamento de uma formação para um perfil ativo.
+
+    O caso consulta o proprietário por porta, rejeita ausência ou exclusão,
+    gera uma identidade tipada e constrói a entidade antes de delegar o
+    salvamento à porta específica. Ele existe para coordenar a associação entre
+    perfil e formação sem acoplar domínio ou Application à persistência.
+    """
+
+    def __init__(
+        self,
+        repositorio_usuario: RepositorioUsuario,
+        repositorio_formacao: RepositorioFormacaoAcademica,
+        gerador_formacao_id: GeradorFormacaoAcademicaId,
+    ) -> None:
+        """Recebe as portas necessárias à validação e ao cadastro da formação.
+
+        O construtor armazena abstrações para consultar o perfil, persistir a
+        entidade e gerar sua identidade, sem executar I/O. Ele existe para que
+        a orquestração seja injetável e determinística em testes unitários.
+        """
+        self._repositorio_usuario = repositorio_usuario
+        self._repositorio_formacao = repositorio_formacao
+        self._gerador_formacao_id = gerador_formacao_id
+
+    async def executar(
+        self, entrada: CadastrarFormacaoAcademicaEntrada
+    ) -> FormacaoAcademica:
+        """Cadastra uma formação vinculada a perfil existente e ainda ativo.
+
+        O método obtém o proprietário, interrompe o fluxo para ausência ou
+        exclusão e então cria a entidade com os value objects fornecidos antes
+        de solicitar o salvamento assíncrono. Ele existe para impedir formação
+        órfã ou atribuída a perfil removido sem fazer I/O diretamente.
+        """
+        usuario = await self._repositorio_usuario.obter_por_id(entrada.usuario_id)
+        if usuario is None:
+            raise PerfilNaoEncontrado("Perfil não encontrado.")
+        if usuario.excluido:
+            raise PerfilExcluido("Perfil excluído não pode cadastrar formação.")
+
+        formacao = FormacaoAcademica(
+            id=self._gerador_formacao_id.gerar(),
+            usuario_id=entrada.usuario_id,
+            instituicao=entrada.instituicao,
+            curso=entrada.curso,
+            nivel=entrada.nivel,
+            periodo=entrada.periodo,
+            status=entrada.status,
+        )
+        await self._repositorio_formacao.salvar(formacao)
+        return formacao
 
 
 class ExcluirPerfil:

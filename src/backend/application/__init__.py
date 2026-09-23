@@ -17,15 +17,21 @@ from backend.application.acesso_estudante import (
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.application.ports import (
+    GeradorFormacaoAcademicaId,
     GeradorUsuarioId,
     Relogio,
+    RepositorioFormacaoAcademica,
     RepositorioUsuario,
     VerificadorSenha,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.application.perfil_estudante import (
+    CadastrarFormacaoAcademica,
+    CadastrarFormacaoAcademicaEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     ExcluirPerfil,
@@ -41,15 +47,20 @@ __all__ = [
     "AcessarEstudanteEntrada",
     "CredenciaisInvalidas",
     "EmailJaCadastrado",
+    # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+    "CadastrarFormacaoAcademica",
+    "CadastrarFormacaoAcademicaEntrada",
     # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
     "EditarPerfil",
     "EditarPerfilEntrada",
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
+    "GeradorFormacaoAcademicaId",
     "GeradorUsuarioId",
     "PerfilExcluido",
     "PerfilNaoEncontrado",
     "Relogio",
+    "RepositorioFormacaoAcademica",
     "RepositorioUsuario",
     "VerificadorSenha",
 ]

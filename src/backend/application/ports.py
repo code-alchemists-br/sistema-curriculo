@@ -11,7 +11,10 @@ from typing import Protocol
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+from backend.domain.itens_perfil import FormacaoAcademica
 from backend.domain.value_objects import Email, UsuarioId
+from backend.domain.value_objects import FormacaoAcademicaId
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
@@ -68,6 +71,24 @@ class RepositorioUsuario(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class RepositorioFormacaoAcademica(Protocol):
+    """Define a persistência assíncrona de formações acadêmicas válidas.
+
+    A porta recebe uma entidade de domínio pronta e delega o I/O ao adapter que
+    a implementar, sem escolher ORM, tabela ou transação. Ela existe para que o
+    caso de uso registre formações sem acoplar a Application à infraestrutura.
+    """
+
+    async def salvar(self, formacao: FormacaoAcademica) -> None:
+        """Solicita a persistência assíncrona de uma formação acadêmica válida.
+
+        Implementações aguardam o armazenamento e preservam a entidade recebida
+        sem criar regras de negócio adicionais. O método existe para separar a
+        intenção de cadastrar formação do mecanismo concreto de persistência.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 class Relogio(Protocol):
     """Define a obtenção substituível do instante corrente para casos de uso.
@@ -118,4 +139,22 @@ class GeradorUsuarioId(Protocol):
         Implementações podem obter um UUID de qualquer fonte compatível, mas
         retornam o value object do domínio. O método existe para manter o fluxo
         de cadastro determinístico em testes e independente da infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class GeradorFormacaoAcademicaId(Protocol):
+    """Define a geração substituível de identidade para uma formação acadêmica.
+
+    A porta encapsula a origem do UUID e devolve o value object tipado, sem
+    impor uma estratégia de aleatoriedade à Application. Ela existe para que o
+    cadastro crie identidades determinísticas em testes e independentes de I/O.
+    """
+
+    def gerar(self) -> FormacaoAcademicaId:
+        """Gera uma identidade tipada para a nova formação acadêmica.
+
+        Implementações podem consultar qualquer fonte compatível e retornam o
+        tipo de domínio já validado. O método existe para manter a criação da
+        entidade explícita e substituível no caso de uso.
         """
