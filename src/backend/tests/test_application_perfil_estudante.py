@@ -1,10 +1,13 @@
-"""Testa unitariamente os casos de uso de edição e exclusão do perfil."""
+"""Testa unitariamente as operações de perfil e cadastro de formação."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import unittest
 from uuid import uuid4
 
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.application import (
+    CadastrarFormacaoAcademica,
+    CadastrarFormacaoAcademicaEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     EmailJaCadastrado,
@@ -13,9 +16,19 @@ from backend.application import (
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
-from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
+from backend.domain import (
+    Email,
+    FormacaoAcademica,
+    FormacaoAcademicaId,
+    HashSenha,
+    Nome,
+    Periodo,
+    Usuario,
+    UsuarioId,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 
 
 class RepositorioUsuarioSpy:
@@ -88,6 +101,64 @@ class RelogioStub:
         """
         self.chamadas += 1
         return self._instante
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class RepositorioFormacaoAcademicaSpy:
+    """Substitui a porta de formação e registra salvamentos solicitados.
+
+    O double acumula entidades recebidas inteiramente em memória e não acessa
+    banco, ORM ou rede. Ele existe para observar o efeito externo do caso de
+    uso de cadastro sem transformar o teste unitário em teste de integração.
+    """
+
+    def __init__(self) -> None:
+        """Inicia o histórico vazio de formações salvas pelo caso de uso.
+
+        O construtor não configura recursos externos e mantém apenas uma lista
+        controlada pelo teste. Ele existe para tornar observável cada solicitação
+        de persistência feita pela orquestração.
+        """
+        self.formacoes_salvas: list[FormacaoAcademica] = []
+
+    async def salvar(self, formacao: FormacaoAcademica) -> None:
+        """Registra assincronamente a formação recebida sem persistência real.
+
+        O método acrescenta a mesma entidade ao histórico em memória e não
+        modifica seu conteúdo. Ele existe para simular a porta aguardável e
+        permitir afirmar se o cadastro solicitou ou evitou o salvamento.
+        """
+        self.formacoes_salvas.append(formacao)
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class GeradorFormacaoAcademicaIdStub:
+    """Substitui a geração de ID por valor fixo e conta suas utilizações.
+
+    O double devolve sempre a identidade configurada e registra as chamadas,
+    sem produzir aleatoriedade. Ele existe para verificar tanto a identidade da
+    entidade criada quanto a ausência de geração nos fluxos interrompidos.
+    """
+
+    def __init__(self, formacao_id: FormacaoAcademicaId) -> None:
+        """Armazena a identidade fixa e zera o contador de chamadas.
+
+        O construtor recebe o value object pronto, sem criar UUID ou consultar
+        serviço externo. Ele existe para preparar uma dependência totalmente
+        determinística para os cenários de cadastro.
+        """
+        self._formacao_id = formacao_id
+        self.chamadas = 0
+
+    def gerar(self) -> FormacaoAcademicaId:
+        """Devolve a identidade configurada e registra uma solicitação.
+
+        O método incrementa o contador antes de retornar o mesmo value object,
+        preservando a previsibilidade do teste. Ele existe para tornar visível
+        quando o caso de uso efetivamente inicia a criação da entidade.
+        """
+        self.chamadas += 1
+        return self._formacao_id
 
 
 class EditarPerfilTestCase(unittest.IsolatedAsyncioTestCase):
@@ -246,6 +317,85 @@ class ExcluirPerfilTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(relogio.chamadas, 0)
 
 
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class CadastrarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica o cadastro de formação isolado de qualquer adapter externo.
+
+    A classe usa spy de repositório, stub de gerador e perfil em memória para
+    observar a sequência de decisões do caso de uso. Ela existe para proteger
+    a associação com perfil ativo sem depender de banco, API ou ORM.
+    """
+
+    async def test_cadastra_formacao_para_perfil_ativo(self) -> None:
+        """Confirma a criação e o salvamento da formação com dados recebidos.
+
+        O teste fornece proprietário ativo, ID fixo e entrada válida, então
+        compara a entidade retornada ao efeito observado pelo spy. Ele existe
+        para proteger o caminho bem-sucedido da orquestração.
+        """
+        usuario = _criar_usuario()
+        repositorio_usuario = RepositorioUsuarioSpy([usuario])
+        repositorio_formacao = RepositorioFormacaoAcademicaSpy()
+        formacao_id = FormacaoAcademicaId(uuid4())
+        gerador = GeradorFormacaoAcademicaIdStub(formacao_id)
+        entrada = _criar_entrada_formacao(usuario.id)
+
+        resultado = await CadastrarFormacaoAcademica(
+            repositorio_usuario, repositorio_formacao, gerador
+        ).executar(entrada)
+
+        self.assertEqual(resultado.id, formacao_id)
+        self.assertEqual(resultado.usuario_id, usuario.id)
+        self.assertEqual(resultado.instituicao, entrada.instituicao)
+        self.assertEqual(resultado.curso, entrada.curso)
+        self.assertEqual(resultado.nivel, entrada.nivel)
+        self.assertEqual(resultado.periodo, entrada.periodo)
+        self.assertEqual(resultado.status, entrada.status)
+        self.assertEqual(repositorio_formacao.formacoes_salvas, [resultado])
+        self.assertEqual(gerador.chamadas, 1)
+
+    async def test_rejeita_perfil_inexistente_sem_gerar_ou_salvar_formacao(self) -> None:
+        """Confirma que ausência do proprietário interrompe o cadastro cedo.
+
+        O teste consulta um repositório sem usuário e observa a falha junto à
+        ausência de chamadas ao gerador e ao spy. Ele existe para impedir que a
+        Application crie ou persista formação órfã.
+        """
+        repositorio_usuario = RepositorioUsuarioSpy()
+        repositorio_formacao = RepositorioFormacaoAcademicaSpy()
+        gerador = GeradorFormacaoAcademicaIdStub(FormacaoAcademicaId(uuid4()))
+        entrada = _criar_entrada_formacao(UsuarioId(uuid4()))
+
+        with self.assertRaises(PerfilNaoEncontrado):
+            await CadastrarFormacaoAcademica(
+                repositorio_usuario, repositorio_formacao, gerador
+            ).executar(entrada)
+
+        self.assertEqual(gerador.chamadas, 0)
+        self.assertEqual(repositorio_formacao.formacoes_salvas, [])
+
+    async def test_rejeita_perfil_excluido_sem_gerar_ou_salvar_formacao(self) -> None:
+        """Confirma que perfil excluído não recebe nova formação acadêmica.
+
+        O teste fornece usuário removido e observa a falha antes de qualquer
+        geração ou salvamento. Ele existe para preservar o ciclo de vida do
+        perfil e impedir sua ampliação implícita após exclusão lógica.
+        """
+        usuario = _criar_usuario().excluir(_instante_exclusao())
+        repositorio_usuario = RepositorioUsuarioSpy([usuario])
+        repositorio_formacao = RepositorioFormacaoAcademicaSpy()
+        gerador = GeradorFormacaoAcademicaIdStub(FormacaoAcademicaId(uuid4()))
+        entrada = _criar_entrada_formacao(usuario.id)
+
+        with self.assertRaises(PerfilExcluido):
+            await CadastrarFormacaoAcademica(
+                repositorio_usuario, repositorio_formacao, gerador
+            ).executar(entrada)
+
+        self.assertEqual(gerador.chamadas, 0)
+        self.assertEqual(repositorio_formacao.formacoes_salvas, [])
+
+
 def _criar_usuario(email: str = "ana@example.com") -> Usuario:
     """Cria perfil ativo com dados válidos para os casos de uso.
 
@@ -258,6 +408,26 @@ def _criar_usuario(email: str = "ana@example.com") -> Usuario:
         nome=Nome("Ana Silva"),
         email=Email(email),
         hash_senha=HashSenha("hash-ja-derivado"),
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+def _criar_entrada_formacao(
+    usuario_id: UsuarioId,
+) -> CadastrarFormacaoAcademicaEntrada:
+    """Monta uma entrada válida e estável para cenários de cadastro.
+
+    A função reúne textos e período em memória sem consultar gerador, relógio
+    ou persistência. Ela existe para manter os testes focados nas decisões do
+    caso de uso, variando somente o proprietário quando necessário.
+    """
+    return CadastrarFormacaoAcademicaEntrada(
+        usuario_id=usuario_id,
+        instituicao="FATEC",
+        curso="Análise e Desenvolvimento de Sistemas",
+        nivel="tecnologo",
+        periodo=Periodo(date(2024, 2, 1)),
+        status="em_andamento",
     )
 
 
