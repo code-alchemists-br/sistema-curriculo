@@ -11,7 +11,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 
 from backend.domain.exceptions import RegraDeDominioViolada
-from backend.domain.value_objects import Email, HashSenha, Nome, UsuarioId
+from backend.domain.value_objects import DadosContato, Email, HashSenha, Nome, UsuarioId
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -30,6 +30,8 @@ class Usuario:
     email: Email
     hash_senha: HashSenha
     deleted_at: datetime | None = None
+    # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+    dados_contato: DadosContato | None = None
 
     @property
     def excluido(self) -> bool:
@@ -51,6 +53,19 @@ class Usuario:
         if self.excluido:
             raise RegraDeDominioViolada("Perfil excluído não pode ser editado.")
         return replace(self, nome=nome, email=email)
+
+    # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+    def atualizar_dados_contato(self, dados_contato: DadosContato) -> Usuario:
+        """Produz o estado do perfil com endereço, telefones e links atualizados.
+
+        A transição rejeita perfis excluídos e usa ``replace`` para conservar o
+        agregado original imutável, sua identidade, credencial e demais dados.
+        Ela existe para que a manutenção de contato siga o mesmo contrato de
+        ``editar_perfil`` sem misturar identidade com dados de contato.
+        """
+        if self.excluido:
+            raise RegraDeDominioViolada("Perfil excluído não pode ser editado.")
+        return replace(self, dados_contato=dados_contato)
 
     def excluir(self, excluido_em: datetime) -> Usuario:
         """Produz a exclusão lógica idempotente do perfil do usuário.

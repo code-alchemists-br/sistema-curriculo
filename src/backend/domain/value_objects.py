@@ -239,6 +239,86 @@ class Nome:
             raise RegraDeDominioViolada("Nome não pode ser vazio.")
         object.__setattr__(self, "valor", valor_normalizado)
 
+# Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Endereco:
+    """Representa um endereço completo e não vazio do domínio de usuário.
+
+    O value object remove espaços periféricos e preserva o conteúdo informado.
+    Ele existe para assegurar que o endereço de contato de um usuário nunca
+    seja composto somente por espaços ou fique ausente silenciosamente.
+    """
+
+    valor: str
+
+    def __post_init__(self) -> None:
+        """Normaliza espaços periféricos e rejeita um endereço vazio.
+
+        A checagem ocorre no momento da criação e não aplica normalização
+        postal ou geográfica ainda não especificada. Ela existe para garantir
+        uma invariante mínima usada por ``DadosContato``.
+        """
+        valor_normalizado = self.valor.strip()
+        if not valor_normalizado:
+            raise RegraDeDominioViolada("Endereço não pode ser vazio.")
+        object.__setattr__(self, "valor", valor_normalizado)
+
+
+# Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Telefone:
+    """Representa um telefone de contato não vazio do domínio de usuário.
+
+    O value object remove espaços periféricos e preserva o conteúdo informado.
+    Ele existe para assegurar que cada telefone dentro de ``DadosContato`` seja
+    um valor com conteúdo, sem impor ainda uma máscara ou DDI específicos.
+    """
+
+    valor: str
+
+    def __post_init__(self) -> None:
+        """Normaliza espaços periféricos e rejeita um telefone vazio.
+
+        A checagem ocorre no momento da criação e não valida formato regional
+        ainda não especificado pelos requisitos. Ela existe para garantir uma
+        invariante mínima usada por ``DadosContato``.
+        """
+        valor_normalizado = self.valor.strip()
+        if not valor_normalizado:
+            raise RegraDeDominioViolada("Telefone não pode ser vazio.")
+        object.__setattr__(self, "valor", valor_normalizado)
+
+
+# Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class DadosContato:
+    """Agrupa endereço, telefones e links profissionais opcionais de contato.
+
+    O value object reúne os dados de contato do usuário como uma unidade só e
+    exige ao menos um telefone válido. Ele existe para que endereço, telefones
+    e links nunca fiquem parcialmente preenchidos ou inconsistentes entre si
+    dentro do agregado ``Usuario``.
+    """
+
+    endereco: Endereco
+    telefones: tuple[Telefone, ...]
+    linkedin: str | None = None
+    curriculo_lattes: str | None = None
+
+    def __post_init__(self) -> None:
+        """Exige ao menos um telefone e normaliza links opcionais vazios.
+
+        A validação rejeita contato sem nenhum telefone e converte links em
+        branco para ``None``, sem verificar formato de URL ainda não exigido.
+        Ela existe para manter a invariante mínima de contato do usuário.
+        """
+        if not self.telefones:
+            raise RegraDeDominioViolada("Informe ao menos um telefone de contato.")
+        linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
+        lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
+        object.__setattr__(self, "linkedin", linkedin_normalizado or None)
+        object.__setattr__(self, "curriculo_lattes", lattes_normalizado or None)
+
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
