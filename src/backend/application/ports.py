@@ -164,6 +164,7 @@ class GeradorFormacaoAcademicaId(Protocol):
         Implementações podem consultar qualquer fonte compatível e retornam o
         tipo de domínio já validado. O método existe para manter a criação da
         entidade explícita e substituível no caso de uso.
+        """
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
     """Define a persistência necessária ao cadastro de uma experiência.
