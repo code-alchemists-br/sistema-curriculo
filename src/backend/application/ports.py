@@ -16,6 +16,8 @@ from backend.domain.itens_perfil import ProjetoAcademico
 from backend.domain.usuario import Usuario
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import FormacaoAcademica
+from backend.domain.itens_perfil import Certificacao, Curso, Idioma
+from backend.domain.value_objects import CertificacaoId, CursoId, IdiomaId
 from backend.domain.value_objects import Email, UsuarioId
 from backend.domain.value_objects import FormacaoAcademicaId
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
@@ -163,7 +165,7 @@ class GeradorFormacaoAcademicaId(Protocol):
 
         Implementações podem consultar qualquer fonte compatível e retornam o
         tipo de domínio já validado. O método existe para manter a criação da
-        entidade explícita e substituível no caso de uso.
+        entidade explícita e substituível no caso de uso."""
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
     """Define a persistência necessária ao cadastro de uma experiência.
@@ -239,3 +241,24 @@ class GeradorProjetoAcademicoId(Protocol):
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
         """
+
+# --- CURSO ---
+class RepositorioCurso(Protocol):
+    async def salvar(self, curso: Curso) -> None: ...
+
+class GeradorCursoId(Protocol):
+    def gerar(self) -> CursoId: ...
+
+# --- CERTIFICAÇÃO ---
+class RepositorioCertificacao(Protocol):
+    async def salvar(self, certificacao: Certificacao) -> None: ...
+
+class GeradorCertificacaoId(Protocol):
+    def gerar(self) -> CertificacaoId: ...
+
+# --- IDIOMA ---
+class RepositorioIdioma(Protocol):
+    async def salvar(self, idioma: Idioma) -> None: ...
+
+class GeradorIdiomaId(Protocol):
+    def gerar(self) -> IdiomaId: ...

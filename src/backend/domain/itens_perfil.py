@@ -21,6 +21,7 @@ from backend.domain.value_objects import (
     ProjetoAcademicoId,
     UsuarioId,
 )
+from backend.domain.value_objects import CertificacaoId, CursoId
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001

@@ -290,6 +290,26 @@ class HashSenha:
         if not self.valor.strip():
             raise RegraDeDominioViolada("Hash de senha não pode ser vazio.")
 
+# Adicionar no domain/value_objects.py
+@dataclass(frozen=True, slots=True)
+class CursoId:
+    """Representa a identidade imutável de um curso complementar."""
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        _validar_uuid(self.valor, "CursoId")
+
+
+@dataclass(frozen=True, slots=True)
+class CertificacaoId:
+    """Representa a identidade imutável de uma certificação."""
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        _validar_uuid(self.valor, "CertificacaoId")
+
 
 IdItemPerfil = (
     FormacaoAcademicaId
@@ -298,6 +318,8 @@ IdItemPerfil = (
     | CompetenciaId
     | IdiomaId
     | DocumentoId
+    | CursoId
+    | CertificacaoId
 )
 
 
@@ -332,6 +354,56 @@ class ReferenciaCurriculo:
         if not isinstance(self.item_id, tipos_permitidos):
             raise RegraDeDominioViolada("Referência deve apontar para um item de perfil.")
 
+@dataclass(frozen=True, slots=True)
+class Curso:
+    """Representa um curso complementar pertencente a um usuário."""
+
+    id: CursoId
+    usuario_id: UsuarioId
+    nome: str
+    instituicao: str
+    carga_horaria: int | None = None
+
+    def __post_init__(self) -> None:
+        for campo, valor in (("nome", self.nome), ("instituição", self.instituicao)):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(f"O curso exige {campo} preenchido.")
+        if self.carga_horaria is not None and self.carga_horaria <= 0:
+            raise RegraDeDominioViolada("A carga horária do curso deve ser positiva.")
+
+
+@dataclass(frozen=True, slots=True)
+class Certificacao:
+    """Representa uma certificação pertencente a um usuário."""
+
+    id: CertificacaoId
+    usuario_id: UsuarioId
+    nome: str
+    organizacao_emissora: str
+
+    def __post_init__(self) -> None:
+        for campo, valor in (
+            ("nome", self.nome),
+            ("organização emissora", self.organizacao_emissora),
+        ):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(f"A certificação exige {campo} preenchido.")
+
+
+# Ajustar a entidade Idioma existente para validar strings não vazias:
+@dataclass(frozen=True, slots=True)
+class Idioma:
+    """Representa um idioma e nível reutilizáveis pertencentes a um usuário."""
+
+    id: IdiomaId
+    usuario_id: UsuarioId
+    idioma: str
+    nivel: str
+
+    def __post_init__(self) -> None:
+        for campo, valor in (("idioma", self.idioma), ("nível", self.nivel)):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(f"O idioma exige {campo} preenchido.")
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 def _validar_uuid(valor: UUID, nome_do_tipo: str) -> None:
