@@ -164,3 +164,36 @@ class Documento:
     nome_arquivo: str
     tipo_arquivo: str
     url_armazenamento: str
+
+# Adicione ou confirme a presença das entidades abaixo:
+
+@dataclass(frozen=True)
+class Curso:
+    id: CursoId
+    usuario_id: UsuarioId
+    nome: str
+    instituicao: str
+    carga_horaria: int | None = None
+
+    def __post_init__(self) -> None:
+        for campo, valor in (("nome", self.nome), ("instituição", self.instituicao)):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(f"O curso exige {campo} preenchido.")
+        if self.carga_horaria is not None and self.carga_horaria <= 0:
+            raise RegraDeDominioViolada("A carga horária do curso deve ser positiva.")
+
+
+@dataclass(frozen=True)
+class Certificacao:
+    id: CertificacaoId
+    usuario_id: UsuarioId
+    nome: str
+    organizacao_emissora: str
+
+    def __post_init__(self) -> None:
+        for campo, valor in (
+            ("nome", self.nome),
+            ("organização emissora", self.organizacao_emissora),
+        ):
+            if not isinstance(valor, str) or not valor.strip():
+                raise RegraDeDominioViolada(f"A certificação exige {campo} preenchido.")
