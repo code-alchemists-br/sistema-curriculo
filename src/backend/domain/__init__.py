@@ -23,8 +23,12 @@ from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
     CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+    DadosContato,
     DocumentoId,
     Email,
+    # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+    Endereco,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     HashSenha,
@@ -33,6 +37,8 @@ from backend.domain.value_objects import (
     Periodo,
     ProjetoAcademicoId,
     ReferenciaCurriculo,
+    # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+    Telefone,
     UsuarioId,
 )
 
@@ -41,9 +47,11 @@ __all__ = [
     "CompetenciaId",
     "Curriculo",
     "CurriculoId",
+    "DadosContato",
     "Documento",
     "DocumentoId",
     "Email",
+    "Endereco",
     "ExperienciaProfissional",
     "ExperienciaProfissionalId",
     "FormacaoAcademica",
@@ -57,6 +65,7 @@ __all__ = [
     "ProjetoAcademicoId",
     "ReferenciaCurriculo",
     "RegraDeDominioViolada",
+    "Telefone",
     "Usuario",
     "UsuarioId",
 ]
