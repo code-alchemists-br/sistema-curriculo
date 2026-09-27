@@ -22,4 +22,4 @@ jobs:
         uses: cachix/install-nix-action@v31
 
       - name: Run backend unit tests
-        run: nix develop .#backend --command python -m unittest discover -s src/backend/tests
+        run: nix develop .#backend --command python -m unittest discover -s src/backend/tests -t src
