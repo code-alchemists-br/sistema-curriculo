@@ -21,7 +21,8 @@ class Curriculo:
     O agregado recebe identidade e proprietário obrigatórios, mantém título,
     layout e visibilidade sem impor vocabulários não definidos, e encapsula as
     referências selecionadas. Ele existe para concentrar regras locais de
-    inclusão sem conhecer persistência ou validar propriedade transagregados.
+    edição e inclusão sem conhecer persistência ou validar propriedade
+    transagregados.
     """
 
     id: CurriculoId
@@ -38,14 +39,39 @@ class Curriculo:
     def __post_init__(self) -> None:
         """Valida os dados locais indispensáveis para existir uma versão de currículo.
 
-        O método exige título não vazio e uma flag booleana, deixando layout como
-        texto porque seus valores ainda não foram definidos. Ele existe para que
-        o agregado não seja construído com uma versão anônima ou ambígua.
+        O método delega ao validador compartilhado com a edição, exigindo título
+        não vazio e uma flag booleana, e deixa layout como texto porque seus
+        valores ainda não foram definidos. Ele existe para que o agregado não
+        seja construído com uma versão anônima ou ambígua.
         """
-        if not self.titulo_versao.strip():
+        self._validar_dados_da_versao(self.titulo_versao, self.is_public)
+
+    @staticmethod
+    def _validar_dados_da_versao(titulo_versao: str, is_public: bool) -> None:
+        """Garante título preenchido e visibilidade booleana para uma versão.
+
+        A função verifica os dois valores recebidos sem consultar o estado do
+        agregado, de modo que possa validar dados novos antes de aplicá-los.
+        Ela existe para que construção e edição obedeçam exatamente às mesmas
+        invariantes, sem duplicar a regra.
+        """
+        if not titulo_versao.strip():
             raise RegraDeDominioViolada("Título da versão do currículo não pode ser vazio.")
-        if not isinstance(self.is_public, bool):
+        if not isinstance(is_public, bool):
             raise RegraDeDominioViolada("Visibilidade do currículo deve ser booleana.")
+
+    def editar_versao(self, titulo_versao: str, layout: str, is_public: bool) -> None:
+        """Atualiza título, layout e visibilidade preservando identidade e referências.
+
+        O método valida os novos valores antes de alterar qualquer atributo, de
+        modo que uma edição inválida não deixa o agregado parcialmente
+        modificado. Ele existe para que a edição da versão ocorra somente pela
+        raiz do agregado, sem permitir troca de identidade ou de proprietário.
+        """
+        self._validar_dados_da_versao(titulo_versao, is_public)
+        self.titulo_versao = titulo_versao
+        self.layout = layout
+        self.is_public = is_public
 
     @property
     def referencias(self) -> frozenset[ReferenciaCurriculo]:

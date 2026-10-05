@@ -22,7 +22,8 @@ from backend.domain.value_objects import FormacaoAcademicaId
 from backend.domain.value_objects import ExperienciaProfissionalId
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.domain.value_objects import ProjetoAcademicoId
-
+from backend.domain.curriculo import Curriculo
+from backend.domain.value_objects import CurriculoId
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
@@ -239,4 +240,29 @@ class GeradorProjetoAcademicoId(Protocol):
         A implementação escolhe a estratégia concreta e retorna o tipo de
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
+        """
+
+class RepositorioCurriculo(Protocol):
+    """Define a capacidade assíncrona de consultar e persistir versões de currículo.
+
+    A porta recebe e devolve o agregado de domínio e torna aguardáveis somente a
+    consulta e a atualização, que serão I/O em adapters. Ela existe para que o
+    caso de uso de manutenção de versões não conheça banco, ORM ou implementação
+    concreta.
+    """
+
+    async def obter_por_id(self, curriculo_id: CurriculoId) -> Curriculo | None:
+        """Obtém assincronamente a versão de currículo identificada, quando existir.
+
+        Implementações consultam o armazenamento e devolvem somente o agregado ou
+        ausência, sem expor detalhes de persistência. O método existe para que o
+        caso de uso localize a versão correta por identidade tipada.
+        """
+
+    async def atualizar(self, curriculo: Curriculo) -> None:
+        """Solicita assincronamente a persistência do novo estado da versão.
+
+        Implementações atualizam a representação armazenada sem introduzir regras
+        de currículo na infraestrutura. O método existe para persistir a edição
+        decidida pelo núcleo.
         """

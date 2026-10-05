@@ -68,6 +68,15 @@ from backend.application.dados_contato import (
     AtualizarDadosContatoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+from backend.application.ports import RepositorioCurriculo
+# Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+from backend.application.versao_curriculo import (
+    CurriculoNaoEncontrado,
+    EditarVersaoCurriculo,
+    EditarVersaoCurriculoEntrada,
+)
+
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
@@ -108,4 +117,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "RepositorioProjetoAcademico",
     "VerificadorSenha",
+    # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+    "CurriculoNaoEncontrado",
+    "EditarVersaoCurriculo",
+    "EditarVersaoCurriculoEntrada",
+    "RepositorioCurriculo",
 ]
