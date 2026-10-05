@@ -48,14 +48,13 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 
 | Pessoa | Função |
 | --- | --- |
-| André Luiz da Silva Lima | Dev |
+| André Luiz da Silva Lima | Funcionalidades de vagas e associações currículo–vaga; integração com o Sistema Externo do Grupo 2; módulo opcional de recrutador/empresa parceira |
 | Ricardo Galdino de Sampaio | Front End/UI/UX |
 | Nathan Campos Nagano | Front End/UI/UX |
-| Kelly Daiane Miranda Mendes | CI&CD/Ambientes e Cross-Cutting |
-| Maria Carolina Cardozo Yamamoto | Backend - camada 'interface adapters' e 'frameworks and drives'. |
-| Vinicius Regazio Farias | Backend - camada 'interface adapters' e 'frameworks and drives'. |
-| Yasmin Victoria Bernardes Silva | Backend - camada domain e 'use cases' |
-| Matheus Gnann Cardoso | Backend - camada domain e 'use cases' |
+| Kelly Daiane Miranda Mendes | CI&CD/Ambientes e Cross-Cutting; implementação do sistema de login em middleware |
+| Maria Carolina Cardozo Yamamoto | Funcionalidades de informações complementares (competências, idiomas, cursos, certificações, projetos e links profissionais) e armazenamento de documentos complementares |
+| Vinicius Regazio Farias | Gestão de versões de currículo; revisão e visualização do currículo; geração, exportação e download em PDF e DOCX |
+| Matheus Gnann Cardoso | Funcionalidades de perfil e dados pessoais; formação acadêmica; experiências profissionais |
 | Daniel Lacerda Xavier | Testes/Controle de qualidade |
 | Gustavo Minoru Haga |  Testes/Controle de qualidade|
 | Thiago Jose Miranda Matias | Documentação |
@@ -63,7 +62,7 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 | Rodolpho P. M. Ferreira | Gerente de projeto/líder técnico e QA arquitetural|
 
 
-# Descrição das Atividades
+# Descrição das Camadas
 
 - **Front End/UI/UX**: Responsáveis pelo design de UX e implementação de UI.
 
