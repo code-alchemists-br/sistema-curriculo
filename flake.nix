@@ -26,6 +26,10 @@
         tests = import ./nix/tests.nix {
           inherit pkgs;
         };
+
+        quality = import ./nix/quality.nix {
+          inherit pkgs;
+        };
       };
     };
 }
