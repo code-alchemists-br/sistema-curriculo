@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,8 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,
     atualizar_registro,
     para_curriculo,
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    para_registro,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
@@ -21,6 +23,10 @@ from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import 
 
 ID_CURRICULO = UUID("00000000-0000-0000-0000-0000000000c1")
 ID_USUARIO = UUID("00000000-0000-0000-0000-000000000001")
+
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+ADAPTER = "backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo"
+MODELO = "backend.infrastructure.persistence.sqlalchemy.curriculo"
 
 
 def criar_curriculo() -> Curriculo:
@@ -193,3 +199,68 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(RuntimeError):
             await self.repositorio.atualizar(criar_curriculo())
+
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    async def test_salva_com_add_e_flush_sem_consultar_nem_controlar_transacao(self) -> None:
+        """Confere inserção aguardável usando o conversor e o flush da sessão.
+
+        Substitui o conversor para observar o registro entregue a ``add``, e
+        verifica ``flush`` aguardado, ausência de consulta e de ``commit``. Ele
+        existe para proteger que a criação apenas insere e deixa a transação com
+        a composição externa.
+        """
+        curriculo = criar_curriculo()
+
+        with patch(f"{ADAPTER}.para_registro") as conversor:
+            await self.repositorio.salvar(curriculo)
+
+        conversor.assert_called_once_with(curriculo)
+        self.session.add.assert_called_once_with(conversor.return_value)
+        self.session.flush.assert_awaited_once_with()
+        self.session.get.assert_not_awaited()
+        self.session.commit.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    async def test_salvar_propaga_falha_no_flush(self) -> None:
+        """Confere que falhas de inserção, como violação de chave, chegam intactas.
+
+        Faz o envio da inserção falhar e verifica que o adapter não a mascara
+        nem traduz o erro, deixando a decisão para a composição externa.
+        """
+        self.session.flush.side_effect = RuntimeError("falha")
+
+        with patch(f"{ADAPTER}.para_registro"):
+            with self.assertRaises(RuntimeError):
+                await self.repositorio.salvar(criar_curriculo())
+
+
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+class ConversaoParaRegistroTestCase(unittest.TestCase):
+    """Verifica a tradução do agregado de currículo para registro ORM.
+
+    Substitui o construtor ORM para inspecionar os argumentos primitivos e
+    proteger a separação entre agregado e representação persistida sem executar
+    ORM ou I/O.
+    """
+
+    def test_converte_valores_sem_modificar_agregado(self) -> None:
+        """Confere a conversão comparando argumentos recebidos pelo double.
+
+        Preserva o agregado original e verifica UUIDs, título, layout e
+        visibilidade, para evitar a persistência de value objects em vez de
+        valores primitivos.
+        """
+        curriculo = criar_curriculo()
+
+        with patch(f"{MODELO}.CurriculoRegistro") as registro:
+            resultado = para_registro(curriculo)
+
+        registro.assert_called_once_with(
+            id=ID_CURRICULO,
+            usuario_id=ID_USUARIO,
+            titulo_versao="Estágio em TI",
+            layout="classico",
+            is_public=False,
+        )
+        self.assertIs(resultado, registro.return_value)
+        self.assertEqual(curriculo, criar_curriculo())
