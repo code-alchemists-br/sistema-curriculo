@@ -147,6 +147,16 @@ Por exemplo, para utilizar o ambiente de backend:
 nix develop .#backend
 ```
 
+Para executar os gates e gerar métricas de qualidade do backend Python, use o
+ambiente dedicado:
+
+```bash
+nix develop .#quality
+```
+
+Ele disponibiliza Ruff, Bandit, Radon e coverage.py; os testes existentes
+continuam executados com `python -m unittest`.
+
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
 Por exemplo, caso o ambiente `backend` inclua o `python3`, não é necessário que o Python esteja instalado globalmente no sistema. Enquanto o ambiente Nix estiver ativo, o comando estará disponível.
