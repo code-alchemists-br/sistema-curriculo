@@ -28,6 +28,8 @@ from backend.api.projeto_academico import (
 )
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    CriacaoVersaoCurriculoExecutor,
     EdicaoVersaoCurriculoExecutor,
     criar_router as criar_router_versao_curriculo,
 )
@@ -42,6 +44,8 @@ def create_app(
     atualizar_dados_contato: AtualizacaoDadosContatoExecutor | None = None,
     cadastrar_projeto_academico: CadastroProjetoAcademicoExecutor | None = None,
     editar_versao_curriculo: EdicaoVersaoCurriculoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -56,5 +60,5 @@ def create_app(
     app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
-    app.include_router(criar_router_versao_curriculo(editar_versao_curriculo))
+    app.include_router(criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo))
     return app
