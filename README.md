@@ -44,7 +44,7 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 
 ---
 
-# Equipe e Funções
+# Equipe e Atribuições
 
 | Pessoa | Função |
 | --- | --- |
@@ -62,7 +62,7 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 | Rodolpho P. M. Ferreira | Gerente de projeto/líder técnico e QA arquitetural|
 
 
-# Descrição das Camadas
+# Descrição das Camadas e/ou Funções
 
 - **Front End/UI/UX**: Responsáveis pelo design de UX e implementação de UI.
 
