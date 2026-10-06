@@ -246,9 +246,9 @@ class RepositorioCurriculo(Protocol):
     """Define a capacidade assíncrona de consultar e persistir versões de currículo.
 
     A porta recebe e devolve o agregado de domínio e torna aguardáveis somente a
-    consulta e a atualização, que serão I/O em adapters. Ela existe para que o
-    caso de uso de manutenção de versões não conheça banco, ORM ou implementação
-    concreta.
+    consulta, a inserção e a atualização, que serão I/O em adapters. Ela existe
+    para que os casos de uso de criação e manutenção de versões não conheçam
+    banco, ORM ou implementação concreta.
     """
 
     async def obter_por_id(self, curriculo_id: CurriculoId) -> Curriculo | None:
@@ -265,4 +265,33 @@ class RepositorioCurriculo(Protocol):
         Implementações atualizam a representação armazenada sem introduzir regras
         de currículo na infraestrutura. O método existe para persistir a edição
         decidida pelo núcleo.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    async def salvar(self, curriculo: Curriculo) -> None:
+        """Solicita assincronamente a persistência de uma nova versão válida.
+
+        Implementações inserem a representação do agregado já construído e
+        validado pelo núcleo, sem introduzir regras de currículo na
+        infraestrutura. O método existe para registrar a versão criada sem
+        acoplar a Application ao armazenamento.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+class GeradorCurriculoId(Protocol):
+    """Fornece identificadores tipados para novas versões de currículo.
+
+    A porta separa a geração de identidade da orquestração e devolve um value
+    object válido. Ela existe para tornar os testes determinísticos e manter o
+    núcleo livre da estratégia concreta de geração de UUID.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    def gerar(self) -> CurriculoId:
+        """Gera o identificador da próxima versão de currículo.
+
+        A implementação escolhe a estratégia concreta e retorna o tipo de
+        domínio esperado. O método existe para que a criação sempre receba uma
+        identidade explícita e válida.
         """

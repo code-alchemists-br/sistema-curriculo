@@ -77,6 +77,14 @@ from backend.application.versao_curriculo import (
     EditarVersaoCurriculoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+from backend.application.ports import GeradorCurriculoId
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+from backend.application.versao_curriculo import (
+    CriarVersaoCurriculo,
+    CriarVersaoCurriculoEntrada,
+)
+
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
@@ -122,4 +130,8 @@ __all__ = [
     "EditarVersaoCurriculo",
     "EditarVersaoCurriculoEntrada",
     "RepositorioCurriculo",
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    "CriarVersaoCurriculo",
+    "CriarVersaoCurriculoEntrada",
+    "GeradorCurriculoId",
 ]
