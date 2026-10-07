@@ -1,0 +1,4 @@
+[lint]
+# O gate inicial detecta erros de importação e referências inválidas sem bloquear
+# a adoção incremental das regras de estilo já existentes no código.
+select = ["F"]
