@@ -2,7 +2,7 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession

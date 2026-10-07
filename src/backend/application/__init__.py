@@ -53,7 +53,9 @@ from backend.application.perfil_estudante import (
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import (
+    GeradorCurriculoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     GeradorProjetoAcademicoId,
@@ -68,18 +70,13 @@ from backend.application.ports import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
-from backend.application.versao_curriculo import (
-    CurriculoNaoEncontrado,
-    EditarVersaoCurriculo,
-    EditarVersaoCurriculoEntrada,
-)
-
-# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
-from backend.application.ports import GeradorCurriculoId
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.versao_curriculo import (
     CriarVersaoCurriculo,
     CriarVersaoCurriculoEntrada,
+    CurriculoNaoEncontrado,
+    EditarVersaoCurriculo,
+    EditarVersaoCurriculoEntrada,
 )
 
 __all__ = [
