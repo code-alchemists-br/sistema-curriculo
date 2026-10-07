@@ -7,13 +7,30 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain import Curriculo, CurriculoId, UsuarioId
+from backend.domain import (
+    CompetenciaId,
+    Curriculo,
+    CurriculoId,
+    DocumentoId,
+    ExperienciaProfissionalId,
+    FormacaoAcademicaId,
+    IdiomaId,
+    ProjetoAcademicoId,
+    ReferenciaCurriculo,
+    UsuarioId,
+)
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    CurriculoItemRegistro,
     CurriculoRegistro,
     atualizar_registro,
     para_curriculo,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     para_registro,
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    para_referencia,
+    para_registros_itens,
+    para_tipo_e_item_id,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
@@ -27,6 +44,41 @@ ID_USUARIO = UUID("00000000-0000-0000-0000-000000000001")
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 ADAPTER = "backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo"
 MODELO = "backend.infrastructure.persistence.sqlalchemy.curriculo"
+
+# Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+ID_PROJETO = UUID("00000000-0000-0000-0000-0000000000a1")
+ID_IDIOMA = UUID("00000000-0000-0000-0000-0000000000a2")
+REFERENCIA_PROJETO = ReferenciaCurriculo(ProjetoAcademicoId(ID_PROJETO))
+REFERENCIA_IDIOMA = ReferenciaCurriculo(IdiomaId(ID_IDIOMA))
+
+
+def linha_projeto() -> SimpleNamespace:
+    """Prepara uma linha de seleção simulada equivalente ao projeto de referência.
+
+    O double expõe somente o tipo textual e o UUID, como a linha ORM, sem sessão
+    ou tabela. Ele existe para controlar as seleções já persistidas em cada
+    cenário.
+    """
+    return SimpleNamespace(tipo="projeto_academico", item_id=ID_PROJETO)
+
+
+def linha_idioma() -> SimpleNamespace:
+    """Prepara uma linha de seleção simulada equivalente ao idioma de referência.
+
+    O double expõe somente o tipo textual e o UUID, como a linha ORM, sem sessão
+    ou tabela. Ele existe para controlar as seleções já persistidas em cada
+    cenário.
+    """
+    return SimpleNamespace(tipo="idioma", item_id=ID_IDIOMA)
+
+
+def resultado_com(linhas: list) -> MagicMock:
+    """Prepara o resultado simulado de uma consulta que devolve as linhas dadas.
+
+    O double responde a ``all`` com a lista informada, como o resultado escalar
+    da sessão. Ele existe para controlar o que a consulta de seleção devolve.
+    """
+    return MagicMock(all=MagicMock(return_value=linhas))
 
 
 def criar_curriculo() -> Curriculo:
@@ -116,6 +168,7 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         awaits e impedir interferência entre cenários.
         """
         self.session = MagicMock(spec=AsyncSession)
+        self.session.scalars.return_value = resultado_com([])
         self.repositorio = RepositorioCurriculoSqlAlchemy(self.session)
 
     async def test_obtem_versao_por_id_e_a_converte_para_agregado(self) -> None:
@@ -233,6 +286,137 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(RuntimeError):
                 await self.repositorio.salvar(criar_curriculo())
 
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_obtem_versao_com_a_selecao_persistida(self) -> None:
+        """Confirma que a leitura reconstrói as referências a partir das linhas.
+
+        Faz a consulta de seleção devolver duas linhas e compara as referências
+        do agregado, além de inspecionar a consulta enviada à sessão. Ele existe
+        para garantir que o agregado carregado reflita a seleção gravada.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.scalars.return_value = resultado_com([linha_projeto(), linha_idioma()])
+
+        resultado = await self.repositorio.obter_por_id(CurriculoId(ID_CURRICULO))
+
+        self.assertEqual(resultado.referencias, frozenset({REFERENCIA_PROJETO, REFERENCIA_IDIOMA}))
+        self.session.scalars.assert_awaited_once()
+        consulta = str(self.session.scalars.call_args.args[0])
+        self.assertIn("curriculo_itens", consulta)
+        self.assertIn("WHERE", consulta)
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_nao_consulta_a_selecao_quando_a_versao_nao_existe(self) -> None:
+        """Confirma que a ausência da versão encerra a leitura sem consultar a seleção.
+
+        Faz a sessão devolver ausência e verifica que a consulta de seleção não
+        é aguardada. Ele existe para evitar leitura inútil de linhas órfãs.
+        """
+        self.session.get.return_value = None
+
+        resultado = await self.repositorio.obter_por_id(CurriculoId(ID_CURRICULO))
+
+        self.assertIsNone(resultado)
+        self.session.scalars.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_atualizar_insere_somente_os_itens_novos_da_selecao(self) -> None:
+        """Confere que apenas a referência nova vira linha, sem remover nada.
+
+        O agregado tem duas referências e uma delas já existe no armazenamento.
+        Verifica o registro entregue a ``add``, a ausência de remoção e o flush.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.scalars.return_value = resultado_com([linha_projeto()])
+        curriculo = criar_curriculo()
+        curriculo.incluir_referencia(REFERENCIA_PROJETO)
+        curriculo.incluir_referencia(REFERENCIA_IDIOMA)
+
+        await self.repositorio.atualizar(curriculo)
+
+        self.session.add.assert_called_once()
+        novo = self.session.add.call_args.args[0]
+        self.assertIsInstance(novo, CurriculoItemRegistro)
+        self.assertEqual((novo.curriculo_id, novo.tipo, novo.item_id), (ID_CURRICULO, "idioma", ID_IDIOMA))
+        self.session.delete.assert_not_awaited()
+        self.session.flush.assert_awaited_once_with()
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_atualizar_remove_somente_os_itens_que_sairam_da_selecao(self) -> None:
+        """Confere que apenas a linha ausente do agregado é removida.
+
+        O armazenamento tem duas linhas e o agregado mantém uma. Verifica a
+        remoção da linha excedente, a ausência de inserção e o flush.
+        """
+        self.session.get.return_value = criar_registro()
+        mantida, removida = linha_projeto(), linha_idioma()
+        self.session.scalars.return_value = resultado_com([mantida, removida])
+        curriculo = criar_curriculo()
+        curriculo.incluir_referencia(REFERENCIA_PROJETO)
+
+        await self.repositorio.atualizar(curriculo)
+
+        self.session.delete.assert_awaited_once_with(removida)
+        self.session.add.assert_not_called()
+        self.session.flush.assert_awaited_once_with()
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_atualizar_sem_mudar_a_selecao_nao_adiciona_nem_remove_linhas(self) -> None:
+        """Confere que editar a versão com a seleção intacta não toca as linhas.
+
+        O agregado reconstruído tem as mesmas referências do armazenamento, como
+        após uma edição de título. Verifica que nada é inserido nem removido, o
+        que protege a seleção contra apagamento acidental.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.scalars.return_value = resultado_com([linha_projeto(), linha_idioma()])
+        curriculo = criar_curriculo()
+        curriculo.incluir_referencia(REFERENCIA_PROJETO)
+        curriculo.incluir_referencia(REFERENCIA_IDIOMA)
+        curriculo.editar_versao("Gestão de Projetos", "moderno", True)
+
+        await self.repositorio.atualizar(curriculo)
+
+        self.session.add.assert_not_called()
+        self.session.delete.assert_not_awaited()
+        self.session.flush.assert_awaited_once_with()
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_atualizar_propaga_falha_ao_consultar_a_selecao(self) -> None:
+        """Confere que falha na consulta da seleção chega intacta e impede o flush.
+
+        Faz a consulta de seleção falhar e verifica que o adapter não a mascara
+        nem envia alterações parciais.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.scalars.side_effect = RuntimeError("falha")
+
+        with self.assertRaises(RuntimeError):
+            await self.repositorio.atualizar(criar_curriculo())
+
+        self.session.flush.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def test_salvar_com_selecao_insere_os_itens_depois_do_flush_da_versao(self) -> None:
+        """Confere a ordem entre a inserção da versão e a das linhas de seleção.
+
+        Registra cada ``add`` e cada ``flush`` e exige que a versão seja enviada
+        antes das linhas, para que a chave estrangeira desta encontre a versão.
+        """
+        ordem: list[str] = []
+
+        async def registrar_flush() -> None:
+            ordem.append("flush")
+
+        self.session.flush.side_effect = registrar_flush
+        self.session.add.side_effect = lambda objeto: ordem.append(type(objeto).__name__)
+        curriculo = criar_curriculo()
+        curriculo.incluir_referencia(REFERENCIA_PROJETO)
+
+        await self.repositorio.salvar(curriculo)
+
+        self.assertEqual(ordem, ["CurriculoRegistro", "flush", "CurriculoItemRegistro", "flush"])
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class ConversaoParaRegistroTestCase(unittest.TestCase):
@@ -264,3 +448,75 @@ class ConversaoParaRegistroTestCase(unittest.TestCase):
         )
         self.assertIs(resultado, registro.return_value)
         self.assertEqual(curriculo, criar_curriculo())
+
+
+# Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+class ConversaoItensTestCase(unittest.TestCase):
+    """Verifica a tradução entre referências de domínio e linhas de seleção.
+
+    Usa linhas simuladas e instâncias ORM sem sessão para proteger a separação
+    entre agregado e representação persistida, sem executar ORM ou I/O.
+    """
+
+    def test_converte_os_seis_tipos_de_ida_e_volta(self) -> None:
+        """Confirma o texto de tipo de cada identificador e o caminho de volta.
+
+        Fixa os seis textos esperados e verifica a conversão nos dois sentidos.
+        Ele existe para impedir que uma troca de texto invalide dados já
+        gravados.
+        """
+        esperados = {
+            "formacao_academica": FormacaoAcademicaId,
+            "experiencia_profissional": ExperienciaProfissionalId,
+            "projeto_academico": ProjetoAcademicoId,
+            "competencia": CompetenciaId,
+            "idioma": IdiomaId,
+            "documento": DocumentoId,
+        }
+        for tipo, classe in esperados.items():
+            with self.subTest(tipo=tipo):
+                referencia = ReferenciaCurriculo(classe(ID_PROJETO))
+
+                self.assertEqual(para_tipo_e_item_id(referencia), (tipo, ID_PROJETO))
+                self.assertEqual(para_referencia(tipo, ID_PROJETO), referencia)
+
+    def test_rejeita_tipo_de_item_desconhecido(self) -> None:
+        """Confirma que um tipo gravado desconhecido falha de forma explícita.
+
+        Tenta recriar uma referência com texto fora do vocabulário e observa o
+        erro. Ele existe para que dado corrompido não vire referência inválida.
+        """
+        with self.assertRaises(ValueError):
+            para_referencia("certificado", ID_PROJETO)
+
+    def test_reconstroi_agregado_com_as_referencias_das_linhas(self) -> None:
+        """Confirma que as linhas recebidas viram referências do agregado.
+
+        Converte o registro da versão junto com duas linhas simuladas e compara
+        as referências. Ele existe para garantir que a seleção persistida volte
+        ao domínio pelo comportamento do próprio agregado.
+        """
+        resultado = para_curriculo(criar_registro(), [linha_projeto(), linha_idioma()])
+
+        self.assertEqual(resultado.referencias, frozenset({REFERENCIA_PROJETO, REFERENCIA_IDIOMA}))
+
+    def test_converte_referencias_em_linhas_ordenadas_sem_modificar_agregado(self) -> None:
+        """Confirma a conversão das referências em linhas determinísticas.
+
+        Inclui duas referências fora de ordem e verifica tipo, UUID, versão e
+        a ordenação por tipo, além da ausência de linhas para uma versão sem
+        seleção.
+        """
+        curriculo = criar_curriculo()
+        curriculo.incluir_referencia(REFERENCIA_PROJETO)
+        curriculo.incluir_referencia(REFERENCIA_IDIOMA)
+
+        linhas = para_registros_itens(curriculo)
+
+        self.assertEqual(
+            [(linha.curriculo_id, linha.tipo, linha.item_id) for linha in linhas],
+            [(ID_CURRICULO, "idioma", ID_IDIOMA), (ID_CURRICULO, "projeto_academico", ID_PROJETO)],
+        )
+        self.assertTrue(all(isinstance(linha, CurriculoItemRegistro) for linha in linhas))
+        self.assertEqual(curriculo.referencias, frozenset({REFERENCIA_PROJETO, REFERENCIA_IDIOMA}))
+        self.assertEqual(para_registros_itens(criar_curriculo()), [])
