@@ -1,7 +1,7 @@
 """Testa unitariamente as transições do perfil no agregado de usuário."""
 
-from datetime import datetime, timezone
 import unittest
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.domain import (

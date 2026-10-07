@@ -9,21 +9,29 @@ depender do núcleo da aplicação.
 from datetime import datetime
 from typing import Protocol
 
-# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
-from backend.domain.itens_perfil import ExperienciaProfissional
-# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
-from backend.domain.itens_perfil import ProjetoAcademico
-from backend.domain.usuario import Usuario
-# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
-from backend.domain.itens_perfil import FormacaoAcademica
-from backend.domain.value_objects import Email, UsuarioId
-from backend.domain.value_objects import FormacaoAcademicaId
-# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
-from backend.domain.value_objects import ExperienciaProfissionalId
-# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
-from backend.domain.value_objects import ProjetoAcademicoId
 from backend.domain.curriculo import Curriculo
-from backend.domain.value_objects import CurriculoId
+
+# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+from backend.domain.itens_perfil import (
+    ExperienciaProfissional,
+    FormacaoAcademica,
+    ProjetoAcademico,
+)
+from backend.domain.usuario import Usuario
+
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+from backend.domain.value_objects import (
+    CurriculoId,
+    Email,
+    ExperienciaProfissionalId,
+    FormacaoAcademicaId,
+    ProjetoAcademicoId,
+    UsuarioId,
+)
+
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002

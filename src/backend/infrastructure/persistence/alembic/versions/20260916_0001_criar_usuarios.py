@@ -1,7 +1,7 @@
 """Cria a primeira tabela de contas conforme o recorte Code First aprovado."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
 revision = "20260916_0001"

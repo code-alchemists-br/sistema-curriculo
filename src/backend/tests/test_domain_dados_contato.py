@@ -1,7 +1,7 @@
 """Testa unitariamente a transição de dados de contato no agregado de usuário."""
 
-from datetime import datetime, timezone
 import unittest
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.domain import (

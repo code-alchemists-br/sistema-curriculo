@@ -17,7 +17,14 @@ from backend.application import (
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
-from backend.domain import DadosContato, Endereco, RegraDeDominioViolada, Telefone, Usuario, UsuarioId
+from backend.domain import (
+    DadosContato,
+    Endereco,
+    RegraDeDominioViolada,
+    Telefone,
+    Usuario,
+    UsuarioId,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 

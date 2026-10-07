@@ -1,7 +1,7 @@
 """Valida o contrato Code First em memória, sem executar DDL contra banco."""
 
-from importlib import import_module
 import unittest
+from importlib import import_module
 from unittest.mock import patch
 
 from sqlalchemy import Column, Text, UniqueConstraint, Uuid

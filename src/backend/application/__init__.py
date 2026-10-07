@@ -7,29 +7,15 @@ os casos de uso posteriormente.
 """
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
-from backend.application.cadastro_estudante import (
-    CadastrarEstudante,
-    CadastrarEstudanteEntrada,
-    EmailJaCadastrado,
-)
 from backend.application.acesso_estudante import (
     AcessarEstudante,
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
-# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
-from backend.application.ports import (
-    GeradorFormacaoAcademicaId,
-    GeradorUsuarioId,
-    Relogio,
-    RepositorioFormacaoAcademica,
-    RepositorioUsuario,
-    VerificadorSenha,
-)
-# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
-from backend.application.ports import (
-    GeradorExperienciaProfissionalId,
-    RepositorioExperienciaProfissional,
+from backend.application.cadastro_estudante import (
+    CadastrarEstudante,
+    CadastrarEstudanteEntrada,
+    EmailJaCadastrado,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
@@ -43,10 +29,11 @@ from backend.application.cadastro_projeto_academico import (
     CadastrarProjetoAcademico,
     CadastrarProjetoAcademicoEntrada,
 )
-# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
-from backend.application.ports import (
-    GeradorProjetoAcademicoId,
-    RepositorioProjetoAcademico,
+
+# Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
+from backend.application.dados_contato import (
+    AtualizarDadosContato,
+    AtualizarDadosContatoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
@@ -62,14 +49,24 @@ from backend.application.perfil_estudante import (
     PerfilNaoEncontrado,
 )
 
-# Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
-from backend.application.dados_contato import (
-    AtualizarDadosContato,
-    AtualizarDadosContatoEntrada,
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+from backend.application.ports import (
+    GeradorExperienciaProfissionalId,
+    GeradorFormacaoAcademicaId,
+    GeradorProjetoAcademicoId,
+    GeradorUsuarioId,
+    Relogio,
+    RepositorioCurriculo,
+    RepositorioExperienciaProfissional,
+    RepositorioFormacaoAcademica,
+    RepositorioProjetoAcademico,
+    RepositorioUsuario,
+    VerificadorSenha,
 )
 
-# Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
-from backend.application.ports import RepositorioCurriculo
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.application.versao_curriculo import (
     CurriculoNaoEncontrado,

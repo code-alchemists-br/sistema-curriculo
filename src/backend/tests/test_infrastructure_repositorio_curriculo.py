@@ -1,7 +1,7 @@
 """Protege a persistência de currículos com doubles, sem conexão com banco."""
 
-from types import SimpleNamespace
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import UUID
 

@@ -5,7 +5,10 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from backend.api.projeto_academico import CadastroProjetoAcademicoRequisicao, criar_router
+from backend.api.projeto_academico import (
+    CadastroProjetoAcademicoRequisicao,
+    criar_router,
+)
 from backend.application import CadastrarProjetoAcademico
 from backend.domain import ProjetoAcademico, ProjetoAcademicoId
 

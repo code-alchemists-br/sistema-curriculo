@@ -1,7 +1,7 @@
 """Cria a tabela de versões de currículo conforme o recorte Code First aprovado."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 revision = "20261005_0002"
