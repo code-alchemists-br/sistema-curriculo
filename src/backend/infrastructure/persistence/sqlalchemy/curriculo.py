@@ -62,3 +62,21 @@ def atualizar_registro(registro: CurriculoRegistro, curriculo: Curriculo) -> Non
     registro.titulo_versao = curriculo.titulo_versao
     registro.layout = curriculo.layout
     registro.is_public = curriculo.is_public
+
+
+# Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+def para_registro(curriculo: Curriculo) -> CurriculoRegistro:
+    """Converte o agregado em registro extraindo valores primitivos dos VOs.
+
+    A conversão cria uma instância externa sem modificar o agregado e sem as
+    referências, que ainda não são persistidas, para que a sessão ORM insira
+    UUIDs, título, layout e visibilidade. Ela existe para preservar a fronteira
+    entre o domínio e o modelo SQLAlchemy na criação.
+    """
+    return CurriculoRegistro(
+        id=curriculo.id.valor,
+        usuario_id=curriculo.usuario_id.valor,
+        titulo_versao=curriculo.titulo_versao,
+        layout=curriculo.layout,
+        is_public=curriculo.is_public,
+    )

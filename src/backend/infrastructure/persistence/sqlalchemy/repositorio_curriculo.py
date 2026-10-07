@@ -9,13 +9,15 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,
     atualizar_registro,
     para_curriculo,
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    para_registro,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 
 
 class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
-    """Consulta e atualiza versões de currículo usando o modelo externo e uma AsyncSession.
+    """Consulta, insere e atualiza versões de currículo usando o modelo externo e uma AsyncSession.
 
     O adapter traduz o agregado em colunas e aguarda I/O, preservando a porta
     interna. A composição externa possui sessão, commit e rollback; erros são
@@ -53,4 +55,16 @@ class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
         if registro is None:
             raise LookupError("Currículo não encontrado para atualização.")
         atualizar_registro(registro, curriculo)
+        await self._session.flush()
+
+    # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+    async def salvar(self, curriculo: Curriculo) -> None:
+        """Insere a nova versão convertendo o agregado e aguardando flush.
+
+        Não realiza upsert nem commit: conflitos e violações de chave
+        estrangeira são propagados e a transação permanece com o chamador. O
+        flush envia a inserção antes do retorno, permitindo detectar falhas sem
+        alterar o agregado.
+        """
+        self._session.add(para_registro(curriculo))
         await self._session.flush()
