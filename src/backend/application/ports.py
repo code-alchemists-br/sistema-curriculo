@@ -24,6 +24,10 @@ from backend.domain.value_objects import ExperienciaProfissionalId
 from backend.domain.value_objects import ProjetoAcademicoId
 from backend.domain.curriculo import Curriculo
 from backend.domain.value_objects import CurriculoId
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.domain.itens_perfil import Competencia, Documento, Idioma
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.domain.value_objects import ReferenciaCurriculo
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
@@ -294,4 +298,36 @@ class GeradorCurriculoId(Protocol):
         A implementação escolhe a estratégia concreta e retorna o tipo de
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+ItemPerfil = (
+    FormacaoAcademica
+    | ExperienciaProfissional
+    | ProjetoAcademico
+    | Competencia
+    | Idioma
+    | Documento
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+class ConsultaItemPerfil(Protocol):
+    """Define a capacidade assíncrona de ler um item de perfil por sua referência.
+
+    A porta recebe a referência tipada de uma versão de currículo e devolve a
+    entidade do item correspondente, sem expor armazenamento. Ela existe para
+    que a prévia leia os seis tipos de item por um único contrato, deixando a
+    implementação por tipo a cargo de adapters.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    async def obter_item(self, referencia: ReferenciaCurriculo) -> ItemPerfil | None:
+        """Obtém assincronamente o item referenciado, quando ele existir.
+
+        Implementações consultam o armazenamento do tipo indicado pela
+        referência e devolvem a entidade ou ausência, sem aplicar regras de
+        propriedade. O método existe para que o caso de uso leia o conteúdo dos
+        itens selecionados e decida sozinho o que pode ser exibido.
         """
