@@ -58,6 +58,12 @@ from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.api.previa_versao_curriculo import (
+    PreviaVersaoCurriculoExecutor,
+    criar_router as criar_router_previa_versao_curriculo,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
@@ -88,15 +94,17 @@ def create_app(
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
     cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
-    itens, listagem de versões e experiências profissionais com os executores recebidos; ausências
-    permanecem explícitas e são traduzidas por cada router em indisponibilidade.
-    Ela existe para concentrar a composição na camada externa, mantendo
-    Application e domínio livres do framework.
+    itens, listagem, experiências profissionais e prévia com os executores
+    recebidos; ausências permanecem explícitas e são traduzidas por cada router
+    em indisponibilidade. Ela existe para concentrar a composição na camada
+    externa, mantendo Application e domínio livres do framework.
     """
     app = FastAPI()
     app.include_router(
@@ -111,4 +119,5 @@ def create_app(
     )
     app.include_router(criar_router_listagem_versoes_curriculo(listar_versoes_curriculo))
     app.include_router(criar_router_experiencia_profissional(cadastrar_experiencia_profissional))
+    app.include_router(criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo))
     return app
