@@ -15,8 +15,11 @@ from backend.domain.curriculo import Curriculo
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import (
+    Competencia,
+    Documento,
     ExperienciaProfissional,
     FormacaoAcademica,
+    Idioma,
     ProjetoAcademico,
 )
 from backend.domain.usuario import Usuario
@@ -33,7 +36,6 @@ from backend.domain.value_objects import (
     ReferenciaCurriculo,
     UsuarioId,
 )
-
 
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
@@ -336,4 +338,36 @@ class ConsultaProprietarioItem(Protocol):
         devolvem a identidade do proprietário ou ausência, sem revelar detalhes
         de persistência. O método existe para que a seleção recuse itens
         inexistentes ou de outro usuário antes de alterar a versão.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+ItemPerfil = (
+    FormacaoAcademica
+    | ExperienciaProfissional
+    | ProjetoAcademico
+    | Competencia
+    | Idioma
+    | Documento
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+class ConsultaItemPerfil(Protocol):
+    """Define a capacidade assíncrona de ler um item de perfil por sua referência.
+
+    A porta recebe a referência tipada de uma versão de currículo e devolve a
+    entidade do item correspondente, sem expor armazenamento. Ela existe para
+    que a prévia leia os seis tipos de item por um único contrato, deixando a
+    implementação por tipo a cargo de adapters.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    async def obter_item(self, referencia: ReferenciaCurriculo) -> ItemPerfil | None:
+        """Obtém assincronamente o item referenciado, quando ele existir.
+
+        Implementações consultam o armazenamento do tipo indicado pela
+        referência e devolvem a entidade ou ausência, sem aplicar regras de
+        propriedade. O método existe para que o caso de uso leia o conteúdo dos
+        itens selecionados e decida sozinho o que pode ser exibido.
         """
