@@ -1,7 +1,7 @@
 import {
   criarClienteDadosPessoaisIndisponivel,
   FormularioDadosPessoais,
-  type ClienteDadosPessoais
+  type ClienteDadosPessoais,
 } from "../../../features/edit-personal-data";
 
 /** Define o cliente opcional usado ao compor a página de dados pessoais. */
@@ -17,11 +17,14 @@ export interface PaginaDadosPessoaisProps {
  * de formulário, sem decidir roteamento ou persistência ainda indisponíveis.
  */
 export function PaginaDadosPessoais({
-  cliente = criarClienteDadosPessoaisIndisponivel()
+  cliente = criarClienteDadosPessoaisIndisponivel(),
 }: PaginaDadosPessoaisProps) {
   return (
     <main className="app-shell">
-      <section aria-labelledby="titulo-dados-pessoais" className="app-shell__content">
+      <section
+        aria-labelledby="titulo-dados-pessoais"
+        className="app-shell__content"
+      >
         <p className="eyebrow">Dados pessoais e contato</p>
         <h1 id="titulo-dados-pessoais">Conte um pouco sobre você</h1>
         <p>Essas informações serão usadas no cabeçalho do seu currículo.</p>

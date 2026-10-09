@@ -9,9 +9,15 @@ import { FormularioExperiencias } from "../../../features/edit-professional-expe
 export function PaginaExperienciasProfissionais() {
   return (
     <main className="app-shell">
-      <section aria-labelledby="titulo-experiencias" className="app-shell__content">
+      <section
+        aria-labelledby="titulo-experiencias"
+        className="app-shell__content"
+      >
         <h1 id="titulo-experiencias">Experiências Profissionais</h1>
-        <p>Cadastre suas experiências de trabalho em ordem. Elas serão organizadas automaticamente da mais recente para a mais antiga.</p>
+        <p>
+          Cadastre suas experiências de trabalho em ordem. Elas serão
+          organizadas automaticamente da mais recente para a mais antiga.
+        </p>
         <FormularioExperiencias />
       </section>
     </main>

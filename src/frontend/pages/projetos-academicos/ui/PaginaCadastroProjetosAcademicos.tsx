@@ -2,7 +2,7 @@
 import {
   criarClienteProjetosAcademicosIndisponivel,
   FormularioCadastroProjetoAcademico,
-  type ClienteProjetosAcademicos
+  type ClienteProjetosAcademicos,
 } from "../../../features/cadastro-projeto-academico";
 
 /** Define o cliente opcional que permite compor a página em cenários distintos. */
@@ -19,15 +19,19 @@ export interface PaginaCadastroProjetosAcademicosProps {
  * inventar sessão, rota protegida, persistência ou navegação global.
  */
 export function PaginaCadastroProjetosAcademicos({
-  cliente = criarClienteProjetosAcademicosIndisponivel()
+  cliente = criarClienteProjetosAcademicosIndisponivel(),
 }: PaginaCadastroProjetosAcademicosProps) {
   return (
     <main className="app-shell">
-      <section aria-labelledby="titulo-pagina-projetos" className="app-shell__content">
+      <section
+        aria-labelledby="titulo-pagina-projetos"
+        className="app-shell__content"
+      >
         <p className="eyebrow">Projetos acadêmicos</p>
         <h1 id="titulo-pagina-projetos">Cadastre seu projeto acadêmico</h1>
         <p>
-          Explique o objetivo do projeto, sua contribuição e as principais tecnologias utilizadas.
+          Explique o objetivo do projeto, sua contribuição e as principais
+          tecnologias utilizadas.
         </p>
         <FormularioCadastroProjetoAcademico cliente={cliente} />
       </section>

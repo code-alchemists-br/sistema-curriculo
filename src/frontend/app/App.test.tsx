@@ -9,7 +9,7 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: "Acesse sua conta" })
+      screen.getByRole("heading", { name: "Acesse sua conta" }),
     ).toBeInTheDocument();
   });
 });

@@ -46,6 +46,6 @@ export function criarClienteProjetosAcademicosIndisponivel(): ClienteProjetosAca
   return {
     async cadastrar() {
       throw new FalhaCadastroProjeto("indisponivel");
-    }
+    },
   };
 }

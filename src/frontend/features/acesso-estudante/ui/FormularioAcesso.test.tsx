@@ -3,7 +3,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { FalhaAcessoEstudante, type ClienteAcessoEstudante } from "../api/cliente-acesso-estudante";
+import {
+  FalhaAcessoEstudante,
+  type ClienteAcessoEstudante,
+} from "../api/cliente-acesso-estudante";
 import { FormularioAcesso } from "./FormularioAcesso";
 
 afterEach(cleanup);
@@ -13,16 +16,25 @@ describe("FormularioAcesso", () => {
     const usuario = userEvent.setup();
     const cliente: ClienteAcessoEstudante = {
       cadastrar: vi.fn(),
-      acessar: vi.fn().mockRejectedValue(new FalhaAcessoEstudante("indisponivel"))
+      acessar: vi
+        .fn()
+        .mockRejectedValue(new FalhaAcessoEstudante("indisponivel")),
     };
 
-    render(<FormularioAcesso cliente={cliente} emailInicial="aluna@fatec.sp.gov.br" />);
+    render(
+      <FormularioAcesso
+        cliente={cliente}
+        emailInicial="aluna@fatec.sp.gov.br"
+      />,
+    );
 
     await usuario.type(screen.getByLabelText("Senha"), "segredo123");
     await usuario.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("indisponível");
-    expect(screen.getByLabelText("E-mail")).toHaveValue("aluna@fatec.sp.gov.br");
+    expect(screen.getByLabelText("E-mail")).toHaveValue(
+      "aluna@fatec.sp.gov.br",
+    );
     expect(screen.getByLabelText("Senha")).toHaveValue("segredo123");
   });
 
@@ -30,15 +42,22 @@ describe("FormularioAcesso", () => {
     const usuario = userEvent.setup();
     const cliente: ClienteAcessoEstudante = {
       cadastrar: vi.fn(),
-      acessar: vi.fn().mockResolvedValue(undefined)
+      acessar: vi.fn().mockResolvedValue(undefined),
     };
 
-    render(<FormularioAcesso cliente={cliente} emailInicial="aluna@fatec.sp.gov.br" />);
+    render(
+      <FormularioAcesso
+        cliente={cliente}
+        emailInicial="aluna@fatec.sp.gov.br"
+      />,
+    );
 
     await usuario.type(screen.getByLabelText("Senha"), "segredo123");
     await usuario.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Uma sessão ainda não foi criada.");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Uma sessão ainda não foi criada.",
+    );
     expect(screen.getByLabelText("Senha")).toHaveValue("");
   });
 });

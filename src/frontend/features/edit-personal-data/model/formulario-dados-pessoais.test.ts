@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   criarStudent,
   criarValoresIniciais,
-  validarDadosPessoais
+  validarDadosPessoais,
 } from "./formulario-dados-pessoais";
 
 describe("validarDadosPessoais", () => {
@@ -12,16 +12,16 @@ describe("validarDadosPessoais", () => {
       validarDadosPessoais({
         ...criarValoresIniciais(),
         telefones: ["", ""],
-        email: "email-invalido"
-      })
+        email: "email-invalido",
+      }),
     ).toEqual({
       nomeCompleto: "Informe seu nome completo.",
       enderecoCompleto: "Informe seu endereço completo.",
       email: "Informe um e-mail válido.",
       telefones: {
         0: "Informe um telefone.",
-        1: "Informe um telefone."
-      }
+        1: "Informe um telefone.",
+      },
     });
   });
 });
@@ -35,13 +35,13 @@ describe("criarStudent", () => {
         telefones: [" (11) 99999-0000 "],
         email: " ana@exemplo.com ",
         linkedIn: " ",
-        curriculoLattes: " "
-      })
+        curriculoLattes: " ",
+      }),
     ).toEqual({
       nomeCompleto: "Ana Silva",
       enderecoCompleto: "Rua das Flores, 10",
       telefones: ["(11) 99999-0000"],
-      email: "ana@exemplo.com"
+      email: "ana@exemplo.com",
     });
   });
 });

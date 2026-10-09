@@ -5,13 +5,13 @@ import {
   normalizarCurso,
   validarCurso,
   validarListaCursos,
-  type Curso
+  type Curso,
 } from "./cursos";
 
 const cursoValido: Curso = {
   nome: "React Avançado",
   instituicao: "Alura",
-  cargaHoraria: "40"
+  cargaHoraria: "40",
 };
 
 describe("validarCurso", () => {
@@ -32,22 +32,30 @@ describe("validarCurso", () => {
 
   it("reporta carga horária vazia", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "" });
-    expect(erros.cargaHoraria).toBe("Informe uma carga horária válida (em horas).");
+    expect(erros.cargaHoraria).toBe(
+      "Informe uma carga horária válida (em horas).",
+    );
   });
 
   it("reporta carga horária não numérica", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "abc" });
-    expect(erros.cargaHoraria).toBe("Informe uma carga horária válida (em horas).");
+    expect(erros.cargaHoraria).toBe(
+      "Informe uma carga horária válida (em horas).",
+    );
   });
 
   it("reporta carga horária negativa", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "-10" });
-    expect(erros.cargaHoraria).toBe("Informe uma carga horária válida (em horas).");
+    expect(erros.cargaHoraria).toBe(
+      "Informe uma carga horária válida (em horas).",
+    );
   });
 
   it("reporta carga horária zero", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "0" });
-    expect(erros.cargaHoraria).toBe("Informe uma carga horária válida (em horas).");
+    expect(erros.cargaHoraria).toBe(
+      "Informe uma carga horária válida (em horas).",
+    );
   });
 });
 
@@ -58,7 +66,10 @@ describe("validarListaCursos", () => {
   });
 
   it("indexa erros pela posição do curso inválido", () => {
-    const erros = validarListaCursos([cursoValido, { nome: "", instituicao: "X", cargaHoraria: "10" }]);
+    const erros = validarListaCursos([
+      cursoValido,
+      { nome: "", instituicao: "X", cargaHoraria: "10" },
+    ]);
     expect(erros[0]).toBeUndefined();
     expect(erros[1]).toHaveProperty("nome");
   });
@@ -78,7 +89,7 @@ describe("normalizarCurso", () => {
     const curso = normalizarCurso({
       nome: "  React Avançado  ",
       instituicao: " Alura ",
-      cargaHoraria: " 40 "
+      cargaHoraria: " 40 ",
     });
 
     expect(curso.nome).toBe("React Avançado");

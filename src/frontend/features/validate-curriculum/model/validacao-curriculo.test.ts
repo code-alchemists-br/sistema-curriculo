@@ -1,27 +1,30 @@
 import { describe, expect, it } from "vitest";
 
-import { validarCurriculo, type CurriculoParaValidacao } from "./validacao-curriculo";
+import {
+  validarCurriculo,
+  type CurriculoParaValidacao,
+} from "./validacao-curriculo";
 
 const curriculoValido: CurriculoParaValidacao = {
   dadosPessoais: {
     nomeCompleto: "Marina Alves",
     enderecoCompleto: "Rua das Acácias, 120",
     telefones: ["11999990000"],
-    email: "marina.alves@example.com"
+    email: "marina.alves@example.com",
   },
   formacaoAcademica: { status: "preenchida" },
   experienciasProfissionais: { status: "preenchida" },
   competencias: {
     hardSkills: ["TypeScript"],
-    softSkills: ["Comunicação"]
+    softSkills: ["Comunicação"],
   },
   projetosAcademicos: [
     {
       titulo: "Portal de Biblioteca",
       descricao: "Aplicação acadêmica para consulta de acervo.",
-      tecnologias: "React, TypeScript"
-    }
-  ]
+      tecnologias: "React, TypeScript",
+    },
+  ],
 };
 
 describe("validarCurriculo", () => {
@@ -31,7 +34,9 @@ describe("validarCurriculo", () => {
     expect(resultado.valido).toBe(true);
     expect(resultado.podeVisualizarPreview).toBe(true);
     expect(resultado.podeExportarPdf).toBe(true);
-    expect(resultado.secoes.every((secao) => secao.status === "valida")).toBe(true);
+    expect(resultado.secoes.every((secao) => secao.status === "valida")).toBe(
+      true,
+    );
   });
 
   it("identifica uma etapa pulada como pendência e bloqueia as ações finais", () => {
@@ -39,12 +44,12 @@ describe("validarCurriculo", () => {
       ...curriculoValido,
       experienciasProfissionais: {
         status: "pulada",
-        mensagemErro: "A etapa de experiências profissionais foi ignorada."
-      }
+        mensagemErro: "A etapa de experiências profissionais foi ignorada.",
+      },
     });
 
     const experiencia = resultado.secoes.find(
-      (secao) => secao.id === "experiencias-profissionais"
+      (secao) => secao.id === "experiencias-profissionais",
     );
 
     expect(resultado.valido).toBe(false);
@@ -52,7 +57,7 @@ describe("validarCurriculo", () => {
     expect(resultado.podeExportarPdf).toBe(false);
     expect(experiencia).toMatchObject({
       status: "pendente",
-      mensagens: ["A etapa de experiências profissionais foi ignorada."]
+      mensagens: ["A etapa de experiências profissionais foi ignorada."],
     });
   });
 
@@ -63,24 +68,28 @@ describe("validarCurriculo", () => {
         nomeCompleto: "",
         enderecoCompleto: "",
         telefones: [""],
-        email: "email-invalido"
+        email: "email-invalido",
       },
-      competencias: { hardSkills: [], softSkills: [] }
+      competencias: { hardSkills: [], softSkills: [] },
     });
 
     expect(resultado.valido).toBe(false);
-    expect(resultado.secoes.find((secao) => secao.id === "dados-pessoais")).toMatchObject({
-      status: "erro"
+    expect(
+      resultado.secoes.find((secao) => secao.id === "dados-pessoais"),
+    ).toMatchObject({
+      status: "erro",
     });
-    expect(resultado.secoes.find((secao) => secao.id === "competencias")).toMatchObject({
-      status: "erro"
+    expect(
+      resultado.secoes.find((secao) => secao.id === "competencias"),
+    ).toMatchObject({
+      status: "erro",
     });
   });
 
   it("preserva projetos acadêmicos como opcionais, sem bloquear a revisão final", () => {
     const resultado = validarCurriculo({
       ...curriculoValido,
-      projetosAcademicos: []
+      projetosAcademicos: [],
     });
 
     expect(resultado.valido).toBe(true);
@@ -91,13 +100,15 @@ describe("validarCurriculo", () => {
       ...curriculoValido,
       formacaoAcademica: {
         status: "preenchida",
-        mensagemErro: "A formação cadastrada está incompleta."
-      }
+        mensagemErro: "A formação cadastrada está incompleta.",
+      },
     });
 
-    expect(resultado.secoes.find((secao) => secao.id === "formacao-academica")).toMatchObject({
+    expect(
+      resultado.secoes.find((secao) => secao.id === "formacao-academica"),
+    ).toMatchObject({
       status: "erro",
-      mensagens: ["A formação cadastrada está incompleta."]
+      mensagens: ["A formação cadastrada está incompleta."],
     });
   });
 });

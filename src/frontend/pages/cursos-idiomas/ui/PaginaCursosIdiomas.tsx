@@ -11,9 +11,15 @@ import { FormularioIdiomas } from "../../../features/edit-languages";
 export function PaginaCursosIdiomas() {
   return (
     <main className="app-shell">
-      <section aria-labelledby="titulo-cursos-idiomas" className="app-shell__content">
+      <section
+        aria-labelledby="titulo-cursos-idiomas"
+        className="app-shell__content"
+      >
         <h1 id="titulo-cursos-idiomas">Cursos, Certificações e Idiomas</h1>
-        <p>Cadastre seus cursos complementares, certificações profissionais e idiomas que domina.</p>
+        <p>
+          Cadastre seus cursos complementares, certificações profissionais e
+          idiomas que domina.
+        </p>
         <FormularioCursos />
         <FormularioIdiomas />
       </section>

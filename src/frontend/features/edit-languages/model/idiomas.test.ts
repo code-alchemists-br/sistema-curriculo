@@ -4,12 +4,12 @@ import {
   criarIdiomaVazio,
   validarIdioma,
   validarListaIdiomas,
-  type Idioma
+  type Idioma,
 } from "./idiomas";
 
 const idiomaValido: Idioma = {
   nome: "Inglês",
-  nivel: "avancado"
+  nivel: "avancado",
 };
 
 describe("validarIdioma", () => {
@@ -31,7 +31,10 @@ describe("validarIdioma", () => {
 
 describe("validarListaIdiomas", () => {
   it("retorna mapa vazio quando todos os idiomas são válidos", () => {
-    const erros = validarListaIdiomas([idiomaValido, { nome: "Espanhol", nivel: "basico" }]);
+    const erros = validarListaIdiomas([
+      idiomaValido,
+      { nome: "Espanhol", nivel: "basico" },
+    ]);
     expect(Object.keys(erros)).toHaveLength(0);
   });
 

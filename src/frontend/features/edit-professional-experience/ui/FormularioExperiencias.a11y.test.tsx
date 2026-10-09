@@ -14,7 +14,7 @@ const experienciaValida: Experiencia = {
   inicio: "2023-01",
   fim: "2024-05",
   empregoAtual: false,
-  descricao: "Desenvolvimento de interfaces acessíveis."
+  descricao: "Desenvolvimento de interfaces acessíveis.",
 };
 
 describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
@@ -28,14 +28,24 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
   it("garante que todos os campos de entrada e botões possuem rótulos acessíveis associados", () => {
     render(<FormularioExperiencias />);
 
-    const campoEmpresa = screen.getByRole("textbox", { name: /nome da empresa/i });
+    const campoEmpresa = screen.getByRole("textbox", {
+      name: /nome da empresa/i,
+    });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
     const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
     const campoFim = screen.getByLabelText(/fim \(mês\/ano\)/i);
-    const checkboxEmpregoAtual = screen.getByRole("checkbox", { name: /emprego atual/i });
-    const campoDescricao = screen.getByRole("textbox", { name: /descrição das atividades/i });
-    const botaoAdicionar = screen.getByRole("button", { name: /\+ adicionar experiência/i });
-    const botaoSalvar = screen.getByRole("button", { name: /salvar experiências/i });
+    const checkboxEmpregoAtual = screen.getByRole("checkbox", {
+      name: /emprego atual/i,
+    });
+    const campoDescricao = screen.getByRole("textbox", {
+      name: /descrição das atividades/i,
+    });
+    const botaoAdicionar = screen.getByRole("button", {
+      name: /\+ adicionar experiência/i,
+    });
+    const botaoSalvar = screen.getByRole("button", {
+      name: /salvar experiências/i,
+    });
 
     expect(campoEmpresa).toBeInTheDocument();
     expect(campoCargo).toBeInTheDocument();
@@ -58,14 +68,24 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     const usuario = userEvent.setup();
     render(<FormularioExperiencias />);
 
-    const campoEmpresa = screen.getByRole("textbox", { name: /nome da empresa/i });
+    const campoEmpresa = screen.getByRole("textbox", {
+      name: /nome da empresa/i,
+    });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
     const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
     const campoFim = screen.getByLabelText(/fim \(mês\/ano\)/i);
-    const checkboxEmpregoAtual = screen.getByRole("checkbox", { name: /emprego atual/i });
-    const campoDescricao = screen.getByRole("textbox", { name: /descrição das atividades/i });
-    const botaoAdicionar = screen.getByRole("button", { name: /\+ adicionar experiência/i });
-    const botaoSalvar = screen.getByRole("button", { name: /salvar experiências/i });
+    const checkboxEmpregoAtual = screen.getByRole("checkbox", {
+      name: /emprego atual/i,
+    });
+    const campoDescricao = screen.getByRole("textbox", {
+      name: /descrição das atividades/i,
+    });
+    const botaoAdicionar = screen.getByRole("button", {
+      name: /\+ adicionar experiência/i,
+    });
+    const botaoSalvar = screen.getByRole("button", {
+      name: /salvar experiências/i,
+    });
 
     await usuario.tab();
     expect(campoEmpresa).toHaveFocus();
@@ -103,9 +123,13 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     const usuario = userEvent.setup();
     render(<FormularioExperiencias />);
 
-    await usuario.click(screen.getByRole("button", { name: /salvar experiências/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar experiências/i }),
+    );
 
-    const campoEmpresa = screen.getByRole("textbox", { name: /nome da empresa/i });
+    const campoEmpresa = screen.getByRole("textbox", {
+      name: /nome da empresa/i,
+    });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
     const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
 
@@ -142,19 +166,34 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioExperiencias onSalvar={onSalvar} />);
 
     // 1. Submissão inválida: deve anunciar alert assertivo
-    await usuario.click(screen.getByRole("button", { name: /salvar experiências/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar experiências/i }),
+    );
 
     const alertaErro = await screen.findByRole("alert");
-    expect(alertaErro).toHaveTextContent("Há pendências que precisam ser corrigidas antes de salvar.");
+    expect(alertaErro).toHaveTextContent(
+      "Há pendências que precisam ser corrigidas antes de salvar.",
+    );
     expect(onSalvar).not.toHaveBeenCalled();
 
     // 2. Preenchimento válido: deve anunciar status de confirmação
-    await usuario.type(screen.getByRole("textbox", { name: /nome da empresa/i }), "Tech Corp");
-    await usuario.type(screen.getByRole("textbox", { name: /cargo/i }), "Desenvolvedor");
-    await usuario.type(screen.getByLabelText(/início \(mês\/ano\)/i), "2023-01");
+    await usuario.type(
+      screen.getByRole("textbox", { name: /nome da empresa/i }),
+      "Tech Corp",
+    );
+    await usuario.type(
+      screen.getByRole("textbox", { name: /cargo/i }),
+      "Desenvolvedor",
+    );
+    await usuario.type(
+      screen.getByLabelText(/início \(mês\/ano\)/i),
+      "2023-01",
+    );
     await usuario.type(screen.getByLabelText(/fim \(mês\/ano\)/i), "2024-05");
 
-    await usuario.click(screen.getByRole("button", { name: /salvar experiências/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar experiências/i }),
+    );
 
     const statusSucesso = await screen.findByRole("status");
     expect(statusSucesso).toHaveTextContent("Experiências salvas com sucesso.");
@@ -197,9 +236,9 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       <FormularioExperiencias
         experienciasIniciais={[
           experienciaValida,
-          { ...experienciaValida, empresa: "Segunda Empresa" }
+          { ...experienciaValida, empresa: "Segunda Empresa" },
         ]}
-      />
+      />,
     );
 
     const grupo1 = screen.getByRole("group", { name: "Experiência 1" });
@@ -208,13 +247,19 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     expect(grupo1).toBeInTheDocument();
     expect(grupo2).toBeInTheDocument();
 
-    const botaoRemover1 = screen.getByRole("button", { name: "Remover experiência 1" });
-    const botaoRemover2 = screen.getByRole("button", { name: "Remover experiência 2" });
+    const botaoRemover1 = screen.getByRole("button", {
+      name: "Remover experiência 1",
+    });
+    const botaoRemover2 = screen.getByRole("button", {
+      name: "Remover experiência 2",
+    });
 
     expect(botaoRemover1).toBeInTheDocument();
     expect(botaoRemover2).toBeInTheDocument();
 
     await usuario.click(botaoRemover2);
-    expect(screen.queryByRole("group", { name: "Experiência 2" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Experiência 2" }),
+    ).not.toBeInTheDocument();
   });
 });

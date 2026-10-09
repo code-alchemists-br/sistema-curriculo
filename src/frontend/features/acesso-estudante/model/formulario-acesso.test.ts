@@ -6,12 +6,17 @@ import { traduzirFalhaAcesso, validarCadastro } from "./formulario-acesso";
 describe("validarCadastro", () => {
   it("informa cada correção local sem substituir a validação do servidor", () => {
     expect(
-      validarCadastro({ nome: "", email: "invalido", senha: "curta", confirmacaoSenha: "diferente" })
+      validarCadastro({
+        nome: "",
+        email: "invalido",
+        senha: "curta",
+        confirmacaoSenha: "diferente",
+      }),
     ).toEqual({
       nome: "Informe seu nome.",
       email: "Informe um e-mail válido.",
       senha: "A senha deve ter ao menos 8 caracteres.",
-      confirmacaoSenha: "As senhas não coincidem."
+      confirmacaoSenha: "As senhas não coincidem.",
     });
   });
 });

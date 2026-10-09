@@ -26,14 +26,16 @@ export interface ErrosPerfilEstudante {
  * modelo de entrada. Ela existe para converter o formato da entidade para o
  * formato controlado pelo formulário sem perder dados do perfil carregado.
  */
-export function criarValoresDeStudent(student: Student): ValoresPerfilEstudante {
+export function criarValoresDeStudent(
+  student: Student,
+): ValoresPerfilEstudante {
   return {
     nomeCompleto: student.nomeCompleto,
     enderecoCompleto: student.enderecoCompleto,
     telefones: student.telefones.length > 0 ? [...student.telefones] : [""],
     email: student.email,
     linkedIn: student.linkedIn ?? "",
-    curriculoLattes: student.curriculoLattes ?? ""
+    curriculoLattes: student.curriculoLattes ?? "",
   };
 }
 
@@ -44,7 +46,9 @@ export function criarValoresDeStudent(student: Student): ValoresPerfilEstudante 
  * e cada telefone existente. Ela existe para oferecer feedback imediato sem
  * substituir as regras definitivas que serão aplicadas pelo backend.
  */
-export function validarPerfilEstudante(valores: ValoresPerfilEstudante): ErrosPerfilEstudante {
+export function validarPerfilEstudante(
+  valores: ValoresPerfilEstudante,
+): ErrosPerfilEstudante {
   const erros: ErrosPerfilEstudante = {};
 
   if (valores.nomeCompleto.trim() === "") {
@@ -80,7 +84,9 @@ export function validarPerfilEstudante(valores: ValoresPerfilEstudante): ErrosPe
  * existe para impedir que o estado de campos opcionais em branco seja tratado
  * como dado significativo pela futura fronteira de API.
  */
-export function criarStudentDeValoresPerfil(valores: ValoresPerfilEstudante): Student {
+export function criarStudentDeValoresPerfil(
+  valores: ValoresPerfilEstudante,
+): Student {
   const linkedIn = valores.linkedIn.trim();
   const curriculoLattes = valores.curriculoLattes.trim();
 
@@ -90,16 +96,21 @@ export function criarStudentDeValoresPerfil(valores: ValoresPerfilEstudante): St
     telefones: valores.telefones.map((telefone) => telefone.trim()),
     email: valores.email.trim(),
     ...(linkedIn === "" ? {} : { linkedIn }),
-    ...(curriculoLattes === "" ? {} : { curriculoLattes })
+    ...(curriculoLattes === "" ? {} : { curriculoLattes }),
   };
 }
 
 /** Traduz uma falha estável do cliente para uma orientação compreensível. */
-export function traduzirFalhaPerfil(codigo: CodigoFalhaPerfilEstudante): string {
+export function traduzirFalhaPerfil(
+  codigo: CodigoFalhaPerfilEstudante,
+): string {
   const mensagens: Record<CodigoFalhaPerfilEstudante, string> = {
-    indisponivel: "Não foi possível completar a operação no momento. Tente novamente mais tarde.",
-    "resposta-invalida": "Recebemos uma resposta inesperada. Tente novamente mais tarde.",
-    "nao-autorizado": "Você não tem permissão para realizar esta ação. Faça login novamente."
+    indisponivel:
+      "Não foi possível completar a operação no momento. Tente novamente mais tarde.",
+    "resposta-invalida":
+      "Recebemos uma resposta inesperada. Tente novamente mais tarde.",
+    "nao-autorizado":
+      "Você não tem permissão para realizar esta ação. Faça login novamente.",
   };
 
   return mensagens[codigo];

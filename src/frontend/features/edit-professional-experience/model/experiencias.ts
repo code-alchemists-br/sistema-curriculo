@@ -24,7 +24,7 @@ export function criarExperienciaVazia(): Experiencia {
     inicio: "",
     fim: "",
     empregoAtual: false,
-    descricao: ""
+    descricao: "",
   };
 }
 
@@ -73,7 +73,7 @@ export function validarExperiencia(experiencia: Experiencia): ErrosExperiencia {
  * resultado as posições que apresentam pelo menos um campo inválido.
  */
 export function validarListaExperiencias(
-  experiencias: Experiencia[]
+  experiencias: Experiencia[],
 ): Record<number, ErrosExperiencia> {
   const erros: Record<number, ErrosExperiencia> = {};
 
@@ -95,7 +95,9 @@ export function validarListaExperiencias(
  * ordenação lexicográfica direta. A função retorna um novo array sem alterar
  * o original.
  */
-export function ordenarPorDataDecrescente(experiencias: Experiencia[]): Experiencia[] {
+export function ordenarPorDataDecrescente(
+  experiencias: Experiencia[],
+): Experiencia[] {
   return [...experiencias].sort((a, b) => {
     if (a.empregoAtual && !b.empregoAtual) return -1;
     if (!a.empregoAtual && b.empregoAtual) return 1;

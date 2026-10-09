@@ -64,7 +64,7 @@ export interface ClienteAcessoEstudante {
  * substituível por doubles nos testes unitários.
  */
 export function criarClienteAcessoEstudante(
-  urlDaApi = import.meta.env.VITE_API_URL
+  urlDaApi = import.meta.env.VITE_API_URL,
 ): ClienteAcessoEstudante {
   return {
     async cadastrar(entrada) {
@@ -82,7 +82,7 @@ export function criarClienteAcessoEstudante(
       if (resposta.status === 204) return;
 
       throw new FalhaAcessoEstudante(classificarFalhaAcesso(resposta.status));
-    }
+    },
   };
 }
 
@@ -109,13 +109,13 @@ function normalizarUrlDaApi(urlDaApi: string | undefined): string {
  */
 async function enviarRequisicao(
   url: string,
-  corpo: CadastroEstudanteEntrada | AcessoEstudanteEntrada
+  corpo: CadastroEstudanteEntrada | AcessoEstudanteEntrada,
 ): Promise<Response> {
   try {
     return await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(corpo)
+      body: JSON.stringify(corpo),
     });
   } catch {
     throw new FalhaAcessoEstudante("rede");
@@ -129,7 +129,9 @@ async function enviarRequisicao(
  * incompatível. Ela existe para impedir que um DTO externo vire modelo de UI
  * sem validação na fronteira.
  */
-async function lerEstudanteCadastrado(resposta: Response): Promise<EstudanteCadastrado> {
+async function lerEstudanteCadastrado(
+  resposta: Response,
+): Promise<EstudanteCadastrado> {
   try {
     const dados: unknown = await resposta.json();
 

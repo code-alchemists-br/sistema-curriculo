@@ -5,7 +5,7 @@ import {
   ordenarPorDataDecrescente,
   validarExperiencia,
   validarListaExperiencias,
-  type Experiencia
+  type Experiencia,
 } from "./experiencias";
 
 const experienciaValida: Experiencia = {
@@ -14,7 +14,7 @@ const experienciaValida: Experiencia = {
   inicio: "2024-01",
   fim: "2025-06",
   empregoAtual: false,
-  descricao: "Desenvolvimento de interfaces com React."
+  descricao: "Desenvolvimento de interfaces com React.",
 };
 
 describe("validarExperiencia", () => {
@@ -40,17 +40,29 @@ describe("validarExperiencia", () => {
 
   it("reporta data de término ausente quando não é emprego atual", () => {
     const erros = validarExperiencia({ ...experienciaValida, fim: "" });
-    expect(erros.fim).toBe("Informe a data de término ou marque como emprego atual.");
+    expect(erros.fim).toBe(
+      "Informe a data de término ou marque como emprego atual.",
+    );
   });
 
   it("ignora data de término quando é emprego atual", () => {
-    const erros = validarExperiencia({ ...experienciaValida, fim: "", empregoAtual: true });
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      fim: "",
+      empregoAtual: true,
+    });
     expect(erros.fim).toBeUndefined();
   });
 
   it("reporta data de término anterior à data de início", () => {
-    const erros = validarExperiencia({ ...experienciaValida, inicio: "2025-06", fim: "2024-01" });
-    expect(erros.fim).toBe("A data de término deve ser posterior à data de início.");
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      inicio: "2025-06",
+      fim: "2024-01",
+    });
+    expect(erros.fim).toBe(
+      "A data de término deve ser posterior à data de início.",
+    );
   });
 
   it("aceita descrição vazia sem erro", () => {
@@ -68,7 +80,7 @@ describe("validarListaExperiencias", () => {
   it("indexa erros pela posição da experiência inválida", () => {
     const erros = validarListaExperiencias([
       experienciaValida,
-      { ...experienciaValida, empresa: "" }
+      { ...experienciaValida, empresa: "" },
     ]);
     expect(erros[0]).toBeUndefined();
     expect(erros[1]).toHaveProperty("empresa");
@@ -79,7 +91,7 @@ describe("ordenarPorDataDecrescente", () => {
   it("posiciona emprego atual antes das demais experiências", () => {
     const resultado = ordenarPorDataDecrescente([
       { ...experienciaValida, inicio: "2020-01", empregoAtual: false },
-      { ...experienciaValida, inicio: "2023-01", empregoAtual: true }
+      { ...experienciaValida, inicio: "2023-01", empregoAtual: true },
     ]);
 
     expect(resultado[0].empregoAtual).toBe(true);
@@ -89,7 +101,7 @@ describe("ordenarPorDataDecrescente", () => {
     const resultado = ordenarPorDataDecrescente([
       { ...experienciaValida, inicio: "2020-01" },
       { ...experienciaValida, inicio: "2023-06" },
-      { ...experienciaValida, inicio: "2021-03" }
+      { ...experienciaValida, inicio: "2021-03" },
     ]);
 
     expect(resultado[0].inicio).toBe("2023-06");
@@ -100,7 +112,7 @@ describe("ordenarPorDataDecrescente", () => {
   it("não altera o array original", () => {
     const original = [
       { ...experienciaValida, inicio: "2020-01" },
-      { ...experienciaValida, inicio: "2023-06" }
+      { ...experienciaValida, inicio: "2023-06" },
     ];
     const copia = [...original];
     ordenarPorDataDecrescente(original);

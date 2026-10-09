@@ -30,9 +30,9 @@ describe("FormularioIdiomas", () => {
       <FormularioIdiomas
         idiomasIniciais={[
           { nome: "Inglês", nivel: "avancado" },
-          { nome: "Espanhol", nivel: "basico" }
+          { nome: "Espanhol", nivel: "basico" },
         ]}
-      />
+      />,
     );
 
     await usuario.click(screen.getByLabelText("Remover idioma 1"));
@@ -49,7 +49,9 @@ describe("FormularioIdiomas", () => {
     await usuario.click(screen.getByText("Salvar idiomas"));
 
     expect(screen.getByText("Informe o idioma.")).toBeInTheDocument();
-    expect(screen.getByText("Selecione o nível de proficiência.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Selecione o nível de proficiência."),
+    ).toBeInTheDocument();
   });
 
   it("chama onSalvar com idiomas quando válidos", async () => {
@@ -59,11 +61,18 @@ describe("FormularioIdiomas", () => {
     render(<FormularioIdiomas onSalvar={onSalvar} />);
 
     await usuario.type(screen.getByLabelText("Idioma"), "Inglês");
-    await usuario.selectOptions(screen.getByLabelText("Nível de proficiência"), "avancado");
+    await usuario.selectOptions(
+      screen.getByLabelText("Nível de proficiência"),
+      "avancado",
+    );
     await usuario.click(screen.getByText("Salvar idiomas"));
 
-    expect(onSalvar).toHaveBeenCalledWith([{ nome: "Inglês", nivel: "avancado" }]);
-    expect(screen.getByRole("status")).toHaveTextContent("Idiomas salvos com sucesso.");
+    expect(onSalvar).toHaveBeenCalledWith([
+      { nome: "Inglês", nivel: "avancado" },
+    ]);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Idiomas salvos com sucesso.",
+    );
   });
 
   it("não chama onSalvar quando há erros de validação", async () => {

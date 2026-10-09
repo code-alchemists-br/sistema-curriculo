@@ -3,22 +3,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   traduzirFalhaCadastroProjeto,
-  validarProjetoAcademico
+  validarProjetoAcademico,
 } from "./formulario-projeto-academico";
 
 describe("validarProjetoAcademico", () => {
   it("indica título e descrição ausentes sem impor formato de tecnologias", () => {
     expect(
-      validarProjetoAcademico({ titulo: " ", descricao: "", tecnologias: "" })
+      validarProjetoAcademico({ titulo: " ", descricao: "", tecnologias: "" }),
     ).toEqual({
       titulo: "Informe o título do projeto.",
-      descricao: "Descreva o objetivo ou sua contribuição no projeto."
+      descricao: "Descreva o objetivo ou sua contribuição no projeto.",
     });
   });
 });
 
 describe("traduzirFalhaCadastroProjeto", () => {
   it("orienta o estudante quando o cadastro ainda está indisponível", () => {
-    expect(traduzirFalhaCadastroProjeto("indisponivel")).toContain("indisponível");
+    expect(traduzirFalhaCadastroProjeto("indisponivel")).toContain(
+      "indisponível",
+    );
   });
 });

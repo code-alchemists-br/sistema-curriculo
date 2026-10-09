@@ -7,11 +7,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Student } from "../entities/student";
 import {
   FalhaDadosPessoais,
-  type ClienteDadosPessoais
+  type ClienteDadosPessoais,
 } from "../features/edit-personal-data";
 import type {
   CurriculoParaValidacao,
-  EstadoSecaoObrigatoria
+  EstadoSecaoObrigatoria,
 } from "../features/validate-curriculum";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
@@ -49,20 +49,22 @@ export function JornadaCurriculoHarness({
   experienciasProfissionais = { status: "preenchida" },
   competencias = {
     hardSkills: ["TypeScript", "React"],
-    softSkills: ["Comunicação", "Trabalho em equipe"]
+    softSkills: ["Comunicação", "Trabalho em equipe"],
   },
   projetosAcademicos = [
     {
       titulo: "Sistema de Currículo",
       descricao: "Plataforma web para elaboração de currículos universitários",
-      tecnologias: "React, TypeScript"
-    }
+      tecnologias: "React, TypeScript",
+    },
   ],
   onVisualizarPreview,
   onExportarPdf,
-  onConfirmarCurriculo
+  onConfirmarCurriculo,
 }: JornadaCurriculoHarnessProps) {
-  const [etapa, setEtapa] = useState<"dados-pessoais" | "revisao">("dados-pessoais");
+  const [etapa, setEtapa] = useState<"dados-pessoais" | "revisao">(
+    "dados-pessoais",
+  );
   const [dadosSalvos, setDadosSalvos] = useState<Student | null>(null);
 
   const clienteInterceptador: ClienteDadosPessoais = useMemo(
@@ -70,9 +72,9 @@ export function JornadaCurriculoHarness({
       salvar: async (student: Student) => {
         await clienteDadosPessoais.salvar(student);
         setDadosSalvos(student);
-      }
+      },
     }),
-    [clienteDadosPessoais]
+    [clienteDadosPessoais],
   );
 
   const dadosConsolidados: CurriculoParaValidacao = useMemo(
@@ -82,20 +84,26 @@ export function JornadaCurriculoHarness({
             nomeCompleto: dadosSalvos.nomeCompleto,
             enderecoCompleto: dadosSalvos.enderecoCompleto,
             telefones: dadosSalvos.telefones,
-            email: dadosSalvos.email
+            email: dadosSalvos.email,
           }
         : {
             nomeCompleto: "",
             enderecoCompleto: "",
             telefones: [],
-            email: ""
+            email: "",
           },
       formacaoAcademica,
       experienciasProfissionais,
       competencias,
-      projetosAcademicos
+      projetosAcademicos,
     }),
-    [dadosSalvos, formacaoAcademica, experienciasProfissionais, competencias, projetosAcademicos]
+    [
+      dadosSalvos,
+      formacaoAcademica,
+      experienciasProfissionais,
+      competencias,
+      projetosAcademicos,
+    ],
   );
 
   return (
@@ -132,10 +140,7 @@ export function JornadaCurriculoHarness({
         hidden={etapa !== "revisao"}
       >
         <div style={{ marginBottom: "1rem" }}>
-          <button
-            type="button"
-            onClick={() => setEtapa("dados-pessoais")}
-          >
+          <button type="button" onClick={() => setEtapa("dados-pessoais")}>
             Voltar para dados pessoais
           </button>
         </div>
@@ -164,10 +169,16 @@ async function preencherCamposDadosPessoais(
     enderecoCompleto: string;
     telefone: string;
     email: string;
-  }
+  },
 ): Promise<void> {
-  await usuario.type(screen.getByLabelText("Nome completo"), dados.nomeCompleto);
-  await usuario.type(screen.getByLabelText("Endereço completo"), dados.enderecoCompleto);
+  await usuario.type(
+    screen.getByLabelText("Nome completo"),
+    dados.nomeCompleto,
+  );
+  await usuario.type(
+    screen.getByLabelText("Endereço completo"),
+    dados.enderecoCompleto,
+  );
   await usuario.type(screen.getByLabelText("Telefone 1"), dados.telefone);
   await usuario.type(screen.getByLabelText("E-mail"), dados.email);
 }
@@ -183,7 +194,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
   it("conclui a jornada com sucesso desde o preenchimento de dados pessoais até a liberação e disparo das ações de exportação", async () => {
     const usuario = userEvent.setup();
     const clienteDadosPessoais: ClienteDadosPessoais = {
-      salvar: vi.fn().mockResolvedValue(undefined)
+      salvar: vi.fn().mockResolvedValue(undefined),
     };
     const onVisualizarPreview = vi.fn();
     const onConfirmarCurriculo = vi.fn();
@@ -195,45 +206,61 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
         onConfirmarCurriculo={onConfirmarCurriculo}
         onExportarPdf={onExportarPdf}
         onVisualizarPreview={onVisualizarPreview}
-      />
+      />,
     );
 
     // 1. Início da jornada: dados pessoais
-    expect(screen.getByRole("heading", { name: "Conte um pouco sobre você" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Avançar para revisão" })).toBeDisabled();
+    expect(
+      screen.getByRole("heading", { name: "Conte um pouco sobre você" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Avançar para revisão" }),
+    ).toBeDisabled();
 
     // 2. Preenchimento de dados pessoais com telefone adicional
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Mariana Souza",
       enderecoCompleto: "Avenida Paulista, 1000 - Bela Vista, São Paulo - SP",
       telefone: "(11) 98765-4321",
-      email: "mariana.souza@universidade.edu.br"
+      email: "mariana.souza@universidade.edu.br",
     });
 
-    await usuario.click(screen.getByRole("button", { name: "+ Adicionar telefone" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar telefone" }),
+    );
     await usuario.type(screen.getByLabelText("Telefone 2"), "(11) 91234-5678");
 
     // 3. Submissão do formulário de dados pessoais
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
 
     // 4. Verificação do feedback de sucesso e liberação de navegação
-    expect(await screen.findByRole("status")).toHaveTextContent("Dados pessoais salvos com sucesso.");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Dados pessoais salvos com sucesso.",
+    );
     expect(clienteDadosPessoais.salvar).toHaveBeenCalledWith({
       nomeCompleto: "Mariana Souza",
       enderecoCompleto: "Avenida Paulista, 1000 - Bela Vista, São Paulo - SP",
       telefones: ["(11) 98765-4321", "(11) 91234-5678"],
-      email: "mariana.souza@universidade.edu.br"
+      email: "mariana.souza@universidade.edu.br",
     });
 
-    const botaoAvancar = screen.getByRole("button", { name: "Avançar para revisão" });
+    const botaoAvancar = screen.getByRole("button", {
+      name: "Avançar para revisão",
+    });
     expect(botaoAvancar).toBeEnabled();
 
     // 5. Transição para a etapa final de revisão
     await usuario.click(botaoAvancar);
 
     // 6. Verificação do estado consolidado na tela de validação
-    expect(screen.getByRole("heading", { name: "Valide os dados do currículo" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Todas as seções obrigatórias estão válidas.");
+    expect(
+      screen.getByRole("heading", { name: "Valide os dados do currículo" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Todas as seções obrigatórias estão válidas.",
+    );
 
     // Verifica que todas as seções obrigatórias aparecem como válidas
     expect(screen.getByText("Dados pessoais")).toBeInTheDocument();
@@ -245,9 +272,15 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     expect(statusesValidos.length).toBeGreaterThanOrEqual(4);
 
     // 7. Verificação e acionamento das ações liberadas
-    const botaoPreview = screen.getByRole("button", { name: "Visualizar prévia" });
-    const botaoConfirmar = screen.getByRole("button", { name: "Confirmar currículo" });
-    const botaoExportarPdf = screen.getByRole("button", { name: "Exportar PDF" });
+    const botaoPreview = screen.getByRole("button", {
+      name: "Visualizar prévia",
+    });
+    const botaoConfirmar = screen.getByRole("button", {
+      name: "Confirmar currículo",
+    });
+    const botaoExportarPdf = screen.getByRole("button", {
+      name: "Exportar PDF",
+    });
 
     expect(botaoPreview).toBeEnabled();
     expect(botaoConfirmar).toBeEnabled();
@@ -272,7 +305,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
   it("bloqueia as ações de confirmação e exportação de PDF quando uma seção obrigatória está pendente", async () => {
     const usuario = userEvent.setup();
     const clienteDadosPessoais: ClienteDadosPessoais = {
-      salvar: vi.fn().mockResolvedValue(undefined)
+      salvar: vi.fn().mockResolvedValue(undefined),
     };
     const onVisualizarPreview = vi.fn();
     const onConfirmarCurriculo = vi.fn();
@@ -283,37 +316,54 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
         clienteDadosPessoais={clienteDadosPessoais}
         formacaoAcademica={{
           status: "pulada",
-          mensagemErro: "A formação acadêmica é obrigatória antes de continuar."
+          mensagemErro:
+            "A formação acadêmica é obrigatória antes de continuar.",
         }}
         onConfirmarCurriculo={onConfirmarCurriculo}
         onExportarPdf={onExportarPdf}
         onVisualizarPreview={onVisualizarPreview}
-      />
+      />,
     );
 
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Carlos Alberto",
       enderecoCompleto: "Rua das Amoreiras, 50 - Campinas - SP",
       telefone: "(19) 99888-7766",
-      email: "carlos.alberto@email.com"
+      email: "carlos.alberto@email.com",
     });
 
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("salvos com sucesso");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "salvos com sucesso",
+    );
 
-    await usuario.click(screen.getByRole("button", { name: "Avançar para revisão" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Avançar para revisão" }),
+    );
 
     // Verificação de bloqueio na revisão
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Há pendências que precisam ser corrigidas antes de continuar."
+      "Há pendências que precisam ser corrigidas antes de continuar.",
     );
     expect(screen.getByText("Formação acadêmica")).toBeInTheDocument();
     expect(screen.getByText(/Pendente/)).toBeInTheDocument();
-    expect(screen.getByText("A formação acadêmica é obrigatória antes de continuar.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A formação acadêmica é obrigatória antes de continuar.",
+      ),
+    ).toBeInTheDocument();
 
-    const botaoPreview = screen.getByRole("button", { name: "Visualizar prévia" });
-    const botaoConfirmar = screen.getByRole("button", { name: "Confirmar currículo" });
-    const botaoExportarPdf = screen.getByRole("button", { name: "Exportar PDF" });
+    const botaoPreview = screen.getByRole("button", {
+      name: "Visualizar prévia",
+    });
+    const botaoConfirmar = screen.getByRole("button", {
+      name: "Confirmar currículo",
+    });
+    const botaoExportarPdf = screen.getByRole("button", {
+      name: "Exportar PDF",
+    });
 
     expect(botaoPreview).toBeDisabled();
     expect(botaoConfirmar).toBeDisabled();
@@ -339,36 +389,44 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
   it("preserva os dados preenchidos e impede o avanço quando o double indica indisponibilidade", async () => {
     const usuario = userEvent.setup();
     const clienteDadosPessoais: ClienteDadosPessoais = {
-      salvar: vi.fn().mockRejectedValue(new FalhaDadosPessoais("indisponivel"))
+      salvar: vi.fn().mockRejectedValue(new FalhaDadosPessoais("indisponivel")),
     };
 
     render(
-      <JornadaCurriculoHarness
-        clienteDadosPessoais={clienteDadosPessoais}
-      />
+      <JornadaCurriculoHarness clienteDadosPessoais={clienteDadosPessoais} />,
     );
 
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Juliana Mendes",
       enderecoCompleto: "Rua do Comércio, 120 - Santos - SP",
       telefone: "(13) 97777-6655",
-      email: "juliana.mendes@email.com"
+      email: "juliana.mendes@email.com",
     });
 
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
 
     // Verificação de erro amigável sem perda de dados
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não foi possível salvar os dados pessoais no momento. Tente novamente mais tarde."
+      "Não foi possível salvar os dados pessoais no momento. Tente novamente mais tarde.",
     );
 
-    expect(screen.getByLabelText("Nome completo")).toHaveValue("Juliana Mendes");
-    expect(screen.getByLabelText("Endereço completo")).toHaveValue("Rua do Comércio, 120 - Santos - SP");
+    expect(screen.getByLabelText("Nome completo")).toHaveValue(
+      "Juliana Mendes",
+    );
+    expect(screen.getByLabelText("Endereço completo")).toHaveValue(
+      "Rua do Comércio, 120 - Santos - SP",
+    );
     expect(screen.getByLabelText("Telefone 1")).toHaveValue("(13) 97777-6655");
-    expect(screen.getByLabelText("E-mail")).toHaveValue("juliana.mendes@email.com");
+    expect(screen.getByLabelText("E-mail")).toHaveValue(
+      "juliana.mendes@email.com",
+    );
 
     // Não deve permitir avançar para revisão
-    expect(screen.getByRole("button", { name: "Avançar para revisão" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Avançar para revisão" }),
+    ).toBeDisabled();
   });
 
   /**
@@ -381,13 +439,11 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
   it("permite retornar da revisão para editar os dados pessoais e avançar novamente", async () => {
     const usuario = userEvent.setup();
     const clienteDadosPessoais: ClienteDadosPessoais = {
-      salvar: vi.fn().mockResolvedValue(undefined)
+      salvar: vi.fn().mockResolvedValue(undefined),
     };
 
     render(
-      <JornadaCurriculoHarness
-        clienteDadosPessoais={clienteDadosPessoais}
-      />
+      <JornadaCurriculoHarness clienteDadosPessoais={clienteDadosPessoais} />,
     );
 
     // Preenche dados iniciais
@@ -395,19 +451,31 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
       nomeCompleto: "Beatriz Lima",
       enderecoCompleto: "Rua Alvorada, 300 - Curitiba - PR",
       telefone: "(41) 98888-1111",
-      email: "beatriz.lima@email.com"
+      email: "beatriz.lima@email.com",
     });
 
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("salvos com sucesso");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "salvos com sucesso",
+    );
 
     // Avança para a revisão
-    await usuario.click(screen.getByRole("button", { name: "Avançar para revisão" }));
-    expect(screen.getByRole("heading", { name: "Valide os dados do currículo" })).toBeInTheDocument();
+    await usuario.click(
+      screen.getByRole("button", { name: "Avançar para revisão" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Valide os dados do currículo" }),
+    ).toBeInTheDocument();
 
     // Retorna para a etapa de dados pessoais
-    await usuario.click(screen.getByRole("button", { name: "Voltar para dados pessoais" }));
-    expect(screen.getByRole("heading", { name: "Conte um pouco sobre você" })).toBeInTheDocument();
+    await usuario.click(
+      screen.getByRole("button", { name: "Voltar para dados pessoais" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Conte um pouco sobre você" }),
+    ).toBeInTheDocument();
 
     // Campo de nome deve conter o valor anterior
     const campoNome = screen.getByLabelText("Nome completo");
@@ -416,18 +484,28 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     // Atualiza o nome e salva novamente
     await usuario.clear(campoNome);
     await usuario.type(campoNome, "Beatriz Alencar Lima");
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("salvos com sucesso");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "salvos com sucesso",
+    );
 
     expect(clienteDadosPessoais.salvar).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        nomeCompleto: "Beatriz Alencar Lima"
-      })
+        nomeCompleto: "Beatriz Alencar Lima",
+      }),
     );
 
     // Avança novamente para a revisão
-    await usuario.click(screen.getByRole("button", { name: "Avançar para revisão" }));
-    expect(screen.getByRole("heading", { name: "Valide os dados do currículo" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Todas as seções obrigatórias estão válidas.");
+    await usuario.click(
+      screen.getByRole("button", { name: "Avançar para revisão" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Valide os dados do currículo" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Todas as seções obrigatórias estão válidas.",
+    );
   });
 });

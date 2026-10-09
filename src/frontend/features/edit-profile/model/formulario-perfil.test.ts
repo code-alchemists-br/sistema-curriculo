@@ -4,7 +4,7 @@ import {
   criarStudentDeValoresPerfil,
   criarValoresDeStudent,
   validarPerfilEstudante,
-  type ValoresPerfilEstudante
+  type ValoresPerfilEstudante,
 } from "./formulario-perfil";
 
 const valoresValidos: ValoresPerfilEstudante = {
@@ -13,7 +13,7 @@ const valoresValidos: ValoresPerfilEstudante = {
   telefones: ["(11) 99999-0000"],
   email: "ricardo@exemplo.com",
   linkedIn: "https://linkedin.com/in/ricardo",
-  curriculoLattes: ""
+  curriculoLattes: "",
 };
 
 describe("validarPerfilEstudante", () => {
@@ -23,24 +23,33 @@ describe("validarPerfilEstudante", () => {
   });
 
   it("reporta nome completo ausente", () => {
-    const erros = validarPerfilEstudante({ ...valoresValidos, nomeCompleto: "  " });
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      nomeCompleto: "  ",
+    });
     expect(erros.nomeCompleto).toBe("Informe seu nome completo.");
   });
 
   it("reporta endereço completo ausente", () => {
-    const erros = validarPerfilEstudante({ ...valoresValidos, enderecoCompleto: "" });
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      enderecoCompleto: "",
+    });
     expect(erros.enderecoCompleto).toBe("Informe seu endereço completo.");
   });
 
   it("reporta e-mail com formato inválido", () => {
-    const erros = validarPerfilEstudante({ ...valoresValidos, email: "invalido" });
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      email: "invalido",
+    });
     expect(erros.email).toBe("Informe um e-mail válido.");
   });
 
   it("reporta telefone vazio pelo índice correspondente", () => {
     const erros = validarPerfilEstudante({
       ...valoresValidos,
-      telefones: ["(11) 99999-0000", ""]
+      telefones: ["(11) 99999-0000", ""],
     });
     expect(erros.telefones).toEqual({ 1: "Informe um telefone." });
   });
@@ -51,7 +60,7 @@ describe("criarStudentDeValoresPerfil", () => {
     const student = criarStudentDeValoresPerfil({
       ...valoresValidos,
       linkedIn: "  ",
-      curriculoLattes: ""
+      curriculoLattes: "",
     });
 
     expect(student).not.toHaveProperty("linkedIn");
@@ -67,7 +76,7 @@ describe("criarStudentDeValoresPerfil", () => {
     const student = criarStudentDeValoresPerfil({
       ...valoresValidos,
       nomeCompleto: "  Ricardo Galdino  ",
-      email: " ricardo@exemplo.com "
+      email: " ricardo@exemplo.com ",
     });
 
     expect(student.nomeCompleto).toBe("Ricardo Galdino");
@@ -81,7 +90,7 @@ describe("criarValoresDeStudent", () => {
       nomeCompleto: "Ricardo Galdino",
       enderecoCompleto: "Av. Paulista, 1000",
       telefones: ["(11) 99999-0000"],
-      email: "ricardo@exemplo.com"
+      email: "ricardo@exemplo.com",
     });
 
     expect(valores.linkedIn).toBe("");
@@ -93,7 +102,7 @@ describe("criarValoresDeStudent", () => {
       nomeCompleto: "Ricardo Galdino",
       enderecoCompleto: "Av. Paulista, 1000",
       telefones: [],
-      email: "ricardo@exemplo.com"
+      email: "ricardo@exemplo.com",
     });
 
     expect(valores.telefones).toEqual([""]);

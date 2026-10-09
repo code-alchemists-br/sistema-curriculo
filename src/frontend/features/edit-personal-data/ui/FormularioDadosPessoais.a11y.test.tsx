@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   FalhaDadosPessoais,
-  type ClienteDadosPessoais
+  type ClienteDadosPessoais,
 } from "../api/cliente-dados-pessoais";
 import { FormularioDadosPessoais } from "./FormularioDadosPessoais";
 
@@ -32,13 +32,21 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
-    const campoEndereco = screen.getByRole("textbox", { name: /endereço completo/i });
+    const campoEndereco = screen.getByRole("textbox", {
+      name: /endereço completo/i,
+    });
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
     const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
-    const campoLattes = screen.getByRole("textbox", { name: /currículo lattes/i });
-    const botaoAdicionarTelefone = screen.getByRole("button", { name: /\+ adicionar telefone/i });
-    const botaoSalvar = screen.getByRole("button", { name: /salvar dados pessoais/i });
+    const campoLattes = screen.getByRole("textbox", {
+      name: /currículo lattes/i,
+    });
+    const botaoAdicionarTelefone = screen.getByRole("button", {
+      name: /\+ adicionar telefone/i,
+    });
+    const botaoSalvar = screen.getByRole("button", {
+      name: /salvar dados pessoais/i,
+    });
 
     expect(campoNome).toBeInTheDocument();
     expect(campoEndereco).toBeInTheDocument();
@@ -62,13 +70,21 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
-    const campoEndereco = screen.getByRole("textbox", { name: /endereço completo/i });
+    const campoEndereco = screen.getByRole("textbox", {
+      name: /endereço completo/i,
+    });
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
-    const botaoAdicionarTelefone = screen.getByRole("button", { name: /\+ adicionar telefone/i });
+    const botaoAdicionarTelefone = screen.getByRole("button", {
+      name: /\+ adicionar telefone/i,
+    });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
     const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
-    const campoLattes = screen.getByRole("textbox", { name: /currículo lattes/i });
-    const botaoSalvar = screen.getByRole("button", { name: /salvar dados pessoais/i });
+    const campoLattes = screen.getByRole("textbox", {
+      name: /currículo lattes/i,
+    });
+    const botaoSalvar = screen.getByRole("button", {
+      name: /salvar dados pessoais/i,
+    });
 
     // Inicia a tabulação a partir do topo do documento
     await usuario.tab();
@@ -108,10 +124,14 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
     // Tenta salvar com campos obrigatórios vazios para forçar a exibição de erros
-    await usuario.click(screen.getByRole("button", { name: /salvar dados pessoais/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar dados pessoais/i }),
+    );
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
-    const campoEndereco = screen.getByRole("textbox", { name: /endereço completo/i });
+    const campoEndereco = screen.getByRole("textbox", {
+      name: /endereço completo/i,
+    });
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
 
@@ -134,8 +154,12 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
 
     // As mensagens de erro referenciadas devem existir e conter texto explicativo
     expect(document.getElementById(idErroNome!)).toHaveTextContent(/nome/i);
-    expect(document.getElementById(idErroEndereco!)).toHaveTextContent(/endereço/i);
-    expect(document.getElementById(idErroTelefone!)).toHaveTextContent(/telefone/i);
+    expect(document.getElementById(idErroEndereco!)).toHaveTextContent(
+      /endereço/i,
+    );
+    expect(document.getElementById(idErroTelefone!)).toHaveTextContent(
+      /telefone/i,
+    );
     expect(document.getElementById(idErroEmail!)).toHaveTextContent(/e-mail/i);
   });
 
@@ -150,7 +174,9 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     const usuario = userEvent.setup();
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
-    await usuario.click(screen.getByRole("button", { name: /salvar dados pessoais/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar dados pessoais/i }),
+    );
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
     expect(campoNome).toHaveAttribute("aria-invalid", "true");
@@ -172,24 +198,42 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
      */
     const usuario = userEvent.setup();
     const clienteFalha: ClienteDadosPessoais = {
-      salvar: vi.fn().mockRejectedValue(new FalhaDadosPessoais("indisponivel"))
+      salvar: vi.fn().mockRejectedValue(new FalhaDadosPessoais("indisponivel")),
     };
 
-    const { rerender } = render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
+    const { rerender } = render(
+      <FormularioDadosPessoais cliente={criarClienteSucesso()} />,
+    );
 
     // Preenche dados válidos e envia para gerar sucesso
-    await usuario.type(screen.getByRole("textbox", { name: /nome completo/i }), "Carlos Silva");
-    await usuario.type(screen.getByRole("textbox", { name: /endereço completo/i }), "Rua A, 100");
-    await usuario.type(screen.getByRole("textbox", { name: /telefone 1/i }), "(11) 97777-0000");
-    await usuario.type(screen.getByRole("textbox", { name: /e-mail/i }), "carlos@fatec.sp.gov.br");
-    await usuario.click(screen.getByRole("button", { name: /salvar dados pessoais/i }));
+    await usuario.type(
+      screen.getByRole("textbox", { name: /nome completo/i }),
+      "Carlos Silva",
+    );
+    await usuario.type(
+      screen.getByRole("textbox", { name: /endereço completo/i }),
+      "Rua A, 100",
+    );
+    await usuario.type(
+      screen.getByRole("textbox", { name: /telefone 1/i }),
+      "(11) 97777-0000",
+    );
+    await usuario.type(
+      screen.getByRole("textbox", { name: /e-mail/i }),
+      "carlos@fatec.sp.gov.br",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar dados pessoais/i }),
+    );
 
     const mensagemSucesso = await screen.findByRole("status");
     expect(mensagemSucesso).toHaveTextContent(/salvos com sucesso/i);
 
     // Agora renderiza formulário que falha na submissão
     rerender(<FormularioDadosPessoais cliente={clienteFalha} />);
-    await usuario.click(screen.getByRole("button", { name: /salvar dados pessoais/i }));
+    await usuario.click(
+      screen.getByRole("button", { name: /salvar dados pessoais/i }),
+    );
 
     const mensagemAlerta = await screen.findByRole("alert");
     expect(mensagemAlerta).toHaveTextContent(/não foi possível salvar/i);

@@ -27,7 +27,7 @@ export function criarValoresIniciais(): ValoresDadosPessoais {
     telefones: [""],
     email: "",
     linkedIn: "",
-    curriculoLattes: ""
+    curriculoLattes: "",
   };
 }
 
@@ -38,7 +38,9 @@ export function criarValoresIniciais(): ValoresDadosPessoais {
  * e-mail e cada telefone existente. Ela existe para oferecer feedback imediato
  * sem substituir as regras definitivas que serão aplicadas pelo backend.
  */
-export function validarDadosPessoais(valores: ValoresDadosPessoais): ErrosDadosPessoais {
+export function validarDadosPessoais(
+  valores: ValoresDadosPessoais,
+): ErrosDadosPessoais {
   const erros: ErrosDadosPessoais = {};
 
   if (valores.nomeCompleto.trim() === "") {
@@ -84,15 +86,19 @@ export function criarStudent(valores: ValoresDadosPessoais): Student {
     telefones: valores.telefones.map((telefone) => telefone.trim()),
     email: valores.email.trim(),
     ...(linkedIn === "" ? {} : { linkedIn }),
-    ...(curriculoLattes === "" ? {} : { curriculoLattes })
+    ...(curriculoLattes === "" ? {} : { curriculoLattes }),
   };
 }
 
 /** Traduz uma falha estável do cliente para uma orientação compreensível. */
-export function traduzirFalhaDadosPessoais(codigo: CodigoFalhaDadosPessoais): string {
+export function traduzirFalhaDadosPessoais(
+  codigo: CodigoFalhaDadosPessoais,
+): string {
   const mensagens: Record<CodigoFalhaDadosPessoais, string> = {
-    indisponivel: "Não foi possível salvar os dados pessoais no momento. Tente novamente mais tarde.",
-    "resposta-invalida": "Recebemos uma resposta inesperada. Tente novamente mais tarde."
+    indisponivel:
+      "Não foi possível salvar os dados pessoais no momento. Tente novamente mais tarde.",
+    "resposta-invalida":
+      "Recebemos uma resposta inesperada. Tente novamente mais tarde.",
   };
 
   return mensagens[codigo];

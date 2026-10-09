@@ -5,7 +5,7 @@ import {
   ordenarPorDataDecrescente,
   validarListaExperiencias,
   type ErrosExperiencia,
-  type Experiencia
+  type Experiencia,
 } from "../model/experiencias";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
@@ -24,9 +24,10 @@ export interface FormularioExperienciasProps {
  */
 export function FormularioExperiencias({
   experienciasIniciais = [criarExperienciaVazia()],
-  onSalvar
+  onSalvar,
 }: FormularioExperienciasProps) {
-  const [experiencias, setExperiencias] = useState<Experiencia[]>(experienciasIniciais);
+  const [experiencias, setExperiencias] =
+    useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
 
@@ -34,10 +35,10 @@ export function FormularioExperiencias({
   function atualizarCampo(
     indice: number,
     campo: keyof Omit<Experiencia, "empregoAtual">,
-    valor: string
+    valor: string,
   ): void {
     setExperiencias((atuais) =>
-      atuais.map((exp, i) => (i === indice ? { ...exp, [campo]: valor } : exp))
+      atuais.map((exp, i) => (i === indice ? { ...exp, [campo]: valor } : exp)),
     );
     limparErroDoCampo(indice, campo as keyof ErrosExperiencia);
   }
@@ -48,14 +49,21 @@ export function FormularioExperiencias({
       atuais.map((exp, i) => {
         if (i !== indice) return exp;
         const novoValor = !exp.empregoAtual;
-        return { ...exp, empregoAtual: novoValor, fim: novoValor ? "" : exp.fim };
-      })
+        return {
+          ...exp,
+          empregoAtual: novoValor,
+          fim: novoValor ? "" : exp.fim,
+        };
+      }),
     );
     limparErroDoCampo(indice, "fim");
   }
 
   /** Remove o erro de um campo específico de uma experiência. */
-  function limparErroDoCampo(indice: number, campo: keyof ErrosExperiencia): void {
+  function limparErroDoCampo(
+    indice: number,
+    campo: keyof ErrosExperiencia,
+  ): void {
     setErros((atuais) => {
       const errosExp = { ...atuais[indice] };
       delete errosExp[campo];
@@ -122,10 +130,12 @@ export function FormularioExperiencias({
       inicio: exp.inicio,
       fim: exp.fim,
       empregoAtual: exp.empregoAtual,
-      descricao: exp.descricao.trim()
+      descricao: exp.descricao.trim(),
     }));
 
-    const experienciasOrdenadas = ordenarPorDataDecrescente(experienciasNormalizadas);
+    const experienciasOrdenadas = ordenarPorDataDecrescente(
+      experienciasNormalizadas,
+    );
     onSalvar?.(experienciasOrdenadas);
     setMensagem("Experiências salvas com sucesso.");
   }
@@ -145,55 +155,85 @@ export function FormularioExperiencias({
             <div className="field">
               <label htmlFor={`${prefixo}-empresa`}>Nome da empresa</label>
               <input
-                aria-describedby={errosExp?.empresa !== undefined ? `${prefixo}-empresa-erro` : undefined}
-                aria-invalid={errosExp?.empresa !== undefined ? true : undefined}
+                aria-describedby={
+                  errosExp?.empresa !== undefined
+                    ? `${prefixo}-empresa-erro`
+                    : undefined
+                }
+                aria-invalid={
+                  errosExp?.empresa !== undefined ? true : undefined
+                }
                 id={`${prefixo}-empresa`}
-                onChange={(e) => atualizarCampo(indice, "empresa", e.target.value)}
+                onChange={(e) =>
+                  atualizarCampo(indice, "empresa", e.target.value)
+                }
                 required
                 type="text"
                 value={exp.empresa}
               />
               {errosExp?.empresa !== undefined && (
-                <p className="field__error" id={`${prefixo}-empresa-erro`}>{errosExp.empresa}</p>
+                <p className="field__error" id={`${prefixo}-empresa-erro`}>
+                  {errosExp.empresa}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-cargo`}>Cargo</label>
               <input
-                aria-describedby={errosExp?.cargo !== undefined ? `${prefixo}-cargo-erro` : undefined}
+                aria-describedby={
+                  errosExp?.cargo !== undefined
+                    ? `${prefixo}-cargo-erro`
+                    : undefined
+                }
                 aria-invalid={errosExp?.cargo !== undefined ? true : undefined}
                 id={`${prefixo}-cargo`}
-                onChange={(e) => atualizarCampo(indice, "cargo", e.target.value)}
+                onChange={(e) =>
+                  atualizarCampo(indice, "cargo", e.target.value)
+                }
                 required
                 type="text"
                 value={exp.cargo}
               />
               {errosExp?.cargo !== undefined && (
-                <p className="field__error" id={`${prefixo}-cargo-erro`}>{errosExp.cargo}</p>
+                <p className="field__error" id={`${prefixo}-cargo-erro`}>
+                  {errosExp.cargo}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-inicio`}>Início (Mês/Ano)</label>
               <input
-                aria-describedby={errosExp?.inicio !== undefined ? `${prefixo}-inicio-erro` : undefined}
+                aria-describedby={
+                  errosExp?.inicio !== undefined
+                    ? `${prefixo}-inicio-erro`
+                    : undefined
+                }
                 aria-invalid={errosExp?.inicio !== undefined ? true : undefined}
                 id={`${prefixo}-inicio`}
-                onChange={(e) => atualizarCampo(indice, "inicio", e.target.value)}
+                onChange={(e) =>
+                  atualizarCampo(indice, "inicio", e.target.value)
+                }
                 required
                 type="month"
                 value={exp.inicio}
               />
               {errosExp?.inicio !== undefined && (
-                <p className="field__error" id={`${prefixo}-inicio-erro`}>{errosExp.inicio}</p>
+                <p className="field__error" id={`${prefixo}-inicio-erro`}>
+                  {errosExp.inicio}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-fim`}>Fim (Mês/Ano)</label>
               <input
-                aria-describedby={errosExp?.fim !== undefined ? `${prefixo}-fim-erro` : undefined}
+                aria-describedby={
+                  errosExp?.fim !== undefined
+                    ? `${prefixo}-fim-erro`
+                    : undefined
+                }
                 aria-invalid={errosExp?.fim !== undefined ? true : undefined}
                 disabled={exp.empregoAtual}
                 id={`${prefixo}-fim`}
@@ -203,7 +243,9 @@ export function FormularioExperiencias({
                 value={exp.fim}
               />
               {errosExp?.fim !== undefined && (
-                <p className="field__error" id={`${prefixo}-fim-erro`}>{errosExp.fim}</p>
+                <p className="field__error" id={`${prefixo}-fim-erro`}>
+                  {errosExp.fim}
+                </p>
               )}
             </div>
 
@@ -214,16 +256,20 @@ export function FormularioExperiencias({
                   id={`${prefixo}-emprego-atual`}
                   onChange={() => alternarEmpregoAtual(indice)}
                   type="checkbox"
-                />
-                {" "}Emprego atual
+                />{" "}
+                Emprego atual
               </label>
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-descricao`}>Descrição das atividades (opcional)</label>
+              <label htmlFor={`${prefixo}-descricao`}>
+                Descrição das atividades (opcional)
+              </label>
               <textarea
                 id={`${prefixo}-descricao`}
-                onChange={(e) => atualizarCampo(indice, "descricao", e.target.value)}
+                onChange={(e) =>
+                  atualizarCampo(indice, "descricao", e.target.value)
+                }
                 rows={4}
                 value={exp.descricao}
               />
@@ -242,10 +288,15 @@ export function FormularioExperiencias({
         );
       })}
 
-      <button onClick={adicionarExperiencia} type="button">+ Adicionar experiência</button>
+      <button onClick={adicionarExperiencia} type="button">
+        + Adicionar experiência
+      </button>
 
       {mensagem !== null && (
-        <p className="form-message" role={mensagem.includes("sucesso") ? "status" : "alert"}>
+        <p
+          className="form-message"
+          role={mensagem.includes("sucesso") ? "status" : "alert"}
+        >
           {mensagem}
         </p>
       )}

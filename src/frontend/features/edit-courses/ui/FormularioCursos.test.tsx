@@ -31,9 +31,9 @@ describe("FormularioCursos", () => {
       <FormularioCursos
         cursosIniciais={[
           { nome: "React", instituicao: "Alura", cargaHoraria: "40" },
-          { nome: "Node", instituicao: "Udemy", cargaHoraria: "20" }
+          { nome: "Node", instituicao: "Udemy", cargaHoraria: "20" },
         ]}
-      />
+      />,
     );
 
     await usuario.click(screen.getByLabelText("Remover curso 1"));
@@ -51,7 +51,9 @@ describe("FormularioCursos", () => {
 
     expect(screen.getByText("Informe o nome do curso.")).toBeInTheDocument();
     expect(screen.getByText("Informe a instituição.")).toBeInTheDocument();
-    expect(screen.getByText("Informe uma carga horária válida (em horas).")).toBeInTheDocument();
+    expect(
+      screen.getByText("Informe uma carga horária válida (em horas)."),
+    ).toBeInTheDocument();
   });
 
   it("chama onSalvar com cursos normalizados quando válidos", async () => {
@@ -60,15 +62,20 @@ describe("FormularioCursos", () => {
 
     render(<FormularioCursos onSalvar={onSalvar} />);
 
-    await usuario.type(screen.getByLabelText("Nome do curso"), "  React Avançado  ");
+    await usuario.type(
+      screen.getByLabelText("Nome do curso"),
+      "  React Avançado  ",
+    );
     await usuario.type(screen.getByLabelText("Instituição"), " Alura ");
     await usuario.type(screen.getByLabelText("Carga horária (horas)"), "40");
     await usuario.click(screen.getByText("Salvar cursos"));
 
     expect(onSalvar).toHaveBeenCalledWith([
-      { nome: "React Avançado", instituicao: "Alura", cargaHoraria: "40" }
+      { nome: "React Avançado", instituicao: "Alura", cargaHoraria: "40" },
     ]);
-    expect(screen.getByRole("status")).toHaveTextContent("Cursos salvos com sucesso.");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Cursos salvos com sucesso.",
+    );
   });
 
   it("não chama onSalvar quando há erros de validação", async () => {

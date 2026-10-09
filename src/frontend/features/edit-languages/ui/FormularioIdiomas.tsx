@@ -6,7 +6,7 @@ import {
   validarListaIdiomas,
   type ErrosIdioma,
   type Idioma,
-  type NivelIdioma
+  type NivelIdioma,
 } from "../model/idiomas";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
@@ -25,7 +25,7 @@ export interface FormularioIdiomasProps {
  */
 export function FormularioIdiomas({
   idiomasIniciais = [criarIdiomaVazio()],
-  onSalvar
+  onSalvar,
 }: FormularioIdiomasProps) {
   const [idiomas, setIdiomas] = useState<Idioma[]>(idiomasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosIdioma>>({});
@@ -34,7 +34,7 @@ export function FormularioIdiomas({
   /** Atualiza o nome de um idioma pela sua posição no array. */
   function atualizarNome(indice: number, nome: string): void {
     setIdiomas((atuais) =>
-      atuais.map((idioma, i) => (i === indice ? { ...idioma, nome } : idioma))
+      atuais.map((idioma, i) => (i === indice ? { ...idioma, nome } : idioma)),
     );
     limparErroDoCampo(indice, "nome");
   }
@@ -42,7 +42,7 @@ export function FormularioIdiomas({
   /** Atualiza o nível de proficiência de um idioma pela sua posição. */
   function atualizarNivel(indice: number, nivel: NivelIdioma | ""): void {
     setIdiomas((atuais) =>
-      atuais.map((idioma, i) => (i === indice ? { ...idioma, nivel } : idioma))
+      atuais.map((idioma, i) => (i === indice ? { ...idioma, nivel } : idioma)),
     );
     limparErroDoCampo(indice, "nivel");
   }
@@ -102,7 +102,7 @@ export function FormularioIdiomas({
 
     const idiomasNormalizados = idiomas.map((idioma) => ({
       nome: idioma.nome.trim(),
-      nivel: idioma.nivel
+      nivel: idioma.nivel,
     })) as Idioma[];
 
     onSalvar?.(idiomasNormalizados);
@@ -124,8 +124,14 @@ export function FormularioIdiomas({
             <div className="field">
               <label htmlFor={`${prefixo}-nome`}>Idioma</label>
               <input
-                aria-describedby={errosIdioma?.nome !== undefined ? `${prefixo}-nome-erro` : undefined}
-                aria-invalid={errosIdioma?.nome !== undefined ? true : undefined}
+                aria-describedby={
+                  errosIdioma?.nome !== undefined
+                    ? `${prefixo}-nome-erro`
+                    : undefined
+                }
+                aria-invalid={
+                  errosIdioma?.nome !== undefined ? true : undefined
+                }
                 id={`${prefixo}-nome`}
                 onChange={(e) => atualizarNome(indice, e.target.value)}
                 required
@@ -133,27 +139,43 @@ export function FormularioIdiomas({
                 value={idioma.nome}
               />
               {errosIdioma?.nome !== undefined && (
-                <p className="field__error" id={`${prefixo}-nome-erro`}>{errosIdioma.nome}</p>
+                <p className="field__error" id={`${prefixo}-nome-erro`}>
+                  {errosIdioma.nome}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-nivel`}>Nível de proficiência</label>
               <select
-                aria-describedby={errosIdioma?.nivel !== undefined ? `${prefixo}-nivel-erro` : undefined}
-                aria-invalid={errosIdioma?.nivel !== undefined ? true : undefined}
+                aria-describedby={
+                  errosIdioma?.nivel !== undefined
+                    ? `${prefixo}-nivel-erro`
+                    : undefined
+                }
+                aria-invalid={
+                  errosIdioma?.nivel !== undefined ? true : undefined
+                }
                 id={`${prefixo}-nivel`}
-                onChange={(e) => atualizarNivel(indice, e.target.value as NivelIdioma | "")}
+                onChange={(e) =>
+                  atualizarNivel(indice, e.target.value as NivelIdioma | "")
+                }
                 required
                 value={idioma.nivel}
               >
                 <option value="">Selecione um nível</option>
-                {(Object.entries(NIVEIS_IDIOMA) as [NivelIdioma, string][]).map(([valor, rotulo]) => (
-                  <option key={valor} value={valor}>{rotulo}</option>
-                ))}
+                {(Object.entries(NIVEIS_IDIOMA) as [NivelIdioma, string][]).map(
+                  ([valor, rotulo]) => (
+                    <option key={valor} value={valor}>
+                      {rotulo}
+                    </option>
+                  ),
+                )}
               </select>
               {errosIdioma?.nivel !== undefined && (
-                <p className="field__error" id={`${prefixo}-nivel-erro`}>{errosIdioma.nivel}</p>
+                <p className="field__error" id={`${prefixo}-nivel-erro`}>
+                  {errosIdioma.nivel}
+                </p>
               )}
             </div>
 
@@ -170,10 +192,14 @@ export function FormularioIdiomas({
         );
       })}
 
-      <button onClick={adicionarIdioma} type="button">+ Adicionar idioma</button>
+      <button onClick={adicionarIdioma} type="button">
+        + Adicionar idioma
+      </button>
 
       {mensagem !== null && (
-        <p className="form-message" role="status">{mensagem}</p>
+        <p className="form-message" role="status">
+          {mensagem}
+        </p>
       )}
 
       <button type="submit">Salvar idiomas</button>

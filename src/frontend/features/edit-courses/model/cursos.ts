@@ -17,7 +17,7 @@ export function criarCursoVazio(): Curso {
   return {
     nome: "",
     instituicao: "",
-    cargaHoraria: ""
+    cargaHoraria: "",
   };
 }
 
@@ -53,7 +53,9 @@ export function validarCurso(curso: Curso): ErrosCurso {
  * A função aplica validarCurso a cada entrada e somente inclui no resultado
  * as posições que apresentam pelo menos um campo inválido.
  */
-export function validarListaCursos(cursos: Curso[]): Record<number, ErrosCurso> {
+export function validarListaCursos(
+  cursos: Curso[],
+): Record<number, ErrosCurso> {
   const erros: Record<number, ErrosCurso> = {};
 
   cursos.forEach((curso, indice) => {
@@ -76,6 +78,6 @@ export function normalizarCurso(curso: Curso): Curso {
   return {
     nome: curso.nome.trim(),
     instituicao: curso.instituicao.trim(),
-    cargaHoraria: curso.cargaHoraria.trim()
+    cargaHoraria: curso.cargaHoraria.trim(),
   };
 }

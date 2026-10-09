@@ -6,7 +6,7 @@ export const NIVEIS_IDIOMA: Record<NivelIdioma, string> = {
   basico: "Básico",
   intermediario: "Intermediário",
   avancado: "Avançado",
-  fluente: "Fluente"
+  fluente: "Fluente",
 };
 
 /** Representa um idioma informado pelo estudante. */
@@ -25,7 +25,7 @@ export interface ErrosIdioma {
 export function criarIdiomaVazio(): Idioma {
   return {
     nome: "",
-    nivel: ""
+    nivel: "",
   };
 }
 
@@ -56,7 +56,9 @@ export function validarIdioma(idioma: Idioma): ErrosIdioma {
  * A função aplica validarIdioma a cada entrada e somente inclui no resultado
  * as posições que apresentam pelo menos um campo inválido.
  */
-export function validarListaIdiomas(idiomas: Idioma[]): Record<number, ErrosIdioma> {
+export function validarListaIdiomas(
+  idiomas: Idioma[],
+): Record<number, ErrosIdioma> {
   const erros: Record<number, ErrosIdioma> = {};
 
   idiomas.forEach((idioma, indice) => {

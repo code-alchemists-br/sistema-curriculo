@@ -5,7 +5,7 @@ import {
   criarClienteAcessoEstudante,
   FormularioAcesso,
   FormularioCadastro,
-  type ClienteAcessoEstudante
+  type ClienteAcessoEstudante,
 } from "../../../features/acesso-estudante";
 
 /** Define o colaborador da página para permitir composição e testes isolados. */
@@ -41,8 +41,14 @@ export function PaginaAcessoEstudante({ cliente }: PaginaAcessoEstudanteProps) {
       <section aria-labelledby="titulo-acesso" className="app-shell__content">
         <p className="eyebrow">Sistema Currículo</p>
         <h1 id="titulo-acesso">Acesse sua conta</h1>
-        <p>Crie sua conta ou confirme suas credenciais para iniciar sua jornada.</p>
-        <div aria-label="Escolha o fluxo de conta" className="tabs" role="tablist">
+        <p>
+          Crie sua conta ou confirme suas credenciais para iniciar sua jornada.
+        </p>
+        <div
+          aria-label="Escolha o fluxo de conta"
+          className="tabs"
+          role="tablist"
+        >
           <button
             aria-selected={abaAtiva === "acesso"}
             className="tabs__button"
@@ -62,11 +68,24 @@ export function PaginaAcessoEstudante({ cliente }: PaginaAcessoEstudanteProps) {
             Criar conta
           </button>
         </div>
-        <section aria-label={abaAtiva === "acesso" ? "Formulário de acesso" : "Formulário de cadastro"} className="account-form">
+        <section
+          aria-label={
+            abaAtiva === "acesso"
+              ? "Formulário de acesso"
+              : "Formulário de cadastro"
+          }
+          className="account-form"
+        >
           {abaAtiva === "acesso" ? (
-            <FormularioAcesso cliente={clienteDaPagina} emailInicial={emailCadastrado} />
+            <FormularioAcesso
+              cliente={clienteDaPagina}
+              emailInicial={emailCadastrado}
+            />
           ) : (
-            <FormularioCadastro aoCadastrar={concluirCadastro} cliente={clienteDaPagina} />
+            <FormularioCadastro
+              aoCadastrar={concluirCadastro}
+              cliente={clienteDaPagina}
+            />
           )}
         </section>
       </section>
