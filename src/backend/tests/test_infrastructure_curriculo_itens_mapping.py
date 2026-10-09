@@ -1,12 +1,14 @@
 """Valida o contrato Code First da seleção de itens em memória, sem executar DDL contra banco."""
 
-from importlib import import_module
 import unittest
+from importlib import import_module
 from unittest.mock import patch
 
 from sqlalchemy import Column, ForeignKeyConstraint, MetaData, Table, Text, Uuid
 
-from backend.infrastructure.persistence.sqlalchemy.curriculo import CurriculoItemRegistro
+from backend.infrastructure.persistence.sqlalchemy.curriculo import (
+    CurriculoItemRegistro,
+)
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001

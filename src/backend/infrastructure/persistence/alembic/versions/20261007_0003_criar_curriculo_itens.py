@@ -1,7 +1,7 @@
 """Cria a tabela de seleção de itens por versão de currículo conforme o recorte Code First aprovado."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 revision = "20261007_0003"

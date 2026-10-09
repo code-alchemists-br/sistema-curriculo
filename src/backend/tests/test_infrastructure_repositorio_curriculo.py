@@ -1,7 +1,7 @@
 """Protege a persistência de currículos com doubles, sem conexão com banco."""
 
-from types import SimpleNamespace
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
@@ -25,10 +25,11 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,
     atualizar_registro,
     para_curriculo,
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    para_referencia,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     para_registro,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-    para_referencia,
     para_registros_itens,
     para_tipo_e_item_id,
 )

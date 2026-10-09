@@ -9,16 +9,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.domain.curriculo import Curriculo
 from backend.domain.value_objects import (
-    CurriculoId,
-    UsuarioId,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     CompetenciaId,
+    CurriculoId,
     DocumentoId,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     IdiomaId,
     ProjetoAcademicoId,
     ReferenciaCurriculo,
+    UsuarioId,
 )
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 

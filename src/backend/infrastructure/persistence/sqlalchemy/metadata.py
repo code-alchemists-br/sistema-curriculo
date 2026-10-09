@@ -9,9 +9,10 @@ manter ORM fora do núcleo do backend.
 # ``Base.metadata``; ela é explícita porque cada módulo de modelo é importado à
 # parte do módulo da base.
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-from backend.infrastructure.persistence.sqlalchemy.curriculo import CurriculoRegistro  # noqa: F401
+from backend.infrastructure.persistence.sqlalchemy.curriculo import (
+    CurriculoRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
-
 
 # Proveniência: decision-analysis prompts/backend/20260916-estrutura-alembic-code-first-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001

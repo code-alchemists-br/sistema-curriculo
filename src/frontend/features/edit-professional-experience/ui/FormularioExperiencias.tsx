@@ -97,13 +97,22 @@ export function FormularioExperiencias({
     setMensagem(null);
   }
 
-  /** Valida, ordena cronologicamente e chama o callback se não houver erros. */
+  /**
+   * Valida, ordena cronologicamente e comunica o status de envio do formulário.
+   *
+   * O manipulador impede o envio nativo, verifica inconsistências de preenchimento
+   * através de `validarListaExperiencias`, emite alerta acessível quando há campos
+   * inválidos e, em caso de sucesso, normaliza e ordena as experiências antes de
+   * acionar o callback `onSalvar`. Ele existe para assegurar feedback imediato e
+   * acessível para usuários de tecnologias assistivas e de navegação por teclado.
+   */
   function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
     evento.preventDefault();
     const novosErros = validarListaExperiencias(experiencias);
 
     if (Object.keys(novosErros).length > 0) {
       setErros(novosErros);
+      setMensagem("Há pendências que precisam ser corrigidas antes de salvar.");
       return;
     }
 
@@ -199,9 +208,10 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field">
-              <label>
+              <label htmlFor={`${prefixo}-emprego-atual`}>
                 <input
                   checked={exp.empregoAtual}
+                  id={`${prefixo}-emprego-atual`}
                   onChange={() => alternarEmpregoAtual(indice)}
                   type="checkbox"
                 />
@@ -235,7 +245,9 @@ export function FormularioExperiencias({
       <button onClick={adicionarExperiencia} type="button">+ Adicionar experiência</button>
 
       {mensagem !== null && (
-        <p className="form-message" role="status">{mensagem}</p>
+        <p className="form-message" role={mensagem.includes("sucesso") ? "status" : "alert"}>
+          {mensagem}
+        </p>
       )}
 
       <button type="submit">Salvar experiências</button>

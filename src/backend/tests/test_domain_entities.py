@@ -1,7 +1,7 @@
 """Testa a construção unitária das entidades independentes do perfil."""
 
-from datetime import date
 import unittest
+from datetime import date
 from uuid import uuid4
 
 from backend.domain import (
