@@ -34,12 +34,16 @@ from backend.domain import (
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,
     para_curriculo,
+)
+from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     para_registro as curriculo_para_registro,
 )
 from backend.infrastructure.persistence.sqlalchemy.usuario import (
     UsuarioRegistro,
-    para_registro as usuario_para_registro,
     para_usuario,
+)
+from backend.infrastructure.persistence.sqlalchemy.usuario import (
+    para_registro as usuario_para_registro,
 )
 
 ID_ESTUDANTE_ANA = UUID("10000000-0000-4000-8000-000000000001")

@@ -10,6 +10,7 @@ from backend.tests.fixtures.curriculo_exportacao import (
     CurriculoExportacaoFixture,
     obter_curriculo_exportacao_fixture,
 )
+
 # Proveniência: decision-analysis prompts/backend/20261009-160234-dados-reutilizaveis-perfis-testes-integracao-e2e-v003.md#v003
 from backend.tests.fixtures.perfis_integracao import (
     PerfilIntegracaoFake,
