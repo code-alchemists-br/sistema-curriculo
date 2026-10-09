@@ -5,8 +5,10 @@ carregados explicitamente. Ele existe para tornar autogenerate determinístico e
 manter ORM fora do núcleo do backend.
 """
 
-# A importação abaixo registra a tabela de currículos em ``Base.metadata``; ela é
-# explícita porque cada modelo vive em seu próprio módulo.
+# A importação abaixo registra as tabelas de currículos e de seleção de itens em
+# ``Base.metadata``; ela é explícita porque cada módulo de modelo é importado à
+# parte do módulo da base.
+# Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
 )

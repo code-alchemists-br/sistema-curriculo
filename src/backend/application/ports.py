@@ -29,6 +29,8 @@ from backend.domain.value_objects import (
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     ProjetoAcademicoId,
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    ReferenciaCurriculo,
     UsuarioId,
 )
 
@@ -302,4 +304,25 @@ class GeradorCurriculoId(Protocol):
         A implementação escolhe a estratégia concreta e retorna o tipo de
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+class ConsultaProprietarioItem(Protocol):
+    """Define a consulta do proprietário de um item do perfil referenciável.
+
+    A porta recebe a referência tipada e devolve somente a identidade do dono,
+    sem expor o item, o armazenamento ou o tipo concreto de repositório. Ela
+    existe para que o caso de uso verifique que o item pertence ao mesmo
+    usuário da versão, regra que atravessa agregados e não cabe ao domínio.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+    async def obter_proprietario(self, referencia: ReferenciaCurriculo) -> UsuarioId | None:
+        """Obtém assincronamente o dono do item referenciado, quando ele existir.
+
+        Implementações consultam o armazenamento do tipo de item indicado e
+        devolvem a identidade do proprietário ou ausência, sem revelar detalhes
+        de persistência. O método existe para que a seleção recuse itens
+        inexistentes ou de outro usuário antes de alterar a versão.
         """
