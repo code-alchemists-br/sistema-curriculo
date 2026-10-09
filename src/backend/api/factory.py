@@ -28,6 +28,7 @@ from backend.api.perfil_estudante import (
 from backend.api.perfil_estudante import (
     criar_router as criar_router_perfil,
 )
+
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
 from backend.api.previa_versao_curriculo import (
     PreviaVersaoCurriculoExecutor,

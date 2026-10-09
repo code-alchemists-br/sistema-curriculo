@@ -38,6 +38,7 @@ from backend.domain.value_objects import (
     UsuarioId,
 )
 
+
 # Proveniência: decision-analysis prompts/backend/20260914-cadastro-acesso-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-cadastro-acesso-estudante-v002.md#v002
 class RepositorioUsuario(Protocol):

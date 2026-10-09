@@ -6,7 +6,10 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from backend.api.previa_versao_curriculo import PreviaVersaoCurriculoResposta, criar_router
+from backend.api.previa_versao_curriculo import (
+    PreviaVersaoCurriculoResposta,
+    criar_router,
+)
 from backend.application import (
     CurriculoNaoEncontrado,
     GerarPreviaVersaoCurriculoEntrada,
