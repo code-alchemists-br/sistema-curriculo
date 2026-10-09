@@ -11,26 +11,37 @@ from backend.api.cadastro_acesso import (
     AcessoEstudanteExecutor,
     CadastroEstudanteExecutor,
     DerivadorSenha,
+)
+from backend.api.cadastro_acesso import (
     criar_router as criar_router_cadastro_acesso,
 )
 from backend.api.dados_contato import (
     AtualizacaoDadosContatoExecutor,
+)
+from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
 from backend.api.perfil_estudante import (
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
+)
+from backend.api.perfil_estudante import (
     criar_router as criar_router_perfil,
 )
 from backend.api.projeto_academico import (
     CadastroProjetoAcademicoExecutor,
+)
+from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     CriacaoVersaoCurriculoExecutor,
     EdicaoVersaoCurriculoExecutor,
+)
+from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
 

@@ -1,7 +1,7 @@
 """Testa invariantes unitárias dos value objects do domínio."""
 
-from datetime import date
 import unittest
+from datetime import date
 
 from backend.domain import Email, Nome, Periodo, RegraDeDominioViolada, UsuarioId
 

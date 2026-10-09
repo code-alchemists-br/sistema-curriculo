@@ -9,6 +9,7 @@ autenticação ou autorização.
 from dataclasses import dataclass
 
 from backend.application.ports import GeradorUsuarioId, RepositorioUsuario
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, HashSenha, Nome

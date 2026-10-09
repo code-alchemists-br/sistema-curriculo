@@ -1,7 +1,7 @@
 """Testa unitariamente o caso de uso de atualização de dados de contato."""
 
-from datetime import datetime, timezone
 import unittest
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.application import (

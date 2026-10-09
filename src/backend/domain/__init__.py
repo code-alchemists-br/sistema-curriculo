@@ -8,6 +8,8 @@ futuros dependam do domínio, e não o contrário.
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 from backend.domain.curriculo import Curriculo
+from backend.domain.exceptions import RegraDeDominioViolada
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.itens_perfil import (
     Competencia,
@@ -17,9 +19,9 @@ from backend.domain.itens_perfil import (
     Idioma,
     ProjetoAcademico,
 )
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
-from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
     CompetenciaId,
     CurriculoId,
