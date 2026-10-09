@@ -38,15 +38,15 @@ interface ExportadorPdf {
 }
 
 const FORMACOES: ItemPerfil[] = [
-  { id: "f1", rotulo: "Bacharelado em Ciência da Computação" }
+  { id: "f1", rotulo: "Bacharelado em Ciência da Computação" },
 ];
 const EXPERIENCIAS: ItemPerfil[] = [
   { id: "e1", rotulo: "Estágio em Desenvolvimento Web" },
-  { id: "e2", rotulo: "Monitoria de Algoritmos" }
+  { id: "e2", rotulo: "Monitoria de Algoritmos" },
 ];
 const COMPETENCIAS: ItemPerfil[] = [
   { id: "c1", rotulo: "TypeScript" },
-  { id: "c2", rotulo: "Comunicação" }
+  { id: "c2", rotulo: "Comunicação" },
 ];
 
 /**
@@ -63,7 +63,7 @@ const COMPETENCIAS: ItemPerfil[] = [
  */
 function JornadaCompletaHarness({
   cliente,
-  exportador
+  exportador,
 }: {
   cliente: ClienteDadosPessoais;
   exportador: ExportadorPdf;
@@ -79,9 +79,9 @@ function JornadaCompletaHarness({
       salvar: async (student) => {
         await cliente.salvar(student);
         setDados(student);
-      }
+      },
     }),
-    [cliente]
+    [cliente],
   );
 
   function alternar(id: string): void {
@@ -94,28 +94,39 @@ function JornadaCompletaHarness({
     setPreviaAberta(false);
   }
 
-  const selecionados = (itens: ItemPerfil[]) => itens.filter((item) => marcados.has(item.id));
+  const selecionados = (itens: ItemPerfil[]) =>
+    itens.filter((item) => marcados.has(item.id));
 
   const curriculo: CurriculoParaValidacao = {
     dadosPessoais: {
       nomeCompleto: dados?.nomeCompleto ?? "",
       enderecoCompleto: dados?.enderecoCompleto ?? "",
       telefones: dados?.telefones ?? [],
-      email: dados?.email ?? ""
+      email: dados?.email ?? "",
     },
     formacaoAcademica:
       selecionados(FORMACOES).length > 0
         ? { status: "preenchida" }
-        : { status: "pulada", mensagemErro: "Selecione ao menos uma formação." },
+        : {
+            status: "pulada",
+            mensagemErro: "Selecione ao menos uma formação.",
+          },
     experienciasProfissionais:
       selecionados(EXPERIENCIAS).length > 0
         ? { status: "preenchida" }
-        : { status: "pulada", mensagemErro: "Selecione ao menos uma experiência." },
+        : {
+            status: "pulada",
+            mensagemErro: "Selecione ao menos uma experiência.",
+          },
     competencias: {
-      hardSkills: selecionados(COMPETENCIAS.slice(0, 1)).map((item) => item.rotulo),
-      softSkills: selecionados(COMPETENCIAS.slice(1)).map((item) => item.rotulo)
+      hardSkills: selecionados(COMPETENCIAS.slice(0, 1)).map(
+        (item) => item.rotulo,
+      ),
+      softSkills: selecionados(COMPETENCIAS.slice(1)).map(
+        (item) => item.rotulo,
+      ),
     },
-    projetosAcademicos: []
+    projetosAcademicos: [],
   };
 
   async function exportar(): Promise<void> {
@@ -126,14 +137,18 @@ function JornadaCompletaHarness({
   const grupos: Array<[string, ItemPerfil[]]> = [
     ["Formações", FORMACOES],
     ["Experiências", EXPERIENCIAS],
-    ["Competências", COMPETENCIAS]
+    ["Competências", COMPETENCIAS],
   ];
 
   return (
     <div>
       <section aria-label="Etapa de dados" hidden={etapa !== "dados"}>
         <PaginaDadosPessoais cliente={clienteInterceptador} />
-        <button type="button" disabled={dados === null} onClick={() => setEtapa("selecao")}>
+        <button
+          type="button"
+          disabled={dados === null}
+          onClick={() => setEtapa("selecao")}
+        >
           Ir para seleção
         </button>
       </section>
@@ -200,13 +215,18 @@ function JornadaCompletaHarness({
  */
 async function criarDadosPessoais(
   usuario: ReturnType<typeof userEvent.setup>,
-  nome: string
+  nome: string,
 ): Promise<void> {
   await usuario.type(screen.getByLabelText("Nome completo"), nome);
-  await usuario.type(screen.getByLabelText("Endereço completo"), "Rua das Flores, 10");
+  await usuario.type(
+    screen.getByLabelText("Endereço completo"),
+    "Rua das Flores, 10",
+  );
   await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
   await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
-  await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+  await usuario.click(
+    screen.getByRole("button", { name: "Salvar dados pessoais" }),
+  );
   await screen.findByText("Dados pessoais salvos com sucesso.");
 }
 
@@ -219,7 +239,7 @@ async function criarDadosPessoais(
  */
 async function marcar(
   usuario: ReturnType<typeof userEvent.setup>,
-  rotulos: string[]
+  rotulos: string[],
 ): Promise<void> {
   for (const rotulo of rotulos) {
     await usuario.click(screen.getByRole("checkbox", { name: rotulo }));
@@ -237,54 +257,82 @@ describe("Jornada E2E: criação, seleção, prévia e exportação", () => {
    */
   it("conclui criação, edição, seleção, prévia e exportação com download simulado", async () => {
     const usuario = userEvent.setup();
-    const cliente: ClienteDadosPessoais = { salvar: vi.fn().mockResolvedValue(undefined) };
-    const exportador: ExportadorPdf = {
-      exportar: vi.fn().mockResolvedValue(new Blob(["%PDF-1.4"], { type: "application/pdf" }))
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
     };
-    render(<JornadaCompletaHarness cliente={cliente} exportador={exportador} />);
+    const exportador: ExportadorPdf = {
+      exportar: vi
+        .fn()
+        .mockResolvedValue(new Blob(["%PDF-1.4"], { type: "application/pdf" })),
+    };
+    render(
+      <JornadaCompletaHarness cliente={cliente} exportador={exportador} />,
+    );
 
     // 1. Criação e edição dos dados.
     await criarDadosPessoais(usuario, "Ana Silva");
-    await usuario.click(screen.getByRole("button", { name: "Ir para seleção" }));
-    await usuario.click(screen.getByRole("button", { name: "Editar dados pessoais" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para seleção" }),
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Editar dados pessoais" }),
+    );
     const nome = screen.getByLabelText("Nome completo");
     await usuario.clear(nome);
     await usuario.type(nome, "Ana Souza Silva");
-    await usuario.click(screen.getByRole("button", { name: "Salvar dados pessoais" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
     await vi.waitFor(() => expect(cliente.salvar).toHaveBeenCalledTimes(2));
     expect(cliente.salvar).toHaveBeenLastCalledWith(
-      expect.objectContaining({ nomeCompleto: "Ana Souza Silva" })
+      expect.objectContaining({ nomeCompleto: "Ana Souza Silva" }),
     );
 
     // 2. Seleção dos itens da versão.
-    await usuario.click(screen.getByRole("button", { name: "Ir para seleção" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para seleção" }),
+    );
     await marcar(usuario, [
       "Bacharelado em Ciência da Computação",
       "Estágio em Desenvolvimento Web",
-      "TypeScript"
+      "TypeScript",
     ]);
-    await usuario.click(screen.getByRole("button", { name: "Ir para revisão" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para revisão" }),
+    );
 
     // 3. Revisão válida e prévia refletindo a seleção.
     expect(screen.getAllByRole("status")[0]).toHaveTextContent(
-      "Todas as seções obrigatórias estão válidas."
+      "Todas as seções obrigatórias estão válidas.",
     );
-    await usuario.click(screen.getByRole("button", { name: "Visualizar prévia" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Visualizar prévia" }),
+    );
     const previa = screen.getByRole("article", { name: "Prévia do currículo" });
-    expect(within(previa).getByRole("heading", { name: "Ana Souza Silva" })).toBeInTheDocument();
-    expect(within(previa).getByText("Estágio em Desenvolvimento Web")).toBeInTheDocument();
+    expect(
+      within(previa).getByRole("heading", { name: "Ana Souza Silva" }),
+    ).toBeInTheDocument();
+    expect(
+      within(previa).getByText("Estágio em Desenvolvimento Web"),
+    ).toBeInTheDocument();
     expect(within(previa).getByText("TypeScript")).toBeInTheDocument();
-    expect(within(previa).queryByText("Monitoria de Algoritmos")).not.toBeInTheDocument();
+    expect(
+      within(previa).queryByText("Monitoria de Algoritmos"),
+    ).not.toBeInTheDocument();
 
     // 4. Exportação com resposta de download simulada.
     await usuario.click(screen.getByRole("button", { name: "Exportar PDF" }));
-    expect(await screen.findByText(/Download iniciado: curriculo\.pdf \(8 bytes\)/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Download iniciado: curriculo\.pdf \(8 bytes\)/),
+    ).toBeInTheDocument();
     expect(exportador.exportar).toHaveBeenCalledTimes(1);
     expect(exportador.exportar).toHaveBeenCalledWith(
       expect.objectContaining({
-        dadosPessoais: expect.objectContaining({ nomeCompleto: "Ana Souza Silva" }),
-        competencias: { hardSkills: ["TypeScript"], softSkills: [] }
-      })
+        dadosPessoais: expect.objectContaining({
+          nomeCompleto: "Ana Souza Silva",
+        }),
+        competencias: { hardSkills: ["TypeScript"], softSkills: [] },
+      }),
     );
   });
 
@@ -298,26 +346,47 @@ describe("Jornada E2E: criação, seleção, prévia e exportação", () => {
    */
   it("bloqueia prévia e exportação quando nenhuma experiência foi selecionada", async () => {
     const usuario = userEvent.setup();
-    const cliente: ClienteDadosPessoais = { salvar: vi.fn().mockResolvedValue(undefined) };
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
     const exportador: ExportadorPdf = { exportar: vi.fn() };
-    render(<JornadaCompletaHarness cliente={cliente} exportador={exportador} />);
+    render(
+      <JornadaCompletaHarness cliente={cliente} exportador={exportador} />,
+    );
 
     await criarDadosPessoais(usuario, "Bruno Lima");
-    await usuario.click(screen.getByRole("button", { name: "Ir para seleção" }));
-    await marcar(usuario, ["Bacharelado em Ciência da Computação", "Comunicação"]);
-    await usuario.click(screen.getByRole("button", { name: "Ir para revisão" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para seleção" }),
+    );
+    await marcar(usuario, [
+      "Bacharelado em Ciência da Computação",
+      "Comunicação",
+    ]);
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para revisão" }),
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent("Há pendências");
-    expect(screen.getByText("Selecione ao menos uma experiência.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Visualizar prévia" })).toBeDisabled();
+    expect(
+      screen.getByText("Selecione ao menos uma experiência."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Visualizar prévia" }),
+    ).toBeDisabled();
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeDisabled();
-    expect(screen.queryByRole("article", { name: "Prévia do currículo" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("article", { name: "Prévia do currículo" }),
+    ).not.toBeInTheDocument();
     expect(exportador.exportar).not.toHaveBeenCalled();
 
     // Corrige a seleção e o fluxo é liberado.
-    await usuario.click(screen.getByRole("button", { name: "Voltar para seleção" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Voltar para seleção" }),
+    );
     await marcar(usuario, ["Monitoria de Algoritmos"]);
-    await usuario.click(screen.getByRole("button", { name: "Ir para revisão" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Ir para revisão" }),
+    );
     expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeEnabled();
   });
 });

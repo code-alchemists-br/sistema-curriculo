@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { ModalConfirmacao } from "../../../shared";
 import {
   FalhaPerfilEstudante,
-  type ClientePerfilEstudante
+  type ClientePerfilEstudante,
 } from "../api/cliente-perfil-estudante";
 import {
   criarStudentDeValoresPerfil,
@@ -11,7 +11,7 @@ import {
   traduzirFalhaPerfil,
   validarPerfilEstudante,
   type ErrosPerfilEstudante,
-  type ValoresPerfilEstudante
+  type ValoresPerfilEstudante,
 } from "../model/formulario-perfil";
 import type { Student } from "../../../entities/student";
 
@@ -28,9 +28,12 @@ export interface FormularioEdicaoPerfilProps {
  * exige confirmação explícita via modal para excluir a conta. Ele existe para
  * oferecer manutenção do perfil sem acoplar a interface a HTTP ou ao backend.
  */
-export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioEdicaoPerfilProps) {
+export function FormularioEdicaoPerfil({
+  cliente,
+  valoresIniciais,
+}: FormularioEdicaoPerfilProps) {
   const [valores, setValores] = useState<ValoresPerfilEstudante>(() =>
-    criarValoresDeStudent(valoresIniciais)
+    criarValoresDeStudent(valoresIniciais),
   );
   const [erros, setErros] = useState<ErrosPerfilEstudante>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -39,7 +42,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
   const [modalAberto, setModalAberto] = useState(false);
 
   /** Atualiza um campo simples e remove o feedback anterior daquele campo. */
-  function atualizarCampo(campo: Exclude<keyof ValoresPerfilEstudante, "telefones">, valor: string): void {
+  function atualizarCampo(
+    campo: Exclude<keyof ValoresPerfilEstudante, "telefones">,
+    valor: string,
+  ): void {
     setValores((atuais) => ({ ...atuais, [campo]: valor }));
     setErros((atuais) => ({ ...atuais, [campo]: undefined }));
     setMensagem(null);
@@ -49,7 +55,9 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
   function atualizarTelefone(indice: number, telefone: string): void {
     setValores((atuais) => ({
       ...atuais,
-      telefones: atuais.telefones.map((valor, indiceAtual) => (indiceAtual === indice ? telefone : valor))
+      telefones: atuais.telefones.map((valor, indiceAtual) =>
+        indiceAtual === indice ? telefone : valor,
+      ),
     }));
     setErros((atuais) => {
       const errosDeTelefone = { ...atuais.telefones };
@@ -57,7 +65,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
 
       return {
         ...atuais,
-        telefones: Object.keys(errosDeTelefone).length === 0 ? undefined : errosDeTelefone
+        telefones:
+          Object.keys(errosDeTelefone).length === 0
+            ? undefined
+            : errosDeTelefone,
       };
     });
     setMensagem(null);
@@ -65,7 +76,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
 
   /** Inclui um novo campo vazio para que o estudante informe outro telefone. */
   function adicionarTelefone(): void {
-    setValores((atuais) => ({ ...atuais, telefones: [...atuais.telefones, ""] }));
+    setValores((atuais) => ({
+      ...atuais,
+      telefones: [...atuais.telefones, ""],
+    }));
   }
 
   /**
@@ -75,7 +89,9 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
    * chama somente o contrato injetado. Ele existe para manter a regra de
    * experiência testável enquanto a persistência real não está disponível.
    */
-  async function enviarFormulario(evento: FormEvent<HTMLFormElement>): Promise<void> {
+  async function enviarFormulario(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
     const novosErros = validarPerfilEstudante(valores);
 
@@ -91,7 +107,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
       await cliente.atualizar(criarStudentDeValoresPerfil(valores));
       setMensagem("Perfil atualizado com sucesso.");
     } catch (erro: unknown) {
-      const codigo = erro instanceof FalhaPerfilEstudante ? erro.codigo : "resposta-invalida";
+      const codigo =
+        erro instanceof FalhaPerfilEstudante
+          ? erro.codigo
+          : "resposta-invalida";
       setMensagem(traduzirFalhaPerfil(codigo));
     } finally {
       setEnviando(false);
@@ -114,7 +133,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
       await cliente.excluir();
       setMensagem("Sua conta foi excluída com sucesso.");
     } catch (erro: unknown) {
-      const codigo = erro instanceof FalhaPerfilEstudante ? erro.codigo : "resposta-invalida";
+      const codigo =
+        erro instanceof FalhaPerfilEstudante
+          ? erro.codigo
+          : "resposta-invalida";
       setMensagem(traduzirFalhaPerfil(codigo));
     } finally {
       setExcluindo(false);
@@ -155,16 +177,24 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
                   aria-invalid={erro === undefined ? undefined : true}
                   autoComplete="tel"
                   id={id}
-                  onChange={(evento) => atualizarTelefone(indice, evento.target.value)}
+                  onChange={(evento) =>
+                    atualizarTelefone(indice, evento.target.value)
+                  }
                   required
                   type="tel"
                   value={telefone}
                 />
-                {erro !== undefined && <p className="field__error" id={idErro}>{erro}</p>}
+                {erro !== undefined && (
+                  <p className="field__error" id={idErro}>
+                    {erro}
+                  </p>
+                )}
               </div>
             );
           })}
-          <button onClick={adicionarTelefone} type="button">+ Adicionar telefone</button>
+          <button onClick={adicionarTelefone} type="button">
+            + Adicionar telefone
+          </button>
         </div>
         <CampoTexto
           erro={erros.email}
@@ -192,7 +222,10 @@ export function FormularioEdicaoPerfil({ cliente, valoresIniciais }: FormularioE
           value={valores.curriculoLattes}
         />
         {mensagem !== null && (
-          <p className="form-message" role={mensagem.includes("sucesso") ? "status" : "alert"}>
+          <p
+            className="form-message"
+            role={mensagem.includes("sucesso") ? "status" : "alert"}
+          >
             {mensagem}
           </p>
         )}
@@ -239,7 +272,16 @@ interface CampoTextoProps {
  * e descrição acessível para leitores de tela. Ele existe para manter a
  * semântica e a apresentação dos campos consistentes dentro desta feature.
  */
-function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type = "text", value }: CampoTextoProps) {
+function CampoTexto({
+  ajuda,
+  erro,
+  id,
+  label,
+  onChange,
+  required = false,
+  type = "text",
+  value,
+}: CampoTextoProps) {
   const idErro = `${id}-erro`;
   const idAjuda = `${id}-ajuda`;
 
@@ -248,10 +290,21 @@ function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type =
       <label htmlFor={id}>
         {label}
         {ajuda !== undefined && (
-          <span aria-describedby={idAjuda} aria-label={`Ajuda: ${ajuda}`} title={ajuda}> ?</span>
+          <span
+            aria-describedby={idAjuda}
+            aria-label={`Ajuda: ${ajuda}`}
+            title={ajuda}
+          >
+            {" "}
+            ?
+          </span>
         )}
       </label>
-      {ajuda !== undefined && <span hidden id={idAjuda}>{ajuda}</span>}
+      {ajuda !== undefined && (
+        <span hidden id={idAjuda}>
+          {ajuda}
+        </span>
+      )}
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
@@ -261,7 +314,11 @@ function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type =
         type={type}
         value={value}
       />
-      {erro !== undefined && <p className="field__error" id={idErro}>{erro}</p>}
+      {erro !== undefined && (
+        <p className="field__error" id={idErro}>
+          {erro}
+        </p>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 
 import {
   FalhaDadosPessoais,
-  type ClienteDadosPessoais
+  type ClienteDadosPessoais,
 } from "../api/cliente-dados-pessoais";
 import {
   criarStudent,
@@ -10,7 +10,7 @@ import {
   traduzirFalhaDadosPessoais,
   validarDadosPessoais,
   type ErrosDadosPessoais,
-  type ValoresDadosPessoais
+  type ValoresDadosPessoais,
 } from "../model/formulario-dados-pessoais";
 
 /** Define o cliente usado para manter os dados pessoais do estudante. */
@@ -25,14 +25,20 @@ export interface FormularioDadosPessoaisProps {
  * e delega o salvamento ao cliente injetado. Ele existe para oferecer uma etapa
  * acessível do Wizard sem acoplar a interface a HTTP ou ao backend inexistente.
  */
-export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProps) {
-  const [valores, setValores] = useState<ValoresDadosPessoais>(criarValoresIniciais);
+export function FormularioDadosPessoais({
+  cliente,
+}: FormularioDadosPessoaisProps) {
+  const [valores, setValores] =
+    useState<ValoresDadosPessoais>(criarValoresIniciais);
   const [erros, setErros] = useState<ErrosDadosPessoais>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   /** Atualiza um campo simples e remove o feedback anterior daquele campo. */
-  function atualizarCampo(campo: Exclude<keyof ValoresDadosPessoais, "telefones">, valor: string): void {
+  function atualizarCampo(
+    campo: Exclude<keyof ValoresDadosPessoais, "telefones">,
+    valor: string,
+  ): void {
     setValores((atuais) => ({ ...atuais, [campo]: valor }));
     setErros((atuais) => ({ ...atuais, [campo]: undefined }));
     setMensagem(null);
@@ -42,7 +48,9 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
   function atualizarTelefone(indice: number, telefone: string): void {
     setValores((atuais) => ({
       ...atuais,
-      telefones: atuais.telefones.map((valor, indiceAtual) => (indiceAtual === indice ? telefone : valor))
+      telefones: atuais.telefones.map((valor, indiceAtual) =>
+        indiceAtual === indice ? telefone : valor,
+      ),
     }));
     setErros((atuais) => {
       const errosDeTelefone = { ...atuais.telefones };
@@ -50,7 +58,10 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
 
       return {
         ...atuais,
-        telefones: Object.keys(errosDeTelefone).length === 0 ? undefined : errosDeTelefone
+        telefones:
+          Object.keys(errosDeTelefone).length === 0
+            ? undefined
+            : errosDeTelefone,
       };
     });
     setMensagem(null);
@@ -58,7 +69,10 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
 
   /** Inclui um novo campo vazio para que o estudante informe outro telefone. */
   function adicionarTelefone(): void {
-    setValores((atuais) => ({ ...atuais, telefones: [...atuais.telefones, ""] }));
+    setValores((atuais) => ({
+      ...atuais,
+      telefones: [...atuais.telefones, ""],
+    }));
   }
 
   /**
@@ -68,7 +82,9 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
    * chama somente o contrato injetado. Ele existe para manter a regra de
    * experiência testável enquanto a persistência real não está disponível.
    */
-  async function enviarFormulario(evento: FormEvent<HTMLFormElement>): Promise<void> {
+  async function enviarFormulario(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
     const novosErros = validarDadosPessoais(valores);
 
@@ -84,7 +100,8 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
       await cliente.salvar(criarStudent(valores));
       setMensagem("Dados pessoais salvos com sucesso.");
     } catch (erro: unknown) {
-      const codigo = erro instanceof FalhaDadosPessoais ? erro.codigo : "resposta-invalida";
+      const codigo =
+        erro instanceof FalhaDadosPessoais ? erro.codigo : "resposta-invalida";
       setMensagem(traduzirFalhaDadosPessoais(codigo));
     } finally {
       setEnviando(false);
@@ -124,16 +141,24 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
                 aria-invalid={erro === undefined ? undefined : true}
                 autoComplete="tel"
                 id={id}
-                onChange={(evento) => atualizarTelefone(indice, evento.target.value)}
+                onChange={(evento) =>
+                  atualizarTelefone(indice, evento.target.value)
+                }
                 required
                 type="tel"
                 value={telefone}
               />
-              {erro !== undefined && <p className="field__error" id={idErro}>{erro}</p>}
+              {erro !== undefined && (
+                <p className="field__error" id={idErro}>
+                  {erro}
+                </p>
+              )}
             </div>
           );
         })}
-        <button onClick={adicionarTelefone} type="button">+ Adicionar telefone</button>
+        <button onClick={adicionarTelefone} type="button">
+          + Adicionar telefone
+        </button>
       </div>
       <CampoTexto
         erro={erros.email}
@@ -161,7 +186,10 @@ export function FormularioDadosPessoais({ cliente }: FormularioDadosPessoaisProp
         value={valores.curriculoLattes}
       />
       {mensagem !== null && (
-        <p className="form-message" role={mensagem.includes("sucesso") ? "status" : "alert"}>
+        <p
+          className="form-message"
+          role={mensagem.includes("sucesso") ? "status" : "alert"}
+        >
           {mensagem}
         </p>
       )}
@@ -191,7 +219,16 @@ interface CampoTextoProps {
  * e descrição acessível para leitores de tela. Ele existe para manter a
  * semântica e a apresentação dos campos consistentes dentro desta feature.
  */
-function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type = "text", value }: CampoTextoProps) {
+function CampoTexto({
+  ajuda,
+  erro,
+  id,
+  label,
+  onChange,
+  required = false,
+  type = "text",
+  value,
+}: CampoTextoProps) {
   const idErro = `${id}-erro`;
   const idAjuda = `${id}-ajuda`;
 
@@ -200,10 +237,21 @@ function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type =
       <label htmlFor={id}>
         {label}
         {ajuda !== undefined && (
-          <span aria-describedby={idAjuda} aria-label={`Ajuda: ${ajuda}`} title={ajuda}> ?</span>
+          <span
+            aria-describedby={idAjuda}
+            aria-label={`Ajuda: ${ajuda}`}
+            title={ajuda}
+          >
+            {" "}
+            ?
+          </span>
         )}
       </label>
-      {ajuda !== undefined && <span hidden id={idAjuda}>{ajuda}</span>}
+      {ajuda !== undefined && (
+        <span hidden id={idAjuda}>
+          {ajuda}
+        </span>
+      )}
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
@@ -213,7 +261,11 @@ function CampoTexto({ ajuda, erro, id, label, onChange, required = false, type =
         type={type}
         value={value}
       />
-      {erro !== undefined && <p className="field__error" id={idErro}>{erro}</p>}
+      {erro !== undefined && (
+        <p className="field__error" id={idErro}>
+          {erro}
+        </p>
+      )}
     </div>
   );
 }

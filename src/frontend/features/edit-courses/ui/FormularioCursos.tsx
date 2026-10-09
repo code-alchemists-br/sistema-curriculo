@@ -5,7 +5,7 @@ import {
   normalizarCurso,
   validarListaCursos,
   type Curso,
-  type ErrosCurso
+  type ErrosCurso,
 } from "../model/cursos";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
@@ -24,16 +24,22 @@ export interface FormularioCursosProps {
  */
 export function FormularioCursos({
   cursosIniciais = [criarCursoVazio()],
-  onSalvar
+  onSalvar,
 }: FormularioCursosProps) {
   const [cursos, setCursos] = useState<Curso[]>(cursosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosCurso>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
 
   /** Atualiza um campo específico de um curso pela sua posição no array. */
-  function atualizarCurso(indice: number, campo: keyof Curso, valor: string): void {
+  function atualizarCurso(
+    indice: number,
+    campo: keyof Curso,
+    valor: string,
+  ): void {
     setCursos((atuais) =>
-      atuais.map((curso, i) => (i === indice ? { ...curso, [campo]: valor } : curso))
+      atuais.map((curso, i) =>
+        i === indice ? { ...curso, [campo]: valor } : curso,
+      ),
     );
     setErros((atuais) => {
       const errosCurso = { ...atuais[indice] };
@@ -106,7 +112,11 @@ export function FormularioCursos({
             <div className="field">
               <label htmlFor={`${prefixo}-nome`}>Nome do curso</label>
               <input
-                aria-describedby={errosCurso?.nome !== undefined ? `${prefixo}-nome-erro` : undefined}
+                aria-describedby={
+                  errosCurso?.nome !== undefined
+                    ? `${prefixo}-nome-erro`
+                    : undefined
+                }
                 aria-invalid={errosCurso?.nome !== undefined ? true : undefined}
                 id={`${prefixo}-nome`}
                 onChange={(e) => atualizarCurso(indice, "nome", e.target.value)}
@@ -115,40 +125,62 @@ export function FormularioCursos({
                 value={curso.nome}
               />
               {errosCurso?.nome !== undefined && (
-                <p className="field__error" id={`${prefixo}-nome-erro`}>{errosCurso.nome}</p>
+                <p className="field__error" id={`${prefixo}-nome-erro`}>
+                  {errosCurso.nome}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-instituicao`}>Instituição</label>
               <input
-                aria-describedby={errosCurso?.instituicao !== undefined ? `${prefixo}-instituicao-erro` : undefined}
-                aria-invalid={errosCurso?.instituicao !== undefined ? true : undefined}
+                aria-describedby={
+                  errosCurso?.instituicao !== undefined
+                    ? `${prefixo}-instituicao-erro`
+                    : undefined
+                }
+                aria-invalid={
+                  errosCurso?.instituicao !== undefined ? true : undefined
+                }
                 id={`${prefixo}-instituicao`}
-                onChange={(e) => atualizarCurso(indice, "instituicao", e.target.value)}
+                onChange={(e) =>
+                  atualizarCurso(indice, "instituicao", e.target.value)
+                }
                 required
                 type="text"
                 value={curso.instituicao}
               />
               {errosCurso?.instituicao !== undefined && (
-                <p className="field__error" id={`${prefixo}-instituicao-erro`}>{errosCurso.instituicao}</p>
+                <p className="field__error" id={`${prefixo}-instituicao-erro`}>
+                  {errosCurso.instituicao}
+                </p>
               )}
             </div>
 
             <div className="field">
               <label htmlFor={`${prefixo}-carga`}>Carga horária (horas)</label>
               <input
-                aria-describedby={errosCurso?.cargaHoraria !== undefined ? `${prefixo}-carga-erro` : undefined}
-                aria-invalid={errosCurso?.cargaHoraria !== undefined ? true : undefined}
+                aria-describedby={
+                  errosCurso?.cargaHoraria !== undefined
+                    ? `${prefixo}-carga-erro`
+                    : undefined
+                }
+                aria-invalid={
+                  errosCurso?.cargaHoraria !== undefined ? true : undefined
+                }
                 id={`${prefixo}-carga`}
                 inputMode="numeric"
-                onChange={(e) => atualizarCurso(indice, "cargaHoraria", e.target.value)}
+                onChange={(e) =>
+                  atualizarCurso(indice, "cargaHoraria", e.target.value)
+                }
                 required
                 type="text"
                 value={curso.cargaHoraria}
               />
               {errosCurso?.cargaHoraria !== undefined && (
-                <p className="field__error" id={`${prefixo}-carga-erro`}>{errosCurso.cargaHoraria}</p>
+                <p className="field__error" id={`${prefixo}-carga-erro`}>
+                  {errosCurso.cargaHoraria}
+                </p>
               )}
             </div>
 
@@ -165,10 +197,14 @@ export function FormularioCursos({
         );
       })}
 
-      <button onClick={adicionarCurso} type="button">+ Adicionar curso</button>
+      <button onClick={adicionarCurso} type="button">
+        + Adicionar curso
+      </button>
 
       {mensagem !== null && (
-        <p className="form-message" role="status">{mensagem}</p>
+        <p className="form-message" role="status">
+          {mensagem}
+        </p>
       )}
 
       <button type="submit">Salvar cursos</button>

@@ -39,6 +39,6 @@ export function criarClienteDadosPessoaisIndisponivel(): ClienteDadosPessoais {
   return {
     async salvar() {
       throw new FalhaDadosPessoais("indisponivel");
-    }
+    },
   };
 }

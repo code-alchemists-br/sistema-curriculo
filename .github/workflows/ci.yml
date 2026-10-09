@@ -36,3 +36,43 @@ jobs:
 
       - name: Run backend unit tests
         run: nix develop .#backend --command python -m unittest discover -s src/backend/tests -t src
+
+  frontend-quality:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Install frontend dependencies
+        run: nix develop .#quality --command npm --prefix src/frontend ci
+
+      - name: Run frontend lint
+        run: nix develop .#quality --command npm --prefix src/frontend run lint
+
+      - name: Check frontend formatting
+        run: nix develop .#quality --command npm --prefix src/frontend run format:check
+
+      - name: Run frontend type check
+        run: nix develop .#quality --command npm --prefix src/frontend run check
+
+      - name: Build frontend
+        run: nix develop .#quality --command npm --prefix src/frontend run build
+
+  secrets-scan:
+    name: Secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Scan Git history for secrets
+        run: nix develop .#quality --command gitleaks git --redact --no-banner

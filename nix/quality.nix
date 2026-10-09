@@ -7,8 +7,10 @@ pkgs.mkShell {
   name = "quality";
 
   packages = [
-    # Ferramentas de gate para o backend Python e geração de baseline.
+    # Ferramentas de gate estático para backend e frontend.
     pkgs.git
+    pkgs.gitleaks
+    pkgs.nodejs
     pkgs.ruff
     (pkgs.python3.withPackages (ps: with ps;
       (backendPythonPackages ps) ++ [
@@ -20,6 +22,6 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    echo "Ambiente de quality gates do backend Python"
+    echo "Ambiente de quality gates"
   '';
 }

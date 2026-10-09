@@ -13,6 +13,6 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
-    setupFiles: "./app/test/setup.ts"
-  }
+    setupFiles: "./app/test/setup.ts",
+  },
 });

@@ -3,9 +3,13 @@ import { useState, type FormEvent } from "react";
 
 import {
   FalhaAcessoEstudante,
-  type ClienteAcessoEstudante
+  type ClienteAcessoEstudante,
 } from "../api/cliente-acesso-estudante";
-import { traduzirFalhaAcesso, validarAcesso, type ErrosFormulario } from "../model/formulario-acesso";
+import {
+  traduzirFalhaAcesso,
+  validarAcesso,
+  type ErrosFormulario,
+} from "../model/formulario-acesso";
 
 /** Define os colaboradores e o e-mail inicial do formulário de acesso. */
 export interface FormularioAcessoProps {
@@ -20,7 +24,10 @@ export interface FormularioAcessoProps {
  * do envio e usa o cliente injetado para isolar transporte. Ele existe para
  * informar o resultado de 204 sem inventar sessão, token ou navegação protegida.
  */
-export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProps) {
+export function FormularioAcesso({
+  cliente,
+  emailInicial,
+}: FormularioAcessoProps) {
   const [email, setEmail] = useState(emailInicial);
   const [senha, setSenha] = useState("");
   const [erros, setErros] = useState<ErrosFormulario>({});
@@ -48,7 +55,9 @@ export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProp
    * após 204 ele limpa a senha e informa que não há sessão criada. Ele existe para
    * representar precisamente o contrato atual de acesso do backend.
    */
-  async function enviarAcesso(evento: FormEvent<HTMLFormElement>): Promise<void> {
+  async function enviarAcesso(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
     const novosErros = validarAcesso({ email, senha });
 
@@ -67,8 +76,8 @@ export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProp
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaAcesso(
-          erro instanceof FalhaAcessoEstudante ? erro.codigo : "rede"
-        )
+          erro instanceof FalhaAcessoEstudante ? erro.codigo : "rede",
+        ),
       );
     } finally {
       setEnviando(false);
@@ -80,7 +89,9 @@ export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProp
       <div className="field">
         <label htmlFor="email-acesso">E-mail</label>
         <input
-          aria-describedby={erros.email === undefined ? undefined : "email-acesso-erro"}
+          aria-describedby={
+            erros.email === undefined ? undefined : "email-acesso-erro"
+          }
           aria-invalid={erros.email === undefined ? undefined : true}
           autoComplete="email"
           id="email-acesso"
@@ -89,12 +100,18 @@ export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProp
           type="email"
           value={email}
         />
-        {erros.email !== undefined && <p className="field__error" id="email-acesso-erro">{erros.email}</p>}
+        {erros.email !== undefined && (
+          <p className="field__error" id="email-acesso-erro">
+            {erros.email}
+          </p>
+        )}
       </div>
       <div className="field">
         <label htmlFor="senha-acesso">Senha</label>
         <input
-          aria-describedby={erros.senha === undefined ? undefined : "senha-acesso-erro"}
+          aria-describedby={
+            erros.senha === undefined ? undefined : "senha-acesso-erro"
+          }
           aria-invalid={erros.senha === undefined ? undefined : true}
           autoComplete="current-password"
           id="senha-acesso"
@@ -103,9 +120,17 @@ export function FormularioAcesso({ cliente, emailInicial }: FormularioAcessoProp
           type="password"
           value={senha}
         />
-        {erros.senha !== undefined && <p className="field__error" id="senha-acesso-erro">{erros.senha}</p>}
+        {erros.senha !== undefined && (
+          <p className="field__error" id="senha-acesso-erro">
+            {erros.senha}
+          </p>
+        )}
       </div>
-      {mensagem !== null && <p className="form-message" role="status">{mensagem}</p>}
+      {mensagem !== null && (
+        <p className="form-message" role="status">
+          {mensagem}
+        </p>
+      )}
       <button disabled={enviando} type="submit">
         {enviando ? "Confirmando..." : "Entrar"}
       </button>

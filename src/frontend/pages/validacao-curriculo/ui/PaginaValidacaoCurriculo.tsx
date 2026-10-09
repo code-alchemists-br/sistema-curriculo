@@ -1,6 +1,6 @@
 import {
   TelaValidacaoCurriculo,
-  type CurriculoParaValidacao
+  type CurriculoParaValidacao,
 } from "../../../features/validate-curriculum";
 
 /** Define os dados e ações recebidos pela página de validação final. */

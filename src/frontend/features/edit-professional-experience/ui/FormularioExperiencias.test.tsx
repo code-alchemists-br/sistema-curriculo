@@ -13,7 +13,7 @@ const experienciaCompleta: Experiencia = {
   inicio: "2024-01",
   fim: "2025-06",
   empregoAtual: false,
-  descricao: "Desenvolvimento frontend."
+  descricao: "Desenvolvimento frontend.",
 };
 
 describe("FormularioExperiencias", () => {
@@ -40,9 +40,9 @@ describe("FormularioExperiencias", () => {
       <FormularioExperiencias
         experienciasIniciais={[
           experienciaCompleta,
-          { ...experienciaCompleta, empresa: "Outra Empresa" }
+          { ...experienciaCompleta, empresa: "Outra Empresa" },
         ]}
-      />
+      />,
     );
 
     await usuario.click(screen.getByLabelText("Remover experiência 1"));
@@ -66,8 +66,10 @@ describe("FormularioExperiencias", () => {
     const usuario = userEvent.setup();
     render(
       <FormularioExperiencias
-        experienciasIniciais={[{ ...experienciaCompleta, empregoAtual: true, fim: "" }]}
-      />
+        experienciasIniciais={[
+          { ...experienciaCompleta, empregoAtual: true, fim: "" },
+        ]}
+      />,
     );
 
     const checkbox = screen.getByLabelText("Emprego atual");
@@ -94,11 +96,21 @@ describe("FormularioExperiencias", () => {
     render(
       <FormularioExperiencias
         experienciasIniciais={[
-          { ...experienciaCompleta, empresa: "Antiga", inicio: "2020-01", fim: "2021-12" },
-          { ...experienciaCompleta, empresa: "Recente", inicio: "2024-01", fim: "2025-06" }
+          {
+            ...experienciaCompleta,
+            empresa: "Antiga",
+            inicio: "2020-01",
+            fim: "2021-12",
+          },
+          {
+            ...experienciaCompleta,
+            empresa: "Recente",
+            inicio: "2024-01",
+            fim: "2025-06",
+          },
         ]}
         onSalvar={onSalvar}
-      />
+      />,
     );
 
     await usuario.click(screen.getByText("Salvar experiências"));
@@ -107,7 +119,9 @@ describe("FormularioExperiencias", () => {
     const resultado = onSalvar.mock.calls[0][0] as Experiencia[];
     expect(resultado[0].empresa).toBe("Recente");
     expect(resultado[1].empresa).toBe("Antiga");
-    expect(screen.getByRole("status")).toHaveTextContent("Experiências salvas com sucesso.");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Experiências salvas com sucesso.",
+    );
   });
 
   it("não chama onSalvar quando há erros de validação", async () => {

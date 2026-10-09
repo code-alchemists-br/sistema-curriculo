@@ -21,7 +21,7 @@ export const HARD_SKILLS_SUGERIDAS = [
   "TypeScript",
   "SQL",
   "Git",
-  "React"
+  "React",
 ];
 
 /**
@@ -34,7 +34,7 @@ export const SOFT_SKILLS_SUGERIDAS = [
   "Organização",
   "Proatividade",
   "Criatividade",
-  "Resolução de problemas"
+  "Resolução de problemas",
 ];
 
 /**
@@ -49,12 +49,12 @@ export function normalizarHabilidade(habilidade: string): string {
  */
 export function habilidadeJaExiste(
   habilidades: string[],
-  habilidade: string
+  habilidade: string,
 ): boolean {
   const habilidadeNormalizada = normalizarHabilidade(habilidade).toLowerCase();
 
   return habilidades.some(
-    (item) => item.toLowerCase() === habilidadeNormalizada
+    (item) => item.toLowerCase() === habilidadeNormalizada,
   );
 }
 
@@ -63,7 +63,7 @@ export function habilidadeJaExiste(
  */
 export function adicionarHabilidade(
   habilidades: string[],
-  habilidade: string
+  habilidade: string,
 ): string[] {
   const habilidadeNormalizada = normalizarHabilidade(habilidade);
 
@@ -83,7 +83,7 @@ export function adicionarHabilidade(
  */
 export function removerHabilidade(
   habilidades: string[],
-  habilidade: string
+  habilidade: string,
 ): string[] {
   return habilidades.filter((item) => item !== habilidade);
 }

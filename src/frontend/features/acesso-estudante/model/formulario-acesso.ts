@@ -3,7 +3,7 @@
 import type {
   AcessoEstudanteEntrada,
   CadastroEstudanteEntrada,
-  CodigoFalhaAcessoEstudante
+  CodigoFalhaAcessoEstudante,
 } from "../api/cliente-acesso-estudante";
 
 /** Representa os valores locais do formulário de criação de conta. */
@@ -25,8 +25,10 @@ export function validarCadastro(valores: ValoresCadastro): ErrosFormulario {
   const erros: ErrosFormulario = {};
 
   if (valores.nome.trim() === "") erros.nome = "Informe seu nome.";
-  if (!emailPareceValido(valores.email)) erros.email = "Informe um e-mail válido.";
-  if (valores.senha.length < 8) erros.senha = "A senha deve ter ao menos 8 caracteres.";
+  if (!emailPareceValido(valores.email))
+    erros.email = "Informe um e-mail válido.";
+  if (valores.senha.length < 8)
+    erros.senha = "A senha deve ter ao menos 8 caracteres.";
   if (valores.confirmacaoSenha !== valores.senha) {
     erros.confirmacaoSenha = "As senhas não coincidem.";
   }
@@ -41,11 +43,15 @@ export function validarCadastro(valores: ValoresCadastro): ErrosFormulario {
  * conta existe. Ela existe para reduzir tentativas incompletas mantendo o
  * backend como fonte de verdade para as credenciais.
  */
-export function validarAcesso(entrada: AcessoEstudanteEntrada): ErrosFormulario {
+export function validarAcesso(
+  entrada: AcessoEstudanteEntrada,
+): ErrosFormulario {
   const erros: ErrosFormulario = {};
 
-  if (!emailPareceValido(entrada.email)) erros.email = "Informe um e-mail válido.";
-  if (entrada.senha.length < 8) erros.senha = "A senha deve ter ao menos 8 caracteres.";
+  if (!emailPareceValido(entrada.email))
+    erros.email = "Informe um e-mail válido.";
+  if (entrada.senha.length < 8)
+    erros.senha = "A senha deve ter ao menos 8 caracteres.";
 
   return erros;
 }
@@ -57,14 +63,18 @@ export function validarAcesso(entrada: AcessoEstudanteEntrada): ErrosFormulario 
  * internos do servidor. Ela existe para informar o estudante preservando os
  * valores já preenchidos quando uma dependência externa falha.
  */
-export function traduzirFalhaAcesso(codigo: CodigoFalhaAcessoEstudante): string {
+export function traduzirFalhaAcesso(
+  codigo: CodigoFalhaAcessoEstudante,
+): string {
   const mensagens: Record<CodigoFalhaAcessoEstudante, string> = {
     "credenciais-invalidas": "E-mail ou senha não conferem.",
     "email-ja-cadastrado": "Este e-mail já possui uma conta.",
     "dados-invalidos": "Revise os dados informados e tente novamente.",
-    indisponivel: "O serviço está indisponível no momento. Tente novamente mais tarde.",
+    indisponivel:
+      "O serviço está indisponível no momento. Tente novamente mais tarde.",
     rede: "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.",
-    "resposta-invalida": "Recebemos uma resposta inesperada. Tente novamente mais tarde."
+    "resposta-invalida":
+      "Recebemos uma resposta inesperada. Tente novamente mais tarde.",
   };
 
   return mensagens[codigo];

@@ -1,4 +1,7 @@
-import { validarCurriculo, type CurriculoParaValidacao } from "../model/validacao-curriculo";
+import {
+  validarCurriculo,
+  type CurriculoParaValidacao,
+} from "../model/validacao-curriculo";
 
 /** Define os callbacks das ações finais do fluxo de currículo. */
 export interface TelaValidacaoCurriculoProps {
@@ -18,7 +21,7 @@ export function TelaValidacaoCurriculo({
   dados,
   onVisualizarPreview,
   onExportarPdf,
-  onConfirmarCurriculo
+  onConfirmarCurriculo,
 }: TelaValidacaoCurriculoProps) {
   const resultado = validarCurriculo(dados);
 
@@ -28,14 +31,17 @@ export function TelaValidacaoCurriculo({
         <p>Revisão final</p>
         <h1 id="titulo-validacao-curriculo">Valide os dados do currículo</h1>
         <p>
-          Confira as seções obrigatórias antes de visualizar ou exportar seu currículo.
+          Confira as seções obrigatórias antes de visualizar ou exportar seu
+          currículo.
         </p>
 
         <div aria-live="polite">
           {resultado.valido ? (
             <p role="status">Todas as seções obrigatórias estão válidas.</p>
           ) : (
-            <p role="alert">Há pendências que precisam ser corrigidas antes de continuar.</p>
+            <p role="alert">
+              Há pendências que precisam ser corrigidas antes de continuar.
+            </p>
           )}
         </div>
 

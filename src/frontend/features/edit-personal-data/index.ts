@@ -1,9 +1,9 @@
 export {
   criarClienteDadosPessoaisIndisponivel,
-  FalhaDadosPessoais
+  FalhaDadosPessoais,
 } from "./api/cliente-dados-pessoais";
 export type {
   ClienteDadosPessoais,
-  CodigoFalhaDadosPessoais
+  CodigoFalhaDadosPessoais,
 } from "./api/cliente-dados-pessoais";
 export { FormularioDadosPessoais } from "./ui/FormularioDadosPessoais";

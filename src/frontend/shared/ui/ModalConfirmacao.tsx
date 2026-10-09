@@ -26,7 +26,7 @@ export function ModalConfirmacao({
   textoBotaoConfirmar = "Confirmar",
   textoBotaoCancelar = "Cancelar",
   onConfirmar,
-  onCancelar
+  onCancelar,
 }: ModalConfirmacaoProps) {
   const refBotaoCancelar = useRef<HTMLButtonElement>(null);
 
@@ -62,17 +62,10 @@ export function ModalConfirmacao({
       <h2 id="modal-titulo">{titulo}</h2>
       <p id="modal-descricao">{descricao}</p>
       <div>
-        <button
-          onClick={onCancelar}
-          ref={refBotaoCancelar}
-          type="button"
-        >
+        <button onClick={onCancelar} ref={refBotaoCancelar} type="button">
           {textoBotaoCancelar}
         </button>
-        <button
-          onClick={onConfirmar}
-          type="button"
-        >
+        <button onClick={onConfirmar} type="button">
           {textoBotaoConfirmar}
         </button>
       </div>

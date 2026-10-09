@@ -8,7 +8,7 @@ import {
   removerHabilidade,
   SOFT_SKILLS_SUGERIDAS,
   type Habilidades,
-  type TipoHabilidade
+  type TipoHabilidade,
 } from "../model/habilidades";
 
 /**
@@ -21,7 +21,7 @@ export interface FormularioCompetenciasProps {
 
 const VALORES_INICIAIS: Habilidades = {
   hardSkills: [],
-  softSkills: []
+  softSkills: [],
 };
 
 /**
@@ -34,7 +34,7 @@ const VALORES_INICIAIS: Habilidades = {
  */
 export function FormularioCompetencias({
   habilidadesIniciais = VALORES_INICIAIS,
-  onSalvar
+  onSalvar,
 }: FormularioCompetenciasProps) {
   const [hardSkills, setHardSkills] = useState(habilidadesIniciais.hardSkills);
   const [softSkills, setSoftSkills] = useState(habilidadesIniciais.softSkills);
@@ -72,7 +72,7 @@ export function FormularioCompetencias({
    */
   function lidarComTecla(
     evento: KeyboardEvent<HTMLInputElement>,
-    tipo: TipoHabilidade
+    tipo: TipoHabilidade,
   ): void {
     if (evento.key !== "Enter") {
       return;
@@ -90,15 +90,18 @@ export function FormularioCompetencias({
   function salvar(): void {
     onSalvar?.({
       hardSkills,
-      softSkills
+      softSkills,
     });
   }
 
   return (
-    <form className="skills-form" onSubmit={(evento) => {
-      evento.preventDefault();
-      salvar();
-    }}>
+    <form
+      className="skills-form"
+      onSubmit={(evento) => {
+        evento.preventDefault();
+        salvar();
+      }}
+    >
       <section aria-labelledby="hard-skills-titulo" className="skills-section">
         <div className="skills-section__heading">
           <h2 id="hard-skills-titulo">Hard Skills</h2>
@@ -116,10 +119,7 @@ export function FormularioCompetencias({
           placeholder="Digite uma competência e pressione Enter"
         />
 
-        <div
-          aria-label="Hard Skills selecionadas"
-          className="skills-chips"
-        >
+        <div aria-label="Hard Skills selecionadas" className="skills-chips">
           {hardSkills.map((habilidade) => (
             <span className="skill-chip" key={habilidade}>
               <span>{habilidade}</span>
@@ -172,10 +172,7 @@ export function FormularioCompetencias({
           placeholder="Digite uma competência e pressione Enter"
         />
 
-        <div
-          aria-label="Soft Skills selecionadas"
-          className="skills-chips"
-        >
+        <div aria-label="Soft Skills selecionadas" className="skills-chips">
           {softSkills.map((habilidade) => (
             <span className="skill-chip" key={habilidade}>
               <span>{habilidade}</span>

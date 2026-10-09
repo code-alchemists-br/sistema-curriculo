@@ -2,9 +2,7 @@ import type { Student } from "../../../entities/student";
 
 /** Enumera falhas que a interface pode explicar sem revelar detalhes técnicos. */
 export type CodigoFalhaPerfilEstudante =
-  | "indisponivel"
-  | "resposta-invalida"
-  | "nao-autorizado";
+  "indisponivel" | "resposta-invalida" | "nao-autorizado";
 
 /**
  * Representa uma falha conhecida ao operar sobre o perfil do estudante.
@@ -46,6 +44,6 @@ export function criarClientePerfilIndisponivel(): ClientePerfilEstudante {
     },
     async excluir() {
       throw new FalhaPerfilEstudante("indisponivel");
-    }
+    },
   };
 }

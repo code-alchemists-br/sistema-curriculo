@@ -3,33 +3,39 @@ import { z } from "zod";
 /** Representa o estado de uma etapa obrigatória do Wizard. */
 export const estadoSecaoObrigatoriaSchema = z.object({
   status: z.enum(["preenchida", "pulada"]),
-  mensagemErro: z.string().trim().min(1).optional()
+  mensagemErro: z.string().trim().min(1).optional(),
 });
 
 /** Representa os dados pessoais mínimos já definidos pelo formulário existente. */
 const dadosPessoaisSchema = z.object({
   nomeCompleto: z.string().trim().min(1, "Informe o nome completo."),
   enderecoCompleto: z.string().trim().min(1, "Informe o endereço completo."),
-  telefones: z.array(z.string().trim().min(1, "Informe um telefone.")).min(1, "Informe pelo menos um telefone."),
-  email: z.string().trim().email("Informe um e-mail válido.")
+  telefones: z
+    .array(z.string().trim().min(1, "Informe um telefone."))
+    .min(1, "Informe pelo menos um telefone."),
+  email: z.string().trim().email("Informe um e-mail válido."),
 });
 
 /** Representa as competências mantidas pela feature de competências. */
 const competenciasSchema = z
   .object({
     hardSkills: z.array(z.string().trim().min(1)).default([]),
-    softSkills: z.array(z.string().trim().min(1)).default([])
+    softSkills: z.array(z.string().trim().min(1)).default([]),
   })
   .refine(
-    ({ hardSkills, softSkills }) => hardSkills.length > 0 || softSkills.length > 0,
-    { path: ["competencias"], message: "Informe pelo menos uma competência técnica ou comportamental." }
+    ({ hardSkills, softSkills }) =>
+      hardSkills.length > 0 || softSkills.length > 0,
+    {
+      path: ["competencias"],
+      message: "Informe pelo menos uma competência técnica ou comportamental.",
+    },
   );
 
 /** Representa o mínimo do projeto acadêmico que a feature atual consegue validar. */
 const projetoAcademicoSchema = z.object({
   titulo: z.string().trim().min(1, "Informe o título do projeto."),
   descricao: z.string().trim().min(1, "Informe a descrição do projeto."),
-  tecnologias: z.string().trim()
+  tecnologias: z.string().trim(),
 });
 
 /** Representa todo o estado necessário para a validação final do currículo. */
@@ -38,7 +44,7 @@ export const curriculoParaValidacaoSchema = z.object({
   formacaoAcademica: estadoSecaoObrigatoriaSchema,
   experienciasProfissionais: estadoSecaoObrigatoriaSchema,
   competencias: competenciasSchema,
-  projetosAcademicos: z.array(projetoAcademicoSchema)
+  projetosAcademicos: z.array(projetoAcademicoSchema),
 });
 
 export interface EstadoSecaoObrigatoria {
@@ -98,12 +104,13 @@ export interface ResultadoValidacaoCurriculo {
   podeExportarPdf: boolean;
 }
 
-const METADADOS_SECOES: Array<Pick<ResultadoValidacaoSecao, "id" | "titulo">> = [
-  { id: "dados-pessoais", titulo: "Dados pessoais" },
-  { id: "formacao-academica", titulo: "Formação acadêmica" },
-  { id: "experiencias-profissionais", titulo: "Experiências profissionais" },
-  { id: "competencias", titulo: "Competências" }
-];
+const METADADOS_SECOES: Array<Pick<ResultadoValidacaoSecao, "id" | "titulo">> =
+  [
+    { id: "dados-pessoais", titulo: "Dados pessoais" },
+    { id: "formacao-academica", titulo: "Formação acadêmica" },
+    { id: "experiencias-profissionais", titulo: "Experiências profissionais" },
+    { id: "competencias", titulo: "Competências" },
+  ];
 
 /**
  * Valida o currículo inteiro e transforma falhas técnicas em pendências por seção.
@@ -111,14 +118,18 @@ const METADADOS_SECOES: Array<Pick<ResultadoValidacaoSecao, "id" | "titulo">> = 
  * pendências, bloqueando prévia e PDF. Essa função existe para concentrar a regra
  * transversal do Wizard em um contrato único e reutilizável pela interface.
  */
-export function validarCurriculo(valores: unknown): ResultadoValidacaoCurriculo {
+export function validarCurriculo(
+  valores: unknown,
+): ResultadoValidacaoCurriculo {
   const resultado = curriculoParaValidacaoSchema.safeParse(valores);
-  const secoes: ResultadoValidacaoSecao[] = METADADOS_SECOES.map(({ id, titulo }) => ({
-    id,
-    titulo,
-    status: "valida",
-    mensagens: []
-  }));
+  const secoes: ResultadoValidacaoSecao[] = METADADOS_SECOES.map(
+    ({ id, titulo }) => ({
+      id,
+      titulo,
+      status: "valida",
+      mensagens: [],
+    }),
+  );
 
   if (!resultado.success) {
     for (const issue of resultado.error.issues) {
@@ -128,9 +139,10 @@ export function validarCurriculo(valores: unknown): ResultadoValidacaoCurriculo 
       const secao = secoes.find((item) => item.id === id);
       if (secao === undefined) continue;
 
-      secao.status = issue.path[1] === "status" && issue.message === "Required"
-        ? "pendente"
-        : "erro";
+      secao.status =
+        issue.path[1] === "status" && issue.message === "Required"
+          ? "pendente"
+          : "erro";
       secao.mensagens.push(issue.message);
     }
   }
@@ -145,12 +157,14 @@ export function validarCurriculo(valores: unknown): ResultadoValidacaoCurriculo 
     valido,
     secoes,
     podeVisualizarPreview: valido,
-    podeExportarPdf: valido
+    podeExportarPdf: valido,
   };
 }
 
 /** Converte o caminho produzido pelo Zod no identificador da seção da tela. */
-function idDaSecao(caminho: PropertyKey | undefined): IdSecaoCurriculo | undefined {
+function idDaSecao(
+  caminho: PropertyKey | undefined,
+): IdSecaoCurriculo | undefined {
   switch (caminho) {
     case "dadosPessoais":
       return "dados-pessoais";
@@ -168,11 +182,11 @@ function idDaSecao(caminho: PropertyKey | undefined): IdSecaoCurriculo | undefin
 /** Marca etapas puladas e mensagens explícitas como pendências do Wizard. */
 function aplicarPendenciasDeEtapas(
   valores: CurriculoParaValidacao,
-  secoes: ResultadoValidacaoSecao[]
+  secoes: ResultadoValidacaoSecao[],
 ): void {
   const etapas: Array<[IdSecaoCurriculo, EstadoSecaoObrigatoria]> = [
     ["formacao-academica", valores.formacaoAcademica],
-    ["experiencias-profissionais", valores.experienciasProfissionais]
+    ["experiencias-profissionais", valores.experienciasProfissionais],
   ];
 
   for (const [id, etapa] of etapas) {

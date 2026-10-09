@@ -4,7 +4,7 @@ import {
   adicionarHabilidade,
   habilidadeJaExiste,
   normalizarHabilidade,
-  removerHabilidade
+  removerHabilidade,
 } from "./habilidades";
 
 describe("normalizarHabilidade", () => {
@@ -28,7 +28,7 @@ describe("adicionarHabilidade", () => {
 
   it("não adiciona duplicada ignorando maiúsculas e minúsculas", () => {
     expect(adicionarHabilidade(["JavaScript"], "javascript")).toEqual([
-      "JavaScript"
+      "JavaScript",
     ]);
   });
 });

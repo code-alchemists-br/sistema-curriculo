@@ -1,12 +1,15 @@
 // Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001
 import { useState, type FormEvent } from "react";
 
-import { FalhaCadastroProjeto, type ClienteProjetosAcademicos } from "../api/cliente-projetos-academicos";
+import {
+  FalhaCadastroProjeto,
+  type ClienteProjetosAcademicos,
+} from "../api/cliente-projetos-academicos";
 import {
   traduzirFalhaCadastroProjeto,
   validarProjetoAcademico,
   type ErrosProjetoAcademico,
-  type ValoresProjetoAcademico
+  type ValoresProjetoAcademico,
 } from "../model/formulario-projeto-academico";
 
 /** Define o cliente usado pelo formulário de cadastro de projeto acadêmico. */
@@ -17,7 +20,7 @@ export interface FormularioCadastroProjetoAcademicoProps {
 const valoresIniciais: ValoresProjetoAcademico = {
   titulo: "",
   descricao: "",
-  tecnologias: ""
+  tecnologias: "",
 };
 
 /**
@@ -28,7 +31,7 @@ const valoresIniciais: ValoresProjetoAcademico = {
  * oferecer o cadastro acessível sem conhecer HTTP, usuário autenticado ou banco.
  */
 export function FormularioCadastroProjetoAcademico({
-  cliente
+  cliente,
 }: FormularioCadastroProjetoAcademicoProps) {
   const [valores, setValores] = useState(valoresIniciais);
   const [erros, setErros] = useState<ErrosProjetoAcademico>({});
@@ -36,7 +39,10 @@ export function FormularioCadastroProjetoAcademico({
   const [enviando, setEnviando] = useState(false);
 
   /** Atualiza um valor e remove feedback que já não descreve o campo editado. */
-  function atualizarCampo(campo: keyof ValoresProjetoAcademico, valor: string): void {
+  function atualizarCampo(
+    campo: keyof ValoresProjetoAcademico,
+    valor: string,
+  ): void {
     setValores((atuais) => ({ ...atuais, [campo]: valor }));
     setErros((atuais) => ({ ...atuais, [campo]: undefined }));
     setMensagem(null);
@@ -49,7 +55,9 @@ export function FormularioCadastroProjetoAcademico({
    * projeto e distingue sucesso de falhas controladas. Ele existe para manter
    * regras de experiência na feature e transporte fora do componente visual.
    */
-  async function enviarProjeto(evento: FormEvent<HTMLFormElement>): Promise<void> {
+  async function enviarProjeto(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
     const novosErros = validarProjetoAcademico(valores);
 
@@ -65,15 +73,17 @@ export function FormularioCadastroProjetoAcademico({
       await cliente.cadastrar({
         titulo: valores.titulo.trim(),
         descricao: valores.descricao.trim(),
-        tecnologias: valores.tecnologias.trim()
+        tecnologias: valores.tecnologias.trim(),
       });
       setValores(valoresIniciais);
       setMensagem("Dados do projeto enviados para processamento.");
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaCadastroProjeto(
-          erro instanceof FalhaCadastroProjeto ? erro.codigo : "resposta-invalida"
-        )
+          erro instanceof FalhaCadastroProjeto
+            ? erro.codigo
+            : "resposta-invalida",
+        ),
       );
     } finally {
       setEnviando(false);
@@ -105,7 +115,10 @@ export function FormularioCadastroProjetoAcademico({
         value={valores.tecnologias}
       />
       {mensagem !== null && (
-        <p className="form-message" role={mensagem.includes("processamento") ? "status" : "alert"}>
+        <p
+          className="form-message"
+          role={mensagem.includes("processamento") ? "status" : "alert"}
+        >
           {mensagem}
         </p>
       )}
@@ -133,22 +146,46 @@ interface CampoTextoProps {
  * mesmo vínculo semântico com o erro. Ele existe para reduzir repetição visual
  * sem mover validações ou regras de projeto para uma camada de UI genérica.
  */
-function CampoTexto({ erro, id, label, multiline = false, onChange, value }: CampoTextoProps) {
+function CampoTexto({
+  erro,
+  id,
+  label,
+  multiline = false,
+  onChange,
+  value,
+}: CampoTextoProps) {
   const idErro = `${id}-erro`;
   const atributosDeAcesso = {
     "aria-describedby": erro === undefined ? undefined : idErro,
-    "aria-invalid": erro === undefined ? undefined : true
+    "aria-invalid": erro === undefined ? undefined : true,
   };
 
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       {multiline ? (
-        <textarea {...atributosDeAcesso} id={id} onChange={(evento) => onChange(evento.target.value)} required rows={5} value={value} />
+        <textarea
+          {...atributosDeAcesso}
+          id={id}
+          onChange={(evento) => onChange(evento.target.value)}
+          required
+          rows={5}
+          value={value}
+        />
       ) : (
-        <input {...atributosDeAcesso} id={id} onChange={(evento) => onChange(evento.target.value)} type="text" value={value} />
+        <input
+          {...atributosDeAcesso}
+          id={id}
+          onChange={(evento) => onChange(evento.target.value)}
+          type="text"
+          value={value}
+        />
       )}
-      {erro !== undefined && <p className="field__error" id={idErro}>{erro}</p>}
+      {erro !== undefined && (
+        <p className="field__error" id={idErro}>
+          {erro}
+        </p>
+      )}
     </div>
   );
 }

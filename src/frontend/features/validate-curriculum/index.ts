@@ -2,7 +2,7 @@ export { TelaValidacaoCurriculo } from "./ui/TelaValidacaoCurriculo";
 export type { TelaValidacaoCurriculoProps } from "./ui/TelaValidacaoCurriculo";
 export {
   curriculoParaValidacaoSchema,
-  validarCurriculo
+  validarCurriculo,
 } from "./model/validacao-curriculo";
 export type {
   CurriculoParaValidacao,
@@ -10,5 +10,5 @@ export type {
   IdSecaoCurriculo,
   ResultadoValidacaoCurriculo,
   ResultadoValidacaoSecao,
-  StatusValidacaoSecao
+  StatusValidacaoSecao,
 } from "./model/validacao-curriculo";

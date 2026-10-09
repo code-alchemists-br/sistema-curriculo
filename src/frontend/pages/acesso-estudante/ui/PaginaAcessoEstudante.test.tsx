@@ -13,9 +13,9 @@ describe("PaginaAcessoEstudante", () => {
       cadastrar: vi.fn().mockResolvedValue({
         id: "1",
         nome: "Ana Estudante",
-        email: "ana@fatec.sp.gov.br"
+        email: "ana@fatec.sp.gov.br",
       }),
-      acessar: vi.fn()
+      acessar: vi.fn(),
     };
 
     render(<PaginaAcessoEstudante cliente={cliente} />);
@@ -27,7 +27,9 @@ describe("PaginaAcessoEstudante", () => {
     await usuario.type(screen.getByLabelText("Confirme a senha"), "segredo123");
     await usuario.click(screen.getByRole("button", { name: "Criar conta" }));
 
-    expect(await screen.findByRole("tab", { name: "Entrar", selected: true })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("tab", { name: "Entrar", selected: true }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("E-mail")).toHaveValue("ana@fatec.sp.gov.br");
     expect(screen.getByLabelText("Senha")).toHaveValue("");
   });

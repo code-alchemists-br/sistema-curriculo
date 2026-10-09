@@ -1,7 +1,7 @@
 import {
   criarClientePerfilIndisponivel,
   FormularioEdicaoPerfil,
-  type ClientePerfilEstudante
+  type ClientePerfilEstudante,
 } from "../../../features/edit-profile";
 import type { Student } from "../../../entities/student";
 
@@ -15,7 +15,7 @@ const DADOS_FICTICIOS: Student = {
   nomeCompleto: "Estudante Exemplo",
   enderecoCompleto: "Rua Exemplo, 123",
   telefones: ["(11) 90000-0000"],
-  email: "estudante@exemplo.com"
+  email: "estudante@exemplo.com",
 };
 
 /**
@@ -27,15 +27,21 @@ const DADOS_FICTICIOS: Student = {
  */
 export function PaginaConfiguracoesPerfil({
   cliente = criarClientePerfilIndisponivel(),
-  valoresIniciais = DADOS_FICTICIOS
+  valoresIniciais = DADOS_FICTICIOS,
 }: PaginaConfiguracoesPerfilProps) {
   return (
     <main className="app-shell">
-      <section aria-labelledby="titulo-configuracoes-perfil" className="app-shell__content">
+      <section
+        aria-labelledby="titulo-configuracoes-perfil"
+        className="app-shell__content"
+      >
         <p className="eyebrow">Configurações</p>
         <h1 id="titulo-configuracoes-perfil">Editar perfil</h1>
         <p>Atualize seus dados pessoais ou exclua sua conta permanentemente.</p>
-        <FormularioEdicaoPerfil cliente={cliente} valoresIniciais={valoresIniciais} />
+        <FormularioEdicaoPerfil
+          cliente={cliente}
+          valoresIniciais={valoresIniciais}
+        />
       </section>
     </main>
   );
