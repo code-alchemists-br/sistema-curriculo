@@ -10,7 +10,10 @@ from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
 )
-from backend.infrastructure.persistence.sqlalchemy.usuario import para_registro, para_usuario
+from backend.infrastructure.persistence.sqlalchemy.usuario import (
+    para_registro,
+    para_usuario,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
 

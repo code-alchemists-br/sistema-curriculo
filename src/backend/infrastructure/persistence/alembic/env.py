@@ -15,7 +15,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
 
-
 # Proveniência: decision-analysis prompts/backend/20260916-estrutura-alembic-code-first-v001.md#v001
 config = context.config
 target_metadata = metadata

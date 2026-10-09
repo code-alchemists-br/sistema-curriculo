@@ -7,9 +7,9 @@ identidade e estados estruturalmente inválidos antes que entidades os utilizem.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
-import re
 from uuid import UUID
 
 from backend.domain.exceptions import RegraDeDominioViolada

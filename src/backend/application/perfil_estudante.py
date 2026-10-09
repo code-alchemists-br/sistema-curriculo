@@ -8,6 +8,7 @@ manter as intenções de perfil testáveis e separadas de currículos e credenci
 from dataclasses import dataclass
 
 from backend.application.cadastro_estudante import EmailJaCadastrado
+
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.application.ports import (
     GeradorFormacaoAcademicaId,
@@ -15,14 +16,14 @@ from backend.application.ports import (
     RepositorioFormacaoAcademica,
     RepositorioUsuario,
 )
-# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
-from backend.domain.usuario import Usuario
-from backend.domain.value_objects import Email, Nome, UsuarioId
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import FormacaoAcademica
-from backend.domain.value_objects import Periodo
+
+# Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+from backend.domain.usuario import Usuario
+from backend.domain.value_objects import Email, Nome, Periodo, UsuarioId
 
 
 class PerfilNaoEncontrado(LookupError):

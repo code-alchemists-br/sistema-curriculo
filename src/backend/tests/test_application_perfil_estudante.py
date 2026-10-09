@@ -1,7 +1,7 @@
 """Testa unitariamente as operações de perfil e cadastro de formação."""
 
-from datetime import date, datetime, timezone
 import unittest
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001

@@ -11,7 +11,12 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from backend.application import AcessarEstudanteEntrada, CadastrarEstudanteEntrada, CredenciaisInvalidas, EmailJaCadastrado
+from backend.application import (
+    AcessarEstudanteEntrada,
+    CadastrarEstudanteEntrada,
+    CredenciaisInvalidas,
+    EmailJaCadastrado,
+)
 from backend.domain import Email, HashSenha, Nome, RegraDeDominioViolada, Usuario
 
 
