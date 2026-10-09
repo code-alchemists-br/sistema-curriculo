@@ -36,6 +36,12 @@ from backend.application.dados_contato import (
     AtualizarDadosContatoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+from backend.application.listagem_versoes_curriculo import (
+    ListarVersoesCurriculo,
+    ListarVersoesCurriculoEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.application.perfil_estudante import (
@@ -146,4 +152,7 @@ __all__ = [
     "ItemNaoEncontrado",
     "SelecionarItemVersaoCurriculo",
     "SelecionarItemVersaoCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    "ListarVersoesCurriculo",
+    "ListarVersoesCurriculoEntrada",
 ]

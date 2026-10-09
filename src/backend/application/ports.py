@@ -287,6 +287,17 @@ class RepositorioCurriculo(Protocol):
         acoplar a Application ao armazenamento.
         """
 
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def listar_por_usuario(self, usuario_id: UsuarioId) -> tuple[Curriculo, ...]:
+        """Lista assincronamente as versões de currículo pertencentes ao usuário.
+
+        Implementações consultam o armazenamento pelo proprietário e devolvem os
+        agregados completos, com suas referências, no mesmo contrato de
+        ``obter_por_id``, ou uma tupla vazia, sem aplicar ordem nem regras de
+        currículo. O método existe para que o caso de uso de listagem obtenha
+        todas as versões do estudante sem conhecer banco, ORM ou tabelas.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class GeradorCurriculoId(Protocol):
