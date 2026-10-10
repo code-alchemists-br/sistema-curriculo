@@ -44,9 +44,9 @@ describe("adaptarRespostaGrupo2", () => {
   });
 
   it("recusa uma resposta que não respeita o contrato", () => {
-    expect(() => adaptarRespostaGrupo2({ associacoes: [{ vaga: {} }] })).toThrow(
-      new FalhaVagasGrupo2("resposta-invalida"),
-    );
+    expect(() =>
+      adaptarRespostaGrupo2({ associacoes: [{ vaga: {} }] }),
+    ).toThrow(new FalhaVagasGrupo2("resposta-invalida"));
   });
 });
 
