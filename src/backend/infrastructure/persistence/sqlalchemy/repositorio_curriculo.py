@@ -1,5 +1,8 @@
 """Implementa a porta de currículo com sessão SQLAlchemy assíncrona injetada."""
 
+# Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+from collections import defaultdict
+
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from uuid import UUID
 
@@ -9,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.ports import RepositorioCurriculo
 from backend.domain.curriculo import Curriculo
-from backend.domain.value_objects import CurriculoId
+from backend.domain.value_objects import (
+    CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    UsuarioId,
+)
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     CurriculoItemRegistro,
@@ -27,13 +34,15 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
 
 
 class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
-    """Consulta, insere e atualiza versões de currículo usando o modelo externo e uma AsyncSession.
+    """Consulta, lista, insere e atualiza versões de currículo usando o modelo externo e uma AsyncSession.
 
     O adapter traduz o agregado em colunas e aguarda I/O, preservando a porta
     interna. A composição externa possui sessão, commit e rollback; erros são
     propagados para ela sem política de transação ou tradução de falhas aqui. O
     adapter reconstrói a seleção de itens ao carregar e, ao gravar, persiste
     somente a diferença entre as referências do agregado e as linhas existentes.
+    Ao listar, lê as versões do proprietário e as seleções de todas elas em duas
+    consultas, sem consulta por versão.
     """
 
     def __init__(self, session: AsyncSession) -> None:
@@ -92,6 +101,29 @@ class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
             for registro_item in registros_itens:
                 self._session.add(registro_item)
             await self._session.flush()
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def listar_por_usuario(self, usuario_id: UsuarioId) -> tuple[Curriculo, ...]:
+        """Lista as versões do usuário, cada uma com sua seleção de itens.
+
+        O método consulta as versões pelo proprietário e, somente quando há
+        alguma, carrega em uma segunda consulta as linhas de seleção de todas
+        elas, agrupando-as por versão antes de converter cada registro em
+        agregado. Ele existe para que a listagem devolva agregados completos, no
+        mesmo contrato de ``obter_por_id``, com duas consultas fixas e sem uma
+        consulta por versão.
+        """
+        consulta_versoes = select(CurriculoRegistro).where(CurriculoRegistro.usuario_id == usuario_id.valor)
+        registros = list((await self._session.scalars(consulta_versoes)).all())
+        if not registros:
+            return ()
+        consulta_itens = select(CurriculoItemRegistro).where(
+            CurriculoItemRegistro.curriculo_id.in_([registro.id for registro in registros])
+        )
+        itens_por_versao: defaultdict[UUID, list[CurriculoItemRegistro]] = defaultdict(list)
+        for item in (await self._session.scalars(consulta_itens)).all():
+            itens_por_versao[item.curriculo_id].append(item)
+        return tuple(para_curriculo(registro, itens_por_versao[registro.id]) for registro in registros)
 
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     async def _obter_itens(self, curriculo_id: UUID) -> list[CurriculoItemRegistro]:

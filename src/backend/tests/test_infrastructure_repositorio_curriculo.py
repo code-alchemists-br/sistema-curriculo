@@ -52,6 +52,9 @@ ID_IDIOMA = UUID("00000000-0000-0000-0000-0000000000a2")
 REFERENCIA_PROJETO = ReferenciaCurriculo(ProjetoAcademicoId(ID_PROJETO))
 REFERENCIA_IDIOMA = ReferenciaCurriculo(IdiomaId(ID_IDIOMA))
 
+# Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+ID_CURRICULO_B = UUID("00000000-0000-0000-0000-0000000000c2")
+
 
 def linha_projeto() -> SimpleNamespace:
     """Prepara uma linha de seleção simulada equivalente ao projeto de referência.
@@ -110,6 +113,34 @@ def criar_registro() -> MagicMock:
         layout="classico",
         is_public=False,
     )
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+def criar_registro_da_listagem(curriculo_id: UUID, titulo: str) -> MagicMock:
+    """Prepara um registro ORM simulado do usuário de referência com título e id dados.
+
+    O double existe somente em memória e expõe as colunas que o mapeador lê, sem
+    sessão, tabela ou driver. Ele existe para montar várias versões distintas do
+    mesmo proprietário nos cenários de listagem.
+    """
+    return MagicMock(
+        id=curriculo_id,
+        usuario_id=ID_USUARIO,
+        titulo_versao=titulo,
+        layout="classico",
+        is_public=False,
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+def linha_da_versao(curriculo_id: UUID, tipo: str, item_id: UUID) -> SimpleNamespace:
+    """Prepara uma linha de seleção simulada que informa a versão a que pertence.
+
+    O double expõe a versão, o tipo textual e o UUID do item, como a linha ORM,
+    sem sessão ou tabela. Ele existe para que o adapter agrupe as seleções de
+    várias versões lidas em uma única consulta.
+    """
+    return SimpleNamespace(curriculo_id=curriculo_id, tipo=tipo, item_id=item_id)
 
 
 class ConversaoCurriculoTestCase(unittest.TestCase):
@@ -417,6 +448,155 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         await self.repositorio.salvar(curriculo)
 
         self.assertEqual(ordem, ["CurriculoRegistro", "flush", "CurriculoItemRegistro", "flush"])
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_lista_as_versoes_do_usuario_com_a_selecao_de_cada_uma(self) -> None:
+        """Confirma que cada versão listada volta com as suas referências.
+
+        Faz a primeira consulta devolver duas versões e a segunda devolver
+        linhas de seleção de ambas, e compara as referências de cada agregado.
+        Ele existe para garantir que a listagem entregue agregados completos, no
+        mesmo contrato de ``obter_por_id``.
+        """
+        self.session.scalars.side_effect = [
+            resultado_com(
+                [
+                    criar_registro_da_listagem(ID_CURRICULO, "Estágio em TI"),
+                    criar_registro_da_listagem(ID_CURRICULO_B, "Gestão"),
+                ]
+            ),
+            resultado_com(
+                [
+                    linha_da_versao(ID_CURRICULO, "projeto_academico", ID_PROJETO),
+                    linha_da_versao(ID_CURRICULO_B, "idioma", ID_IDIOMA),
+                ]
+            ),
+        ]
+
+        resultado = await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.assertIsInstance(resultado, tuple)
+        self.assertEqual([curriculo.id.valor for curriculo in resultado], [ID_CURRICULO, ID_CURRICULO_B])
+        self.assertEqual(resultado[0].referencias, frozenset({REFERENCIA_PROJETO}))
+        self.assertEqual(resultado[1].referencias, frozenset({REFERENCIA_IDIOMA}))
+        self.assertEqual(resultado[0].usuario_id, UsuarioId(ID_USUARIO))
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_filtra_pelo_usuario_e_carrega_as_selecoes_em_uma_unica_consulta(self) -> None:
+        """Confirma o filtro por proprietário e a consulta única das seleções.
+
+        Inspeciona as duas consultas enviadas à sessão: a primeira filtra as
+        versões pelo usuário informado e a segunda busca, de uma vez, as
+        seleções das versões encontradas. Ele existe para proteger o isolamento
+        entre estudantes e a ausência de uma consulta por versão.
+        """
+        self.session.scalars.side_effect = [
+            resultado_com(
+                [
+                    criar_registro_da_listagem(ID_CURRICULO, "Estágio em TI"),
+                    criar_registro_da_listagem(ID_CURRICULO_B, "Gestão"),
+                ]
+            ),
+            resultado_com([]),
+        ]
+
+        await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.assertEqual(self.session.scalars.await_count, 2)
+        consulta_versoes, consulta_itens = (chamada.args[0] for chamada in self.session.scalars.await_args_list)
+        self.assertIn("curriculos", str(consulta_versoes))
+        self.assertIn("WHERE", str(consulta_versoes))
+        self.assertIn(ID_USUARIO, consulta_versoes.compile().params.values())
+        self.assertIn("curriculo_itens", str(consulta_itens))
+        self.assertIn("IN", str(consulta_itens))
+        listas = [list(valor) for valor in consulta_itens.compile().params.values() if isinstance(valor, (list, tuple))]
+        self.assertIn([ID_CURRICULO, ID_CURRICULO_B], listas)
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_versao_sem_selecao_volta_sem_referencias(self) -> None:
+        """Confirma que uma versão sem linhas de seleção não recebe referências.
+
+        Faz a segunda consulta devolver somente a seleção de outra versão e
+        observa que a versão sem linhas permanece sem referências. Ele existe
+        para impedir que a seleção de uma versão vaze para outra.
+        """
+        self.session.scalars.side_effect = [
+            resultado_com(
+                [
+                    criar_registro_da_listagem(ID_CURRICULO, "Estágio em TI"),
+                    criar_registro_da_listagem(ID_CURRICULO_B, "Gestão"),
+                ]
+            ),
+            resultado_com([linha_da_versao(ID_CURRICULO_B, "idioma", ID_IDIOMA)]),
+        ]
+
+        resultado = await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.assertEqual(resultado[0].referencias, frozenset())
+        self.assertEqual(resultado[1].referencias, frozenset({REFERENCIA_IDIOMA}))
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_usuario_sem_versoes_recebe_tupla_vazia_sem_consultar_as_selecoes(self) -> None:
+        """Confirma que a ausência de versões encerra a leitura sem a segunda consulta.
+
+        Faz a primeira consulta devolver uma lista vazia e verifica o resultado e
+        que a consulta de seleções não é aguardada. Ele existe para evitar uma
+        leitura inútil quando o estudante não tem versões.
+        """
+        self.session.scalars.side_effect = [resultado_com([])]
+
+        resultado = await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.assertEqual(resultado, ())
+        self.session.scalars.assert_awaited_once()
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_listar_propaga_falha_na_consulta_das_versoes(self) -> None:
+        """Confere que falha ao ler as versões chega intacta ao chamador.
+
+        Faz a primeira consulta falhar e exige que o erro não seja confundido
+        com uma lista vazia. Ele existe para impedir que uma falha de leitura
+        pareça um estudante sem versões.
+        """
+        self.session.scalars.side_effect = RuntimeError("falha")
+
+        with self.assertRaises(RuntimeError):
+            await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_listar_propaga_falha_na_consulta_das_selecoes(self) -> None:
+        """Confere que falha ao ler as seleções chega intacta ao chamador.
+
+        Faz a primeira consulta devolver uma versão e a segunda falhar, e exige
+        que o erro chegue sem agregados parciais. Ele existe para impedir que a
+        listagem devolva versões sem a seleção por causa de uma falha.
+        """
+        self.session.scalars.side_effect = [
+            resultado_com([criar_registro_da_listagem(ID_CURRICULO, "Estágio em TI")]),
+            RuntimeError("falha"),
+        ]
+
+        with self.assertRaises(RuntimeError):
+            await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+    # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
+    async def test_listar_nao_escreve_na_sessao(self) -> None:
+        """Confirma que listar não adiciona, remove nem envia alterações.
+
+        Executa uma listagem com versões e seleções e observa que a sessão não
+        recebe ``add``, ``delete`` nem ``flush``. Ele existe para proteger a
+        natureza de consulta da operação.
+        """
+        self.session.scalars.side_effect = [
+            resultado_com([criar_registro_da_listagem(ID_CURRICULO, "Estágio em TI")]),
+            resultado_com([linha_da_versao(ID_CURRICULO, "idioma", ID_IDIOMA)]),
+        ]
+
+        await self.repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.session.add.assert_not_called()
+        self.session.delete.assert_not_awaited()
+        self.session.flush.assert_not_awaited()
 
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
