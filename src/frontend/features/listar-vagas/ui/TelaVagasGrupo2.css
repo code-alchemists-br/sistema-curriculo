@@ -1,0 +1,58 @@
+.vagas-grupo2 {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.vagas-grupo2__lista {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vagas-grupo2__card,
+.vagas-grupo2__estado {
+  padding: 1.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.vagas-grupo2__card h2,
+.vagas-grupo2__estado h2 {
+  margin-top: 0;
+}
+
+.vagas-grupo2__metadados,
+.vagas-grupo2__requisitos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vagas-grupo2__metadados span,
+.vagas-grupo2__requisitos li {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #1e3a8a;
+}
+
+.vagas-grupo2__acao {
+  display: inline-block;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.vagas-grupo2__acao:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
