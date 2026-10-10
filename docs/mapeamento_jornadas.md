@@ -55,6 +55,14 @@ UC09, a integração com o Grupo 2, não integra a jornada guiada do aluno.
 
 ## 5. Jornada única: preencher, revisar e gerar o currículo
 
+A jornada começa após o cadastro ou login do aluno. No painel inicial, o sistema apresenta as ações disponíveis conforme o estado do currículo: iniciar um novo preenchimento, continuar um rascunho ou acessar um currículo já concluído para visualização e edição.
+
+Quando o aluno inicia ou continua o preenchimento, o sistema conduz o processo por etapas: dados pessoais e contato, formação acadêmica, experiências profissionais e informações complementares.
+
+Ao concluir o preenchimento, o aluno acessa a revisão, na qual pode conferir os dados de cada seção e selecionar aquela que deseja alterar. 
+
+Ao selecionar PDF ou DOCX, o sistema gera o arquivo e disponibiliza o download.
+
 ```text
 CADASTRO / LOGIN
         ↓
@@ -155,17 +163,18 @@ de itens quando necessário.
 
 ### 6.7 Revisar e editar
 
-O sistema apresenta uma revisão estruturada de todos os dados preenchidos. O
-aluno confirma a completude e navega diretamente para a etapa que deseja
-alterar.
+O sistema apresenta um resumo organizado das informações preenchidas pelo aluno, separado por seção. A revisão permite conferir dados pessoais, formação acadêmica, experiências profissionais e informações complementares antes da visualização final.
 
-O foco da tela é a conferência dos dados cadastrados, não a comparação com
-texto importado ou sugestões automáticas.
+Para cada seção, a interface deve indicar seu conteúdo e disponibilizar uma ação para edição. Ao selecionar essa ação, o aluno retorna à etapa correspondente, altera os dados necessários e pode voltar à revisão para conferir as mudanças.
+
+A interface também deve indicar eventuais pendências obrigatórias, quando aplicável, e orientar o aluno sobre como resolvê-las antes de avançar.
+
+A revisão é uma conferência dos dados informados pelo próprio aluno. Não envolve análise automática, pontuação, comparação com currículos importados ou sugestões geradas por IA.
 
 **Wireframe:** resumo por seção, indicador de pendências obrigatórias e ações
 `Editar`, `Voltar` e `Visualizar currículo`.
 
-**Caso de uso:** UC05.
+**Caso de uso:** UC05  — Editar currículo.
 
 ### 6.8 Visualizar currículo
 
@@ -204,9 +213,9 @@ uma mensagem objetiva e pode tentar novamente sem perder os dados preenchidos.
 
 | Momento | Decisão do aluno | Resultado |
 |---|---|---|
-| Acesso | Criar conta, entrar ou recuperar senha | Chega ao painel inicial. |
-| Painel | Iniciar ou continuar currículo | Entra na próxima etapa pendente. |
-| Cada seção | Adicionar, editar, remover ou salvar rascunho | Mantém os dados sob controle do aluno. |
+| Acesso | Criar conta, entrar ou recuperar senha | Acessa o painel inicial. |
+| Painel | Iniciar um currículo ou continuar um rascunho | Entra na próxima etapa pendente. |
+| Preenchimento | Adicionar, editar ou remover informações | Mantém os dados sob controle do aluno. |
 | Revisão | Corrigir ou confirmar os dados | Libera a visualização. |
 | Visualização | Editar ou gerar | Retorna à revisão ou inicia a exportação. |
 | Exportação | PDF ou DOCX | Gera o arquivo escolhido para download. |
