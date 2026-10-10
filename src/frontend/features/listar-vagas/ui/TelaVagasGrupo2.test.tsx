@@ -26,44 +26,36 @@ const sugestao: SugestaoVaga = {
 };
 
 describe("TelaVagasGrupo2", () => {
-  it(
-    "mostra carregamento e apresenta as vagas devolvidas pelo double",
-    async () => {
-      const cliente: ClienteVagasGrupo2 = {
-        listarSugestoes: vi.fn().mockResolvedValue([sugestao]),
-      };
+  it("mostra carregamento e apresenta as vagas devolvidas pelo double", async () => {
+    const cliente: ClienteVagasGrupo2 = {
+      listarSugestoes: vi.fn().mockResolvedValue([sugestao]),
+    };
 
-      render(<TelaVagasGrupo2 cliente={cliente} />);
+    render(<TelaVagasGrupo2 cliente={cliente} />);
 
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Carregando vagas",
-      );
-      expect(
-        await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
-      ).toBeInTheDocument();
-      expect(screen.getByText("Empresa Exemplo")).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: "Ver detalhes da vaga" }),
-      ).toHaveAttribute("href", sugestao.vaga.urlCandidatura);
-    },
-  );
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando vagas");
+    expect(
+      await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Empresa Exemplo")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver detalhes da vaga" }),
+    ).toHaveAttribute("href", sugestao.vaga.urlCandidatura);
+  });
 
-  it(
-    "apresenta estado vazio quando o double não devolve sugestões",
-    async () => {
-      const cliente: ClienteVagasGrupo2 = {
-        listarSugestoes: vi.fn().mockResolvedValue([]),
-      };
+  it("apresenta estado vazio quando o double não devolve sugestões", async () => {
+    const cliente: ClienteVagasGrupo2 = {
+      listarSugestoes: vi.fn().mockResolvedValue([]),
+    };
 
-      render(<TelaVagasGrupo2 cliente={cliente} />);
+    render(<TelaVagasGrupo2 cliente={cliente} />);
 
-      expect(
-        await screen.findByRole("heading", {
-          name: "Nenhuma vaga encontrada",
-        }),
-      ).toBeInTheDocument();
-    },
-  );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nenhuma vaga encontrada",
+      }),
+    ).toBeInTheDocument();
+  });
 
   it("mostra erro seguro e permite tentar a consulta novamente", async () => {
     const usuario = userEvent.setup();

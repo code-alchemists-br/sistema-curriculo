@@ -84,7 +84,9 @@ function renderizarEstado(
         className="vagas-grupo2__estado"
       >
         <h2 id="titulo-vagas-vazias">Nenhuma vaga encontrada</h2>
-        <p>Não encontramos vagas sugeridas para este currículo neste momento.</p>
+        <p>
+          Não encontramos vagas sugeridas para este currículo neste momento.
+        </p>
       </section>
     );
   }
@@ -165,10 +167,7 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
 }
 
 function mensagemDeErro(erro: unknown): string {
-  if (
-    erro instanceof FalhaVagasGrupo2 &&
-    erro.codigo === "resposta-invalida"
-  ) {
+  if (erro instanceof FalhaVagasGrupo2 && erro.codigo === "resposta-invalida") {
     return "Recebemos uma resposta inesperada. Tente novamente mais tarde.";
   }
 
