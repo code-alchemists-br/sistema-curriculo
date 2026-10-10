@@ -34,12 +34,13 @@ describe("TelaVagasGrupo2", () => {
     render(<TelaVagasGrupo2 cliente={cliente} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("Carregando vagas");
-    expect(await screen.findByRole("heading", { name: sugestao.vaga.titulo })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Empresa Exemplo")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver detalhes da vaga" })).toHaveAttribute(
-      "href",
-      sugestao.vaga.urlCandidatura,
-    );
+    expect(
+      screen.getByRole("link", { name: "Ver detalhes da vaga" }),
+    ).toHaveAttribute("href", sugestao.vaga.urlCandidatura);
   });
 
   it("apresenta estado vazio quando o double não devolve sugestões", async () => {
@@ -49,7 +50,11 @@ describe("TelaVagasGrupo2", () => {
 
     render(<TelaVagasGrupo2 cliente={cliente} />);
 
-    expect(await screen.findByRole("heading", { name: "Nenhuma vaga encontrada" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nenhuma vaga encontrada",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("mostra erro seguro e permite tentar a consulta novamente", async () => {
@@ -63,10 +68,16 @@ describe("TelaVagasGrupo2", () => {
 
     render(<TelaVagasGrupo2 cliente={cliente} />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("integração de vagas está indisponível");
-    await usuario.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "integração de vagas está indisponível",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Tentar novamente" }),
+    );
 
-    expect(await screen.findByRole("heading", { name: sugestao.vaga.titulo })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
+    ).toBeInTheDocument();
     expect(cliente.listarSugestoes).toHaveBeenCalledTimes(2);
   });
 });
