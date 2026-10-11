@@ -871,87 +871,21 @@ Essa separação permite que os controles sejam definidos de forma independente,
 
 # 9. Interface de autenticação para rotas protegidas
 
-## 9.1 Interface entre API e autenticação
+Toda operação que leia ou altere informações pessoais ou profissionais do
+estudante DEVE exigir uma sessão válida. Rotas públicas devem limitar-se a
+cadastro, autenticação, obtenção de proteção CSRF pré-autenticação e verificações
+operacionais sem dados pessoais; exceções exigem justificativa funcional e
+política de exposição documentadas.
 
-Toda rota que exige uma sessão válida DEVE declarar a autenticação na fronteira
-HTTP por uma dependência comum da API, conceitualmente chamada
-`usuario_autenticado`. A dependência lê exclusivamente o cookie de sessão
-definido no planejamento de autenticação (seção 2.6), valida sessão, expiração,
-revogação e estado da conta, e devolve uma identidade autenticada mínima. Ela
-NÃO DEVE aceitar identidade, papel ou permissão enviados no caminho, query,
-corpo ou cabeçalhos pelo cliente.
+A autenticação deve ocorrer por dependência comum na fronteira HTTP. Falha de
+autenticação responde `401` antes de executar o caso de uso; sessão válida sem
+autorização responde `403`, ou `404` quando a política do recurso ocultar sua
+existência. A identidade usada para aplicar propriedade e autorização deve vir
+do contexto autenticado, nunca de valores de identidade ou proprietário
+enviados pelo cliente.
 
-O contrato da identidade disponibilizada ao handler é:
-
-```text
-UsuarioAutenticado
-  usuario_id: UUID
-```
-
-`UsuarioAutenticado` representa a identidade cuja sessão foi validada. É dado
-de contexto confiável fornecido pela dependência, não DTO de entrada do cliente
-nem entidade de domínio. O handler DEVE obter desse contexto o `usuario_id`
-para operações sobre dados privados. A implementação pode usar tipos próprios
-da linguagem/framework, preservando os mesmos campos e garantias.
-
-Em FastAPI, a forma de uso esperada é equivalente a:
-
-```python
-async def consultar_dados(
-    usuario: UsuarioAutenticado = Depends(usuario_autenticado),
-) -> Resposta:
-    ...
-```
-
-A dependência deve ser injetável/substituível nos testes de API. As rotas não
-devem implementar validação de cookie individualmente. Falha de autenticação
-encerra a requisição com `401` antes de invocar o executor/caso de uso; sessão
-válida sem autorização ao recurso produz `403` (ou `404` quando a política
-definida para aquele recurso exigir ocultar sua existência). A política de
-propriedade deve comparar o identificador do recurso com `usuario_id` obtido da
-sessão, nunca com um identificador de proprietário declarado pelo cliente.
-
-## 9.2 Classificação de rotas
-
-As rotas públicas são apenas as necessárias para criar conta, iniciar/validar
-uma sessão, obter token CSRF pré-autenticação e verificações operacionais sem
-dados pessoais. O cadastro de estudante pode ser público; a rota de acesso
-existente (`POST /acessos`) somente poderá ser considerada login quando seguir
-integralmente as operações de sessão da seção 2.6. A classificação pública não
-dispensa limites contra abuso nem controles CSRF aplicáveis.
-
-Conforme RF13, qualquer operação que leia ou altere informações pessoais ou
-profissionais do estudante DEVE exigir autenticação. Na API atual, isso inclui
-no mínimo:
-
-| Operação atual | Regra de interface |
-|---|---|
-| `PUT /estudantes/{usuario_id}` | Exigir sessão e permitir edição somente quando o caminho corresponder a `usuario.usuario_id`; preferencialmente derivar o alvo da sessão e remover `{usuario_id}` em revisão futura de rota. |
-| `DELETE /estudantes/{usuario_id}` | Exigir sessão e limitar a exclusão ao próprio perfil, com a mesma regra de identidade. |
-| Rotas de dados de contato | Exigir sessão; vincular a operação ao perfil do usuário autenticado. |
-| Rotas de projetos acadêmicos | Exigir sessão; vincular criação e alterações ao usuário autenticado. |
-
-Rotas futuras de formação, experiências, competências, consulta de perfil,
-currículos, visualização privada e exportação de currículos também serão
-protegidas quando expuserem ou modificarem dados de um estudante. Endpoints de
-conteúdo explicitamente público só podem ser exceção mediante requisito
-funcional e política de exposição documentados. Este inventário classifica
-recursos por sensibilidade e não substitui os caminhos HTTP definitivos, que
-devem ser registrados quando cada endpoint for especificado.
-
-## 9.3 Contrato dos testes de rota protegida
-
-Cada rota protegida DEVE ter teste de API que envie uma requisição sem cookie de
-sessão e verifique `401 Unauthorized`, ausência de execução do executor e
-ausência de alteração de estado. O teste deve usar entrada válida para a rota,
-assim isolando o resultado de autenticação de erros de validação do payload.
-Também devem ser cobertos cookie inválido, sessão expirada/revogada e sessão
-válida. Para sessão válida, testar que o identificador do usuário entregue ao
-caso de uso vem do contexto autenticado; tentativa de substituir identidade por
-parâmetro de rota ou campo de corpo não pode permitir acesso a outra conta.
-
-Esses testes devem substituir a dependência de autenticação e os executores por
-doubles determinísticos, sem depender de banco ou relógio real. Testes unitários
-de API são executados no ambiente `backend`; testes de integração que exercitem
-persistência ou infraestrutura seguem o ambiente `tests` definido no
-`AGENTS.md` raiz.
+Cada rota protegida deve ter testes para ausência e invalidade de sessão,
+autorização negada e acesso autorizado, incluindo a garantia de que falhas não
+executam casos de uso nem alteram estado. Os detalhes normativos da credencial,
+da dependência, da classificação de endpoints e dos cenários de teste estão no
+[Contrato de credenciais de sessão](contrato-credenciais-sessao.md).
