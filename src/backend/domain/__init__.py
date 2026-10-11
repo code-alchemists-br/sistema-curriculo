@@ -6,6 +6,12 @@ internas possam trabalhar com regras de negócio estáveis e para que adapters
 futuros dependam do domínio, e não o contrário.
 """
 
+# Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+from backend.domain.associacao_curriculo_vaga import (
+    AssociacaoCurriculoVaga,
+    ClassificacaoAssociacao,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 from backend.domain.curriculo import Curriculo
 from backend.domain.exceptions import RegraDeDominioViolada
@@ -42,9 +48,14 @@ from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
     Telefone,
     UsuarioId,
+    # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+    VagaId,
 )
 
 __all__ = [
+    # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+    "AssociacaoCurriculoVaga",
+    "ClassificacaoAssociacao",
     "Competencia",
     "CompetenciaId",
     "Curriculo",
@@ -70,4 +81,6 @@ __all__ = [
     "Telefone",
     "Usuario",
     "UsuarioId",
+    # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+    "VagaId",
 ]
