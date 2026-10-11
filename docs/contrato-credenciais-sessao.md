@@ -127,6 +127,73 @@ autorização e a propriedade de cada recurso usam o `usuario_id` desse contexto
 nunca identidade enviada pelo cliente. A sessão não concede papel ou permissão
 por si só.
 
+### Interface da dependência
+
+Toda rota que exige sessão DEVE declarar autenticação por uma dependência comum
+da API, conceitualmente chamada `usuario_autenticado`. Em FastAPI, o uso
+esperado é equivalente a:
+
+```python
+async def consultar_dados(
+    usuario: UsuarioAutenticado = Depends(usuario_autenticado),
+) -> Resposta:
+    ...
+```
+
+A dependência lê exclusivamente o cookie `__Host-sessao`. Ela NÃO DEVE aceitar
+identidade, papel ou permissão enviados em caminho, query, corpo ou cabeçalhos
+pelo cliente. O handler obtém do contexto `usuario.usuario_id` para operações
+privadas; o contexto não é DTO de entrada nem entidade de domínio. A dependência
+deve ser substituível nos testes, e handlers não devem validar cookies
+individualmente.
+
+Falha de autenticação responde `401 Unauthorized` antes de executar o caso de
+uso. Sessão válida sem autorização ao recurso responde `403 Forbidden`, ou
+`404 Not Found` quando a política daquele recurso ocultar sua existência. A
+propriedade compara o identificador do recurso com o usuário autenticado, nunca
+com o proprietário declarado pelo cliente.
+
+### Classificação de rotas
+
+São públicas somente as rotas necessárias para criar uma conta, iniciar uma
+sessão, obter o token CSRF pré-autenticação e executar verificações operacionais
+sem dados pessoais. Cadastro de estudante pode ser público. `POST /acessos` é o
+login definido neste contrato; ele só cria sessão depois de validar credenciais
+e estado da conta. Rotas públicas continuam sujeitas a limites contra abuso e
+às proteções CSRF aplicáveis.
+
+Qualquer operação que leia ou altere informações pessoais ou profissionais do
+estudante DEVE exigir sessão. Na API atual, isso inclui:
+
+| Operação | Regra de interface |
+|---|---|
+| `PUT /estudantes/{usuario_id}` | Permitir alteração somente se o parâmetro corresponder a `usuario.usuario_id`; em revisão futura, preferir derivar o alvo da sessão e remover `{usuario_id}`. |
+| `DELETE /estudantes/{usuario_id}` | Limitar exclusão ao próprio perfil, usando a mesma regra de identidade. |
+| Rotas de dados de contato | Vincular leitura ou alteração ao perfil do usuário autenticado. |
+| Rotas de projetos acadêmicos | Vincular criação e alterações ao usuário autenticado. |
+
+Rotas futuras de formação, experiências, competências, consulta de perfil,
+currículos, visualização privada e exportação também serão protegidas quando
+expuserem ou modificarem dados de um estudante. Conteúdo explicitamente público
+só pode ser exceção com requisito funcional e política de exposição
+documentados. O inventário classifica recursos por sensibilidade; os caminhos
+HTTP definitivos devem ser registrados ao especificar cada endpoint.
+
+### Testes de rotas protegidas
+
+Cada rota protegida DEVE ter teste de API sem cookie de sessão que confirme
+`401 Unauthorized`, ausência de execução do caso de uso e ausência de alteração
+de estado. Use entrada válida para isolar autenticação de erros de validação.
+Cubra também cookie inválido, sessão expirada ou revogada e sessão válida. No
+caso válido, confirme que o identificador recebido pelo caso de uso veio do
+contexto autenticado e que valores enviados pelo cliente não permitem acesso à
+conta de outra pessoa.
+
+Os testes devem substituir a dependência de autenticação e os executores por
+doubles determinísticos, sem banco ou relógio real. Testes unitários de API
+executam no ambiente `backend`; testes de integração que exercitem persistência
+ou infraestrutura seguem o ambiente `tests` definido no `AGENTS.md` raiz.
+
 ## CSRF e limites de transporte
 
 Como o navegador envia cookies automaticamente, operações que alteram estado
