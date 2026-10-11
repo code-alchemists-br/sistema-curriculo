@@ -75,9 +75,7 @@ export function MensagemEstado({
             {titulo}
           </h3>
         )}
-        {mensagem && (
-          <p className="mensagem-estado__descricao">{mensagem}</p>
-        )}
+        {mensagem && <p className="mensagem-estado__descricao">{mensagem}</p>}
         {children}
         {onAcao && (
           <button
@@ -104,9 +102,7 @@ export function MensagemEstado({
           {titulo}
         </h3>
       )}
-      {mensagem && (
-        <p className="mensagem-estado__descricao">{mensagem}</p>
-      )}
+      {mensagem && <p className="mensagem-estado__descricao">{mensagem}</p>}
       {children}
       {onAcao && (
         <button

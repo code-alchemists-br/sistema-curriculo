@@ -6,7 +6,6 @@ import { MensagemEstado } from "./MensagemEstado";
 
 afterEach(cleanup);
 
-
 describe("MensagemEstado", () => {
   it("renderiza o estado de carregamento com role status e texto padrão", () => {
     render(<MensagemEstado tipo="carregando" />);
@@ -74,11 +73,7 @@ describe("MensagemEstado", () => {
     const aoClicar = vi.fn();
 
     render(
-      <MensagemEstado
-        mensagem="Erro de rede"
-        onAcao={aoClicar}
-        tipo="erro"
-      />,
+      <MensagemEstado mensagem="Erro de rede" onAcao={aoClicar} tipo="erro" />,
     );
 
     const botao = screen.getByRole("button", { name: "Tentar novamente" });
@@ -109,12 +104,7 @@ describe("MensagemEstado", () => {
   });
 
   it("não exibe botão de ação se onAcao não for informado", () => {
-    render(
-      <MensagemEstado
-        mensagem="Falha sem ação"
-        tipo="erro"
-      />,
-    );
+    render(<MensagemEstado mensagem="Falha sem ação" tipo="erro" />);
 
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });

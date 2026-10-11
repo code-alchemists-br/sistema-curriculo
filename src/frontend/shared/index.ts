@@ -5,4 +5,3 @@ export type {
   MensagemEstadoProps,
   TipoMensagemEstado,
 } from "./ui/MensagemEstado";
-
