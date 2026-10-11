@@ -136,6 +136,9 @@ A implementação deverá considerar:
 * armazenamento seguro das informações de sessão;
 * comunicação protegida por HTTPS/TLS.
 
+O contrato da credencial de sessão define o cookie, o prazo máximo de validade,
+a emissão, a validação e a revogação: [Contrato de credenciais de sessão](contrato-credenciais-sessao.md).
+
 Quando forem utilizados cookies para gerenciamento da sessão, deverão ser considerados atributos de segurança apropriados, como:
 
 * `Secure`;
