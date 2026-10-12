@@ -6,8 +6,9 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from backend.domain.curriculo import Curriculo
 
@@ -376,4 +377,46 @@ class ConsultaItemPerfil(Protocol):
         referência e devolvem a entidade ou ausência, sem aplicar regras de
         propriedade. O método existe para que o caso de uso leia o conteúdo dos
         itens selecionados e decida sozinho o que pode ser exibido.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+@dataclass(frozen=True, slots=True)
+class VagaExternaDto:
+    """Representa de forma imutável uma vaga retornada pela busca.
+
+    A estrutura reúne os oito campos aprovados no modelo de referência e não
+    inclui detalhes de transporte ou do provedor. Ela existe para tipar os
+    resultados de busca consumidos pela Application.
+    """
+
+    id: str
+    titulo: str
+    empresa: str
+    descricao: str
+    requisitos: tuple[str, ...]
+    localizacao: str
+    modalidade: str
+    url_candidatura: str
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+class BuscadorVagas(Protocol):
+    """Define a capacidade assíncrona interna de consultar vagas.
+
+    A porta especifica os parâmetros e o DTO retornado sem nomear provedor ou
+    transporte. Ela existe para que os casos de uso dependam de uma abstração
+    que possa ser atendida por adapters externos ou doubles.
+    """
+
+    async def buscar_vagas(
+        self,
+        termo: str = "",
+        filtros: dict[str, Any] | None = None,
+    ) -> list[VagaExternaDto]:
+        """Solicita a busca de vagas e retorna seus resultados tipados.
+
+        A operação recebe o termo e o mapa opcional de filtros da assinatura e
+        aguarda a implementação que realiza a consulta. Ela existe para
+        manter a Application independente da origem da busca.
         """
