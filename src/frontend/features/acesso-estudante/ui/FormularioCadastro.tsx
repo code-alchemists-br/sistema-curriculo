@@ -49,11 +49,13 @@ export function FormularioCadastro({
   }
 
   /**
-   * Valida e envia o cadastro, preservando valores em caso de falha.
+   * Valida e submete os dados de cadastro comunicando feedbacks acessíveis.
    *
-   * O manipulador interrompe o submit nativo, delega o transporte ao cliente e
-   * descarta senhas somente após sucesso. Ele existe para coordenar o fluxo de
-   * criação de conta sem transformar o componente em cliente HTTP.
+   * O manipulador interrompe o envio nativo do formulário, valida os valores
+   * via `validarCadastro`, emite alerta sonoro acessível via live region quando
+   * há pendências locais e, em caso de sucesso, delega a criação ao cliente injetado.
+   * Ele existe para coordenar o fluxo acessível de criação de conta sem acoplar a
+   * interface ao transporte HTTP.
    */
   async function enviarCadastro(
     evento: FormEvent<HTMLFormElement>,
@@ -63,6 +65,9 @@ export function FormularioCadastro({
 
     if (Object.keys(novosErros).length > 0) {
       setErros(novosErros);
+      setMensagem(
+        "Há pendências que precisam ser corrigidas antes de criar a conta.",
+      );
       return;
     }
 
