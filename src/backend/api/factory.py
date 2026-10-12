@@ -61,6 +61,7 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
+from backend.application.sessoes import CriadorSessao
 
 
 def create_app(
@@ -79,6 +80,7 @@ def create_app(
     desselecionar_item_versao_curriculo: DesselecaoItemVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
+    criador_sessao: CriadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -90,7 +92,9 @@ def create_app(
     Application e domínio livres do framework.
     """
     app = FastAPI()
-    app.include_router(criar_router_cadastro_acesso(cadastrar_estudante, acessar_estudante, derivador_senha))
+    app.include_router(
+        criar_router_cadastro_acesso(cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao)
+    )
     app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
