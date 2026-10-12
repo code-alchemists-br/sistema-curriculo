@@ -61,6 +61,8 @@ from backend.application.perfil_estudante import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
     GeradorCurriculoId,
@@ -75,6 +77,13 @@ from backend.application.ports import (
     RepositorioProjetoAcademico,
     RepositorioUsuario,
     VerificadorSenha,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.application.previa_versao_curriculo import (
+    GerarPreviaVersaoCurriculo,
+    GerarPreviaVersaoCurriculoEntrada,
+    PreviaVersaoCurriculo,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -155,4 +164,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     "ListarVersoesCurriculo",
     "ListarVersoesCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    "ConsultaItemPerfil",
+    "GerarPreviaVersaoCurriculo",
+    "GerarPreviaVersaoCurriculoEntrada",
+    "PreviaVersaoCurriculo",
 ]
