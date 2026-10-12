@@ -1,12 +1,15 @@
 """Verifica o encerramento HTTP da sessão atual."""
 
+import hashlib
 import unittest
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Response
 
 from backend.api.factory import create_app
 from backend.api.sessoes import COOKIE_SESSAO, criar_router
 from backend.application.sessoes import RevogadorSessao
+from backend.infrastructure.security.tokens_sessao import RevogadorSessaoSeguro
 
 
 class RevogadorSessaoStub(RevogadorSessao):
@@ -31,6 +34,30 @@ class RevogadorSessaoStub(RevogadorSessao):
         rota encaminha exatamente o cookie recebido.
         """
         self.tokens.append(token)
+
+
+class RepositorioRevogacaoProbe:
+    """Captura os metadados enviados pelo revogador seguro.
+
+    O probe não acessa banco e mantém somente argumentos resumidos. Ele existe
+    para testar o fluxo de logout até a porta de persistência.
+    """
+
+    def __init__(self) -> None:
+        """Prepara a lista de operações de revogação observadas.
+
+        O construtor não abre recursos externos. Ele existe para expor ao teste
+        os valores destinados ao repositório.
+        """
+        self.revogacoes: list[tuple[str, datetime]] = []
+
+    async def revogar_por_hash(self, token_hash: str, revogada_em: datetime) -> None:
+        """Registra hash e instante da atualização solicitada.
+
+        Nenhuma instrução SQL é executada. O método existe para garantir que o
+        token em claro não atravesse o adapter de segurança.
+        """
+        self.revogacoes.append((token_hash, revogada_em))
 
 
 def _handler(revogador_sessao: RevogadorSessaoStub | None):
@@ -109,3 +136,23 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
         operacao = app.openapi()["paths"]["/sessao/atual"]["delete"]
 
         self.assertEqual(operacao["responses"]["204"]["description"], "Successful Response")
+
+    async def test_logout_persiste_revogacao_do_token_recebido(self) -> None:
+        """Encaminha cookie pela rota, adapter seguro e porta de persistência.
+
+        O handler usa o revogador seguro, e o probe captura o hash em vez do
+        segredo. O teste existe para proteger o registro de logout no armazenamento.
+        """
+        repositorio = RepositorioRevogacaoProbe()
+        handler = _handler(RevogadorSessaoSeguro(repositorio))
+        token = "token-da-sessao-atual"
+        resposta = Response()
+
+        await handler(resposta, token)
+
+        self.assertEqual(len(repositorio.revogacoes), 1)
+        token_hash, revogada_em = repositorio.revogacoes[0]
+        self.assertEqual(token_hash, hashlib.sha256(token.encode("utf-8")).hexdigest())
+        self.assertNotEqual(token_hash, token)
+        self.assertIsNotNone(revogada_em.tzinfo)
+        self.assertIn("Max-Age=0", resposta.headers["set-cookie"])

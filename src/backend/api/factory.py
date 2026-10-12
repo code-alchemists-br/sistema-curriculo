@@ -38,6 +38,7 @@ from backend.api.listagem_versoes_curriculo import (
 from backend.api.listagem_versoes_curriculo import (
     criar_router as criar_router_listagem_versoes_curriculo,
 )
+from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
@@ -62,6 +63,7 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
+from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
 
@@ -83,6 +85,7 @@ def create_app(
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
     revogador_sessao: RevogadorSessao | None = None,
+    autenticador_sessao: AutenticadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -91,10 +94,13 @@ def create_app(
     itens e listagem de versões com os executores recebidos; ausências
     permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A rota de sessão recebe um revogador opcional da composição.
+    Quando recebido, o autenticador instala middleware para proteger as demais rotas.
     Ela existe para concentrar a composição na camada externa, mantendo
     Application e domínio livres do framework.
     """
     app = FastAPI()
+    if autenticador_sessao is not None:
+        app.add_middleware(MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao)
     app.include_router(
         criar_router_cadastro_acesso(cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao)
     )
