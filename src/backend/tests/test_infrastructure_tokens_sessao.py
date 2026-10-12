@@ -7,11 +7,20 @@ from importlib import import_module
 from unittest.mock import patch
 from uuid import UUID
 
-from sqlalchemy import Column, DateTime, ForeignKeyConstraint, String, UniqueConstraint, Uuid
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKeyConstraint,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 
 from backend.domain.value_objects import UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
-from backend.infrastructure.persistence.sqlalchemy.repositorio_sessao import RepositorioSessaoSqlAlchemy
+from backend.infrastructure.persistence.sqlalchemy.repositorio_sessao import (
+    RepositorioSessaoSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.sessao import SessaoRegistro
 from backend.infrastructure.security.tokens_sessao import CriadorSessaoSeguro
 
