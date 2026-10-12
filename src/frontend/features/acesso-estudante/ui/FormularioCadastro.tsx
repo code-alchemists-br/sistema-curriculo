@@ -65,7 +65,9 @@ export function FormularioCadastro({
 
     if (Object.keys(novosErros).length > 0) {
       setErros(novosErros);
-      setMensagem("Há pendências que precisam ser corrigidas antes de criar a conta.");
+      setMensagem(
+        "Há pendências que precisam ser corrigidas antes de criar a conta.",
+      );
       return;
     }
 

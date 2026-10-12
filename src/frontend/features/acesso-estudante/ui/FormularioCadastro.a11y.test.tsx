@@ -113,7 +113,10 @@ describe("FormularioCadastro — Testes de Acessibilidade (a11y)", () => {
     );
 
     expect(campoEmail).toHaveAttribute("aria-invalid", "true");
-    expect(campoEmail).toHaveAttribute("aria-describedby", "email-cadastro-erro");
+    expect(campoEmail).toHaveAttribute(
+      "aria-describedby",
+      "email-cadastro-erro",
+    );
     expect(screen.getByText("Informe um e-mail válido.")).toHaveAttribute(
       "id",
       "email-cadastro-erro",
@@ -174,20 +177,24 @@ describe("FormularioCadastro — Testes de Acessibilidade (a11y)", () => {
 
     render(<FormularioCadastro aoCadastrar={vi.fn()} cliente={cliente} />);
 
-    await usuario.type(screen.getByRole("textbox", { name: "Nome" }), "Ana Silva");
+    await usuario.type(
+      screen.getByRole("textbox", { name: "Nome" }),
+      "Ana Silva",
+    );
     await usuario.type(
       screen.getByRole("textbox", { name: "E-mail" }),
       "ana@fatec.sp.gov.br",
     );
     await usuario.type(screen.getByLabelText("Senha"), "senhaSegura123");
-    await usuario.type(screen.getByLabelText("Confirme a senha"), "senhaSegura123");
+    await usuario.type(
+      screen.getByLabelText("Confirme a senha"),
+      "senhaSegura123",
+    );
 
     await usuario.click(screen.getByRole("button", { name: "Criar conta" }));
 
     const alertaGlobal = await screen.findByRole("alert");
-    expect(alertaGlobal).toHaveTextContent(
-      "Este e-mail já possui uma conta.",
-    );
+    expect(alertaGlobal).toHaveTextContent("Este e-mail já possui uma conta.");
   });
 
   /**
