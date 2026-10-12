@@ -79,6 +79,13 @@ from backend.application.ports import (
     VerificadorSenha,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.application.previa_versao_curriculo import (
+    GerarPreviaVersaoCurriculo,
+    GerarPreviaVersaoCurriculoEntrada,
+    PreviaVersaoCurriculo,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from backend.application.selecao_itens_versao_curriculo import (
     DesselecionarItemVersaoCurriculo,
@@ -96,13 +103,6 @@ from backend.application.versao_curriculo import (
     CurriculoNaoEncontrado,
     EditarVersaoCurriculo,
     EditarVersaoCurriculoEntrada,
-)
-
-# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
-from backend.application.previa_versao_curriculo import (
-    GerarPreviaVersaoCurriculo,
-    GerarPreviaVersaoCurriculoEntrada,
-    PreviaVersaoCurriculo,
 )
 
 __all__ = [

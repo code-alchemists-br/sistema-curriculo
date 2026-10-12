@@ -91,11 +91,13 @@ def create_app(
     criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     selecionar_item_versao_curriculo: SelecaoItemVersaoCurriculoExecutor | None = None,
-    desselecionar_item_versao_curriculo: DesselecaoItemVersaoCurriculoExecutor | None = None,
+    desselecionar_item_versao_curriculo: DesselecaoItemVersaoCurriculoExecutor
+    | None = None,
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
-    cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor | None = None,
+    cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor
+    | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
 ) -> FastAPI:
@@ -110,16 +112,28 @@ def create_app(
     """
     app = FastAPI()
     app.include_router(
-        criar_router_cadastro_acesso(cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao)
+        criar_router_cadastro_acesso(
+            cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
+        )
     )
     app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
-    app.include_router(criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo))
     app.include_router(
-        criar_router_itens_versao_curriculo(selecionar_item_versao_curriculo, desselecionar_item_versao_curriculo)
+        criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo)
     )
-    app.include_router(criar_router_listagem_versoes_curriculo(listar_versoes_curriculo))
-    app.include_router(criar_router_experiencia_profissional(cadastrar_experiencia_profissional))
-    app.include_router(criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo))
+    app.include_router(
+        criar_router_itens_versao_curriculo(
+            selecionar_item_versao_curriculo, desselecionar_item_versao_curriculo
+        )
+    )
+    app.include_router(
+        criar_router_listagem_versoes_curriculo(listar_versoes_curriculo)
+    )
+    app.include_router(
+        criar_router_experiencia_profissional(cadastrar_experiencia_profissional)
+    )
+    app.include_router(
+        criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
+    )
     return app

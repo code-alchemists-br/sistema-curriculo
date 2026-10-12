@@ -92,7 +92,9 @@ class GerarPreviaVersaoCurriculo:
         self._consulta_item = consulta_item
 
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
-    async def executar(self, entrada: GerarPreviaVersaoCurriculoEntrada) -> PreviaVersaoCurriculo:
+    async def executar(
+        self, entrada: GerarPreviaVersaoCurriculoEntrada
+    ) -> PreviaVersaoCurriculo:
         """Monta a prévia da versão do solicitante e a devolve agrupada por seção.
 
         O método trata versão ausente, versão alheia e estudante ausente ou
@@ -113,19 +115,35 @@ class GerarPreviaVersaoCurriculo:
         itens = []
         for referencia in curriculo.referencias:
             item = await self._consulta_item.obter_item(referencia)
-            if item is None or item.usuario_id != entrada.usuario_id or item.id != referencia.item_id:
+            if (
+                item is None
+                or item.usuario_id != entrada.usuario_id
+                or item.id != referencia.item_id
+            ):
                 continue
             itens.append(item)
 
         return PreviaVersaoCurriculo(
             usuario=usuario,
             curriculo=curriculo,
-            formacoes=_ordenar_por_periodo(item for item in itens if isinstance(item, FormacaoAcademica)),
-            experiencias=_ordenar_por_periodo(item for item in itens if isinstance(item, ExperienciaProfissional)),
-            projetos=_ordenar_por_texto((item for item in itens if isinstance(item, ProjetoAcademico)), "titulo"),
-            competencias=_ordenar_por_texto((item for item in itens if isinstance(item, Competencia)), "descricao"),
-            idiomas=_ordenar_por_texto((item for item in itens if isinstance(item, Idioma)), "idioma"),
-            documentos=_ordenar_por_texto((item for item in itens if isinstance(item, Documento)), "nome_arquivo"),
+            formacoes=_ordenar_por_periodo(
+                item for item in itens if isinstance(item, FormacaoAcademica)
+            ),
+            experiencias=_ordenar_por_periodo(
+                item for item in itens if isinstance(item, ExperienciaProfissional)
+            ),
+            projetos=_ordenar_por_texto(
+                (item for item in itens if isinstance(item, ProjetoAcademico)), "titulo"
+            ),
+            competencias=_ordenar_por_texto(
+                (item for item in itens if isinstance(item, Competencia)), "descricao"
+            ),
+            idiomas=_ordenar_por_texto(
+                (item for item in itens if isinstance(item, Idioma)), "idioma"
+            ),
+            documentos=_ordenar_por_texto(
+                (item for item in itens if isinstance(item, Documento)), "nome_arquivo"
+            ),
         )
 
 
@@ -138,7 +156,12 @@ def _ordenar_por_periodo(itens):
     formações e experiências apareçam sempre da mais recente para a mais antiga,
     independentemente da ordem do conjunto de referências.
     """
-    return tuple(sorted(itens, key=lambda item: (-item.periodo.inicio.toordinal(), str(item.id.valor))))
+    return tuple(
+        sorted(
+            itens,
+            key=lambda item: (-item.periodo.inicio.toordinal(), str(item.id.valor)),
+        )
+    )
 
 
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
@@ -150,4 +173,9 @@ def _ordenar_por_texto(itens, campo: str):
     documentos tenham ordem determinística, já que as referências formam um
     conjunto sem ordem.
     """
-    return tuple(sorted(itens, key=lambda item: (getattr(item, campo).casefold(), str(item.id.valor))))
+    return tuple(
+        sorted(
+            itens,
+            key=lambda item: (getattr(item, campo).casefold(), str(item.id.valor)),
+        )
+    )

@@ -179,6 +179,8 @@ class GeradorFormacaoAcademicaId(Protocol):
         tipo de domínio já validado. O método existe para manter a criação da
         entidade explícita e substituível no caso de uso.
         """
+
+
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
     """Define a persistência necessária ao cadastro de uma experiência.
@@ -254,6 +256,7 @@ class GeradorProjetoAcademicoId(Protocol):
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
         """
+
 
 class RepositorioCurriculo(Protocol):
     """Define a capacidade assíncrona de consultar e persistir versões de currículo.
@@ -332,7 +335,9 @@ class ConsultaProprietarioItem(Protocol):
     """
 
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-    async def obter_proprietario(self, referencia: ReferenciaCurriculo) -> UsuarioId | None:
+    async def obter_proprietario(
+        self, referencia: ReferenciaCurriculo
+    ) -> UsuarioId | None:
         """Obtém assincronamente o dono do item referenciado, quando ele existir.
 
         Implementações consultam o armazenamento do tipo de item indicado e

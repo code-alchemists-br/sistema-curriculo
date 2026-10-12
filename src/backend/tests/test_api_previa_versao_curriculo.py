@@ -56,7 +56,11 @@ class PreviaExecutorDouble:
     da rota isoladamente da orquestração da Application.
     """
 
-    def __init__(self, resultado: PreviaVersaoCurriculo | None = None, erro: Exception | None = None) -> None:
+    def __init__(
+        self,
+        resultado: PreviaVersaoCurriculo | None = None,
+        erro: Exception | None = None,
+    ) -> None:
         """Guarda o comportamento configurado e inicia o histórico de chamadas.
 
         O construtor não acessa recursos externos. Ele existe para permitir que
@@ -66,7 +70,9 @@ class PreviaExecutorDouble:
         self._erro = erro
         self.entradas: list[GerarPreviaVersaoCurriculoEntrada] = []
 
-    async def executar(self, entrada: GerarPreviaVersaoCurriculoEntrada) -> PreviaVersaoCurriculo:
+    async def executar(
+        self, entrada: GerarPreviaVersaoCurriculoEntrada
+    ) -> PreviaVersaoCurriculo:
         """Registra a entrada recebida e devolve o resultado ou levanta o erro.
 
         O método aguarda de forma trivial, sem I/O real. Ele existe para tornar
@@ -94,7 +100,9 @@ def _rota(caminho: str, metodo: str, executor: PreviaExecutorDouble | None):
     raise AssertionError(f"Rota {metodo} {caminho} não encontrada.")
 
 
-def _criar_previa(com_contato: bool = True, completa: bool = True) -> PreviaVersaoCurriculo:
+def _criar_previa(
+    com_contato: bool = True, completa: bool = True
+) -> PreviaVersaoCurriculo:
     """Cria um modelo de leitura de prévia válido para o double devolver.
 
     A função monta estudante, versão e, quando pedido, um item de cada seção
@@ -159,9 +167,21 @@ def _criar_previa(com_contato: bool = True, completa: bool = True) -> PreviaVers
             ),
         ),
         competencias=(
-            Competencia(id=CompetenciaId(uuid4()), usuario_id=usuario_id, descricao="Python", nivel="Avançado"),
+            Competencia(
+                id=CompetenciaId(uuid4()),
+                usuario_id=usuario_id,
+                descricao="Python",
+                nivel="Avançado",
+            ),
         ),
-        idiomas=(Idioma(id=IdiomaId(uuid4()), usuario_id=usuario_id, idioma="Inglês", nivel="Avançado"),),
+        idiomas=(
+            Idioma(
+                id=IdiomaId(uuid4()),
+                usuario_id=usuario_id,
+                idioma="Inglês",
+                nivel="Avançado",
+            ),
+        ),
         documentos=(
             Documento(
                 id=DocumentoId(uuid4()),
@@ -193,22 +213,34 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         executor = PreviaExecutorDouble(resultado=previa)
         gerar = _rota(CAMINHO_PREVIA, "GET", executor).endpoint
 
-        resposta = await gerar(usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor)
+        resposta = await gerar(
+            usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor
+        )
 
         self.assertIsInstance(resposta, PreviaVersaoCurriculoResposta)
         self.assertEqual(resposta.curriculo_id, previa.curriculo.id.valor)
-        self.assertEqual((resposta.titulo_versao, resposta.layout), ("Estágio em TI", "classico"))
+        self.assertEqual(
+            (resposta.titulo_versao, resposta.layout), ("Estágio em TI", "classico")
+        )
         self.assertEqual(resposta.estudante.nome, "Ana Carolina da Silva")
         self.assertEqual(resposta.estudante.email, "ana.silva@fatec.sp.gov.br")
         self.assertEqual(resposta.estudante.contato.endereco, "Avenida Tiradentes, 615")
-        self.assertEqual(resposta.estudante.contato.telefones, ["(11) 98765-4321", "(11) 3322-1100"])
-        self.assertEqual(resposta.estudante.contato.linkedin, "https://linkedin.com/in/estudante")
+        self.assertEqual(
+            resposta.estudante.contato.telefones, ["(11) 98765-4321", "(11) 3322-1100"]
+        )
+        self.assertEqual(
+            resposta.estudante.contato.linkedin, "https://linkedin.com/in/estudante"
+        )
         self.assertIsNone(resposta.estudante.contato.curriculo_lattes)
         formacao, experiencia = resposta.formacoes[0], resposta.experiencias[0]
-        self.assertEqual((formacao.id, formacao.curso, formacao.inicio, formacao.fim), (
-            previa.formacoes[0].id.valor, "ADS", date(2023, 2, 1), date(2025, 12, 20)
-        ))
-        self.assertEqual((experiencia.cargo, experiencia.inicio, experiencia.fim), ("Estagiária", date(2024, 1, 15), None))
+        self.assertEqual(
+            (formacao.id, formacao.curso, formacao.inicio, formacao.fim),
+            (previa.formacoes[0].id.valor, "ADS", date(2023, 2, 1), date(2025, 12, 20)),
+        )
+        self.assertEqual(
+            (experiencia.cargo, experiencia.inicio, experiencia.fim),
+            ("Estagiária", date(2024, 1, 15), None),
+        )
         self.assertEqual(resposta.projetos[0].tecnologias, "Python, FastAPI")
         self.assertEqual(resposta.competencias[0].descricao, "Python")
         self.assertEqual(resposta.idiomas[0].idioma, "Inglês")
@@ -221,7 +253,9 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             [GerarPreviaVersaoCurriculoEntrada(previa.usuario.id, previa.curriculo.id)],
         )
 
-    async def test_resposta_nao_expoe_credencial_nem_armazenamento_nem_identidades_internas(self) -> None:
+    async def test_resposta_nao_expoe_credencial_nem_armazenamento_nem_identidades_internas(
+        self,
+    ) -> None:
         """Confirma que a resposta serializada omite dados internos e sensíveis.
 
         O teste serializa a resposta completa e procura o hash de senha, o
@@ -229,16 +263,22 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         proteger a minimização de dados da fronteira.
         """
         previa = _criar_previa()
-        gerar = _rota(CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)).endpoint
+        gerar = _rota(
+            CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)
+        ).endpoint
 
-        resposta = await gerar(usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor)
+        resposta = await gerar(
+            usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor
+        )
 
         texto = resposta.model_dump_json()
         self.assertNotIn(HASH_SENHA, texto)
         self.assertNotIn(URL_ARMAZENAMENTO, texto)
         self.assertNotIn(str(previa.usuario.id.valor), texto)
 
-    async def test_estudante_sem_contato_e_versao_vazia_geram_resposta_valida(self) -> None:
+    async def test_estudante_sem_contato_e_versao_vazia_geram_resposta_valida(
+        self,
+    ) -> None:
         """Confirma contato nulo e seções vazias na resposta.
 
         O teste usa um estudante sem dados de contato e uma versão sem itens e
@@ -246,14 +286,24 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         os casos de perfil incompleto e de versão recém-criada.
         """
         previa = _criar_previa(com_contato=False, completa=False)
-        gerar = _rota(CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)).endpoint
+        gerar = _rota(
+            CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)
+        ).endpoint
 
-        resposta = await gerar(usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor)
+        resposta = await gerar(
+            usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor
+        )
 
         self.assertIsNone(resposta.estudante.contato)
         self.assertEqual(
-            (resposta.formacoes, resposta.experiencias, resposta.projetos,
-             resposta.competencias, resposta.idiomas, resposta.documentos),
+            (
+                resposta.formacoes,
+                resposta.experiencias,
+                resposta.projetos,
+                resposta.competencias,
+                resposta.idiomas,
+                resposta.documentos,
+            ),
             ([], [], [], [], [], []),
         )
 

@@ -134,7 +134,9 @@ class ConsultaItemStub:
         return self._itens.get(referencia)
 
 
-def _criar_usuario(usuario_id: UsuarioId | None = None, excluido: bool = False) -> Usuario:
+def _criar_usuario(
+    usuario_id: UsuarioId | None = None, excluido: bool = False
+) -> Usuario:
     """Cria um estudante válido, opcionalmente excluído, para os cenários.
 
     A função monta o agregado com value objects válidos e fixa ``deleted_at``
@@ -168,7 +170,9 @@ def _criar_curriculo(usuario_id: UsuarioId, *itens: object) -> Curriculo:
     return curriculo
 
 
-def _formacao(usuario_id: UsuarioId, inicio: date, curso: str = "ADS") -> FormacaoAcademica:
+def _formacao(
+    usuario_id: UsuarioId, inicio: date, curso: str = "ADS"
+) -> FormacaoAcademica:
     """Cria uma formação válida do usuário com o início de período indicado.
 
     A função fixa os demais campos com valores neutros. Ela existe para variar
@@ -222,7 +226,12 @@ def _competencia(usuario_id: UsuarioId, descricao: str) -> Competencia:
     A função fixa o nível com valor neutro. Ela existe para variar apenas o
     texto observado pela ordenação.
     """
-    return Competencia(id=CompetenciaId(uuid4()), usuario_id=usuario_id, descricao=descricao, nivel="Avançado")
+    return Competencia(
+        id=CompetenciaId(uuid4()),
+        usuario_id=usuario_id,
+        descricao=descricao,
+        nivel="Avançado",
+    )
 
 
 def _idioma(usuario_id: UsuarioId, idioma: str) -> Idioma:
@@ -231,7 +240,9 @@ def _idioma(usuario_id: UsuarioId, idioma: str) -> Idioma:
     A função fixa o nível com valor neutro. Ela existe para variar apenas o
     texto observado pela ordenação.
     """
-    return Idioma(id=IdiomaId(uuid4()), usuario_id=usuario_id, idioma=idioma, nivel="Avançado")
+    return Idioma(
+        id=IdiomaId(uuid4()), usuario_id=usuario_id, idioma=idioma, nivel="Avançado"
+    )
 
 
 def _documento(usuario_id: UsuarioId, nome_arquivo: str) -> Documento:
@@ -288,9 +299,18 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         documento_b = _documento(usuario.id, "Certificado.pdf")
         documento_a = _documento(usuario.id, "boletim.pdf")
         itens = (
-            formacao_antiga, formacao_recente, experiencia_antiga, experiencia_recente,
-            projeto_b, projeto_a, competencia_b, competencia_a, idioma_b, idioma_a,
-            documento_b, documento_a,
+            formacao_antiga,
+            formacao_recente,
+            experiencia_antiga,
+            experiencia_recente,
+            projeto_b,
+            projeto_a,
+            competencia_b,
+            competencia_a,
+            idioma_b,
+            idioma_a,
+            documento_b,
+            documento_a,
         )
         curriculo = _criar_curriculo(usuario.id, *itens)
         caso = GerarPreviaVersaoCurriculo(
@@ -299,7 +319,9 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             _consulta_para(*itens),
         )
 
-        previa = await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id))
+        previa = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id)
+        )
 
         self.assertIs(previa.usuario, usuario)
         self.assertIs(previa.curriculo, curriculo)
@@ -310,7 +332,9 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(previa.idiomas, (idioma_a, idioma_b))
         self.assertEqual(previa.documentos, (documento_a, documento_b))
 
-    async def test_mesma_selecao_em_ordens_diferentes_produz_a_mesma_previa(self) -> None:
+    async def test_mesma_selecao_em_ordens_diferentes_produz_a_mesma_previa(
+        self,
+    ) -> None:
         """Confirma que a ordem de inclusão das referências não altera a saída.
 
         O teste cria duas versões com os mesmos itens incluídos em ordens
@@ -328,12 +352,18 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             _consulta_para(*projetos),
         )
 
-        previa_primeira = await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, primeira.id))
-        previa_segunda = await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, segunda.id))
+        previa_primeira = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, primeira.id)
+        )
+        previa_segunda = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, segunda.id)
+        )
 
         self.assertEqual(previa_primeira.projetos, previa_segunda.projetos)
 
-    async def test_versao_sem_itens_devolve_secoes_vazias_sem_consultar_itens(self) -> None:
+    async def test_versao_sem_itens_devolve_secoes_vazias_sem_consultar_itens(
+        self,
+    ) -> None:
         """Confirma que uma versão sem seleção produz prévia vazia e sem leitura de itens.
 
         O teste usa uma versão sem referências e observa as tuplas vazias e o
@@ -344,13 +374,24 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         curriculo = _criar_curriculo(usuario.id)
         consulta = ConsultaItemStub()
         caso = GerarPreviaVersaoCurriculo(
-            RepositorioCurriculoSpy([curriculo]), RepositorioUsuarioStub([usuario]), consulta
+            RepositorioCurriculoSpy([curriculo]),
+            RepositorioUsuarioStub([usuario]),
+            consulta,
         )
 
-        previa = await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id))
+        previa = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id)
+        )
 
         self.assertEqual(
-            (previa.formacoes, previa.experiencias, previa.projetos, previa.competencias, previa.idiomas, previa.documentos),
+            (
+                previa.formacoes,
+                previa.experiencias,
+                previa.projetos,
+                previa.competencias,
+                previa.idiomas,
+                previa.documentos,
+            ),
             ((), (), (), (), (), ()),
         )
         self.assertEqual(consulta.consultas, [])
@@ -370,7 +411,9 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         alheio = _projeto(outro_usuario_id, "Alheio")
         referenciado = _projeto(usuario.id, "Referenciado")
         outro_item = _projeto(usuario.id, "Outro item")
-        curriculo = _criar_curriculo(usuario.id, valido, inexistente, alheio, referenciado)
+        curriculo = _criar_curriculo(
+            usuario.id, valido, inexistente, alheio, referenciado
+        )
         consulta = ConsultaItemStub(
             {
                 ReferenciaCurriculo(valido.id): valido,
@@ -379,10 +422,14 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             }
         )
         caso = GerarPreviaVersaoCurriculo(
-            RepositorioCurriculoSpy([curriculo]), RepositorioUsuarioStub([usuario]), consulta
+            RepositorioCurriculoSpy([curriculo]),
+            RepositorioUsuarioStub([usuario]),
+            consulta,
         )
 
-        previa = await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id))
+        previa = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id)
+        )
 
         self.assertEqual(previa.projetos, (valido,))
         self.assertEqual(len(consulta.consultas), 4)
@@ -397,13 +444,17 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         projeto = _projeto(usuario.id, "Alfa")
         curriculo = _criar_curriculo(usuario.id, projeto)
         repositorio = RepositorioCurriculoSpy([curriculo])
-        caso = GerarPreviaVersaoCurriculo(repositorio, RepositorioUsuarioStub([usuario]), _consulta_para(projeto))
+        caso = GerarPreviaVersaoCurriculo(
+            repositorio, RepositorioUsuarioStub([usuario]), _consulta_para(projeto)
+        )
 
         await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id))
 
         self.assertEqual(repositorio.escritas, [])
 
-    async def test_versao_inexistente_ou_alheia_falha_sem_consultar_usuario_nem_itens(self) -> None:
+    async def test_versao_inexistente_ou_alheia_falha_sem_consultar_usuario_nem_itens(
+        self,
+    ) -> None:
         """Confirma a mesma falha para versão ausente e versão de outro usuário.
 
         O teste cobre os dois cenários e observa que nem o estudante nem os
@@ -418,16 +469,22 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
                 repositorio_usuario = RepositorioUsuarioStub([usuario])
                 consulta = _consulta_para(projeto)
                 caso = GerarPreviaVersaoCurriculo(
-                    RepositorioCurriculoSpy([curriculo_alheio]), repositorio_usuario, consulta
+                    RepositorioCurriculoSpy([curriculo_alheio]),
+                    repositorio_usuario,
+                    consulta,
                 )
 
                 with self.assertRaises(CurriculoNaoEncontrado):
-                    await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo_id))
+                    await caso.executar(
+                        GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo_id)
+                    )
 
                 self.assertEqual(repositorio_usuario.consultas, [])
                 self.assertEqual(consulta.consultas, [])
 
-    async def test_estudante_ausente_ou_excluido_falha_sem_consultar_itens(self) -> None:
+    async def test_estudante_ausente_ou_excluido_falha_sem_consultar_itens(
+        self,
+    ) -> None:
         """Confirma a falha quando o estudante não existe ou está logicamente excluído.
 
         O teste cobre os dois cenários com uma versão própria e observa que os
@@ -441,10 +498,14 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             with self.subTest(usuarios=len(usuarios)):
                 consulta = _consulta_para(projeto)
                 caso = GerarPreviaVersaoCurriculo(
-                    RepositorioCurriculoSpy([curriculo]), RepositorioUsuarioStub(usuarios), consulta
+                    RepositorioCurriculoSpy([curriculo]),
+                    RepositorioUsuarioStub(usuarios),
+                    consulta,
                 )
 
                 with self.assertRaises(CurriculoNaoEncontrado):
-                    await caso.executar(GerarPreviaVersaoCurriculoEntrada(usuario_id, curriculo.id))
+                    await caso.executar(
+                        GerarPreviaVersaoCurriculoEntrada(usuario_id, curriculo.id)
+                    )
 
                 self.assertEqual(consulta.consultas, [])

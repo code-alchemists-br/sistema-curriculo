@@ -34,7 +34,9 @@ class PreviaVersaoCurriculoExecutor(Protocol):
     """
 
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
-    async def executar(self, entrada: GerarPreviaVersaoCurriculoEntrada) -> PreviaVersaoCurriculo:
+    async def executar(
+        self, entrada: GerarPreviaVersaoCurriculoEntrada
+    ) -> PreviaVersaoCurriculo:
         """Executa a geração interna e devolve a prévia agrupada por seção.
 
         Implementações aplicam as regras de propriedade sem definir respostas
@@ -233,17 +235,29 @@ def _para_resposta(previa: PreviaVersaoCurriculo) -> PreviaVersaoCurriculoRespos
         ],
         projetos=[
             ProjetoPreviaResposta(
-                id=item.id.valor, titulo=item.titulo, descricao=item.descricao, tecnologias=item.tecnologias
+                id=item.id.valor,
+                titulo=item.titulo,
+                descricao=item.descricao,
+                tecnologias=item.tecnologias,
             )
             for item in previa.projetos
         ],
         competencias=[
-            CompetenciaPreviaResposta(id=item.id.valor, descricao=item.descricao, nivel=item.nivel)
+            CompetenciaPreviaResposta(
+                id=item.id.valor, descricao=item.descricao, nivel=item.nivel
+            )
             for item in previa.competencias
         ],
-        idiomas=[IdiomaPreviaResposta(id=item.id.valor, idioma=item.idioma, nivel=item.nivel) for item in previa.idiomas],
+        idiomas=[
+            IdiomaPreviaResposta(id=item.id.valor, idioma=item.idioma, nivel=item.nivel)
+            for item in previa.idiomas
+        ],
         documentos=[
-            DocumentoPreviaResposta(id=item.id.valor, nome_arquivo=item.nome_arquivo, tipo_arquivo=item.tipo_arquivo)
+            DocumentoPreviaResposta(
+                id=item.id.valor,
+                nome_arquivo=item.nome_arquivo,
+                tipo_arquivo=item.tipo_arquivo,
+            )
             for item in previa.documentos
         ],
     )
@@ -269,7 +283,9 @@ def criar_router(gerar_previa: PreviaVersaoCurriculoExecutor | None) -> APIRoute
         "/estudantes/{usuario_id}/curriculos/{curriculo_id}/previa",
         response_model=PreviaVersaoCurriculoResposta,
     )
-    async def gerar(usuario_id: UUID, curriculo_id: UUID) -> PreviaVersaoCurriculoResposta:
+    async def gerar(
+        usuario_id: UUID, curriculo_id: UUID
+    ) -> PreviaVersaoCurriculoResposta:
         """Executa a geração HTTP e devolve a prévia pública da versão.
 
         O handler monta a entrada da Application a partir da rota, aguarda o
@@ -278,7 +294,10 @@ def criar_router(gerar_previa: PreviaVersaoCurriculoExecutor | None) -> APIRoute
         Application.
         """
         if gerar_previa is None:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Prévia indisponível.")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Prévia indisponível.",
+            )
         entrada = GerarPreviaVersaoCurriculoEntrada(
             usuario_id=UsuarioId(usuario_id),
             curriculo_id=CurriculoId(curriculo_id),
@@ -286,7 +305,9 @@ def criar_router(gerar_previa: PreviaVersaoCurriculoExecutor | None) -> APIRoute
         try:
             previa = await gerar_previa.executar(entrada)
         except CurriculoNaoEncontrado as erro:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)
+            ) from erro
         return _para_resposta(previa)
 
     return router
