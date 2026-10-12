@@ -51,6 +51,7 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+from backend.api.sessoes import criar_router as criar_router_sessoes
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
@@ -61,7 +62,7 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
-from backend.application.sessoes import CriadorSessao
+from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
 
 def create_app(
@@ -81,6 +82,7 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
+    revogador_sessao: RevogadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -88,6 +90,7 @@ def create_app(
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
     itens e listagem de versões com os executores recebidos; ausências
     permanecem explícitas e são traduzidas por cada router em indisponibilidade.
+    A rota de sessão recebe um revogador opcional da composição.
     Ela existe para concentrar a composição na camada externa, mantendo
     Application e domínio livres do framework.
     """
@@ -103,4 +106,5 @@ def create_app(
         criar_router_itens_versao_curriculo(selecionar_item_versao_curriculo, desselecionar_item_versao_curriculo)
     )
     app.include_router(criar_router_listagem_versoes_curriculo(listar_versoes_curriculo))
+    app.include_router(criar_router_sessoes(revogador_sessao))
     return app

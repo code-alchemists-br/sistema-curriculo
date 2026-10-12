@@ -16,16 +16,20 @@ from sqlalchemy import (
     Uuid,
 )
 
+from backend.application.sessoes import RepositorioSessao
 from backend.domain.value_objects import UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
 from backend.infrastructure.persistence.sqlalchemy.repositorio_sessao import (
     RepositorioSessaoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.sessao import SessaoRegistro
-from backend.infrastructure.security.tokens_sessao import CriadorSessaoSeguro
+from backend.infrastructure.security.tokens_sessao import (
+    CriadorSessaoSeguro,
+    RevogadorSessaoSeguro,
+)
 
 
-class RepositorioSessaoStub:
+class RepositorioSessaoStub(RepositorioSessao):
     """Captura os metadados enviados pelo emissor sem usar banco.
 
     O double guarda em memória os valores recebidos e nunca precisa do token em
@@ -39,6 +43,7 @@ class RepositorioSessaoStub:
         persistência chamada pelo emissor observável.
         """
         self.sessoes = []
+        self.revogacoes = []
 
     async def salvar(self, usuario_id, token_hash, criada_em, expira_em) -> None:
         """Armazena a identidade, hash e validade recebidos.
@@ -47,6 +52,14 @@ class RepositorioSessaoStub:
         original. Ele existe para validar o conteúdo persistido.
         """
         self.sessoes.append((usuario_id, token_hash, criada_em, expira_em))
+
+    async def revogar_por_hash(self, token_hash, revogada_em) -> None:
+        """Armazena hash e instante recebidos pela porta de revogação.
+
+        O double mantém tudo em memória, sem distinguir tokens existentes. Ele
+        existe para verificar a saída do adapter de segurança sem SQL.
+        """
+        self.revogacoes.append((token_hash, revogada_em))
 
 
 class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
@@ -72,6 +85,40 @@ class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(resumo, token)
         self.assertIsNotNone(criada_em.tzinfo)
         self.assertEqual(expira_em - criada_em, timedelta(hours=8))
+
+
+class RevogadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
+    """Protege o resumo e o instante enviados pelo adapter de revogação."""
+
+    async def test_revoga_com_hash_sha256_e_data_utc_sem_repassar_token(self) -> None:
+        """Confirma que a porta recebe somente o hash do token apresentado.
+
+        O repositório em memória observa argumentos e não persiste credencial.
+        O teste existe para impedir que o segredo em claro atravesse a fronteira.
+        """
+        repositorio = RepositorioSessaoStub()
+        token = "credencial-de-sessao"
+
+        await RevogadorSessaoSeguro(repositorio).revogar(token)
+
+        resumo, revogada_em = repositorio.revogacoes[0]
+        self.assertEqual(resumo, hashlib.sha256(token.encode("utf-8")).hexdigest())
+        self.assertNotEqual(resumo, token)
+        self.assertIsNotNone(revogada_em.tzinfo)
+        self.assertEqual(revogada_em.utcoffset().total_seconds(), 0)
+
+    async def test_token_malformado_e_tratado_com_hash_utf8(self) -> None:
+        """Resume entrada Unicode sem erro e a trata como token desconhecido.
+
+        O teste verifica que caracteres fora do alfabeto emitido não causam
+        erro interno; a consulta resultante não corresponde a sessão válida.
+        """
+        repositorio = RepositorioSessaoStub()
+        token = "token-inválido"
+
+        await RevogadorSessaoSeguro(repositorio).revogar(token)
+
+        self.assertEqual(repositorio.revogacoes[0][0], hashlib.sha256(token.encode("utf-8")).hexdigest())
 
 
 class AsyncSessionDouble:
@@ -106,6 +153,15 @@ class AsyncSessionDouble:
         """
         self.flush_count += 1
 
+    async def execute(self, comando) -> None:
+        """Captura o comando SQL solicitado pelo adapter sem executá-lo.
+
+        O double registra a expressão em memória. Ele existe para verificar as
+        condições da atualização sem banco ou transação real.
+        """
+        self.comandos = getattr(self, "comandos", [])
+        self.comandos.append(comando)
+
 
 class RepositorioSessaoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
     """Verifica conversão e inserção de metadados pelo adapter SQLAlchemy."""
@@ -135,6 +191,28 @@ class RepositorioSessaoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(registro.token_hash, token_hash)
         self.assertEqual(registro.criada_em, criada_em)
         self.assertNotEqual(registro.token_hash, "token-em-claro")
+
+    async def test_revoga_apenas_hash_ativo_e_aguarda_flush_sem_commit(self) -> None:
+        """Gera update condicionado ao hash e à ausência de revogação.
+
+        A sessão double captura a expressão SQL e o flush, sem banco real. O
+        teste existe para proteger idempotência e escopo por sessão.
+        """
+        from datetime import datetime, timezone
+
+        session = AsyncSessionDouble()
+        revogada_em = datetime.now(timezone.utc)
+
+        await RepositorioSessaoSqlAlchemy(session).revogar_por_hash("a" * 64, revogada_em)
+
+        self.assertEqual(session.flush_count, 1)
+        self.assertEqual(len(session.comandos), 1)
+        comando = session.comandos[0]
+        compilado = comando.compile()
+        self.assertEqual(compilado.params["token_hash_1"], "a" * 64)
+        self.assertIn("token_hash", str(compilado))
+        self.assertIn("revogada_em IS NULL", str(compilado))
+        self.assertEqual(compilado.params["revogada_em"], revogada_em)
 
 
 class SessaoMappingTestCase(unittest.TestCase):

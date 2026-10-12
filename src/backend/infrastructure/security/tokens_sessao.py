@@ -5,7 +5,11 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from backend.application.sessoes import CriadorSessao, RepositorioSessao
+from backend.application.sessoes import (
+    CriadorSessao,
+    RepositorioSessao,
+    RevogadorSessao,
+)
 from backend.domain.value_objects import UsuarioId
 
 
@@ -42,3 +46,31 @@ class CriadorSessaoSeguro(CriadorSessao):
             expira_em=criada_em + self._DURACAO,
         )
         return token
+
+
+class RevogadorSessaoSeguro(RevogadorSessao):
+    """Revoga uma sessão procurando o hash do token recebido.
+
+    O adapter calcula SHA-256 e delega a atualização condicional do registro;
+    o segredo em claro nunca chega ao repositório. Ele existe para invalidar
+    somente a sessão apresentada no logout.
+    """
+
+    def __init__(self, repositorio: RepositorioSessao) -> None:
+        """Recebe a porta usada para marcar sessões como revogadas.
+
+        A dependência permite substituir armazenamento em testes e mantém o
+        adapter independente de ORM. Ela existe para separar hashing de SQL.
+        """
+        self._repositorio = repositorio
+
+    async def revogar(self, token: str) -> None:
+        """Resume o token e grava o instante UTC da revogação.
+
+        O método calcula SHA-256 do valor apresentado e delega a atualização
+        condicional ao repositório. Ele existe para encerrar a sessão sem
+        persistir nem registrar novamente o segredo.
+        """
+        await self._repositorio.revogar_por_hash(
+            hashlib.sha256(token.encode("utf-8")).hexdigest(), datetime.now(timezone.utc)
+        )
