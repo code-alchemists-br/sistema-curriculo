@@ -871,21 +871,8 @@ Essa separação permite que os controles sejam definidos de forma independente,
 
 # 9. Interface de autenticação para rotas protegidas
 
-Toda operação que leia ou altere informações pessoais ou profissionais do
-estudante DEVE exigir uma sessão válida. Rotas públicas devem limitar-se a
-cadastro, autenticação, obtenção de proteção CSRF pré-autenticação e verificações
-operacionais sem dados pessoais; exceções exigem justificativa funcional e
-política de exposição documentadas.
-
-A autenticação deve ocorrer por dependência comum na fronteira HTTP. Falha de
-autenticação responde `401` antes de executar o caso de uso; sessão válida sem
-autorização responde `403`, ou `404` quando a política do recurso ocultar sua
-existência. A identidade usada para aplicar propriedade e autorização deve vir
-do contexto autenticado, nunca de valores de identidade ou proprietário
-enviados pelo cliente.
-
-Cada rota protegida deve ter testes para ausência e invalidade de sessão,
-autorização negada e acesso autorizado, incluindo a garantia de que falhas não
-executam casos de uso nem alteram estado. Os detalhes normativos da credencial,
-da dependência, da classificação de endpoints e dos cenários de teste estão no
-[Contrato de credenciais de sessão](contrato-credenciais-sessao.md).
+As regras normativas para exigir e validar sessão nas rotas protegidas, obter a
+identidade autenticada, classificar endpoints e testar autorização estão no
+[Contrato de credenciais de sessão](contrato-credenciais-sessao.md). Esse
+contrato é a fonte detalhada da interface HTTP; esta seção apenas direciona a
+leitura para evitar manter regras duplicadas.
