@@ -5,3 +5,5 @@ export type {
   MensagemEstadoProps,
   TipoMensagemEstado,
 } from "./ui/MensagemEstado";
+export { CampoFormulario } from "./ui/CampoFormulario";
+export type { CampoFormularioProps } from "./ui/CampoFormulario";
