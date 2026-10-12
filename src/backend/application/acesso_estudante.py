@@ -8,7 +8,7 @@ manter o acesso testável e evitar que controllers coordenem regras de uso.
 from dataclasses import dataclass
 
 from backend.application.ports import RepositorioUsuario, VerificadorSenha
-from backend.domain.value_objects import Email
+from backend.domain.value_objects import Email, UsuarioId
 
 
 class CredenciaisInvalidas(ValueError):
@@ -51,13 +51,14 @@ class AcessarEstudante:
         self._repositorio_usuario = repositorio_usuario
         self._verificador_senha = verificador_senha
 
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> None:
-        """Confirma uma tentativa de acesso ou falha sem revelar qual credencial errou.
+    async def executar(self, entrada: AcessarEstudanteEntrada) -> UsuarioId:
+        """Confirma credenciais e devolve a identidade da conta autenticada.
 
-        O método aguarda a busca da conta e compara a senha somente quando há um
-        agregado correspondente. Ele existe para aplicar o fluxo de acesso sem
-        criar sessão, token ou política de autorização ainda não especificados.
+        O método busca a conta e compara a senha somente quando o agregado
+        existe; credenciais inválidas produzem falha uniforme. Ele existe para
+        fornecer à fronteira HTTP a identidade validada para criar uma sessão.
         """
         usuario = await self._repositorio_usuario.obter_por_email(entrada.email)
         if usuario is None or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor):
             raise CredenciaisInvalidas("E-mail ou senha não conferem.")
+        return usuario.id
