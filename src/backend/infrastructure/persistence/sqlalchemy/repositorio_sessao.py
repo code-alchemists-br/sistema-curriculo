@@ -3,15 +3,16 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.application.autenticacao_sessao import ConsultaSessaoAtiva
 from backend.application.sessoes import RepositorioSessao
 from backend.domain.value_objects import UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.sessao import SessaoRegistro
 
 
-class RepositorioSessaoSqlAlchemy(RepositorioSessao):
+class RepositorioSessaoSqlAlchemy(RepositorioSessao, ConsultaSessaoAtiva):
     """Insere metadados de sessão em uma AsyncSession externa.
 
     O adapter converte a identidade tipada e aguarda o flush sem executar
@@ -25,6 +26,22 @@ class RepositorioSessaoSqlAlchemy(RepositorioSessao):
         Ele existe para manter transações sob responsabilidade externa.
         """
         self._session = session
+
+    async def obter_usuario_ativo(self, token_hash: str, instante: datetime) -> UsuarioId | None:
+        """Busca a identidade de sessão não revogada e ainda válida.
+
+        A consulta filtra pelo resumo, expiração e ausência de revogação, sem
+        materializar o registro inteiro. Ela existe para autenticar requisições
+        usando o estado persistido da sessão.
+        """
+        comando = select(SessaoRegistro.usuario_id).where(
+            SessaoRegistro.token_hash == token_hash,
+            SessaoRegistro.expira_em > instante,
+            SessaoRegistro.revogada_em.is_(None),
+        )
+        resultado = await self._session.execute(comando)
+        usuario_id = resultado.scalar_one_or_none()
+        return UsuarioId(usuario_id) if usuario_id is not None else None
 
     async def salvar(
         self,
