@@ -21,6 +21,12 @@ from backend.api.dados_contato import (
 from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
+from backend.api.experiencia_profissional import (
+    CadastroExperienciaProfissionalExecutor,
+)
+from backend.api.experiencia_profissional import (
+    criar_router as criar_router_experiencia_profissional,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from backend.api.itens_versao_curriculo import (
@@ -81,12 +87,13 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
+    cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
-    itens e listagem de versões com os executores recebidos; ausências
+    itens, listagem de versões e experiências profissionais com os executores recebidos; ausências
     permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Ela existe para concentrar a composição na camada externa, mantendo
     Application e domínio livres do framework.
@@ -103,4 +110,5 @@ def create_app(
         criar_router_itens_versao_curriculo(selecionar_item_versao_curriculo, desselecionar_item_versao_curriculo)
     )
     app.include_router(criar_router_listagem_versoes_curriculo(listar_versoes_curriculo))
+    app.include_router(criar_router_experiencia_profissional(cadastrar_experiencia_profissional))
     return app
