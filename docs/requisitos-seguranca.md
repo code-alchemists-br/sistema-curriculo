@@ -136,6 +136,9 @@ A implementação deverá considerar:
 * armazenamento seguro das informações de sessão;
 * comunicação protegida por HTTPS/TLS.
 
+O contrato da credencial de sessão define o cookie, o prazo máximo de validade,
+a emissão, a validação e a revogação: [Contrato de credenciais de sessão](contrato-credenciais-sessao.md).
+
 Quando forem utilizados cookies para gerenciamento da sessão, deverão ser considerados atributos de segurança apropriados, como:
 
 * `Secure`;
@@ -864,3 +867,12 @@ A autorização estabelece **o que o usuário pode acessar ou fazer**.
 A proteção de dados estabelece **como as informações devem ser tratadas e protegidas durante seu ciclo de vida**.
 
 Essa separação permite que os controles sejam definidos de forma independente, mas aplicados conjuntamente.
+
+
+# 9. Interface de autenticação para rotas protegidas
+
+As regras normativas para exigir e validar sessão nas rotas protegidas, obter a
+identidade autenticada, classificar endpoints e testar autorização estão no
+[Contrato de credenciais de sessão](contrato-credenciais-sessao.md). Esse
+contrato é a fonte detalhada da interface HTTP; esta seção apenas direciona a
+leitura para evitar manter regras duplicadas.
