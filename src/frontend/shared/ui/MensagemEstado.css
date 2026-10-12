@@ -1,0 +1,63 @@
+.mensagem-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.mensagem-estado--carregando {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.mensagem-estado--vazio {
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #334155;
+}
+
+.mensagem-estado--erro {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.mensagem-estado__titulo {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.mensagem-estado__descricao {
+  margin: 0;
+  font-size: 0.9375rem;
+  max-width: 32rem;
+  line-height: 1.5;
+}
+
+.mensagem-estado__botao {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  background-color: #2563eb;
+  color: #ffffff;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.mensagem-estado__botao:hover {
+  background-color: #1d4ed8;
+}
+
+.mensagem-estado__botao:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
