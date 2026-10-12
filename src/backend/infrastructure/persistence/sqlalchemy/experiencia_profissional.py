@@ -39,7 +39,9 @@ class ExperienciaProfissionalRegistro(Base):
     data_fim: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
-def para_registro(experiencia: ExperienciaProfissional) -> ExperienciaProfissionalRegistro:
+def para_registro(
+    experiencia: ExperienciaProfissional,
+) -> ExperienciaProfissionalRegistro:
     """Converte uma entidade válida para o modelo persistente externo.
 
     A função extrai UUIDs e datas dos value objects sem alterar a entidade. Ela
@@ -56,7 +58,9 @@ def para_registro(experiencia: ExperienciaProfissional) -> ExperienciaProfission
     )
 
 
-def para_experiencia(registro: ExperienciaProfissionalRegistro) -> ExperienciaProfissional:
+def para_experiencia(
+    registro: ExperienciaProfissionalRegistro,
+) -> ExperienciaProfissional:
     """Reconstrói a entidade de domínio a partir de um registro persistido.
 
     A função recria identidades tipadas e ``Periodo`` para reaplicar as

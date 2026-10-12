@@ -63,6 +63,7 @@ class CadastroExperienciaProfissionalExecutor(Protocol):
         orquestração do caso de uso.
         """
 
+
 def criar_router(
     cadastrar_experiencia: CadastroExperienciaProfissionalExecutor | None,
 ) -> APIRouter:
@@ -92,10 +93,16 @@ def criar_router(
         em respostas HTTP estáveis.
         """
         if cadastrar_experiencia is None:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Cadastro indisponível.")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cadastro indisponível.",
+            )
         usuario_id = getattr(request.state, "usuario_id", None)
         if not isinstance(usuario_id, UUID):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
         try:
             entrada = CadastrarExperienciaProfissionalEntrada(
                 usuario_id=UsuarioId(usuario_id),
@@ -106,7 +113,9 @@ def criar_router(
             )
             experiencia = await cadastrar_experiencia.executar(entrada)
         except RegraDeDominioViolada as erro:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)
+            ) from erro
         return ExperienciaProfissionalResposta(
             id=experiencia.id.valor,
             usuario_id=experiencia.usuario_id.valor,

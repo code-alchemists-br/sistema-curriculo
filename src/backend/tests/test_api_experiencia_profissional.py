@@ -11,6 +11,7 @@ from backend.api.experiencia_profissional import (
     CadastroExperienciaProfissionalRequisicao,
     criar_router,
 )
+from backend.api.factory import create_app
 from backend.application.cadastro_experiencia_profissional import (
     CadastrarExperienciaProfissionalEntrada,
 )
@@ -80,7 +81,12 @@ def _request(usuario_id: UUID | None) -> Request:
     servidor, nunca identidade declarada no corpo da requisição.
     """
     request = Request(
-        {"type": "http", "method": "POST", "path": "/experiencias-profissionais", "headers": []}
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/experiencias-profissionais",
+            "headers": [],
+        }
     )
     if usuario_id is not None:
         request.state.usuario_id = usuario_id
@@ -94,7 +100,9 @@ class CadastroExperienciaProfissionalRotaTestCase(unittest.IsolatedAsyncioTestCa
     Ela existe para proteger a fronteira sem iniciar servidor ou banco.
     """
 
-    async def test_vincula_experiencia_ao_usuario_instalado_pelo_middleware(self) -> None:
+    async def test_vincula_experiencia_ao_usuario_instalado_pelo_middleware(
+        self,
+    ) -> None:
         """Usa o principal da requisição, e não um identificador do cliente.
 
         O cenário instala um UUID em ``request.state`` e compara o proprietário
@@ -157,3 +165,14 @@ class CadastroExperienciaProfissionalRotaTestCase(unittest.IsolatedAsyncioTestCa
             await cadastrar(requisicao, _request(ID_USUARIO_TESTE))
 
         self.assertEqual(contexto.exception.status_code, 503)
+
+    def test_fabrica_registra_a_rota_de_experiencias(self) -> None:
+        """Mantém a rota disponível mesmo antes da composição do executor.
+
+        O cenário constrói a aplicação com suas dependências opcionais e
+        consulta o contrato OpenAPI gerado. Ele existe para garantir que a
+        fábrica inclua a nova fronteira no aplicativo ASGI.
+        """
+        app = create_app()
+
+        self.assertIn("/experiencias-profissionais", app.openapi()["paths"])
