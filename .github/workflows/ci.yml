@@ -1,4 +1,4 @@
-name: CI
+name: Integração contínua
 
 on:
   pull_request:
@@ -25,16 +25,16 @@ jobs:
         run: nix develop .#quality --command ruff check --output-format=github src/backend
 
   backend-tests:
-    name: Backend unit tests
+    name: Testes unitários do backend
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Baixar código do repositório
         uses: actions/checkout@v4
 
-      - name: Install Nix
+      - name: Instalar o Nix
         uses: cachix/install-nix-action@v31
 
-      - name: Run backend unit tests
+      - name: Executar testes unitários do backend
         run: nix develop .#backend --command python -m unittest discover -s src/backend/tests -t src
 
   frontend-quality:
