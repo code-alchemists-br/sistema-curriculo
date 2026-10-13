@@ -65,6 +65,7 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+from backend.api.sessoes import criar_router as criar_router_sessoes
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
@@ -75,7 +76,7 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
-from backend.application.sessoes import CriadorSessao
+from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
 
 def create_app(
@@ -100,6 +101,7 @@ def create_app(
     | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
+    revogador_sessao: RevogadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -136,4 +138,5 @@ def create_app(
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )
+    app.include_router(criar_router_sessoes(revogador_sessao))
     return app

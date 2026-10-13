@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import uuid4
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.sessoes import RepositorioSessao
@@ -48,4 +49,19 @@ class RepositorioSessaoSqlAlchemy(RepositorioSessao):
                 revogada_em=None,
             )
         )
+        await self._session.flush()
+
+    async def revogar_por_hash(self, token_hash: str, revogada_em: datetime) -> None:
+        """Registra revogação somente para sessão ainda ativa do hash informado.
+
+        A atualização condicional evita reescrever a data da primeira
+        revogação e não altera sessões de outros tokens. Ela existe para
+        garantir logout idempotente no armazenamento.
+        """
+        comando = (
+            update(SessaoRegistro)
+            .where(SessaoRegistro.token_hash == token_hash, SessaoRegistro.revogada_em.is_(None))
+            .values(revogada_em=revogada_em)
+        )
+        await self._session.execute(comando)
         await self._session.flush()
