@@ -36,6 +36,12 @@ from backend.application.dados_contato import (
     AtualizarDadosContatoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+from backend.application.exclusao_versao_curriculo import (
+    ExcluirVersaoCurriculo,
+    ExcluirVersaoCurriculoEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
 from backend.application.listagem_versoes_curriculo import (
     ListarVersoesCurriculo,
@@ -164,6 +170,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     "ListarVersoesCurriculo",
     "ListarVersoesCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    "ExcluirVersaoCurriculo",
+    "ExcluirVersaoCurriculoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     "ConsultaItemPerfil",
     "GerarPreviaVersaoCurriculo",
