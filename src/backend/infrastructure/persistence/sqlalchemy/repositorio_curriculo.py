@@ -7,7 +7,8 @@ from collections import defaultdict
 from uuid import UUID
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-from sqlalchemy import select
+# Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.ports import RepositorioCurriculo
@@ -34,7 +35,7 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
 
 
 class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
-    """Consulta, lista, insere e atualiza versões de currículo usando o modelo externo e uma AsyncSession.
+    """Consulta, lista, insere, atualiza e exclui versões de currículo usando o modelo externo e uma AsyncSession.
 
     O adapter traduz o agregado em colunas e aguarda I/O, preservando a porta
     interna. A composição externa possui sessão, commit e rollback; erros são
@@ -124,6 +125,24 @@ class RepositorioCurriculoSqlAlchemy(RepositorioCurriculo):
         for item in (await self._session.scalars(consulta_itens)).all():
             itens_por_versao[item.curriculo_id].append(item)
         return tuple(para_curriculo(registro, itens_por_versao[registro.id]) for registro in registros)
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def excluir(self, curriculo: Curriculo) -> None:
+        """Remove a versão e suas linhas de seleção e aguarda o flush.
+
+        O método recarrega o registro pela chave primária, apaga primeiro as
+        linhas de seleção da versão, que dependem dela por chave estrangeira,
+        marca então a versão para remoção e envia a alteração antes do retorno,
+        sem commit. Se o registro deixou de existir, a falha é propagada sem
+        remover nada. Ele existe para persistir a exclusão decidida pelo núcleo
+        sem violar a integridade referencial.
+        """
+        registro = await self._session.get(CurriculoRegistro, curriculo.id.valor)
+        if registro is None:
+            raise LookupError("Currículo não encontrado para exclusão.")
+        await self._session.execute(delete(CurriculoItemRegistro).where(CurriculoItemRegistro.curriculo_id == registro.id))
+        await self._session.delete(registro)
+        await self._session.flush()
 
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     async def _obter_itens(self, curriculo_id: UUID) -> list[CurriculoItemRegistro]:
