@@ -44,6 +44,7 @@ from backend.api.listagem_versoes_curriculo import (
 from backend.api.listagem_versoes_curriculo import (
     criar_router as criar_router_listagem_versoes_curriculo,
 )
+from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
@@ -76,6 +77,7 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
+from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
 
@@ -102,6 +104,7 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
+    autenticador_sessao: AutenticadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -109,10 +112,13 @@ def create_app(
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
     itens, listagem, experiências profissionais e prévia com os executores
     recebidos; ausências permanecem explícitas e são traduzidas por cada router
-    em indisponibilidade. Ela existe para concentrar a composição na camada
-    externa, mantendo Application e domínio livres do framework.
+    em indisponibilidade. Quando um autenticador é fornecido, instala o
+    middleware que valida sessões nas rotas privadas. Ela existe para concentrar
+    a composição na camada externa, mantendo Application e domínio livres do framework.
     """
     app = FastAPI()
+    if autenticador_sessao is not None:
+        app.add_middleware(MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao)
     app.include_router(
         criar_router_cadastro_acesso(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
