@@ -26,6 +26,14 @@ class RepositorioSessao(Protocol):
         método existe para permitir localizar e revogar a sessão futuramente.
         """
 
+    async def revogar_por_hash(self, token_hash: str, revogada_em: datetime) -> None:
+        """Marca como revogada a sessão ativa associada ao hash informado.
+
+        A implementação atualiza somente registros ainda ativos, preservando a
+        primeira data de revogação. Ela existe para encerrar um token sem tocar
+        nas demais sessões da conta.
+        """
+
 
 class CriadorSessao(Protocol):
     """Define a criação de uma credencial opaca para uma identidade autenticada.
@@ -39,4 +47,19 @@ class CriadorSessao(Protocol):
 
         O método associa a sessão à identidade informada e retorna o segredo
         para que a API o transporte em cookie. Ele existe para concluir o login.
+        """
+
+
+class RevogadorSessao(Protocol):
+    """Define a revogação da sessão associada a um token apresentado.
+
+    A implementação resume o token e atualiza o registro correspondente sem
+    expor persistência à API. Ela existe para encerrar sessões no logout.
+    """
+
+    async def revogar(self, token: str) -> None:
+        """Revoga a sessão do token sem alterar outras sessões da conta.
+
+        Tokens desconhecidos ou já revogados não produzem alteração adicional.
+        O método existe para tornar o logout idempotente e limitado à sessão atual.
         """
