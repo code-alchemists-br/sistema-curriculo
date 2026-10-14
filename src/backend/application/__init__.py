@@ -12,6 +12,13 @@ from backend.application.acesso_estudante import (
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+from backend.application.cadastro_competencia import (
+    CadastrarCompetencia,
+    CadastrarCompetenciaEntrada,
+    CompetenciaJaCadastrada,
+)
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
     CadastrarEstudanteEntrada,
@@ -71,12 +78,16 @@ from backend.application.ports import (
     ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    GeradorCompetenciaId,
     GeradorCurriculoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     GeradorProjetoAcademicoId,
     GeradorUsuarioId,
     Relogio,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    RepositorioCompetencia,
     RepositorioCurriculo,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
@@ -114,6 +125,10 @@ from backend.application.versao_curriculo import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "CadastrarCompetencia",
+    "CadastrarCompetenciaEntrada",
+    "CompetenciaJaCadastrada",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
@@ -136,6 +151,8 @@ __all__ = [
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
     "GeradorFormacaoAcademicaId",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "GeradorCompetenciaId",
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
@@ -145,6 +162,8 @@ __all__ = [
     "PerfilNaoEncontrado",
     "Relogio",
     "RepositorioFormacaoAcademica",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "RepositorioCompetencia",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",

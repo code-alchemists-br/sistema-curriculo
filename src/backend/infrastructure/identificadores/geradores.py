@@ -2,13 +2,13 @@
 
 O adapter encapsula a fonte de aleatoriedade e devolve value objects já tipados,
 sem expor o gerador de UUID às camadas internas. Ele existe para atender a porta
-de identidade de currículo com uma estratégia concreta e substituível.
+de identidade com uma estratégia concreta e substituível.
 """
 
 from uuid import uuid4
 
-from backend.application.ports import GeradorCurriculoId
-from backend.domain.value_objects import CurriculoId
+from backend.application.ports import GeradorCompetenciaId, GeradorCurriculoId
+from backend.domain.value_objects import CompetenciaId, CurriculoId
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 
@@ -29,3 +29,22 @@ class GeradorCurriculoIdUuid4(GeradorCurriculoId):
         contrato da porta de identidade de currículo.
         """
         return CurriculoId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class GeradorCompetenciaIdUuid4(GeradorCompetenciaId):
+    """Gera identidades de competência com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    competência. Ela existe para satisfazer a porta da Application sem expor a
+    biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> CompetenciaId:
+        """Devolve uma identidade nova e tipada para competência.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``CompetenciaId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return CompetenciaId(uuid4())
