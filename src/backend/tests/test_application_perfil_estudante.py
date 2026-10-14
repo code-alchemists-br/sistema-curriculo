@@ -16,19 +16,24 @@ from backend.application import (
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 from backend.domain import (
     Email,
     FormacaoAcademica,
     FormacaoAcademicaId,
     HashSenha,
+    NivelFormacaoAcademica,
     Nome,
     Periodo,
+    StatusFormacaoAcademica,
     Usuario,
     UsuarioId,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 
 
 class RepositorioUsuarioSpy:
@@ -412,6 +417,7 @@ def _criar_usuario(email: str = "ana@example.com") -> Usuario:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def _criar_entrada_formacao(
     usuario_id: UsuarioId,
 ) -> CadastrarFormacaoAcademicaEntrada:
@@ -425,9 +431,9 @@ def _criar_entrada_formacao(
         usuario_id=usuario_id,
         instituicao="FATEC",
         curso="Análise e Desenvolvimento de Sistemas",
-        nivel="tecnologo",
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
         periodo=Periodo(date(2024, 2, 1)),
-        status="em_andamento",
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
 
 

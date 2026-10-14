@@ -19,7 +19,12 @@ from backend.application.ports import (
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
-from backend.domain.itens_perfil import FormacaoAcademica
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+from backend.domain.itens_perfil import (
+    FormacaoAcademica,
+    NivelFormacaoAcademica,
+    StatusFormacaoAcademica,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
@@ -72,22 +77,23 @@ class ExcluirPerfilEntrada:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 @dataclass(frozen=True, slots=True)
 class CadastrarFormacaoAcademicaEntrada:
     """Agrupa os dados de domínio para cadastrar uma formação de um perfil.
 
-    A entrada transporta o proprietário tipado, textos já recebidos por uma
-    fronteira externa e um ``Periodo`` validado, sem incluir HTTP ou ORM. Ela
-    existe para dar contrato explícito ao caso de uso e preservar as invariantes
-    locais da formação no domínio.
+    A entrada transporta proprietário, nível e status tipados, além dos textos
+    e ``Periodo`` preparados pela fronteira externa, sem incluir HTTP ou ORM.
+    Ela existe para dar contrato explícito ao caso de uso e deixar as invariantes
+    da formação protegidas pela entidade de domínio.
     """
 
     usuario_id: UsuarioId
     instituicao: str
     curso: str
-    nivel: str
+    nivel: NivelFormacaoAcademica
     periodo: Periodo
-    status: str
+    status: StatusFormacaoAcademica
 
 
 class EditarPerfil:
@@ -135,6 +141,7 @@ class EditarPerfil:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 class CadastrarFormacaoAcademica:
     """Cria e solicita o salvamento de uma formação para um perfil ativo.
 
