@@ -27,7 +27,7 @@ class RepositorioSessao(Protocol):
         """
 
     async def revogar_por_hash(self, token_hash: str, revogada_em: datetime) -> None:
-        """Marca como revogada a sessão ativa associada ao hash recebido.
+        """Marca como revogada a sessão ativa associada ao hash informado.
 
         A implementação atualiza somente registros ainda ativos, preservando a
         primeira data de revogação. Ela existe para encerrar um token sem tocar

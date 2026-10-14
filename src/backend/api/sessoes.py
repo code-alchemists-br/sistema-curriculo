@@ -1,4 +1,4 @@
-"""Expoe o encerramento HTTP de uma sessão autenticada."""
+"""Expõe o encerramento HTTP de uma sessão autenticada."""
 
 from fastapi import APIRouter, Cookie, HTTPException, Response, status
 

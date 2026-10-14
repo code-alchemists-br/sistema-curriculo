@@ -99,12 +99,12 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     listar_versoes_curriculo: ListagemVersoesCurriculoExecutor | None = None,
     criador_sessao: CriadorSessao | None = None,
-    revogador_sessao: RevogadorSessao | None = None,
-    autenticador_sessao: AutenticadorSessao | None = None,
     cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor
     | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
+    revogador_sessao: RevogadorSessao | None = None,
+    autenticador_sessao: AutenticadorSessao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -112,10 +112,9 @@ def create_app(
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
     itens, listagem, experiências profissionais e prévia com os executores
     recebidos; ausências permanecem explícitas e são traduzidas por cada router
-    em indisponibilidade. A rota de sessão recebe um revogador opcional e,
-    quando recebido, o autenticador instala middleware para proteger as demais
-    rotas. Ela existe para concentrar a composição na camada externa, mantendo
-    Application e domínio livres do framework.
+    em indisponibilidade. Quando um autenticador é fornecido, instala o
+    middleware que valida sessões nas rotas privadas. Ela existe para concentrar
+    a composição na camada externa, mantendo Application e domínio livres do framework.
     """
     app = FastAPI()
     if autenticador_sessao is not None:

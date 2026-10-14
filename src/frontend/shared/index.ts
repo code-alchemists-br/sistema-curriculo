@@ -7,3 +7,5 @@ export type {
 } from "./ui/MensagemEstado";
 export { CampoFormulario } from "./ui/CampoFormulario";
 export type { CampoFormularioProps } from "./ui/CampoFormulario";
+export { Dialogo } from "./ui/Dialogo";
+export type { DialogoProps } from "./ui/Dialogo";

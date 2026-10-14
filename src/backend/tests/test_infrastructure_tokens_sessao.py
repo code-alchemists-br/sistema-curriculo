@@ -54,10 +54,10 @@ class RepositorioSessaoStub(RepositorioSessao):
         self.sessoes.append((usuario_id, token_hash, criada_em, expira_em))
 
     async def revogar_por_hash(self, token_hash, revogada_em) -> None:
-        """Armazena hash e instante recebidos pela porta de revogação.
+        """Registra os argumentos recebidos para revogar uma sessão.
 
-        O double mantém tudo em memória, sem distinguir tokens existentes. Ele
-        existe para verificar a saída do adapter de segurança sem SQL.
+        O double mantém a chamada em memória, sem interpretar o token ou
+        consultar banco. Ele existe para isolar o adapter de hash.
         """
         self.revogacoes.append((token_hash, revogada_em))
 
@@ -65,7 +65,9 @@ class RepositorioSessaoStub(RepositorioSessao):
 class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege a entropia do token e o armazenamento exclusivo de seu hash."""
 
-    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_oito_horas(self) -> None:
+    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_oito_horas(
+        self,
+    ) -> None:
         """Confirma token URL-safe, resumo persistido e validade de oito horas.
 
         O teste controla apenas o repositório e usa os campos observados para
@@ -107,18 +109,21 @@ class RevogadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(revogada_em.tzinfo)
         self.assertEqual(revogada_em.utcoffset().total_seconds(), 0)
 
-    async def test_token_malformado_e_tratado_com_hash_utf8(self) -> None:
-        """Resume entrada Unicode sem erro e a trata como token desconhecido.
+    async def test_token_unicode_e_processado_sem_erro(self) -> None:
+        """Trata entrada Unicode malformada como hash opaco desconhecido.
 
-        O teste verifica que caracteres fora do alfabeto emitido não causam
-        erro interno; a consulta resultante não corresponde a sessão válida.
+        A codificação UTF-8 permite resumir qualquer valor recebido, sem
+        registrar o segredo. O teste existe para evitar erro interno no logout.
         """
         repositorio = RepositorioSessaoStub()
         token = "token-inválido"
 
         await RevogadorSessaoSeguro(repositorio).revogar(token)
 
-        self.assertEqual(repositorio.revogacoes[0][0], hashlib.sha256(token.encode("utf-8")).hexdigest())
+        self.assertEqual(
+            repositorio.revogacoes[0][0],
+            hashlib.sha256(token.encode("utf-8")).hexdigest(),
+        )
 
 
 class AsyncSessionDouble:
@@ -136,6 +141,7 @@ class AsyncSessionDouble:
         """
         self.registros = []
         self.flush_count = 0
+        self.comandos = []
 
     def add(self, registro) -> None:
         """Guarda a linha que o repositório solicitou inserir.
@@ -159,7 +165,6 @@ class AsyncSessionDouble:
         O double registra a expressão em memória. Ele existe para verificar as
         condições da atualização sem banco ou transação real.
         """
-        self.comandos = getattr(self, "comandos", [])
         self.comandos.append(comando)
 
 
@@ -203,7 +208,9 @@ class RepositorioSessaoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         session = AsyncSessionDouble()
         revogada_em = datetime.now(timezone.utc)
 
-        await RepositorioSessaoSqlAlchemy(session).revogar_por_hash("a" * 64, revogada_em)
+        await RepositorioSessaoSqlAlchemy(session).revogar_por_hash(
+            "a" * 64, revogada_em
+        )
 
         self.assertEqual(session.flush_count, 1)
         self.assertEqual(len(session.comandos), 1)
@@ -235,12 +242,22 @@ class SessaoMappingTestCase(unittest.TestCase):
         self.assertIsInstance(tabela.c.token_hash.type, String)
         self.assertIsInstance(tabela.c.criada_em.type, DateTime)
         self.assertIsInstance(tabela.c.expira_em.type, DateTime)
-        unicas = [constraint for constraint in tabela.constraints if isinstance(constraint, UniqueConstraint)]
+        unicas = [
+            constraint
+            for constraint in tabela.constraints
+            if isinstance(constraint, UniqueConstraint)
+        ]
         self.assertEqual(len(unicas), 1)
         self.assertEqual(list(unicas[0].columns.keys()), ["token_hash"])
-        chaves = [constraint for constraint in tabela.constraints if isinstance(constraint, ForeignKeyConstraint)]
+        chaves = [
+            constraint
+            for constraint in tabela.constraints
+            if isinstance(constraint, ForeignKeyConstraint)
+        ]
         self.assertEqual(len(chaves), 1)
-        self.assertEqual([element.target_fullname for element in chaves[0].elements], ["usuarios.id"])
+        self.assertEqual(
+            [element.target_fullname for element in chaves[0].elements], ["usuarios.id"]
+        )
 
     def test_migration_cria_e_remove_tabela_de_sessoes(self) -> None:
         """Compara migration e metadata sem executar DDL real.
@@ -260,10 +277,19 @@ class SessaoMappingTestCase(unittest.TestCase):
             operacoes.create_table.assert_called_once()
             nome, *elementos = operacoes.create_table.call_args.args
             self.assertEqual(nome, "sessoes")
-            colunas = [elemento for elemento in elementos if isinstance(elemento, Column)]
-            self.assertEqual([coluna.name for coluna in colunas], list(metadata.tables[nome].columns.keys()))
+            colunas = [
+                elemento for elemento in elementos if isinstance(elemento, Column)
+            ]
+            self.assertEqual(
+                [coluna.name for coluna in colunas],
+                list(metadata.tables[nome].columns.keys()),
+            )
             for coluna in colunas:
-                self.assertEqual(type(coluna.type), type(metadata.tables[nome].c[coluna.name].type))
-                self.assertEqual(coluna.nullable, metadata.tables[nome].c[coluna.name].nullable)
+                self.assertEqual(
+                    type(coluna.type), type(metadata.tables[nome].c[coluna.name].type)
+                )
+                self.assertEqual(
+                    coluna.nullable, metadata.tables[nome].c[coluna.name].nullable
+                )
             migration.downgrade()
             operacoes.drop_table.assert_called_once_with("sessoes")
