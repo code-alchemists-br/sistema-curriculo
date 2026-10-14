@@ -49,7 +49,9 @@ def _handler(revogador_sessao: RevogadorSessaoStub | None):
 class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege a revogação do token do cookie e a limpeza da sessão no cliente."""
 
-    async def test_revoga_o_cookie_atual_e_envia_instrucao_de_remocao_segura(self) -> None:
+    async def test_revoga_o_cookie_atual_e_envia_instrucao_de_remocao_segura(
+        self,
+    ) -> None:
         """Delega o token recebido e remove o cookie com atributos seguros.
 
         O handler recebe uma resposta em memória e um revogador double. O teste
@@ -84,7 +86,9 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(revogador.tokens, [])
         self.assertIn("Max-Age=0", resposta.headers["set-cookie"])
 
-    async def test_cookie_presente_sem_revogador_retorna_indisponibilidade(self) -> None:
+    async def test_cookie_presente_sem_revogador_retorna_indisponibilidade(
+        self,
+    ) -> None:
         """Não confirma logout quando a persistência de revogação não existe.
 
         A rota devolve 503 antes de limpar o cookie, evitando sinalizar sucesso
@@ -108,4 +112,6 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
 
         operacao = app.openapi()["paths"]["/sessao/atual"]["delete"]
 
-        self.assertEqual(operacao["responses"]["204"]["description"], "Successful Response")
+        self.assertEqual(
+            operacao["responses"]["204"]["description"], "Successful Response"
+        )

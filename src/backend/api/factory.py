@@ -118,7 +118,9 @@ def create_app(
     """
     app = FastAPI()
     if autenticador_sessao is not None:
-        app.add_middleware(MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao)
+        app.add_middleware(
+            MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao
+        )
     app.include_router(
         criar_router_cadastro_acesso(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao

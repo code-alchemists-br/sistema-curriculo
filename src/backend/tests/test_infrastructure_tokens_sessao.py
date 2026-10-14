@@ -65,7 +65,9 @@ class RepositorioSessaoStub(RepositorioSessao):
 class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege a entropia do token e o armazenamento exclusivo de seu hash."""
 
-    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_oito_horas(self) -> None:
+    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_oito_horas(
+        self,
+    ) -> None:
         """Confirma token URL-safe, resumo persistido e validade de oito horas.
 
         O teste controla apenas o repositório e usa os campos observados para
@@ -206,7 +208,9 @@ class RepositorioSessaoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         session = AsyncSessionDouble()
         revogada_em = datetime.now(timezone.utc)
 
-        await RepositorioSessaoSqlAlchemy(session).revogar_por_hash("a" * 64, revogada_em)
+        await RepositorioSessaoSqlAlchemy(session).revogar_por_hash(
+            "a" * 64, revogada_em
+        )
 
         self.assertEqual(session.flush_count, 1)
         self.assertEqual(len(session.comandos), 1)
@@ -238,12 +242,22 @@ class SessaoMappingTestCase(unittest.TestCase):
         self.assertIsInstance(tabela.c.token_hash.type, String)
         self.assertIsInstance(tabela.c.criada_em.type, DateTime)
         self.assertIsInstance(tabela.c.expira_em.type, DateTime)
-        unicas = [constraint for constraint in tabela.constraints if isinstance(constraint, UniqueConstraint)]
+        unicas = [
+            constraint
+            for constraint in tabela.constraints
+            if isinstance(constraint, UniqueConstraint)
+        ]
         self.assertEqual(len(unicas), 1)
         self.assertEqual(list(unicas[0].columns.keys()), ["token_hash"])
-        chaves = [constraint for constraint in tabela.constraints if isinstance(constraint, ForeignKeyConstraint)]
+        chaves = [
+            constraint
+            for constraint in tabela.constraints
+            if isinstance(constraint, ForeignKeyConstraint)
+        ]
         self.assertEqual(len(chaves), 1)
-        self.assertEqual([element.target_fullname for element in chaves[0].elements], ["usuarios.id"])
+        self.assertEqual(
+            [element.target_fullname for element in chaves[0].elements], ["usuarios.id"]
+        )
 
     def test_migration_cria_e_remove_tabela_de_sessoes(self) -> None:
         """Compara migration e metadata sem executar DDL real.
@@ -263,10 +277,19 @@ class SessaoMappingTestCase(unittest.TestCase):
             operacoes.create_table.assert_called_once()
             nome, *elementos = operacoes.create_table.call_args.args
             self.assertEqual(nome, "sessoes")
-            colunas = [elemento for elemento in elementos if isinstance(elemento, Column)]
-            self.assertEqual([coluna.name for coluna in colunas], list(metadata.tables[nome].columns.keys()))
+            colunas = [
+                elemento for elemento in elementos if isinstance(elemento, Column)
+            ]
+            self.assertEqual(
+                [coluna.name for coluna in colunas],
+                list(metadata.tables[nome].columns.keys()),
+            )
             for coluna in colunas:
-                self.assertEqual(type(coluna.type), type(metadata.tables[nome].c[coluna.name].type))
-                self.assertEqual(coluna.nullable, metadata.tables[nome].c[coluna.name].nullable)
+                self.assertEqual(
+                    type(coluna.type), type(metadata.tables[nome].c[coluna.name].type)
+                )
+                self.assertEqual(
+                    coluna.nullable, metadata.tables[nome].c[coluna.name].nullable
+                )
             migration.downgrade()
             operacoes.drop_table.assert_called_once_with("sessoes")
