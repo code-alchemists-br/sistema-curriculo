@@ -28,6 +28,14 @@ from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261014-175641-health-readiness-checks-v001.md#v001
+from backend.api.health import (
+    VerificadorConectividadePersistencia,
+)
+from backend.api.health import (
+    criar_router as criar_router_health,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from backend.api.itens_versao_curriculo import (
     DesselecaoItemVersaoCurriculoExecutor,
@@ -105,20 +113,24 @@ def create_app(
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
     autenticador_sessao: AutenticadorSessao | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261014-175641-health-readiness-checks-v001.md#v001
+    verificador_conectividade: VerificadorConectividadePersistencia | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados de contato, projetos acadêmicos, versões de currículo, seleção de
-    itens, listagem, experiências profissionais e prévia com os executores
-    recebidos; ausências permanecem explícitas e são traduzidas por cada router
-    em indisponibilidade. Quando um autenticador é fornecido, instala o
-    middleware que valida sessões nas rotas privadas. Ela existe para concentrar
-    a composição na camada externa, mantendo Application e domínio livres do framework.
+    itens, listagem, experiências profissionais, prévia e sondagens de integridade
+    (health e readiness) com os executores e verificadores recebidos; ausências
+    permanecem explícitas e são traduzidas por cada router em indisponibilidade.
+    Quando um autenticador é fornecido, instala o middleware que valida sessões nas
+    rotas privadas. Ela existe para concentrar a composição na camada externa,
+    mantendo Application e domínio livres do framework.
     """
     app = FastAPI()
     if autenticador_sessao is not None:
         app.add_middleware(MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao)
+    app.include_router(criar_router_health(verificador_conectividade))
     app.include_router(
         criar_router_cadastro_acesso(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao

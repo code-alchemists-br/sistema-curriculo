@@ -20,6 +20,9 @@ ROTAS_PUBLICAS = frozenset(
         ("GET", "/docs/oauth2-redirect"),
         ("GET", "/openapi.json"),
         ("GET", "/redoc"),
+        # Proveniência: decision-analysis prompts/backend/20261014-175641-health-readiness-checks-v001.md#v001
+        ("GET", "/health"),
+        ("GET", "/ready"),
     }
 )
 
