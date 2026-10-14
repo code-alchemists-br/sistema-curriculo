@@ -42,6 +42,7 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
     agregado imutável e representação persistida sem executar ORM ou I/O.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     def test_converte_valores_sem_modificar_agregado(self) -> None:
         """Confere a conversão comparando argumentos recebidos pelo double.
 
@@ -56,10 +57,17 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
             nome="Ana Silva",
             email="ana@example.com",
             hash_senha="hash-ja-derivado",
+            deleted_at=None,
+            endereco=None,
+            telefones=None,
+            cidade=None,
+            linkedin=None,
+            curriculo_lattes=None,
         )
         self.assertIs(resultado, registro.return_value)
         self.assertEqual(usuario, criar_usuario())
 
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     def test_reconstroi_agregado_a_partir_do_registro_orm(self) -> None:
         """Confirma que a leitura transforma colunas em value objects de domínio.
 
@@ -72,6 +80,12 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
             nome=usuario.nome.valor,
             email=usuario.email.valor,
             hash_senha=usuario.hash_senha.valor,
+            deleted_at=None,
+            endereco=None,
+            telefones=None,
+            cidade=None,
+            linkedin=None,
+            curriculo_lattes=None,
         )
 
         resultado = para_usuario(registro)
@@ -206,6 +220,48 @@ class RepositorioUsuarioSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         self.session.scalar.return_value = None
         with patch(f"{ADAPTER}.para_usuario") as converter:
             resultado = await self.repositorio.obter_por_email(Email("ana@example.com"))
+
+        self.assertIsNone(resultado)
+        converter.assert_not_called()
+
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    async def test_obtem_registro_por_id_e_o_converte_para_agregado(self) -> None:
+        """Confirma filtro pela chave tipada e conversão para o agregado.
+
+        Substitui a consulta, a sessão e o mapper para observar somente a
+        tradução do adapter, sem conexão ou I/O real. O teste existe para
+        garantir que a busca por identidade não exponha o modelo ORM.
+        """
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        with patch(f"{ADAPTER}.select") as select_mock, patch(
+            f"{ADAPTER}.UsuarioRegistro"
+        ) as registro_modelo, patch(
+            f"{ADAPTER}.para_usuario", return_value=sentinel.usuario
+        ) as converter:
+            registro_modelo.id.__eq__.return_value = sentinel.predicado
+            self.session.scalar.return_value = sentinel.registro
+
+            resultado = await self.repositorio.obter_por_id(usuario_id)
+
+        registro_modelo.id.__eq__.assert_called_once_with(usuario_id.valor)
+        select_mock.assert_called_once_with(registro_modelo)
+        select_mock.return_value.where.assert_called_once_with(sentinel.predicado)
+        self.session.scalar.assert_awaited_once_with(select_mock.return_value.where.return_value)
+        converter.assert_called_once_with(sentinel.registro)
+        self.assertIs(resultado, sentinel.usuario)
+
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    async def test_retorna_ausencia_por_id_sem_invocar_o_mapper(self) -> None:
+        """Confirma que a ausência de registro não cria um agregado.
+
+        Faz a sessão simulada devolver ``None`` e verifica que nenhum mapper é
+        executado. O teste existe para distinguir perfil ausente de falha de
+        infraestrutura mantendo a unidade isolada do banco.
+        """
+        self.session.scalar.return_value = None
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        with patch(f"{ADAPTER}.para_usuario") as converter:
+            resultado = await self.repositorio.obter_por_id(usuario_id)
 
         self.assertIsNone(resultado)
         converter.assert_not_called()

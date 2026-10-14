@@ -31,12 +31,13 @@ from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, Nome, Periodo, UsuarioId
 
 
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
 class PerfilNaoEncontrado(LookupError):
-    """Sinaliza que a identidade informada não corresponde a um perfil.
+    """Sinaliza que o perfil não está disponível para a intenção solicitada.
 
-    A falha é produzida antes de qualquer transição ou atualização quando a
-    porta devolve ausência. Ela existe para distinguir falta do perfil das
-    demais regras sem revelar detalhes de armazenamento.
+    A falha representa ausência de linha e, na consulta de perfil, também
+    exclusão lógica para ocultar se a conta existiu. Ela existe para permitir
+    uma resposta externa genérica sem revelar estado de armazenamento.
     """
 
 
@@ -71,6 +72,19 @@ class ExcluirPerfilEntrada:
     A entrada usa um ``UsuarioId`` já obtido por uma fronteira confiável e não
     recebe data ou política de retenção. Ela existe para limitar o comando à
     intenção do estudante/candidato e deixar o instante sob controle do caso.
+    """
+
+    usuario_id: UsuarioId
+
+
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+@dataclass(frozen=True, slots=True)
+class ConsultarPerfilEstudanteEntrada:
+    """Agrupa a identidade já resolvida para consultar o próprio perfil.
+
+    A entrada aceita somente ``UsuarioId`` tipado, sem receber identificador
+    de transporte ou dados de filtro. Ela existe para expressar a intenção de
+    leitura por uma fronteira confiável sem acoplar o caso de uso à API.
     """
 
     usuario_id: UsuarioId
@@ -234,3 +248,34 @@ class ExcluirPerfil:
         usuario_excluido = usuario.excluir(self._relogio.agora())
         await self._repositorio_usuario.atualizar(usuario_excluido)
         return usuario_excluido
+
+
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+class ConsultarPerfilEstudante:
+    """Consulta um perfil ativo por identidade sem produzir efeitos colaterais.
+
+    O caso busca o agregado pela porta e converte ausência ou exclusão lógica
+    na mesma falha pública de perfil não encontrado. Ele existe para fornecer
+    os dados do próprio estudante sem permitir leitura de perfil removido.
+    """
+
+    def __init__(self, repositorio_usuario: RepositorioUsuario) -> None:
+        """Recebe a porta que localiza o perfil pelo identificador tipado.
+
+        O construtor guarda somente a abstração interna e não executa I/O. Ele
+        existe para manter a consulta independente do adapter e substituível
+        por doubles em testes unitários.
+        """
+        self._repositorio_usuario = repositorio_usuario
+
+    async def executar(self, entrada: ConsultarPerfilEstudanteEntrada) -> Usuario:
+        """Devolve o agregado ativo ou falha sem distinguir ausência de exclusão.
+
+        O método aguarda a consulta por ID e lança ``PerfilNaoEncontrado`` para
+        linha ausente ou perfil excluído, evitando efeitos de atualização. Ele
+        existe para que a camada externa responda sem revelar estado de contas.
+        """
+        usuario = await self._repositorio_usuario.obter_por_id(entrada.usuario_id)
+        if usuario is None or usuario.excluido:
+            raise PerfilNaoEncontrado("Perfil não encontrado.")
+        return usuario

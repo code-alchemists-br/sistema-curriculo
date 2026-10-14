@@ -64,6 +64,7 @@ from backend.api.listagem_versoes_curriculo import (
 )
 from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
+    ConsultaPerfilExecutor,
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
 )
@@ -105,6 +106,7 @@ def create_app(
     derivador_senha: DerivadorSenha | None = None,
     editar_perfil: EdicaoPerfilExecutor | None = None,
     excluir_perfil: ExclusaoPerfilExecutor | None = None,
+    consultar_perfil: ConsultaPerfilExecutor | None = None,
     atualizar_dados_contato: AtualizacaoDadosContatoExecutor | None = None,
     cadastrar_projeto_academico: CadastroProjetoAcademicoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
@@ -132,7 +134,7 @@ def create_app(
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
-    A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
+    A função instancia FastAPI e inclui os routers de cadastro e acesso, perfil,
     dados de contato, projetos acadêmicos, competências, versões de currículo,
     seleção de itens, listagem, exclusão de versão, experiências profissionais,
     formações acadêmicas e prévia com os executores recebidos; ausências
@@ -140,7 +142,8 @@ def create_app(
     Quando um autenticador é
     fornecido, instala o middleware que valida sessões nas rotas privadas. Ela
     existe para concentrar a composição na camada externa, mantendo Application
-    e domínio livres do framework.
+    e domínio livres do framework. O executor de consulta pessoal é injetado no
+    router de perfil para manter a leitura protegida e testável.
     """
     app = FastAPI()
     if autenticador_sessao is not None:
@@ -152,7 +155,9 @@ def create_app(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
         )
     )
-    app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
+    app.include_router(
+        criar_router_perfil(editar_perfil, excluir_perfil, consultar_perfil)
+    )
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002

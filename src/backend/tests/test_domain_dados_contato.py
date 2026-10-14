@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.domain import (
+    Cidade,
     DadosContato,
     Email,
     Endereco,
@@ -75,6 +76,35 @@ class DadosContatoDomainTestCase(unittest.TestCase):
         """
         with self.assertRaises(RegraDeDominioViolada):
             DadosContato(endereco=Endereco("Rua Um, 100"), telefones=())
+
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    def test_cidade_e_explicita_e_normaliza_espacos_perifericos(self) -> None:
+        """Confirma que cidade fica separada do texto de endereço.
+
+        Constrói contato com cidade tipada e verifica seu valor normalizado sem
+        modificar o endereço. O teste existe para impedir inferência geográfica
+        a partir de texto livre.
+        """
+        cidade = Cidade("  São Paulo  ")
+        dados_contato = DadosContato(
+            endereco=Endereco("Rua Um, 100"),
+            telefones=(Telefone("11999990000"),),
+            cidade=cidade,
+        )
+
+        self.assertEqual(dados_contato.cidade, Cidade("São Paulo"))
+        self.assertEqual(dados_contato.endereco, Endereco("Rua Um, 100"))
+
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    def test_cidade_vazia_e_rejeitada(self) -> None:
+        """Rejeita cidade composta somente por espaços.
+
+        Tenta construir o value object sem conteúdo significativo e observa a
+        falha local de domínio. O teste existe para impedir estado inválido
+        antes de persistência ou consulta.
+        """
+        with self.assertRaises(RegraDeDominioViolada):
+            Cidade("   ")
 
 
 def _criar_usuario() -> Usuario:
