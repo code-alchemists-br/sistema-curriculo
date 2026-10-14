@@ -13,6 +13,7 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
+from backend.infrastructure.persistence.sqlalchemy.sessao import SessaoRegistro  # noqa: F401
 
 # Proveniência: decision-analysis prompts/backend/20260916-estrutura-alembic-code-first-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001

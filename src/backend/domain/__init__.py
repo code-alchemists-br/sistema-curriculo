@@ -23,6 +23,8 @@ from backend.domain.itens_perfil import (
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    Cidade,
     CompetenciaId,
     CurriculoId,
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
@@ -49,6 +51,7 @@ __all__ = [
     "CompetenciaId",
     "Curriculo",
     "CurriculoId",
+    "Cidade",
     "DadosContato",
     "Documento",
     "DocumentoId",

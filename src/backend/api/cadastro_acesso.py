@@ -5,10 +5,11 @@ falhas conhecidas em respostas HTTP sem expor entidades ou hashes. Ele existe
 para manter transporte e segurança fora das regras de domínio e casos de uso.
 """
 
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from backend.application import (
@@ -56,16 +57,50 @@ class CadastroEstudanteExecutor(Protocol):
 class AcessoEstudanteExecutor(Protocol):
     """Define a capacidade de confirmar acesso que o router precisa invocar.
 
-    O contrato mantém consulta e comparação de senha fora do controller. Ele
-    existe para que a borda HTTP não acesse repositório nem algoritmo de hash.
+    O contrato mantém consulta e comparação de senha fora do controller e
+    devolve o agregado autenticado após sucesso. Ele existe para que a borda
+    emita sessão sem acessar repositório nem repetir validação de senha.
     """
 
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> None:
+    async def executar(self, entrada: AcessarEstudanteEntrada) -> Usuario:
         """Confirma a entrada de acesso ou sinaliza credenciais não confirmadas.
 
         Implementações não expõem qual credencial falhou. O método existe para
         que a interface devolva uma resposta uniforme e segura ao cliente.
         """
+
+
+class GerenciadorSessoes(Protocol):
+    """Define o ciclo de sessão que a interface precisa delegar.
+
+    O contrato mantém tokens e persistência atrás de uma abstração injetada e
+    existe para autenticar requisições sem aceitar identidade do cliente.
+    """
+
+    async def criar(self, usuario_id: UUID) -> tuple[str, datetime]:
+        """Emite token opaco e informa sua expiração absoluta."""
+
+    async def usuario_da_sessao(self, token: str | None) -> UUID | None:
+        """Resolve o principal para token ativo ou retorna ausência."""
+
+    async def revogar(self, token: str | None) -> None:
+        """Revoga a sessão correspondente ao token, quando existente."""
+
+
+async def obter_principal(request: Request) -> UUID:
+    """Exige cookie válido e devolve a identidade obtida no armazenamento.
+
+    A função consulta o gerenciador instalado na composição da aplicação e
+    nunca aceita identidade de path ou JSON. Ela existe para ser injetada como
+    dependência em rotas que exigem autenticação server-side.
+    """
+    sessoes: GerenciadorSessoes | None = getattr(request.app.state, "sessoes", None)
+    if sessoes is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+    usuario_id = await sessoes.usuario_da_sessao(request.cookies.get("sistema_curriculo_sessao"))
+    if usuario_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+    return usuario_id
 
 
 class CadastroEstudanteRequisicao(BaseModel):
@@ -107,6 +142,7 @@ def criar_router(
     cadastrar_estudante: CadastroEstudanteExecutor | None,
     acessar_estudante: AcessoEstudanteExecutor | None,
     derivador_senha: DerivadorSenha | None = None,
+    sessoes: GerenciadorSessoes | None = None,
 ) -> APIRouter:
     """Cria rotas HTTP usando casos de uso injetados pela composição externa.
 
@@ -137,18 +173,34 @@ def criar_router(
         return EstudanteResposta(id=usuario.id.valor, nome=usuario.nome.valor, email=usuario.email.valor)
 
     @router.post("/acessos", status_code=status.HTTP_204_NO_CONTENT)
-    async def acessar(requisicao: AcessoEstudanteRequisicao) -> None:
-        """Confirma credenciais HTTP sem criar sessão ou token ainda não especificado.
+    async def acessar(requisicao: AcessoEstudanteRequisicao) -> Response:
+        """Confirma credenciais e emite cookie de sessão somente no sucesso.
 
         O handler converte somente e-mail e senha em entrada, aguarda o caso de
-        uso e responde uniformemente a falhas. Ele existe para expor a verificação
-        de acesso sem inventar uma política de autenticação pendente.
+        uso e cria uma sessão opaca. Ele existe para fornecer identidade local
+        sem expor token no JSON.
         """
-        if acessar_estudante is None:
+        if acessar_estudante is None or sessoes is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Acesso indisponível.")
         try:
-            await acessar_estudante.executar(AcessarEstudanteEntrada(email=Email(requisicao.email), senha=requisicao.senha))
+            usuario = await acessar_estudante.executar(AcessarEstudanteEntrada(email=Email(requisicao.email), senha=requisicao.senha))
         except (RegraDeDominioViolada, CredenciaisInvalidas) as erro:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha não conferem.") from erro
+        token, expira = await sessoes.criar(usuario.id.valor)
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.set_cookie("sistema_curriculo_sessao", token, expires=expira, httponly=True, secure=True, samesite="lax", path="/")
+        return response
+
+    @router.post("/sessoes/logout", status_code=status.HTTP_204_NO_CONTENT)
+    async def logout(request: Request, response: Response) -> None:
+        """Revoga a credencial corrente e remove o cookie do cliente.
+
+        O token é obtido do cookie e nunca é devolvido no corpo. A rota existe
+        para encerrar imediatamente a sessão server-side.
+        """
+        if sessoes is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Sessões indisponíveis.")
+        await sessoes.revogar(request.cookies.get("sistema_curriculo_sessao"))
+        response.delete_cookie("sistema_curriculo_sessao", path="/", secure=True, httponly=True, samesite="lax")
 
     return router

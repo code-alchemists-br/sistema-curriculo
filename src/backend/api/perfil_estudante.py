@@ -9,16 +9,18 @@ das regras de domínio e dos casos de uso de perfil.
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from backend.application import (
+    ConsultarPerfilEstudanteEntrada,
     EditarPerfilEntrada,
     EmailJaCadastrado,
     ExcluirPerfilEntrada,
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
+from backend.api.cadastro_acesso import obter_principal
 from backend.domain import Email, Nome, RegraDeDominioViolada, Usuario, UsuarioId
 
 
@@ -55,6 +57,22 @@ class ExclusaoPerfilExecutor(Protocol):
         """
 
 
+class ConsultaPerfilExecutor(Protocol):
+    """Define a consulta de perfil que a API precisa delegar.
+
+    O contrato recebe identidade tipada e devolve o agregado encontrado sem
+    acoplar o handler a repositório ou persistência. Ele existe para expor
+    consulta autenticada com execução substituível nos testes.
+    """
+
+    async def executar(self, entrada: ConsultarPerfilEstudanteEntrada) -> Usuario:
+        """Busca e devolve o agregado ativo associado à entrada tipada.
+
+        A implementação delega a leitura ao caso de uso injetado, sem I/O no
+        contrato. Ele existe para manter o handler independente do adapter.
+        """
+
+
 class EditarPerfilRequisicao(BaseModel):
     """Representa o JSON aceito para editar nome e e-mail de um perfil.
 
@@ -80,9 +98,55 @@ class PerfilResposta(BaseModel):
     email: str
 
 
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+class DadosPessoaisResposta(BaseModel):
+    """Representa somente os dados pessoais aprovados para consulta.
+
+    O DTO seleciona nome, e-mail, telefones, cidade e links profissionais do
+    agregado, omitindo identidade interna, hash e estado de persistência. Ele
+    existe para controlar explicitamente a representação de saída da API.
+    """
+
+    nome: str
+    email: str
+    telefones: list[str]
+    cidade: str | None
+    linkedin: str | None
+    curriculo_lattes: str | None
+
+    @classmethod
+    def de_usuario(cls, usuario: Usuario) -> "DadosPessoaisResposta":
+        """Converte o agregado para o conjunto permitido de campos de resposta.
+
+        A conversão lê contatos do value object quando presente, usando lista
+        vazia e campos opcionais nulos para perfis sem contato cadastrado. Ela
+        existe para impedir serialização implícita do agregado e do hash.
+        """
+        contato = usuario.dados_contato
+        return cls(
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            telefones=(
+                [telefone.valor for telefone in contato.telefones]
+                if contato is not None
+                else []
+            ),
+            cidade=(
+                contato.cidade.valor
+                if contato is not None and contato.cidade is not None
+                else None
+            ),
+            linkedin=contato.linkedin if contato is not None else None,
+            curriculo_lattes=(
+                contato.curriculo_lattes if contato is not None else None
+            ),
+        )
+
+
 def criar_router(
     editar_perfil: EdicaoPerfilExecutor | None,
     excluir_perfil: ExclusaoPerfilExecutor | None,
+    consultar_perfil: ConsultaPerfilExecutor | None = None,
 ) -> APIRouter:
     """Cria rotas HTTP de perfil usando casos de uso injetados pela composição.
 
@@ -90,12 +154,34 @@ def criar_router(
     traduz exceções conhecidas em status seguros. Ela existe para registrar a
     API e permitir testes unitários com doubles, sem sessão de banco real.
 
-    Nota: a identidade do perfil ainda é recebida pela própria rota
-    (``usuario_id`` no caminho), e não derivada de uma sessão autenticada.
-    Autenticação e autorização de entrada permanecem um handoff pendente,
-    conforme prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md.
+    A consulta por ID exige principal validado por cookie e compara a identidade
+    com o recurso solicitado antes de executar o caso de uso. A função existe
+    para manter autorização da leitura na fronteira HTTP.
     """
     router = APIRouter()
+
+    @router.get("/estudantes/{usuario_id}", response_model=DadosPessoaisResposta)
+    async def consultar(
+        usuario_id: UUID,
+        principal_id: UUID = Depends(obter_principal),
+    ) -> DadosPessoaisResposta:
+        """Devolve dados pessoais somente ao estudante proprietário.
+
+        O handler exige principal autenticado, mascara IDs alheios como 404 e
+        projeta somente campos aprovados após a consulta do caso de uso. Ele
+        existe para atender a leitura pessoal sem permitir enumeração de contas.
+        """
+        if principal_id != usuario_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil não encontrado.")
+        if consultar_perfil is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Consulta indisponível.")
+        try:
+            usuario = await consultar_perfil.executar(
+                ConsultarPerfilEstudanteEntrada(usuario_id=UsuarioId(principal_id))
+            )
+        except PerfilNaoEncontrado as erro:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil não encontrado.") from erro
+        return DadosPessoaisResposta.de_usuario(usuario)
 
     @router.put("/estudantes/{usuario_id}", response_model=PerfilResposta)
     async def editar(usuario_id: UUID, requisicao: EditarPerfilRequisicao) -> PerfilResposta:

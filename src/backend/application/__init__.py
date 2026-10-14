@@ -47,6 +47,9 @@ from backend.application.listagem_versoes_curriculo import (
 from backend.application.perfil_estudante import (
     CadastrarFormacaoAcademica,
     CadastrarFormacaoAcademicaEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    ConsultarPerfilEstudante,
+    ConsultarPerfilEstudanteEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     ExcluirPerfil,
@@ -115,6 +118,8 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
     "CadastrarFormacaoAcademica",
     "CadastrarFormacaoAcademicaEntrada",
+    "ConsultarPerfilEstudante",
+    "ConsultarPerfilEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
     "EditarPerfil",
     "EditarPerfilEntrada",

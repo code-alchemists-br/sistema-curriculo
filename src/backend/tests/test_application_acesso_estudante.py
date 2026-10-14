@@ -81,8 +81,9 @@ class AcessarEstudanteTestCase(unittest.IsolatedAsyncioTestCase):
         repositorio = RepositorioUsuarioStub(usuario)
         verificador = VerificadorSenhaStub(True)
 
-        await AcessarEstudante(repositorio, verificador).executar(entrada)
+        resultado = await AcessarEstudante(repositorio, verificador).executar(entrada)
 
+        self.assertIs(resultado, usuario)
         self.assertEqual(repositorio.emails_consultados, [entrada.email])
         self.assertEqual(verificador.chamadas, [(entrada.senha, usuario.hash_senha.valor)])
 
