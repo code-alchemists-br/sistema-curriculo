@@ -25,6 +25,14 @@ from backend.api.dados_contato import (
 from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+from backend.api.exclusao_versao_curriculo import (
+    ExclusaoVersaoCurriculoExecutor,
+)
+from backend.api.exclusao_versao_curriculo import (
+    criar_router as criar_router_exclusao_versao_curriculo,
+)
 from backend.api.experiencia_profissional import (
     CadastroExperienciaProfissionalExecutor,
 )
@@ -111,17 +119,19 @@ def create_app(
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
     autenticador_sessao: AutenticadorSessao | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    excluir_versao_curriculo: ExclusaoVersaoCurriculoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados de contato, projetos acadêmicos, competências, versões de currículo,
-    seleção de itens, listagem, experiências profissionais e prévia com os
-    executores recebidos; ausências permanecem explícitas e são traduzidas por
-    cada router em indisponibilidade. Quando um autenticador é fornecido,
-    instala o middleware que valida sessões nas rotas privadas. Ela existe para
-    concentrar a composição na camada externa, mantendo Application e domínio
-    livres do framework.
+    seleção de itens, listagem, exclusão de versão, experiências profissionais
+    e prévia com os executores recebidos; ausências permanecem explícitas e são
+    traduzidas por cada router em indisponibilidade. Quando um autenticador é
+    fornecido, instala o middleware que valida sessões nas rotas privadas. Ela
+    existe para concentrar a composição na camada externa, mantendo Application
+    e domínio livres do framework.
     """
     app = FastAPI()
     if autenticador_sessao is not None:
@@ -155,5 +165,6 @@ def create_app(
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )
+    app.include_router(criar_router_exclusao_versao_curriculo(excluir_versao_curriculo))
     app.include_router(criar_router_sessoes(revogador_sessao))
     return app

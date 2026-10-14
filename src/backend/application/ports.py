@@ -359,6 +359,16 @@ class RepositorioCurriculo(Protocol):
         todas as versões do estudante sem conhecer banco, ORM ou tabelas.
         """
 
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def excluir(self, curriculo: Curriculo) -> None:
+        """Solicita assincronamente a remoção definitiva da versão e de sua seleção.
+
+        Implementações removem do armazenamento a versão e tudo o que depende
+        dela, como as referências aos itens, sem introduzir regras de currículo
+        na infraestrutura. O método existe para persistir a exclusão decidida
+        pelo núcleo sem acoplar a Application a banco, ORM ou tabelas.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class GeradorCurriculoId(Protocol):

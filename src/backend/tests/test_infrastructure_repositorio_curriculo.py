@@ -598,6 +598,117 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         self.session.delete.assert_not_awaited()
         self.session.flush.assert_not_awaited()
 
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_exclui_as_linhas_de_selecao_antes_da_versao_e_envia_flush(self) -> None:
+        """Confere a ordem entre a remoção das seleções, da versão e do flush.
+
+        Registra cada chamada à sessão e exige que as linhas de seleção sejam
+        removidas antes da versão, para que a chave estrangeira não seja
+        violada, e que o flush venha por último. Ele existe para proteger a
+        integridade referencial da exclusão.
+        """
+        registro = criar_registro()
+        self.session.get.return_value = registro
+        ordem: list[str] = []
+
+        async def registrar_execucao(*_args, **_kwargs) -> None:
+            ordem.append("remove_selecoes")
+
+        async def registrar_remocao(objeto) -> None:
+            ordem.append(("remove_versao", objeto))
+
+        async def registrar_flush() -> None:
+            ordem.append("flush")
+
+        self.session.execute.side_effect = registrar_execucao
+        self.session.delete.side_effect = registrar_remocao
+        self.session.flush.side_effect = registrar_flush
+
+        await self.repositorio.excluir(criar_curriculo())
+
+        self.session.get.assert_awaited_once_with(CurriculoRegistro, ID_CURRICULO)
+        self.assertEqual(ordem, ["remove_selecoes", ("remove_versao", registro), "flush"])
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_a_remocao_das_selecoes_atinge_somente_a_versao_excluida(self) -> None:
+        """Confirma que a instrução de remoção filtra pela versão e pela tabela de seleção.
+
+        Inspeciona a instrução enviada à sessão: ela deve apagar de
+        ``curriculo_itens`` e filtrar pelo identificador da versão. Ele existe
+        para impedir que a exclusão apague seleções de outras versões.
+        """
+        self.session.get.return_value = criar_registro()
+
+        await self.repositorio.excluir(criar_curriculo())
+
+        instrucao = self.session.execute.await_args.args[0]
+        self.assertIn("DELETE FROM curriculo_itens", str(instrucao))
+        self.assertIn("WHERE", str(instrucao))
+        self.assertIn(ID_CURRICULO, instrucao.compile().params.values())
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_excluir_versao_inexistente_falha_sem_remover_nada(self) -> None:
+        """Confirma que excluir versão ausente falha sem enviar nenhuma remoção.
+
+        Faz a sessão devolver ausência e exige a falha de busca, sem remoção de
+        seleções, sem remoção da versão e sem flush. Ele existe para impedir
+        efeito colateral quando a versão já foi removida.
+        """
+        self.session.get.return_value = None
+
+        with self.assertRaises(LookupError):
+            await self.repositorio.excluir(criar_curriculo())
+
+        self.session.execute.assert_not_awaited()
+        self.session.delete.assert_not_awaited()
+        self.session.flush.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_excluir_propaga_falha_ao_remover_as_selecoes_sem_remover_a_versao(self) -> None:
+        """Confere que falha na remoção das seleções chega intacta e interrompe o fluxo.
+
+        Faz a remoção das seleções falhar e verifica que a versão não é marcada
+        para remoção nem enviada. Ele existe para impedir uma exclusão parcial
+        mascarada pelo adapter.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.execute.side_effect = RuntimeError("falha")
+
+        with self.assertRaises(RuntimeError):
+            await self.repositorio.excluir(criar_curriculo())
+
+        self.session.delete.assert_not_awaited()
+        self.session.flush.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_excluir_propaga_falha_no_flush(self) -> None:
+        """Confere que falha ao enviar a remoção chega intacta ao chamador.
+
+        Faz o envio da alteração falhar e verifica que o adapter não a mascara
+        nem controla transação. Ele existe para que a composição externa decida
+        o rollback.
+        """
+        self.session.get.return_value = criar_registro()
+        self.session.flush.side_effect = RuntimeError("falha")
+
+        with self.assertRaises(RuntimeError):
+            await self.repositorio.excluir(criar_curriculo())
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def test_excluir_nao_insere_nem_faz_commit(self) -> None:
+        """Confirma que excluir não adiciona linhas nem controla a transação.
+
+        Executa uma exclusão e observa que a sessão não recebe ``add`` nem
+        ``commit``. Ele existe para proteger que a transação fique com a
+        composição externa.
+        """
+        self.session.get.return_value = criar_registro()
+
+        await self.repositorio.excluir(criar_curriculo())
+
+        self.session.add.assert_not_called()
+        self.session.commit.assert_not_awaited()
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class ConversaoParaRegistroTestCase(unittest.TestCase):
