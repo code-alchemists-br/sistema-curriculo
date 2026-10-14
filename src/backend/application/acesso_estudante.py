@@ -8,8 +8,7 @@ manter o acesso testável e evitar que controllers coordenem regras de uso.
 from dataclasses import dataclass
 
 from backend.application.ports import RepositorioUsuario, VerificadorSenha
-from backend.domain.usuario import Usuario
-from backend.domain.value_objects import Email
+from backend.domain.value_objects import Email, UsuarioId
 
 
 class CredenciaisInvalidas(ValueError):
@@ -38,8 +37,8 @@ class AcessarEstudante:
     """Confirma credenciais por meio de repositório e verificador de senha.
 
     O caso de uso busca o usuário pelo e-mail e delega a comparação segura do
-    segredo à porta e devolve o agregado somente quando ambos forem válidos. Ele
-    existe para concentrar o acesso e permitir emissão de sessão na borda.
+    segredo à porta; após sucesso, devolve somente o ID tipado. Ele existe para
+    concentrar o acesso e permitir emissão de sessão na borda sem expor o agregado.
     """
 
     def __init__(self, repositorio_usuario: RepositorioUsuario, verificador_senha: VerificadorSenha) -> None:
@@ -52,14 +51,14 @@ class AcessarEstudante:
         self._repositorio_usuario = repositorio_usuario
         self._verificador_senha = verificador_senha
 
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> Usuario:
-        """Confirma credenciais e devolve a identidade autenticada.
+    async def executar(self, entrada: AcessarEstudanteEntrada) -> UsuarioId:
+        """Confirma credenciais e devolve a identidade da conta autenticada.
 
-        O método aguarda a busca da conta e compara a senha somente quando há um
-        agregado correspondente. Ele existe para aplicar o fluxo de acesso e
-        permitir que a fronteira transversal emita sessão sem repetir a senha.
+        O método busca a conta e compara a senha somente quando o agregado
+        existe; credenciais inválidas produzem falha uniforme. Ele existe para
+        fornecer à fronteira HTTP a identidade validada para criar uma sessão.
         """
         usuario = await self._repositorio_usuario.obter_por_email(entrada.email)
         if usuario is None or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor):
             raise CredenciaisInvalidas("E-mail ou senha não conferem.")
-        return usuario
+        return usuario.id

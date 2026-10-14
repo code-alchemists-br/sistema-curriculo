@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
+from backend.api.factory import create_app
 from backend.api.perfil_estudante import (
     DadosPessoaisResposta,
     EditarPerfilRequisicao,
@@ -378,3 +379,15 @@ class ConsultarPerfilRotaTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(contexto.exception.status_code, 404)
         self.assertEqual(contexto.exception.detail, "Perfil não encontrado.")
+
+    async def test_fabrica_registra_rota_de_consulta(self) -> None:
+        """Inclui a rota de consulta ao compor a aplicação.
+
+        A fábrica recebe o executor e registra o endpoint no OpenAPI. O teste
+        existe para impedir que a implementação fique isolada do app composto.
+        """
+        app = create_app(consultar_perfil=ConsultarPerfilExecutorDouble())
+
+        operacao = app.openapi()["paths"]["/estudantes/{usuario_id}"]["get"]
+
+        self.assertEqual(operacao["responses"]["200"]["description"], "Successful Response")

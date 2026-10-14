@@ -16,6 +16,8 @@ from uuid import UUID
 # Proveniência: decision-analysis prompts/backend/20261006-215500-fixture-teste-exportacao-curriculo-v001.md#v001
 from backend.domain.curriculo import Curriculo
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
     Competencia,
     ExperienciaProfissional,
     FormacaoAcademica,
@@ -45,10 +47,16 @@ from backend.domain.value_objects import (
 ID_USUARIO_ESTAVEL = UsuarioId(UUID("11111111-1111-4111-8111-111111111111"))
 ID_CURRICULO_ESTAVEL = CurriculoId(UUID("22222222-2222-4222-8222-222222222222"))
 ID_FORMACAO_ESTAVEL = FormacaoAcademicaId(UUID("33333333-3333-4333-8333-333333333333"))
-ID_EXPERIENCIA_ESTAVEL = ExperienciaProfissionalId(UUID("44444444-4444-4444-8444-444444444444"))
+ID_EXPERIENCIA_ESTAVEL = ExperienciaProfissionalId(
+    UUID("44444444-4444-4444-8444-444444444444")
+)
 ID_PROJETO_ESTAVEL = ProjetoAcademicoId(UUID("55555555-5555-4555-8555-555555555555"))
-ID_COMPETENCIA_PYTHON_ESTAVEL = CompetenciaId(UUID("66666666-6666-4666-8666-666666666661"))
-ID_COMPETENCIA_FASTAPI_ESTAVEL = CompetenciaId(UUID("66666666-6666-4666-8666-666666666662"))
+ID_COMPETENCIA_PYTHON_ESTAVEL = CompetenciaId(
+    UUID("66666666-6666-4666-8666-666666666661")
+)
+ID_COMPETENCIA_FASTAPI_ESTAVEL = CompetenciaId(
+    UUID("66666666-6666-4666-8666-666666666662")
+)
 ID_IDIOMA_INGLES_ESTAVEL = IdiomaId(UUID("77777777-7777-4777-8777-777777777771"))
 ID_IDIOMA_ESPANHOL_ESTAVEL = IdiomaId(UUID("77777777-7777-4777-8777-777777777772"))
 
@@ -88,7 +96,9 @@ class CurriculoExportacaoFixture:
                 "email": self.usuario.email.valor,
                 "dados_contato": {
                     "endereco": contato.endereco.valor if contato else "",
-                    "telefones": [t.valor for t in contato.telefones] if contato else [],
+                    "telefones": [t.valor for t in contato.telefones]
+                    if contato
+                    else [],
                     "linkedin": contato.linkedin if contato else None,
                     "curriculo_lattes": contato.curriculo_lattes if contato else None,
                 },
@@ -216,6 +226,8 @@ def obter_curriculo_exportacao_fixture() -> CurriculoExportacaoFixture:
     competencia_python = Competencia(
         id=ID_COMPETENCIA_PYTHON_ESTAVEL,
         usuario_id=ID_USUARIO_ESTAVEL,
+        # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+        categoria=CategoriaCompetencia.TECNICA,
         descricao="Python e Clean Architecture",
         nivel="Avançado",
     )
@@ -223,6 +235,8 @@ def obter_curriculo_exportacao_fixture() -> CurriculoExportacaoFixture:
     competencia_fastapi = Competencia(
         id=ID_COMPETENCIA_FASTAPI_ESTAVEL,
         usuario_id=ID_USUARIO_ESTAVEL,
+        # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+        categoria=CategoriaCompetencia.TECNICA,
         descricao="FastAPI e APIs RESTful",
         nivel="Intermediário",
     )

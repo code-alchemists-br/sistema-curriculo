@@ -8,6 +8,7 @@ transições da conta e permitir seu crescimento coeso fora de um módulo genér
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.exceptions import RegraDeDominioViolada
@@ -116,20 +117,80 @@ class ProjetoAcademico:
                 )
 
 
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class CategoriaCompetencia(str, Enum):
+    """Representa as categorias válidas de uma competência do perfil.
+
+    O enum limita o valor às categorias técnica e comportamental, sem depender
+    de transporte ou persistência. Ele existe para que o domínio preserve a
+    distinção solicitada ao cadastrar e deduplicar competências.
+    """
+
+    TECNICA = "tecnica"
+    COMPORTAMENTAL = "comportamental"
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+def normalizar_descricao_competencia(descricao: str) -> str:
+    """Produz a chave textual usada para comparar competências equivalentes.
+
+    A função exige texto, colapsa espaços Unicode entre termos e aplica
+    ``casefold`` sem remover acentos, pontuação ou símbolos. Ela existe para
+    tornar a regra de duplicidade determinística e reutilizável pelo domínio e
+    pela orquestração, sem depender de collation do banco.
+    """
+    if not isinstance(descricao, str):
+        raise RegraDeDominioViolada("A competência exige descrição textual.")
+    return " ".join(descricao.split()).casefold()
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Competencia:
     """Representa uma competência reutilizável pertencente a um usuário.
 
-    A entidade identifica a competência e registra sua descrição e nível como
-    textos, pois o vocabulário de níveis ainda não foi especificado. Ela existe
-    para que o perfil seja independente de uma versão particular de currículo.
+    A entidade identifica a competência, registra categoria, descrição e nível
+    como valores controlados ou textos validados, pois o vocabulário de níveis
+    ainda não foi especificado. Ela existe para que o perfil seja independente
+    de uma versão particular de currículo e diferencie habilidades técnicas e
+    comportamentais.
     """
 
     id: CompetenciaId
     usuario_id: UsuarioId
+    categoria: CategoriaCompetencia
     descricao: str
     nivel: str
+
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    def __post_init__(self) -> None:
+        """Valida e apará os textos obrigatórios de uma competência.
+
+        O método confirma a categoria controlada, normaliza a descrição para
+        detectar ausência e remove somente seus espaços de contorno; o nível
+        também deve ser texto não vazio. Ele existe para manter toda entidade
+        de competência válida antes que a Application consulte ou persista.
+        """
+        if not isinstance(self.categoria, CategoriaCompetencia):
+            raise RegraDeDominioViolada("A competência exige categoria válida.")
+        descricao_normalizada = normalizar_descricao_competencia(self.descricao)
+        if not descricao_normalizada:
+            raise RegraDeDominioViolada("A competência exige descrição preenchida.")
+        if not isinstance(self.nivel, str) or not self.nivel.strip():
+            raise RegraDeDominioViolada("A competência exige nível preenchido.")
+        object.__setattr__(self, "descricao", self.descricao.strip())
+        object.__setattr__(self, "nivel", self.nivel.strip())
+
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    @property
+    def descricao_normalizada(self) -> str:
+        """Devolve a chave canônica da descrição da competência.
+
+        A propriedade reaplica a política de colapso de espaços e ``casefold``
+        sobre a descrição já validada. Ela existe para dar ao caso de uso uma
+        chave estável de duplicidade sem expor detalhe de infraestrutura.
+        """
+        return normalizar_descricao_competencia(self.descricao)
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001

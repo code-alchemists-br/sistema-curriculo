@@ -12,6 +12,13 @@ from backend.application.acesso_estudante import (
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+from backend.application.cadastro_competencia import (
+    CadastrarCompetencia,
+    CadastrarCompetenciaEntrada,
+    CompetenciaJaCadastrada,
+)
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
     CadastrarEstudanteEntrada,
@@ -34,6 +41,12 @@ from backend.application.cadastro_projeto_academico import (
 from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+from backend.application.exclusao_versao_curriculo import (
+    ExcluirVersaoCurriculo,
+    ExcluirVersaoCurriculoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
@@ -64,20 +77,33 @@ from backend.application.perfil_estudante import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    GeradorCompetenciaId,
     GeradorCurriculoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     GeradorProjetoAcademicoId,
     GeradorUsuarioId,
     Relogio,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    RepositorioCompetencia,
     RepositorioCurriculo,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     RepositorioProjetoAcademico,
     RepositorioUsuario,
     VerificadorSenha,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+from backend.application.previa_versao_curriculo import (
+    GerarPreviaVersaoCurriculo,
+    GerarPreviaVersaoCurriculoEntrada,
+    PreviaVersaoCurriculo,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -102,6 +128,10 @@ from backend.application.versao_curriculo import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "CadastrarCompetencia",
+    "CadastrarCompetenciaEntrada",
+    "CompetenciaJaCadastrada",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
@@ -126,6 +156,8 @@ __all__ = [
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
     "GeradorFormacaoAcademicaId",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "GeradorCompetenciaId",
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
@@ -135,6 +167,8 @@ __all__ = [
     "PerfilNaoEncontrado",
     "Relogio",
     "RepositorioFormacaoAcademica",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "RepositorioCompetencia",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",
@@ -160,4 +194,12 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     "ListarVersoesCurriculo",
     "ListarVersoesCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    "ExcluirVersaoCurriculo",
+    "ExcluirVersaoCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    "ConsultaItemPerfil",
+    "GerarPreviaVersaoCurriculo",
+    "GerarPreviaVersaoCurriculoEntrada",
+    "PreviaVersaoCurriculo",
 ]

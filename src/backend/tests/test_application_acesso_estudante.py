@@ -81,11 +81,11 @@ class AcessarEstudanteTestCase(unittest.IsolatedAsyncioTestCase):
         repositorio = RepositorioUsuarioStub(usuario)
         verificador = VerificadorSenhaStub(True)
 
-        resultado = await AcessarEstudante(repositorio, verificador).executar(entrada)
+        usuario_id = await AcessarEstudante(repositorio, verificador).executar(entrada)
 
-        self.assertIs(resultado, usuario)
         self.assertEqual(repositorio.emails_consultados, [entrada.email])
         self.assertEqual(verificador.chamadas, [(entrada.senha, usuario.hash_senha.valor)])
+        self.assertEqual(usuario_id, usuario.id)
 
     async def test_rejeita_conta_ausente_sem_conferir_senha(self) -> None:
         """Confirma que a ausência recebe a mesma falha sem tocar no verificador.

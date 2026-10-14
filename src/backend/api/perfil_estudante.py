@@ -1,15 +1,14 @@
-"""Expõe DTOs e handlers HTTP para edição e exclusão do perfil do estudante.
+"""Expõe consulta, edição e exclusão HTTP do perfil do estudante.
 
-O módulo converte JSON e identidade de rota em tipos da Application e traduz
-falhas conhecidas em respostas HTTP sem expor entidades, hash de senha ou
-detalhes de persistência. Ele existe para manter transporte e segurança fora
-das regras de domínio e dos casos de uso de perfil.
+O módulo converte entradas e principal autenticado em tipos da Application e
+traduz falhas sem expor entidades, hash ou detalhes de persistência. Ele existe
+para manter transporte e autorização fora das regras de domínio.
 """
 
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from backend.application import (
@@ -20,8 +19,23 @@ from backend.application import (
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
-from backend.api.cadastro_acesso import obter_principal
 from backend.domain import Email, Nome, RegraDeDominioViolada, Usuario, UsuarioId
+
+
+async def obter_principal(request: Request) -> UUID:
+    """Devolve a identidade instalada pelo middleware de sessão.
+
+    O middleware valida o cookie antes do handler e grava somente o UUID
+    autenticado em `request.state`; identidade ausente ou inválida recebe 401.
+    A função existe para impedir que a rota confie no ID fornecido pelo cliente.
+    """
+    usuario_id = getattr(request.state, "usuario_id", None)
+    if not isinstance(usuario_id, UUID):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sessão ausente ou inválida.",
+        )
+    return usuario_id
 
 
 class EdicaoPerfilExecutor(Protocol):

@@ -6,8 +6,9 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from backend.domain.curriculo import Curriculo
 
@@ -15,8 +16,13 @@ from backend.domain.curriculo import Curriculo
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
+    Competencia,
+    Documento,
     ExperienciaProfissional,
     FormacaoAcademica,
+    Idioma,
     ProjetoAcademico,
 )
 from backend.domain.usuario import Usuario
@@ -24,6 +30,8 @@ from backend.domain.usuario import Usuario
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CompetenciaId,
     CurriculoId,
     Email,
     ExperienciaProfissionalId,
@@ -176,6 +184,8 @@ class GeradorFormacaoAcademicaId(Protocol):
         tipo de domínio já validado. O método existe para manter a criação da
         entidade explícita e substituível no caso de uso.
         """
+
+
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
     """Define a persistência necessária ao cadastro de uma experiência.
@@ -215,6 +225,56 @@ class GeradorExperienciaProfissionalId(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class RepositorioCompetencia(Protocol):
+    """Define a consulta e a persistência de competências válidas.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    competências equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        categoria: CategoriaCompetencia,
+        descricao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe competência com a chave lógica fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, categoria
+        e descrição canônica, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, competencia: Competencia) -> None:
+        """Solicita a persistência assíncrona de uma competência válida.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class GeradorCompetenciaId(Protocol):
+    """Fornece identidades tipadas para novas competências.
+
+    A porta encapsula a origem da identidade e devolve ``CompetenciaId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CompetenciaId:
+        """Gera a identidade da próxima competência cadastrada.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 class RepositorioProjetoAcademico(Protocol):
     """Define a persistência necessária ao cadastro de um projeto acadêmico.
@@ -251,6 +311,7 @@ class GeradorProjetoAcademicoId(Protocol):
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
         """
+
 
 class RepositorioCurriculo(Protocol):
     """Define a capacidade assíncrona de consultar e persistir versões de currículo.
@@ -298,6 +359,16 @@ class RepositorioCurriculo(Protocol):
         todas as versões do estudante sem conhecer banco, ORM ou tabelas.
         """
 
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def excluir(self, curriculo: Curriculo) -> None:
+        """Solicita assincronamente a remoção definitiva da versão e de sua seleção.
+
+        Implementações removem do armazenamento a versão e tudo o que depende
+        dela, como as referências aos itens, sem introduzir regras de currículo
+        na infraestrutura. O método existe para persistir a exclusão decidida
+        pelo núcleo sem acoplar a Application a banco, ORM ou tabelas.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class GeradorCurriculoId(Protocol):
@@ -329,11 +400,87 @@ class ConsultaProprietarioItem(Protocol):
     """
 
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-    async def obter_proprietario(self, referencia: ReferenciaCurriculo) -> UsuarioId | None:
+    async def obter_proprietario(
+        self, referencia: ReferenciaCurriculo
+    ) -> UsuarioId | None:
         """Obtém assincronamente o dono do item referenciado, quando ele existir.
 
         Implementações consultam o armazenamento do tipo de item indicado e
         devolvem a identidade do proprietário ou ausência, sem revelar detalhes
         de persistência. O método existe para que a seleção recuse itens
         inexistentes ou de outro usuário antes de alterar a versão.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+ItemPerfil = (
+    FormacaoAcademica
+    | ExperienciaProfissional
+    | ProjetoAcademico
+    | Competencia
+    | Idioma
+    | Documento
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+class ConsultaItemPerfil(Protocol):
+    """Define a capacidade assíncrona de ler um item de perfil por sua referência.
+
+    A porta recebe a referência tipada de uma versão de currículo e devolve a
+    entidade do item correspondente, sem expor armazenamento. Ela existe para
+    que a prévia leia os seis tipos de item por um único contrato, deixando a
+    implementação por tipo a cargo de adapters.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    async def obter_item(self, referencia: ReferenciaCurriculo) -> ItemPerfil | None:
+        """Obtém assincronamente o item referenciado, quando ele existir.
+
+        Implementações consultam o armazenamento do tipo indicado pela
+        referência e devolvem a entidade ou ausência, sem aplicar regras de
+        propriedade. O método existe para que o caso de uso leia o conteúdo dos
+        itens selecionados e decida sozinho o que pode ser exibido.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+@dataclass(frozen=True, slots=True)
+class VagaExternaDto:
+    """Representa de forma imutável uma vaga retornada pela busca.
+
+    A estrutura reúne os oito campos aprovados no modelo de referência e não
+    inclui detalhes de transporte ou do provedor. Ela existe para tipar os
+    resultados de busca consumidos pela Application.
+    """
+
+    id: str
+    titulo: str
+    empresa: str
+    descricao: str
+    requisitos: tuple[str, ...]
+    localizacao: str
+    modalidade: str
+    url_candidatura: str
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+class BuscadorVagas(Protocol):
+    """Define a capacidade assíncrona interna de consultar vagas.
+
+    A porta especifica os parâmetros e o DTO retornado sem nomear provedor ou
+    transporte. Ela existe para que os casos de uso dependam de uma abstração
+    que possa ser atendida por adapters externos ou doubles.
+    """
+
+    async def buscar_vagas(
+        self,
+        termo: str = "",
+        filtros: dict[str, Any] | None = None,
+    ) -> list[VagaExternaDto]:
+        """Solicita a busca de vagas e retorna seus resultados tipados.
+
+        A operação recebe o termo e o mapa opcional de filtros da assinatura e
+        aguarda a implementação que realiza a consulta. Ela existe para
+        manter a Application independente da origem da busca.
         """

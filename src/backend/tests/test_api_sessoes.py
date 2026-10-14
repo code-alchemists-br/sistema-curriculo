@@ -1,132 +1,117 @@
-"""Testa emissão e encerramento de sessão na fronteira HTTP."""
+"""Verifica o encerramento HTTP da sessão atual."""
 
 import unittest
-from datetime import datetime, timezone
-from uuid import uuid4
 
-from fastapi import APIRouter, FastAPI, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response
 
-from backend.api.cadastro_acesso import AcessoEstudanteRequisicao, criar_router, obter_principal
-from backend.application import AcessarEstudanteEntrada
-from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
-from backend.infrastructure.security.sessoes import SessoesSqlAlchemy
+from backend.api.factory import create_app
+from backend.api.sessoes import COOKIE_SESSAO, criar_router
+from backend.application.sessoes import RevogadorSessao
 
 
-class AcessoExecutorStub:
-    """Devolve identidade autenticada sem consultar banco ou senha real.
+class RevogadorSessaoStub(RevogadorSessao):
+    """Registra os tokens encaminhados pelo handler sem tocar no banco.
 
-    O double registra a entrada e existe para isolar a emissão de sessão do
-    caso de uso de validação de credenciais.
-    """
-
-    def __init__(self, usuario: Usuario) -> None:
-        """Guarda a conta que representa credenciais válidas no cenário."""
-        self.usuario = usuario
-        self.entradas: list[AcessarEstudanteEntrada] = []
-
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> Usuario:
-        """Registra a tentativa e devolve o agregado autenticado configurado."""
-        self.entradas.append(entrada)
-        return self.usuario
-
-
-class SessoesStub:
-    """Simula gerenciamento de sessão e registra operações solicitadas.
-
-    Os métodos retornam valores estáveis sem persistência. O double existe para
-    verificar que a API cria, resolve e revoga sessões através do contrato.
+    O double guarda chamadas em memória. Ele existe para isolar a tradução
+    HTTP do adapter de persistência.
     """
 
     def __init__(self) -> None:
-        """Inicializa histórico vazio e token previsível para as asserções."""
-        self.criacoes: list[object] = []
-        self.revogacoes: list[str | None] = []
+        """Prepara histórico vazio de tokens revogados.
 
-    async def criar(self, usuario_id):
-        """Registra proprietário e devolve token de teste com prazo futuro."""
-        self.criacoes.append(usuario_id)
-        return "token-de-teste", datetime(2030, 1, 1, tzinfo=timezone.utc)
+        Nenhum recurso externo é aberto. O construtor existe para tornar
+        observável a dependência usada pelo teste.
+        """
+        self.tokens: list[str] = []
 
-    async def usuario_da_sessao(self, token):
-        """Retorna a conta sintética somente para o token conhecido."""
-        return self.criacoes[0] if token == "token-de-teste" and self.criacoes else None
+    async def revogar(self, token: str) -> None:
+        """Registra o token apresentado ao handler sem persistir ou resumir.
 
-    async def revogar(self, token):
-        """Registra a credencial que a API solicitou invalidar."""
-        self.revogacoes.append(token)
+        O método simula a porta de aplicação e mantém chamadas observáveis.
+        Ele existe para conferir a delegação HTTP usando estado local.
+        """
+        self.tokens.append(token)
 
 
-def _endpoint(router: APIRouter, caminho: str, metodo: str):
-    """Localiza handler registrado para chamada isolada sem servidor HTTP."""
+def _handler(revogador_sessao: RevogadorSessaoStub | None):
+    """Localiza o handler DELETE sem iniciar servidor ASGI.
+
+    A função procura a rota no router isolado e devolve sua função endpoint.
+    Ela existe para testar respostas e delegação sem rede.
+    """
+    router: APIRouter = criar_router(revogador_sessao)
     for rota in router.routes:
-        if rota.path == caminho and metodo in rota.methods:
+        if rota.path == "/sessao/atual" and "DELETE" in rota.methods:
             return rota.endpoint
-    raise AssertionError(f"Rota {metodo} {caminho} não encontrada.")
+    raise AssertionError("Rota DELETE /sessao/atual não encontrada.")
 
 
-class SessaoApiTestCase(unittest.IsolatedAsyncioTestCase):
-    """Verifica cookie de login e revogação pelo endpoint de logout."""
+class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
+    """Protege a revogação do token do cookie e a limpeza da sessão no cliente."""
 
-    async def test_login_emite_cookie_seguro_sem_payload_de_token(self) -> None:
-        """Confirma flags do cookie e associação ao usuário autenticado."""
-        usuario = Usuario(UsuarioId(uuid4()), Nome("Ana Silva"), Email("ana@example.com"), HashSenha("hash"))
-        sessoes = SessoesStub()
-        router = criar_router(None, AcessoExecutorStub(usuario), sessoes=sessoes)
+    async def test_revoga_o_cookie_atual_e_envia_instrucao_de_remocao_segura(
+        self,
+    ) -> None:
+        """Delega o token recebido e remove o cookie com atributos seguros.
 
-        resposta = await _endpoint(router, "/acessos", "POST")(AcessoEstudanteRequisicao(email="ana@example.com", senha="senha-correta"))
+        O handler recebe uma resposta em memória e um revogador double. O teste
+        existe para proteger logout sem afetar outras sessões do estudante.
+        """
+        revogador = RevogadorSessaoStub()
+        resposta = Response()
+
+        resultado = await _handler(revogador)(resposta, "token-atual")
 
         cookie = resposta.headers["set-cookie"]
-        self.assertIn("sistema_curriculo_sessao=token-de-teste", cookie)
-        self.assertIn("httponly", cookie.lower())
-        self.assertIn("secure", cookie.lower())
-        self.assertIn("samesite=lax", cookie.lower())
-        self.assertEqual(sessoes.criacoes, [usuario.id.valor])
-        self.assertEqual(resposta.body, b"")
+        self.assertIsNone(resultado)
+        self.assertEqual(revogador.tokens, ["token-atual"])
+        self.assertIn(f"{COOKIE_SESSAO}=", cookie)
+        self.assertIn("Max-Age=0", cookie)
+        self.assertIn("Path=/", cookie)
+        self.assertIn("Secure", cookie)
+        self.assertIn("HttpOnly", cookie)
+        self.assertIn("SameSite=lax", cookie)
 
-    async def test_logout_revoga_cookie_atual_e_o_remove(self) -> None:
-        """Confirma que logout usa o cookie e ordena sua remoção."""
-        from starlette.requests import Request
+    async def test_cookie_ausente_limpa_cliente_sem_chamar_revogador(self) -> None:
+        """Mantém logout idempotente quando o navegador já não envia cookie.
 
-        sessoes = SessoesStub()
-        router = criar_router(None, None, sessoes=sessoes)
-        request = Request({"type": "http", "headers": [(b"cookie", b"sistema_curriculo_sessao=token-de-teste")]})
-        response = Response()
+        A rota recebe token ausente e ainda remove o cookie local. O teste
+        existe para permitir repetição segura da operação de logout.
+        """
+        revogador = RevogadorSessaoStub()
+        resposta = Response()
 
-        await _endpoint(router, "/sessoes/logout", "POST")(request, response)
+        await _handler(revogador)(resposta, None)
 
-        self.assertEqual(sessoes.revogacoes, ["token-de-teste"])
-        self.assertIn("max-age=0", response.headers["set-cookie"].lower())
+        self.assertEqual(revogador.tokens, [])
+        self.assertIn("Max-Age=0", resposta.headers["set-cookie"])
 
-    async def test_persistencia_usa_digest_sem_reter_token_bruto(self) -> None:
-        """Confirma digest SHA-256 estável e de tamanho fixo para armazenamento."""
-        digest = SessoesSqlAlchemy._hash("segredo-de-sessao")
+    async def test_cookie_presente_sem_revogador_retorna_indisponibilidade(
+        self,
+    ) -> None:
+        """Não confirma logout quando a persistência de revogação não existe.
 
-        self.assertEqual(len(digest), 64)
-        self.assertNotEqual(digest, "segredo-de-sessao")
-        self.assertEqual(digest, SessoesSqlAlchemy._hash("segredo-de-sessao"))
+        A rota devolve 503 antes de limpar o cookie, evitando sinalizar sucesso
+        sem invalidar a credencial no servidor.
+        """
+        resposta = Response()
 
-    async def test_principal_e_derivado_do_cookie_validado(self) -> None:
-        """Resolve o usuário pelo cookie com o gerenciador da composição."""
-        from starlette.requests import Request
+        with self.assertRaises(HTTPException) as contexto:
+            await _handler(None)(resposta, "token-atual")
 
-        sessoes = SessoesStub()
-        usuario_id = uuid4()
-        sessoes.criacoes.append(usuario_id)
-        app = FastAPI()
-        app.state.sessoes = sessoes
-        request = Request({"type": "http", "app": app, "headers": [(b"cookie", b"sistema_curriculo_sessao=token-de-teste")]})
+        self.assertEqual(contexto.exception.status_code, 503)
+        self.assertNotIn("set-cookie", resposta.headers)
 
-        self.assertEqual(await obter_principal(request), usuario_id)
+    async def test_fabrica_registra_rota_de_logout(self) -> None:
+        """Confirma que a composição expõe o método de logout no OpenAPI.
 
-    async def test_principal_rejeita_token_ausente(self) -> None:
-        """Responde 401 quando a requisição não traz sessão validável."""
-        from starlette.requests import Request
+        A fábrica monta a aplicação sem iniciar servidor nem banco. O teste
+        existe para impedir que o router fique fora da API pública.
+        """
+        app = create_app(revogador_sessao=RevogadorSessaoStub())
 
-        app = FastAPI()
-        app.state.sessoes = SessoesStub()
-        request = Request({"type": "http", "app": app, "headers": []})
+        operacao = app.openapi()["paths"]["/sessao/atual"]["delete"]
 
-        with self.assertRaises(HTTPException) as erro:
-            await obter_principal(request)
-
-        self.assertEqual(erro.exception.status_code, 401)
+        self.assertEqual(
+            operacao["responses"]["204"]["description"], "Successful Response"
+        )

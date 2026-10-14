@@ -129,6 +129,9 @@ Entre na pasta criada:
 cd sistema-curriculo
 ```
 
+Para consultar o fluxo de branches, commits, envio ao GitHub e Pull Requests,
+veja o [manual de uso do Git](manual-git.md).
+
 O repositório não precisa ser clonado novamente nas próximas utilizações. Basta acessar a pasta onde ele já está armazenado:
 
 ```bash
