@@ -14,6 +14,7 @@ from typing import Any
 from uuid import UUID
 
 # Proveniência: decision-analysis prompts/backend/20261006-215500-fixture-teste-exportacao-curriculo-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 from backend.domain.curriculo import Curriculo
 from backend.domain.itens_perfil import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
@@ -22,7 +23,9 @@ from backend.domain.itens_perfil import (
     ExperienciaProfissional,
     FormacaoAcademica,
     Idioma,
+    NivelFormacaoAcademica,
     ProjetoAcademico,
+    StatusFormacaoAcademica,
 )
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
@@ -80,6 +83,7 @@ class CurriculoExportacaoFixture:
     competencias: tuple[Competencia, ...]
     idiomas: tuple[Idioma, ...]
 
+    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
     def para_dicionario(self) -> dict[str, Any]:
         """Converte a estrutura completa da fixture em um dicionário serializável.
 
@@ -115,8 +119,8 @@ class CurriculoExportacaoFixture:
                 "id": str(self.formacao_academica.id.valor),
                 "instituicao": self.formacao_academica.instituicao,
                 "curso": self.formacao_academica.curso,
-                "nivel": self.formacao_academica.nivel,
-                "status": self.formacao_academica.status,
+                "nivel": self.formacao_academica.nivel.value,
+                "status": self.formacao_academica.status.value,
                 "periodo": {
                     "inicio": self.formacao_academica.periodo.inicio.isoformat(),
                     "fim": (
@@ -189,14 +193,15 @@ def obter_curriculo_exportacao_fixture() -> CurriculoExportacaoFixture:
         dados_contato=contato,
     )
 
+    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
     formacao = FormacaoAcademica(
         id=ID_FORMACAO_ESTAVEL,
         usuario_id=ID_USUARIO_ESTAVEL,
         instituicao="Faculdade de Tecnologia de São Paulo (FATEC-SP)",
         curso="Tecnologia em Análise e Desenvolvimento de Sistemas",
-        nivel="Graduação Tecnológica",
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
         periodo=Periodo(inicio=date(2023, 2, 1), fim=date(2025, 12, 20)),
-        status="Em andamento",
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
 
     experiencia = ExperienciaProfissional(

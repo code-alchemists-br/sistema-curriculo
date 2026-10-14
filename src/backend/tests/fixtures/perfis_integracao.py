@@ -25,9 +25,11 @@ from backend.domain import (
     FormacaoAcademica,
     FormacaoAcademicaId,
     HashSenha,
+    NivelFormacaoAcademica,
     Nome,
     Periodo,
     ReferenciaCurriculo,
+    StatusFormacaoAcademica,
     Usuario,
     UsuarioId,
 )
@@ -207,9 +209,10 @@ def _criar_dados_estudante(
         usuario_id=dono,
         instituicao="Instituto de Tecnologia de Exemplo",
         curso="Análise e Desenvolvimento de Sistemas",
-        nivel="Graduação tecnológica",
+        # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
         periodo=Periodo(inicio=date(2023, 2, 1), fim=None),
-        status="Em andamento",
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
     experiencia = ExperienciaProfissional(
         id=ExperienciaProfissionalId(experiencia_id),
