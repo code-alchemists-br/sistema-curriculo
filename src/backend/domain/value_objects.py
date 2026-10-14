@@ -58,6 +58,29 @@ class CurriculoId:
         _validar_uuid(self.valor, "CurriculoId")
 
 
+# Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+@dataclass(frozen=True, slots=True)
+class VagaId:
+    """Representa a identidade textual e imutável de uma vaga externa.
+
+    O value object preserva o identificador recebido como texto sem impor
+    formato, conversão ou dependência do provedor. Ele existe para distinguir
+    a identidade de uma vaga de outras strings usadas pelo domínio.
+    """
+
+    valor: str
+
+    def __post_init__(self) -> None:
+        """Confirma que o identificador externo permanece textual.
+
+        A validação rejeita valores que não sejam texto e conserva os demais
+        exatamente como recebidos. Ela existe para tipar a referência da vaga
+        sem antecipar regras de formato ainda não definidas.
+        """
+        if not isinstance(self.valor, str):
+            raise RegraDeDominioViolada("VagaId deve receber um identificador textual.")
+
+
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class FormacaoAcademicaId:

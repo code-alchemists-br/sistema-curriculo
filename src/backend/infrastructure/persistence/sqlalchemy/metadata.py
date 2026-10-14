@@ -12,6 +12,9 @@ manter ORM fora do núcleo do backend.
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
 )
+from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
+    ExperienciaProfissionalRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401
 )
