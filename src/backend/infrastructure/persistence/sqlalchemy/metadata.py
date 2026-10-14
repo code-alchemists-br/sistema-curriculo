@@ -19,10 +19,10 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
 from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
     ExperienciaProfissionalRegistro,  # noqa: F401
 )
-from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401
 )
+from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 
 # Proveniência: decision-analysis prompts/backend/20260916-estrutura-alembic-code-first-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001

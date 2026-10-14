@@ -18,7 +18,14 @@ from backend.application import (
     EmailJaCadastrado,
 )
 from backend.application.sessoes import CriadorSessao
-from backend.domain import Email, HashSenha, Nome, RegraDeDominioViolada, Usuario, UsuarioId
+from backend.domain import (
+    Email,
+    HashSenha,
+    Nome,
+    RegraDeDominioViolada,
+    Usuario,
+    UsuarioId,
+)
 
 
 class DerivadorSenha(Protocol):
