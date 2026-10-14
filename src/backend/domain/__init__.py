@@ -18,6 +18,8 @@ from backend.domain.exceptions import RegraDeDominioViolada
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
     Competencia,
     Documento,
     ExperienciaProfissional,
@@ -55,6 +57,8 @@ from backend.domain.value_objects import (
 __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
     "AssociacaoCurriculoVaga",
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    "CategoriaCompetencia",
     "ClassificacaoAssociacao",
     "Competencia",
     "CompetenciaId",

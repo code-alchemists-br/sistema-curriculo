@@ -68,13 +68,17 @@ def _request(metodo: str, caminho: str, token: str | None = None) -> Request:
 class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege rotas privadas e propaga a identidade validada."""
 
-    def _middleware(self, autenticador: AutenticadorSessaoStub) -> MiddlewareAutenticacaoSessao:
+    def _middleware(
+        self, autenticador: AutenticadorSessaoStub
+    ) -> MiddlewareAutenticacaoSessao:
         """Cria middleware sem iniciar aplicação ASGI real.
 
         A aplicação interna é um callable inerte, pois o teste chama `dispatch`
         diretamente. O helper existe para manter os cenários compactos.
         """
-        return MiddlewareAutenticacaoSessao(lambda scope, receive, send: None, autenticador)
+        return MiddlewareAutenticacaoSessao(
+            lambda scope, receive, send: None, autenticador
+        )
 
     async def test_rejeita_rota_privada_sem_cookie(self) -> None:
         """Retorna 401 sem chamar autenticador ou handler da rota.
@@ -90,11 +94,39 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
             chamadas.append(request)
             return Response(status_code=204)
 
-        resposta = await self._middleware(autenticador).dispatch(_request("GET", "/privado"), proxima)
+        resposta = await self._middleware(autenticador).dispatch(
+            _request("GET", "/privado"), proxima
+        )
 
         self.assertEqual(resposta.status_code, 401)
         self.assertTrue(resposta.headers["content-type"].startswith("application/json"))
-        self.assertEqual(json.loads(resposta.body), {"detail": "Sessão ausente ou inválida."})
+        self.assertEqual(
+            json.loads(resposta.body), {"detail": "Sessão ausente ou inválida."}
+        )
+        self.assertEqual(autenticador.tokens, [])
+        self.assertEqual(chamadas, [])
+
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    async def test_cadastro_de_competencia_exige_sessao(self) -> None:
+        """Rejeita o cadastro de competência quando falta cookie de sessão.
+
+        O cenário chama o middleware com o caminho público da nova rota e não
+        fornece credencial. Ele existe para comprovar que o endpoint não foi
+        incluído na lista de exceções de autenticação.
+        """
+        autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
+        chamadas = []
+
+        async def proxima(request: Request) -> Response:
+            """Registra um encaminhamento que não deve ocorrer no cenário."""
+            chamadas.append(request)
+            return Response(status_code=204)
+
+        resposta = await self._middleware(autenticador).dispatch(
+            _request("POST", "/competencias"), proxima
+        )
+
+        self.assertEqual(resposta.status_code, 401)
         self.assertEqual(autenticador.tokens, [])
         self.assertEqual(chamadas, [])
 
@@ -107,15 +139,21 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         autenticador = AutenticadorSessaoStub(None)
         request = _request("GET", "/privado", "token-invalido")
 
-        resposta = await self._middleware(autenticador).dispatch(request, lambda _: None)
+        resposta = await self._middleware(autenticador).dispatch(
+            request, lambda _: None
+        )
 
         self.assertEqual(resposta.status_code, 401)
         self.assertTrue(resposta.headers["content-type"].startswith("application/json"))
-        self.assertEqual(json.loads(resposta.body), {"detail": "Sessão ausente ou inválida."})
+        self.assertEqual(
+            json.loads(resposta.body), {"detail": "Sessão ausente ou inválida."}
+        )
         self.assertNotIn("token-invalido", resposta.body.decode("utf-8"))
         self.assertEqual(autenticador.tokens, ["token-invalido"])
 
-    async def test_autentica_cookie_e_disponibiliza_identidade_na_requisicao(self) -> None:
+    async def test_autentica_cookie_e_disponibiliza_identidade_na_requisicao(
+        self,
+    ) -> None:
         """Propaga o UUID do estudante após validação positiva.
 
         O handler seguinte observa `request.state.usuario_id`; o teste existe
@@ -146,7 +184,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
             with self.subTest(metodo=metodo):
                 autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
                 resposta = await self._middleware(autenticador).dispatch(
-                    _request(metodo, "/estudantes/00000000-0000-0000-0000-000000000001"),
+                    _request(
+                        metodo, "/estudantes/00000000-0000-0000-0000-000000000001"
+                    ),
                     lambda _: None,
                 )
                 self.assertEqual(resposta.status_code, 401)
@@ -169,7 +209,12 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
             return Response(status_code=204)
 
         resposta = await self._middleware(autenticador).dispatch(
-            _request("PUT", "/estudantes/00000000-0000-0000-0000-000000000002", "token-valido"), proxima
+            _request(
+                "PUT",
+                "/estudantes/00000000-0000-0000-0000-000000000002",
+                "token-valido",
+            ),
+            proxima,
         )
 
         self.assertEqual(resposta.status_code, 403)
@@ -221,7 +266,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         for metodo, caminho in cenarios:
             with self.subTest(metodo=metodo, caminho=caminho):
                 autenticador = AutenticadorSessaoStub(UsuarioId(UUID(usuario_id)))
-                resposta = await self._middleware(autenticador).dispatch(_request(metodo, caminho), lambda _: None)
+                resposta = await self._middleware(autenticador).dispatch(
+                    _request(metodo, caminho), lambda _: None
+                )
                 self.assertEqual(resposta.status_code, 401)
                 self.assertEqual(autenticador.tokens, [])
 
@@ -264,7 +311,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """
         usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
         autenticador = AutenticadorSessaoStub(usuario_id)
-        request = _request("GET", f"/estudantes/{usuario_id.valor}/curriculos", "token-valido")
+        request = _request(
+            "GET", f"/estudantes/{usuario_id.valor}/curriculos", "token-valido"
+        )
 
         async def proxima(requisicao: Request) -> Response:
             """Confirma identidade confiável para o handler de currículo."""
@@ -276,7 +325,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(autenticador.tokens, ["token-valido"])
 
-    async def test_login_cadastro_logout_documentacao_e_preflight_sao_publicos(self) -> None:
+    async def test_login_cadastro_logout_documentacao_e_preflight_sao_publicos(
+        self,
+    ) -> None:
         """Encaminha rotas públicas sem exigir token ou chamar autenticador.
 
         Os métodos e caminhos públicos cobrem fluxos prévios à autenticação,
@@ -303,7 +354,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """Devolve resposta 204 usada pela rota pública simulada."""
         return Response(status_code=204)
 
-    async def test_fabrica_instala_middleware_quando_autenticador_e_injetado(self) -> None:
+    async def test_fabrica_instala_middleware_quando_autenticador_e_injetado(
+        self,
+    ) -> None:
         """Confirma que a composição adiciona middleware de sessão.
 
         O teste inspeciona a configuração FastAPI sem iniciar servidor. Ele
@@ -311,7 +364,12 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """
         app = create_app(autenticador_sessao=AutenticadorSessaoStub(None))
 
-        self.assertTrue(any(middleware.cls is MiddlewareAutenticacaoSessao for middleware in app.user_middleware))
+        self.assertTrue(
+            any(
+                middleware.cls is MiddlewareAutenticacaoSessao
+                for middleware in app.user_middleware
+            )
+        )
 
     async def test_fabrica_preserva_composicao_sem_autenticador_opcional(self) -> None:
         """Mantém compatibilidade com composições existentes sem auth configurada.
@@ -322,4 +380,9 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """
         app = create_app()
 
-        self.assertFalse(any(middleware.cls is MiddlewareAutenticacaoSessao for middleware in app.user_middleware))
+        self.assertFalse(
+            any(
+                middleware.cls is MiddlewareAutenticacaoSessao
+                for middleware in app.user_middleware
+            )
+        )

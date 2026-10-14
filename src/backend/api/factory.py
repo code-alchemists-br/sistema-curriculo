@@ -15,6 +15,10 @@ from backend.api.cadastro_acesso import (
 from backend.api.cadastro_acesso import (
     criar_router as criar_router_cadastro_acesso,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+from backend.api.competencia import CadastroCompetenciaExecutor
+from backend.api.competencia import criar_router as criar_router_competencia
 from backend.api.dados_contato import (
     AtualizacaoDadosContatoExecutor,
 )
@@ -89,6 +93,8 @@ def create_app(
     excluir_perfil: ExclusaoPerfilExecutor | None = None,
     atualizar_dados_contato: AtualizacaoDadosContatoExecutor | None = None,
     cadastrar_projeto_academico: CadastroProjetoAcademicoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    cadastrar_competencia: CadastroCompetenciaExecutor | None = None,
     editar_versao_curriculo: EdicaoVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
@@ -109,16 +115,19 @@ def create_app(
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
-    dados de contato, projetos acadêmicos, versões de currículo, seleção de
-    itens, listagem, experiências profissionais e prévia com os executores
-    recebidos; ausências permanecem explícitas e são traduzidas por cada router
-    em indisponibilidade. Quando um autenticador é fornecido, instala o
-    middleware que valida sessões nas rotas privadas. Ela existe para concentrar
-    a composição na camada externa, mantendo Application e domínio livres do framework.
+    dados de contato, projetos acadêmicos, competências, versões de currículo,
+    seleção de itens, listagem, experiências profissionais e prévia com os
+    executores recebidos; ausências permanecem explícitas e são traduzidas por
+    cada router em indisponibilidade. Quando um autenticador é fornecido,
+    instala o middleware que valida sessões nas rotas privadas. Ela existe para
+    concentrar a composição na camada externa, mantendo Application e domínio
+    livres do framework.
     """
     app = FastAPI()
     if autenticador_sessao is not None:
-        app.add_middleware(MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao)
+        app.add_middleware(
+            MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao
+        )
     app.include_router(
         criar_router_cadastro_acesso(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
@@ -127,6 +136,8 @@ def create_app(
     app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    app.include_router(criar_router_competencia(cadastrar_competencia))
     app.include_router(
         criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo)
     )

@@ -10,6 +10,8 @@ from backend.application import (
     GerarPreviaVersaoCurriculoEntrada,
 )
 from backend.domain import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
     Competencia,
     CompetenciaId,
     Curriculo,
@@ -229,6 +231,8 @@ def _competencia(usuario_id: UsuarioId, descricao: str) -> Competencia:
     return Competencia(
         id=CompetenciaId(uuid4()),
         usuario_id=usuario_id,
+        # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+        categoria=CategoriaCompetencia.TECNICA,
         descricao=descricao,
         nivel="Avançado",
     )

@@ -16,6 +16,8 @@ from backend.domain.curriculo import Curriculo
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
     Competencia,
     Documento,
     ExperienciaProfissional,
@@ -28,6 +30,8 @@ from backend.domain.usuario import Usuario
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CompetenciaId,
     CurriculoId,
     Email,
     ExperienciaProfissionalId,
@@ -218,6 +222,56 @@ class GeradorExperienciaProfissionalId(Protocol):
         A implementação define a estratégia concreta de geração e retorna o
         tipo de domínio esperado pelo caso de uso. O método existe para que a
         criação da entidade sempre receba uma identidade explícita e válida.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class RepositorioCompetencia(Protocol):
+    """Define a consulta e a persistência de competências válidas.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    competências equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        categoria: CategoriaCompetencia,
+        descricao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe competência com a chave lógica fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, categoria
+        e descrição canônica, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, competencia: Competencia) -> None:
+        """Solicita a persistência assíncrona de uma competência válida.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class GeradorCompetenciaId(Protocol):
+    """Fornece identidades tipadas para novas competências.
+
+    A porta encapsula a origem da identidade e devolve ``CompetenciaId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CompetenciaId:
+        """Gera a identidade da próxima competência cadastrada.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
         """
 
 
