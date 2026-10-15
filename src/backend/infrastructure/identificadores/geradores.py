@@ -7,8 +7,18 @@ de identidade com uma estratégia concreta e substituível.
 
 from uuid import uuid4
 
-from backend.application.ports import GeradorCompetenciaId, GeradorCurriculoId
-from backend.domain.value_objects import CompetenciaId, CurriculoId
+from backend.application.ports import (
+    GeradorCompetenciaId,
+    GeradorCurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    GeradorIdiomaId,
+)
+from backend.domain.value_objects import (
+    CompetenciaId,
+    CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    IdiomaId,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 
@@ -48,3 +58,24 @@ class GeradorCompetenciaIdUuid4(GeradorCompetenciaId):
         concreta, substituível e sem estado de identificadores.
         """
         return CompetenciaId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+class GeradorIdiomaIdUuid4(GeradorIdiomaId):
+    """Gera identidades de idioma com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    idioma. Ela existe para satisfazer a porta da Application sem expor a
+    biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> IdiomaId:
+        """Devolve uma identidade nova e tipada para idioma.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``IdiomaId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return IdiomaId(uuid4())
+
+

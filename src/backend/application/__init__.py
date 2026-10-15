@@ -31,6 +31,13 @@ from backend.application.cadastro_experiencia_profissional import (
     CadastrarExperienciaProfissionalEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+from backend.application.cadastro_idioma import (
+    CadastrarIdioma,
+    CadastrarIdiomaEntrada,
+    IdiomaJaCadastrado,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.application.cadastro_projeto_academico import (
     CadastrarProjetoAcademico,
@@ -95,6 +102,8 @@ from backend.application.ports import (
     GeradorCurriculoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    GeradorIdiomaId,
     GeradorProjetoAcademicoId,
     GeradorUsuarioId,
     Relogio,
@@ -103,6 +112,8 @@ from backend.application.ports import (
     RepositorioCurriculo,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    RepositorioIdioma,
     RepositorioProjetoAcademico,
     RepositorioUsuario,
     VerificadorSenha,
@@ -141,6 +152,10 @@ __all__ = [
     "CadastrarCompetencia",
     "CadastrarCompetenciaEntrada",
     "CompetenciaJaCadastrada",
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    "CadastrarIdioma",
+    "CadastrarIdiomaEntrada",
+    "IdiomaJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
@@ -173,6 +188,8 @@ __all__ = [
     "GeradorFormacaoAcademicaId",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "GeradorCompetenciaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    "GeradorIdiomaId",
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
@@ -184,6 +201,8 @@ __all__ = [
     "RepositorioFormacaoAcademica",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "RepositorioCompetencia",
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    "RepositorioIdioma",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",

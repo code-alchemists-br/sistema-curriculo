@@ -24,6 +24,11 @@ from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional impo
 from backend.infrastructure.persistence.sqlalchemy.formacao_academica import (
     FormacaoAcademicaRegistro,  # noqa: F401
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.idioma import (
+    IdiomaRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401
 )
