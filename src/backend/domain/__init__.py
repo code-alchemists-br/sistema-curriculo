@@ -18,10 +18,16 @@ from backend.domain.exceptions import RegraDeDominioViolada
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    TAMANHO_MAXIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MAXIMO_TEXTO_FORMACAO,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    TAMANHO_MINIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MINIMO_TEXTO_FORMACAO,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    Certificacao,
     Competencia,
     Documento,
     ExperienciaProfissional,
@@ -31,13 +37,19 @@ from backend.domain.itens_perfil import (
     NivelFormacaoAcademica,
     ProjetoAcademico,
     StatusFormacaoAcademica,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    normalizar_chave_certificacao,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     normalizar_idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    normalizar_texto_certificacao,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     Cidade,
     CompetenciaId,
@@ -68,6 +80,9 @@ __all__ = [
     "AssociacaoCurriculoVaga",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "CategoriaCompetencia",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "Certificacao",
+    "CertificacaoId",
     "ClassificacaoAssociacao",
     "Competencia",
     "CompetenciaId",
@@ -87,6 +102,9 @@ __all__ = [
     "Idioma",
     "IdiomaId",
     "Nome",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "normalizar_chave_certificacao",
+    "normalizar_texto_certificacao",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "normalizar_idioma",
     # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -97,6 +115,9 @@ __all__ = [
     "ReferenciaCurriculo",
     "RegraDeDominioViolada",
     "StatusFormacaoAcademica",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "TAMANHO_MAXIMO_TEXTO_CERTIFICACAO",
+    "TAMANHO_MINIMO_TEXTO_CERTIFICACAO",
     "TAMANHO_MAXIMO_TEXTO_FORMACAO",
     "TAMANHO_MINIMO_TEXTO_FORMACAO",
     "Telefone",
