@@ -60,12 +60,12 @@ from backend.application.listagem_versoes_curriculo import (
 from backend.application.perfil_estudante import (
     CadastrarFormacaoAcademica,
     CadastrarFormacaoAcademicaEntrada,
-    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    EditarFormacaoAcademica,
-    EditarFormacaoAcademicaEntrada,
     # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     ConsultarPerfilEstudante,
     ConsultarPerfilEstudanteEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EditarFormacaoAcademica,
+    EditarFormacaoAcademicaEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     ExcluirPerfil,

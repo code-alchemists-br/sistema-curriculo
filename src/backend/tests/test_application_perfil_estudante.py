@@ -8,12 +8,12 @@ from uuid import uuid4
 from backend.application import (
     CadastrarFormacaoAcademica,
     CadastrarFormacaoAcademicaEntrada,
-    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    EditarFormacaoAcademica,
-    EditarFormacaoAcademicaEntrada,
     # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     ConsultarPerfilEstudante,
     ConsultarPerfilEstudanteEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EditarFormacaoAcademica,
+    EditarFormacaoAcademicaEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     EmailJaCadastrado,
@@ -156,10 +156,7 @@ class RepositorioFormacaoAcademicaSpy:
                 formacao
                 for formacao in self.formacoes_disponiveis
                 if formacao.id == formacao_id
-                and (
-                    formacao.usuario_id == usuario_id
-                    or self.forcar_retorno_alheio
-                )
+                and (formacao.usuario_id == usuario_id or self.forcar_retorno_alheio)
             ),
             None,
         )
@@ -407,7 +404,9 @@ class CadastrarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(repositorio_formacao.formacoes_salvas, [resultado])
         self.assertEqual(gerador.chamadas, 1)
 
-    async def test_rejeita_perfil_inexistente_sem_gerar_ou_salvar_formacao(self) -> None:
+    async def test_rejeita_perfil_inexistente_sem_gerar_ou_salvar_formacao(
+        self,
+    ) -> None:
         """Confirma que ausência do proprietário interrompe o cadastro cedo.
 
         O teste consulta um repositório sem usuário e observa a falha junto à
@@ -519,7 +518,9 @@ class EditarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resultados[0], resultados[1])
 
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    async def test_bloqueia_repositorio_que_devolva_formacao_de_outro_usuario(self) -> None:
+    async def test_bloqueia_repositorio_que_devolva_formacao_de_outro_usuario(
+        self,
+    ) -> None:
         """Confere propriedade na Application mesmo se a porta falhar no filtro.
 
         O teste simula uma porta que devolve registro de terceiro para a
@@ -606,6 +607,7 @@ def _criar_entrada_edicao_formacao(
         periodo=Periodo(date(2024, 2, 1)),
         status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
+
 
 def _criar_usuario(email: str = "ana@example.com") -> Usuario:
     """Cria perfil ativo com dados válidos para os casos de uso.
