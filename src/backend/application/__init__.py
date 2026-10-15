@@ -42,10 +42,6 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
-from backend.application.perfil_completo import (
-    AtualizarPerfilCompleto,
-    AtualizarPerfilCompletoEntrada,
-)
 
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.application.exclusao_versao_curriculo import (
@@ -57,6 +53,10 @@ from backend.application.exclusao_versao_curriculo import (
 from backend.application.listagem_versoes_curriculo import (
     ListarVersoesCurriculo,
     ListarVersoesCurriculoEntrada,
+)
+from backend.application.perfil_completo import (
+    AtualizarPerfilCompleto,
+    AtualizarPerfilCompletoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
