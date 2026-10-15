@@ -33,6 +33,8 @@ from backend.domain.itens_perfil import (
     StatusFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     normalizar_idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+    ordenar_formacoes,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -91,6 +93,8 @@ __all__ = [
     "normalizar_idioma",
     # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
     "NivelFormacaoAcademica",
+    # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+    "ordenar_formacoes",
     "Periodo",
     "ProjetoAcademico",
     "ProjetoAcademicoId",
