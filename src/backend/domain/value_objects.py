@@ -262,14 +262,15 @@ class Nome:
             raise RegraDeDominioViolada("Nome não pode ser vazio.")
         object.__setattr__(self, "valor", valor_normalizado)
 
+
 # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
 @dataclass(frozen=True, slots=True)
 class Cidade:
     """Representa o nome explícito de uma cidade informado pelo usuário.
 
     O value object remove espaços nas extremidades e rejeita conteúdo vazio,
-    sem tentar inferir região a partir de endereço livre. Ele existe para que
-    cidade seja armazenada e consultada como dado próprio do perfil.
+    sem inferir região a partir de endereço livre. Ele existe para armazenar
+    cidade como dado próprio do perfil.
     """
 
     valor: str
@@ -277,15 +278,13 @@ class Cidade:
     def __post_init__(self) -> None:
         """Normaliza espaços periféricos e impede cidade sem conteúdo.
 
-        A validação ocorre na construção e conserva a grafia informada fora dos
-        espaços extremos. Ela existe para manter cidades explícitas válidas sem
-        acoplar o domínio a serviços geográficos ou regras não especificadas.
+        A validação ocorre na construção e conserva a grafia informada. Ela
+        existe para manter cidades explícitas válidas sem serviço geográfico.
         """
         valor_normalizado = self.valor.strip()
         if not valor_normalizado:
             raise RegraDeDominioViolada("Cidade não pode ser vazia.")
         object.__setattr__(self, "valor", valor_normalizado)
-
 
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 @dataclass(frozen=True, slots=True)
@@ -338,35 +337,37 @@ class Telefone:
 
 
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
-# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
 @dataclass(frozen=True, slots=True)
 class DadosContato:
     """Agrupa endereço, cidade, telefones e links profissionais de contato.
 
-    O value object reúne os dados de contato como uma unidade e exige ao menos
-    um telefone válido; cidade permanece opcional para compatibilidade com
-    cadastros existentes. Ele existe para distinguir cidade do endereço livre
-    e manter os dados associados ao agregado ``Usuario``.
+    O value object reúne os dados de contato do usuário como uma unidade só e
+    exige ao menos um telefone válido, mantendo cidade e links opcionais. Ele
+    existe para que os dados usados no cabeçalho de currículo permaneçam coesos
+    dentro do agregado ``Usuario``.
     """
 
     endereco: Endereco
     telefones: tuple[Telefone, ...]
     linkedin: str | None = None
     curriculo_lattes: str | None = None
-    cidade: Cidade | None = None
+    cidade: Cidade | str | None = None
 
     def __post_init__(self) -> None:
-        """Exige telefone e normaliza links profissionais opcionais.
+        """Exige ao menos um telefone e normaliza links opcionais vazios.
 
         A validação rejeita contato sem nenhum telefone e converte links em
-        branco para ``None``, sem verificar formato de URL ainda não exigido;
-        cidade, quando fornecida, já chega validada por ``Cidade``. Ela existe
-        para manter a invariante mínima do contato sem inferir cidade.
+        branco para ``None``, sem verificar formato de URL ainda não exigido.
+        Ela existe para manter a invariante mínima de contato do usuário.
         """
         if not self.telefones:
             raise RegraDeDominioViolada("Informe ao menos um telefone de contato.")
+        cidade = self.cidade
+        if isinstance(cidade, str):
+            cidade = Cidade(cidade) if cidade.strip() else None
         linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
         lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
+        object.__setattr__(self, "cidade", cidade)
         object.__setattr__(self, "linkedin", linkedin_normalizado or None)
         object.__setattr__(self, "curriculo_lattes", lattes_normalizado or None)
 

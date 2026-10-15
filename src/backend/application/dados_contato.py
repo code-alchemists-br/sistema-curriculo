@@ -49,9 +49,10 @@ class AtualizarDadosContato:
     async def executar(self, entrada:AtualizarDadosContatoEntrada) -> Usuario:
         """Aplica a atualização válida e devolve o novo estado persistido.
 
-                O método localiza o usuário, rejeita ausência ou exclusão e delega a
-                transição ao domínio antes de solicitar a atualização. Ele existe para
-                preservar identidade e credencial no fluxo de manutenção de contato.
+                O método localiza o usuário, rejeita ausência ou exclusão, preserva
+                cidade porque o contrato legado não a envia e delega a transição antes
+                de solicitar a atualização. Ele existe para manter compatibilidade do
+                endpoint de contato ao armazenar cidade no agregado completo.
                 """
         usuario = await self._repositorio_usuario.obter_por_id(entrada.usuario_id)
         if usuario is None:
@@ -59,6 +60,16 @@ class AtualizarDadosContato:
         if usuario.excluido:
             raise PerfilExcluido("Perfil excluído não pode atualiza dados de contato")
 
-        usuario_atualizado = usuario.atualizar_dados_contato(entrada.dados_contato)
+        dados_contato = entrada.dados_contato
+        if dados_contato.cidade is None and usuario.dados_contato is not None:
+            dados_contato = DadosContato(
+                endereco=dados_contato.endereco,
+                telefones=dados_contato.telefones,
+                linkedin=dados_contato.linkedin,
+                curriculo_lattes=dados_contato.curriculo_lattes,
+                cidade=usuario.dados_contato.cidade,
+            )
+
+        usuario_atualizado = usuario.atualizar_dados_contato(dados_contato)
         await self ._repositorio_usuario.atualizar(usuario_atualizado)
         return usuario_atualizado

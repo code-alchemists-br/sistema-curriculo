@@ -35,6 +35,8 @@ Premissa geral: salvo indicação contrária, o estudante está autenticado (RF1
 | CT-RF02-02 | RF02 | Positivo | Editar uma informação | Estudante com experiência cadastrada | Alterar um campo da experiência com valor válido e salvar | Alteração é salva e a consulta exibe o valor atualizado |
 | CT-RF02-03 | RF02 | Positivo | Excluir uma informação | Estudante com competência cadastrada | Excluir a competência | Competência deixa de ser exibida na consulta |
 | CT-RF02-04 | RF02 | Exceção | Editar ou excluir informação já removida | Informação removida em outra sessão do mesmo estudante | Tentar editar ou excluir a informação a partir de tela desatualizada | Sistema informa que a informação não existe mais e atualiza a listagem |
+| CT-RF02-05 | RF02 | Positivo | Atualizar o perfil completo próprio | Estudante autenticado com perfil ativo | Enviar nome, e-mail, endereço, cidade, telefones e links para `PUT /estudantes/me/perfil` | Todos os dados editáveis são salvos em uma operação e devolvidos sem credenciais; links ausentes são limpos |
+| CT-RF02-06 | RF02 | Negativo | Impedir atualização de dados de outro estudante | Estudantes A e B; A autenticado | A envia PUT de perfil ou contato apontando para B | API responde 403 e os dados de B permanecem inalterados; sem sessão, responde 401 |
 
 ### RF03 — Centralização das informações
 

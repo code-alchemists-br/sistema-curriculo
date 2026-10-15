@@ -140,11 +140,12 @@ class MapeamentoFormacaoAcademicaTestCase(unittest.TestCase):
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
 class RepositorioFormacaoAcademicaSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
-    """Testa a delegação do repositório com sessão SQLAlchemy substituída.
+    """Testa consulta e persistência com sessão SQLAlchemy substituída.
 
-    A sessão mockada registra o modelo recebido e o flush aguardado, sem banco
-    ou transação real. A classe existe para verificar a implementação da porta.
+    A sessão mockada registra consultas, alterações e flush sem banco ou
+    transação real. A classe existe para verificar a implementação da porta.
     """
 
     async def test_adiciona_modelo_mapeado_e_aguarda_flush_sem_commit(self) -> None:
@@ -160,5 +161,99 @@ class RepositorioFormacaoAcademicaSqlAlchemyTestCase(unittest.IsolatedAsyncioTes
 
         registro = session.add.call_args.args[0]
         self.assertIsInstance(registro, FormacaoAcademicaRegistro)
+        session.flush.assert_awaited_once_with()
+        session.commit.assert_not_called()
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_obtem_formacao_por_id_e_usuario_e_reconstroi_entidade(self) -> None:
+        """Filtra simultaneamente identidade e proprietário na consulta.
+
+        O teste configura um registro ORM e confere o agregado convertido e os
+        parâmetros da instrução. Ele existe para assegurar isolamento e
+        preservar a fronteira de persistência.
+        """
+        session = MagicMock(spec=AsyncSession)
+        registro = para_registro(criar_formacao())
+        session.scalar.return_value = registro
+        repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario(
+            FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertEqual(resultado, criar_formacao())
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("formacoes_academicas.id", str(consulta))
+        self.assertIn("formacoes_academicas.usuario_id", str(consulta))
+        self.assertIn(ID_FORMACAO, consulta.compile().params.values())
+        self.assertIn(ID_USUARIO, consulta.compile().params.values())
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_devolve_none_quando_id_ou_usuario_nao_correspondem(self) -> None:
+        """Devolve ausência quando a consulta conjunta não encontra registro.
+
+        O teste executa buscas com IDs diferentes contra uma sessão sem
+        resultado. Ele existe para manter invisíveis formações inexistentes e
+        de outro usuário no contrato da porta.
+        """
+        for formacao_id, usuario_id in (
+            (FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO)),
+            (
+                FormacaoAcademicaId(ID_FORMACAO),
+                UsuarioId(UUID("00000000-0000-0000-0000-000000000099")),
+            ),
+            (
+                FormacaoAcademicaId(UUID("00000000-0000-0000-0000-000000000099")),
+                UsuarioId(ID_USUARIO),
+            ),
+        ):
+            with self.subTest(formacao_id=formacao_id, usuario_id=usuario_id):
+                session = MagicMock(spec=AsyncSession)
+                session.scalar.return_value = None
+                repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+                resultado = await repositorio.obter_por_id_e_usuario(
+                    formacao_id, usuario_id
+                )
+
+                self.assertIsNone(resultado)
+                consulta = session.scalar.await_args.args[0]
+                self.assertIn("formacoes_academicas.id", str(consulta))
+                self.assertIn("formacoes_academicas.usuario_id", str(consulta))
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_atualiza_campos_mutaveis_preservando_identidades_e_sem_commit(
+        self,
+    ) -> None:
+        """Atualiza as seis propriedades mutáveis no registro carregado.
+
+        O teste usa um registro mapeado existente e verifica os novos textos,
+        enums e datas, além de identidade, proprietário, flush e ausência de
+        commit. Ele existe para proteger a tradução persistente da edição.
+        """
+        formacao_original = criar_formacao()
+        formacao_editada = formacao_original.editar(
+            instituicao="Universidade Exemplo",
+            curso="Ciência de Dados",
+            nivel=NivelFormacaoAcademica.GRADUACAO,
+            periodo=Periodo(date(2025, 1, 1), date(2031, 6, 1)),
+            status=StatusFormacaoAcademica.CONCLUIDO,
+        )
+        registro = para_registro(formacao_original)
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = registro
+        repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+        await repositorio.atualizar(formacao_editada)
+
+        self.assertEqual(registro.id, ID_FORMACAO)
+        self.assertEqual(registro.usuario_id, ID_USUARIO)
+        self.assertEqual(registro.instituicao, "Universidade Exemplo")
+        self.assertEqual(registro.curso, "Ciência de Dados")
+        self.assertEqual(registro.nivel, "graduacao")
+        self.assertEqual(registro.data_inicio, date(2025, 1, 1))
+        self.assertEqual(registro.data_fim, date(2031, 6, 1))
+        self.assertEqual(registro.status, "concluido")
+        session.add.assert_not_called()
         session.flush.assert_awaited_once_with()
         session.commit.assert_not_called()

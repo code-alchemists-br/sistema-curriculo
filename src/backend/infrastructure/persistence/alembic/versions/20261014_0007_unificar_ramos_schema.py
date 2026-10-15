@@ -1,7 +1,7 @@
 """Unifica a evolução dos dados pessoais e dos recursos adicionados em dev."""
 
-revision = "20261014_0007"
-down_revision = ("20261013_0004", "20261014_0006")
+revision = "20261014_0009"
+down_revision = ("20261013_0004", "20261014_0008")
 branch_labels = None
 depends_on = None
 

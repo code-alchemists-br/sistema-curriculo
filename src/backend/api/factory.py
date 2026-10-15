@@ -41,7 +41,11 @@ from backend.api.experiencia_profissional import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-from backend.api.formacao_academica import CadastroFormacaoAcademicaExecutor
+from backend.api.formacao_academica import (
+    CadastroFormacaoAcademicaExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EdicaoFormacaoAcademicaExecutor,
+)
 from backend.api.formacao_academica import (
     criar_router as criar_router_formacao_academica,
 )
@@ -64,6 +68,7 @@ from backend.api.listagem_versoes_curriculo import (
 )
 from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
+    AtualizacaoPerfilCompletoExecutor,
     ConsultaPerfilExecutor,
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
@@ -106,7 +111,6 @@ def create_app(
     derivador_senha: DerivadorSenha | None = None,
     editar_perfil: EdicaoPerfilExecutor | None = None,
     excluir_perfil: ExclusaoPerfilExecutor | None = None,
-    consultar_perfil: ConsultaPerfilExecutor | None = None,
     atualizar_dados_contato: AtualizacaoDadosContatoExecutor | None = None,
     cadastrar_projeto_academico: CadastroProjetoAcademicoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
@@ -123,27 +127,30 @@ def create_app(
     criador_sessao: CriadorSessao | None = None,
     cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+    cadastrar_formacao_academica: CadastroFormacaoAcademicaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
     autenticador_sessao: AutenticadorSessao | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
     excluir_versao_curriculo: ExclusaoVersaoCurriculoExecutor | None = None,
-    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-    cadastrar_formacao_academica: CadastroFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    editar_formacao_academica: EdicaoFormacaoAcademicaExecutor | None = None,
+    atualizar_perfil_completo: AtualizacaoPerfilCompletoExecutor | None = None,
+    consultar_perfil: ConsultaPerfilExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
-    A função instancia FastAPI e inclui os routers de cadastro e acesso, perfil,
-    dados de contato, projetos acadêmicos, competências, versões de currículo,
-    seleção de itens, listagem, exclusão de versão, experiências profissionais,
-    formações acadêmicas e prévia com os executores recebidos; ausências
-    permanecem explícitas e são traduzidas por cada router em indisponibilidade.
-    Quando um autenticador é
-    fornecido, instala o middleware que valida sessões nas rotas privadas. Ela
-    existe para concentrar a composição na camada externa, mantendo Application
-    e domínio livres do framework. O executor de consulta pessoal é injetado no
-    router de perfil para manter a leitura protegida e testável.
+    A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
+    dados completos de perfil, contato, projetos acadêmicos, competências,
+    formações acadêmicas, versões de currículo, seleção de itens, listagem,
+    exclusão de versão, experiências profissionais e prévia com os executores
+    recebidos; ausências permanecem explícitas e são traduzidas por cada router
+    em indisponibilidade. Quando um autenticador é fornecido, instala o
+    middleware que valida sessões nas rotas privadas. Ela existe para
+    concentrar a composição na camada externa, mantendo Application e domínio
+    livres do framework.
     """
     app = FastAPI()
     if autenticador_sessao is not None:
@@ -156,7 +163,12 @@ def create_app(
         )
     )
     app.include_router(
-        criar_router_perfil(editar_perfil, excluir_perfil, consultar_perfil)
+        criar_router_perfil(
+            editar_perfil,
+            excluir_perfil,
+            atualizar_perfil_completo,
+            consultar_perfil,
+        )
     )
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
@@ -176,8 +188,12 @@ def create_app(
     app.include_router(
         criar_router_experiencia_profissional(cadastrar_experiencia_profissional)
     )
-    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-    app.include_router(criar_router_formacao_academica(cadastrar_formacao_academica))
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    app.include_router(
+        criar_router_formacao_academica(
+            cadastrar_formacao_academica, editar_formacao_academica
+        )
+    )
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )

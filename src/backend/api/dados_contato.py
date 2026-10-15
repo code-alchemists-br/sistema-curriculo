@@ -9,7 +9,7 @@ de domínio e do caso de uso de dados de contato.
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from backend.application import (
@@ -84,14 +84,19 @@ def criar_router(
     e traduz exceções conhecidas em status seguros. Ela existe para registrar
     a API e permitir testes unitários com doubles, sem sessão de banco real.
 
-    Nota: a identidade do perfil ainda é recebida pela própria rota
-    (``usuario_id`` no caminho), e não derivada de uma sessão autenticada —
-    mesma limitação já documentada em ``api/perfil_estudante.py``.
+    A rota conserva ``usuario_id`` no caminho por compatibilidade, mas exige
+    que ele corresponda à identidade autenticada instalada pelo middleware.
+    Essa checagem local também impede escrita anônima se a aplicação for
+    composta sem middleware.
     """
     router = APIRouter()
 
     @router.put("/estudantes/{usuario_id}/dados-contato", response_model=DadosContatoResposta)
-    async def atualizar(usuario_id: UUID, requisicao: DadosContatoRequisicao) -> DadosContatoResposta:
+    async def atualizar(
+        usuario_id: UUID,
+        requisicao: DadosContatoRequisicao,
+        request: Request,
+    ) -> DadosContatoResposta:
         """Executa a atualização HTTP e devolve os dados de contato salvos.
 
         O handler cria VOs a partir do JSON, aguarda o caso de uso e traduz
@@ -100,6 +105,11 @@ def criar_router(
         """
         if atualizar_dados_contato is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Atualização indisponível.")
+        usuario_autenticado = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_autenticado, UUID):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+        if usuario_autenticado != usuario_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A sessão não pode alterar este perfil.")
         try:
             dados_contato = DadosContato(
                 endereco=Endereco(requisicao.endereco),

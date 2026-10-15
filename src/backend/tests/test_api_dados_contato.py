@@ -2,9 +2,9 @@
 
 import unittest
 from datetime import datetime, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from backend.api.dados_contato import DadosContatoRequisicao, criar_router
 from backend.application import AtualizarDadosContato
@@ -84,8 +84,73 @@ def _instante_exclusao() -> datetime:
     return datetime(2026, 9, 20, tzinfo=timezone.utc)
 
 
+def _requisicao_autenticada(usuario_id: UUID | None) -> Request:
+    """Monta uma requisição com a identidade que o middleware validaria.
+
+    O teste chama o endpoint diretamente e instala no state o UUID validado,
+    permitindo exercitar a autorização da fronteira sem iniciar servidor ASGI.
+    """
+    return Request(
+        {
+            "type": "http",
+            "method": "PUT",
+            "path": "/estudantes/dados-contato",
+            "headers": [],
+            "state": {} if usuario_id is None else {"usuario_id": usuario_id},
+        }
+    )
+
+
 class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
     """Verifica a rota PUT integrada ao caso de uso real ``AtualizarDadosContato``."""
+
+    async def test_atualizacao_sem_identidade_autenticada_vira_401(self) -> None:
+        """Bloqueia edição de contato quando não há principal autenticado.
+
+        O handler é executado com state vazio e executor real, garantindo que
+        a proteção não dependa de o middleware estar composto na aplicação.
+        """
+        usuario = _criar_usuario()
+        repositorio = RepositorioUsuarioSpy([usuario])
+        atualizar = _rota(
+            criar_router(AtualizarDadosContato(repositorio)),
+            "/estudantes/{usuario_id}/dados-contato",
+            "PUT",
+        )
+
+        with self.assertRaises(HTTPException) as contexto:
+            await atualizar(
+                usuario.id.valor,
+                DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]),
+                _requisicao_autenticada(None),
+            )
+
+        self.assertEqual(contexto.exception.status_code, 401)
+        self.assertEqual(repositorio.usuarios_atualizados, [])
+
+    async def test_atualizacao_de_contato_de_outro_estudante_vira_403(self) -> None:
+        """Impede que principal autenticado altere o contato de outro perfil.
+
+        A rota recebe o UUID de B enquanto o state identifica A. O teste
+        existe para confirmar que o caso de uso não persiste escrita cruzada.
+        """
+        usuario = _criar_usuario()
+        repositorio = RepositorioUsuarioSpy([usuario])
+        atualizar = _rota(
+            criar_router(AtualizarDadosContato(repositorio)),
+            "/estudantes/{usuario_id}/dados-contato",
+            "PUT",
+        )
+
+        with self.assertRaises(HTTPException) as contexto:
+            await atualizar(
+                uuid4(),
+                DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]),
+                _requisicao_autenticada(usuario.id.valor),
+            )
+
+        self.assertEqual(contexto.exception.status_code, 403)
+        self.assertEqual(repositorio.usuarios_atualizados, [])
 
     async def test_atualiza_dados_contato_e_devolve_dados_publicos(self) -> None:
         """Confirma resposta pública e atualização real via repositório double.
@@ -108,6 +173,7 @@ class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
                 telefones=["11999990000"],
                 linkedin="https://linkedin.com/in/ana",
             ),
+            _requisicao_autenticada(usuario.id.valor),
         )
 
         self.assertEqual(resposta.id, usuario.id.valor)
@@ -121,7 +187,7 @@ class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         atualizar = _rota(criar_router(None), "/estudantes/{usuario_id}/dados-contato", "PUT")
 
         with self.assertRaises(HTTPException) as contexto:
-            await atualizar(uuid4(), DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]))
+            await atualizar(uuid4(), DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]), _requisicao_autenticada(uuid4()))
 
         self.assertEqual(contexto.exception.status_code, 503)
 
@@ -141,7 +207,7 @@ class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(HTTPException) as contexto:
-            await atualizar(usuario.id.valor, DadosContatoRequisicao(endereco="   ", telefones=["11999990000"]))
+            await atualizar(usuario.id.valor, DadosContatoRequisicao(endereco="   ", telefones=["11999990000"]), _requisicao_autenticada(usuario.id.valor))
 
         self.assertEqual(contexto.exception.status_code, 422)
         self.assertEqual(repositorio.usuarios_atualizados, [])
@@ -156,7 +222,8 @@ class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(HTTPException) as contexto:
-            await atualizar(uuid4(), DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]))
+            usuario_id = uuid4()
+            await atualizar(usuario_id, DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]), _requisicao_autenticada(usuario_id))
 
         self.assertEqual(contexto.exception.status_code, 404)
 
@@ -171,6 +238,6 @@ class AtualizarDadosContatoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(HTTPException) as contexto:
-            await atualizar(usuario.id.valor, DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]))
+            await atualizar(usuario.id.valor, DadosContatoRequisicao(endereco="Rua Um, 100", telefones=["11999990000"]), _requisicao_autenticada(usuario.id.valor))
 
         self.assertEqual(contexto.exception.status_code, 409)

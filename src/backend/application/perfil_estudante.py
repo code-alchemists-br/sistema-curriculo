@@ -28,7 +28,14 @@ from backend.domain.itens_perfil import (
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
-from backend.domain.value_objects import Email, Nome, Periodo, UsuarioId
+from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    Email,
+    FormacaoAcademicaId,
+    Nome,
+    Periodo,
+    UsuarioId,
+)
 
 
 # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
@@ -48,6 +55,16 @@ class PerfilExcluido(ValueError):
     A falha traduz o estado do agregado antes de editar seus dados ou cadastrar
     uma formação. Ela existe para impedir que operações de perfil reativem ou
     ampliem implicitamente um estudante/candidato removido.
+    """
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+class FormacaoAcademicaNaoEncontrada(LookupError):
+    """Sinaliza que a formação não existe ou não pertence ao usuário solicitante.
+
+    A falha representa ambos os resultados de busca sob o mesmo tipo e
+    mensagem, sem expor detalhes de propriedade. Ela existe para interromper a
+    edição de formações ausentes ou alheias de modo seguro.
     """
 
 
@@ -103,6 +120,25 @@ class CadastrarFormacaoAcademicaEntrada:
     """
 
     usuario_id: UsuarioId
+    instituicao: str
+    curso: str
+    nivel: NivelFormacaoAcademica
+    periodo: Periodo
+    status: StatusFormacaoAcademica
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class EditarFormacaoAcademicaEntrada:
+    """Agrupa identidade do solicitante, da formação e seus novos dados.
+
+    A entrada transporta usuário e formação tipados, textos, enums e período
+    sem incluir HTTP ou persistência. Ela existe para explicitar o contrato de
+    substituição completa consumido pelo caso de uso de edição.
+    """
+
+    usuario_id: UsuarioId
+    formacao_id: FormacaoAcademicaId
     instituicao: str
     curso: str
     nivel: NivelFormacaoAcademica
@@ -208,6 +244,54 @@ class CadastrarFormacaoAcademica:
         )
         await self._repositorio_formacao.salvar(formacao)
         return formacao
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+class EditarFormacaoAcademica:
+    """Edita uma formação própria e solicita a persistência do novo estado.
+
+    O caso obtém a entidade pela combinação de ID e usuário, aplica os novos
+    dados pelo método de domínio e atualiza somente quando a busca encontra
+    formação própria. Ele existe para coordenar a edição sem expor dados alheios
+    nem acoplar a Application ao adapter de persistência.
+    """
+
+    def __init__(self, repositorio_formacao: RepositorioFormacaoAcademica) -> None:
+        """Recebe a porta usada para localizar e atualizar formações.
+
+        O construtor armazena uma abstração interna substituível por double e
+        não inicia I/O. Ele existe para manter a orquestração independente da
+        implementação concreta do repositório.
+        """
+        self._repositorio_formacao = repositorio_formacao
+
+    async def executar(
+        self, entrada: EditarFormacaoAcademicaEntrada
+    ) -> FormacaoAcademica:
+        """Aplica a edição e devolve a formação atualizada.
+
+        O método consulta por ID e proprietário, traduz ausência em falha
+        uniforme, delega a validação do estado completo à entidade e solicita
+        atualização apenas após a edição válida. Ele existe para impedir
+        alteração de formação alheia e persistência de estado inválido.
+        """
+        formacao = await self._repositorio_formacao.obter_por_id_e_usuario(
+            entrada.formacao_id, entrada.usuario_id
+        )
+        if formacao is None or formacao.usuario_id != entrada.usuario_id:
+            raise FormacaoAcademicaNaoEncontrada(
+                "Formação acadêmica não encontrada."
+            )
+
+        formacao_editada = formacao.editar(
+            instituicao=entrada.instituicao,
+            curso=entrada.curso,
+            nivel=entrada.nivel,
+            periodo=entrada.periodo,
+            status=entrada.status,
+        )
+        await self._repositorio_formacao.atualizar(formacao_editada)
+        return formacao_editada
 
 
 class ExcluirPerfil:
