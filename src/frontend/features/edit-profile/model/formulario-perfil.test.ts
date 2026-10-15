@@ -46,19 +46,16 @@ describe("validarPerfilEstudante", () => {
     expect(erros.email).toBe("Informe um e-mail válido.");
   });
 
-  it(
-    "aceita links profissionais absolutos sem limitar plataforma ou domínio",
-    () => {
-      const erros = validarPerfilEstudante({
-        ...valoresValidos,
-        linkedIn: "https://portfolio.exemplo.dev/projetos",
-        curriculoLattes: "https://curriculo.exemplo.org/perfil/ana",
-      });
+  it("aceita links profissionais absolutos sem limitar plataforma ou domínio", () => {
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      linkedIn: "https://portfolio.exemplo.dev/projetos",
+      curriculoLattes: "https://curriculo.exemplo.org/perfil/ana",
+    });
 
-      expect(erros.linkedIn).toBeUndefined();
-      expect(erros.curriculoLattes).toBeUndefined();
-    },
-  );
+    expect(erros.linkedIn).toBeUndefined();
+    expect(erros.curriculoLattes).toBeUndefined();
+  });
 
   it("aceita links profissionais opcionais vazios", () => {
     const erros = validarPerfilEstudante({
