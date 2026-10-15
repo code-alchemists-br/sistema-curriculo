@@ -1,6 +1,7 @@
 """Testa unitariamente a confirmação de credenciais de estudante."""
 
 import unittest
+from datetime import datetime, timezone
 from uuid import UUID
 
 from backend.application import (
@@ -111,6 +112,25 @@ class AcessarEstudanteTestCase(unittest.IsolatedAsyncioTestCase):
             await AcessarEstudante(
                 RepositorioUsuarioStub(_criar_usuario()), VerificadorSenhaStub(False)
             ).executar(_criar_entrada())
+
+    # Proveniência: decision-analysis prompts/backend/20261015-120000-expor-exclusao-perfil-estudante-v001.md#v001
+    async def test_rejeita_perfil_excluido_sem_conferir_senha(self) -> None:
+        """Confirma que conta excluída recebe a falha uniforme de credenciais.
+
+        O cenário devolve um agregado com exclusão lógica e verificador que
+        aceitaria a senha, esperando a mesma exceção sem chamada ao verificador.
+        Ele existe para tornar o perfil excluído indisponível ao acesso sem
+        revelar que a conta existiu.
+        """
+        usuario_excluido = _criar_usuario().excluir(datetime(2026, 10, 15, tzinfo=timezone.utc))
+        verificador = VerificadorSenhaStub(True)
+
+        with self.assertRaises(CredenciaisInvalidas):
+            await AcessarEstudante(
+                RepositorioUsuarioStub(usuario_excluido), verificador
+            ).executar(_criar_entrada())
+
+        self.assertEqual(verificador.chamadas, [])
 
 
 def _criar_entrada() -> AcessarEstudanteEntrada:

@@ -82,15 +82,17 @@ def _resposta_nao_autenticada() -> JSONResponse:
 def _usuario_id_recurso_estudante(metodo: str, caminho: str) -> UUID | None:
     """Extrai identidade de rota para operações de perfil e currículo.
 
-    A função reconhece `PUT` e `DELETE /estudantes/{uuid}` e qualquer método
-    sob `/estudantes/{uuid}/curriculos`. Ela existe para aplicar autorização
-    por proprietário sem alterar handlers ou casos de uso.
+    A função reconhece `PUT /estudantes/{uuid}` e qualquer método sob
+    `/estudantes/{uuid}/curriculos`; a exclusão de perfil usa
+    `/estudantes/atual`, sem UUID, e por isso não passa por esta comparação.
+    Ela existe para aplicar autorização por proprietário sem alterar handlers
+    ou casos de uso.
     """
     segmentos = caminho.strip("/").split("/")
     if len(segmentos) < 2 or segmentos[0] != "estudantes":
         return None
 
-    eh_perfil = len(segmentos) == 2 and metodo in {"PUT", "DELETE"}
+    eh_perfil = len(segmentos) == 2 and metodo == "PUT"
     eh_curriculo = len(segmentos) >= 3 and segmentos[2] == "curriculos"
     if not eh_perfil and not eh_curriculo:
         return None

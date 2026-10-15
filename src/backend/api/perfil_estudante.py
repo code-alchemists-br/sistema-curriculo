@@ -8,9 +8,10 @@ para manter transporte e autorização fora das regras de domínio.
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
+from backend.api.sessoes import COOKIE_SESSAO
 from backend.application import (
     ConsultarPerfilEstudanteEntrada,
     EditarPerfilEntrada,
@@ -169,8 +170,10 @@ def criar_router(
     API e permitir testes unitários com doubles, sem sessão de banco real.
 
     A consulta por ID exige principal validado por cookie e compara a identidade
-    com o recurso solicitado antes de executar o caso de uso. A função existe
-    para manter autorização da leitura na fronteira HTTP.
+    com o recurso solicitado antes de executar o caso de uso. A exclusão usa
+    `/estudantes/atual` e atua somente sobre o principal, sem ID na URL. A
+    função existe para manter a autorização de leitura e exclusão na fronteira
+    HTTP.
     """
     router = APIRouter()
 
@@ -224,20 +227,33 @@ def criar_router(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(erro)) from erro
         return PerfilResposta(id=usuario.id.valor, nome=usuario.nome.valor, email=usuario.email.valor)
 
-    @router.delete("/estudantes/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
-    async def excluir(usuario_id: UUID) -> None:
-        """Executa exclusão lógica HTTP sem expor o estado resultante ao cliente.
+    # Proveniência: decision-analysis prompts/backend/20261015-120000-expor-exclusao-perfil-estudante-v001.md#v001
+    @router.delete("/estudantes/atual", status_code=status.HTTP_204_NO_CONTENT)
+    async def excluir(
+        resposta: Response,
+        principal_id: UUID = Depends(obter_principal),
+    ) -> None:
+        """Exclui logicamente o perfil do estudante autenticado e encerra o cookie.
 
-        O handler converte a identidade de rota, aguarda o caso de uso e traduz
-        ausência sem revelar se o perfil já estava excluído. Ele existe para
-        tornar a exclusão idempotente também do ponto de vista HTTP.
+        O handler não recebe identificador do cliente: usa somente o principal
+        instalado pelo middleware, aguarda o caso de uso, traduz ausência em 404
+        genérico e remove o cookie de sessão da resposta. Ele existe para que o
+        estudante exclua apenas a própria conta, de forma idempotente, sem
+        permitir que um ID forjado na URL selecione outro perfil.
         """
         if excluir_perfil is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Exclusão indisponível.")
-        entrada = ExcluirPerfilEntrada(usuario_id=UsuarioId(usuario_id))
+        entrada = ExcluirPerfilEntrada(usuario_id=UsuarioId(principal_id))
         try:
             await excluir_perfil.executar(entrada)
         except PerfilNaoEncontrado as erro:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil não encontrado.") from erro
+        resposta.delete_cookie(
+            key=COOKIE_SESSAO,
+            path="/",
+            secure=True,
+            httponly=True,
+            samesite="lax",
+        )
 
     return router

@@ -3,14 +3,16 @@
 import unittest
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from backend.api.factory import create_app
 from backend.api.perfil_estudante import (
     DadosPessoaisResposta,
     EditarPerfilRequisicao,
     criar_router,
+    obter_principal,
 )
+from backend.api.sessoes import COOKIE_SESSAO
 from backend.application import (
     ConsultarPerfilEstudanteEntrada,
     EditarPerfilEntrada,
@@ -227,38 +229,93 @@ class EditarPerfilRotaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(contexto.exception.status_code, 409)
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-120000-expor-exclusao-perfil-estudante-v001.md#v001
 class ExcluirPerfilRotaTestCase(unittest.IsolatedAsyncioTestCase):
-    """Verifica a tradução HTTP da exclusão lógica de perfil pela rota DELETE."""
+    """Verifica a exclusão lógica do perfil autenticado pela rota DELETE.
 
-    async def test_exclui_perfil_e_nao_devolve_conteudo(self) -> None:
-        """Confirma execução sem corpo de resposta e entrada correta enviada."""
+    Os cenários chamam o handler de `/estudantes/atual` diretamente com um
+    principal simulado e um double do caso de uso. A classe existe para
+    garantir que a exclusão use apenas a identidade da sessão, encerre o
+    cookie e traduza falhas sem revelar estado da conta.
+    """
+
+    async def test_exclui_perfil_do_principal_e_remove_cookie(self) -> None:
+        """Exclui o perfil da sessão, não devolve corpo e expira o cookie.
+
+        O handler recebe somente o principal e uma resposta mutável; o teste
+        verifica a entrada enviada ao caso de uso e o `Set-Cookie` de remoção.
+        Ele existe para proteger o fluxo principal da exclusão do próprio perfil.
+        """
         usuario = _criar_usuario()
         executor = ExcluirPerfilExecutorDouble(resultado=usuario)
-        excluir = _rota(criar_router(None, executor), "/estudantes/{usuario_id}", "DELETE")
+        excluir = _rota(criar_router(None, executor), "/estudantes/atual", "DELETE")
+        resposta = Response()
 
-        resultado = await excluir(usuario.id.valor)
+        resultado = await excluir(resposta, usuario.id.valor)
 
         self.assertIsNone(resultado)
-        self.assertEqual(executor.entradas[0].usuario_id, UsuarioId(usuario.id.valor))
+        self.assertEqual(executor.entradas, [ExcluirPerfilEntrada(usuario.id)])
+        cookie = resposta.headers["set-cookie"]
+        self.assertIn(f"{COOKIE_SESSAO}=", cookie)
+        self.assertIn("Max-Age=0", cookie)
 
     async def test_excluir_indisponivel_quando_executor_ausente(self) -> None:
-        """Confirma 503 quando nenhum executor de exclusão foi injetado."""
-        excluir = _rota(criar_router(None, None), "/estudantes/{usuario_id}", "DELETE")
+        """Responde 503 quando nenhum executor de exclusão foi injetado.
+
+        O router é criado sem caso de uso e o cookie não é removido. O teste
+        existe para manter explícita a ausência de composição.
+        """
+        excluir = _rota(criar_router(None, None), "/estudantes/atual", "DELETE")
+        resposta = Response()
 
         with self.assertRaises(HTTPException) as contexto:
-            await excluir(uuid4())
+            await excluir(resposta, uuid4())
 
         self.assertEqual(contexto.exception.status_code, 503)
+        self.assertNotIn("set-cookie", resposta.headers)
 
-    async def test_perfil_nao_encontrado_vira_404(self) -> None:
-        """Confirma 404 quando o caso de uso sinaliza perfil inexistente."""
+    async def test_perfil_nao_encontrado_vira_404_generico(self) -> None:
+        """Converte perfil ausente em 404 com mensagem genérica.
+
+        O double sinaliza a falha do caso de uso e o teste compara status e
+        detalhe públicos. Ele existe para não revelar estado da conta.
+        """
         executor = ExcluirPerfilExecutorDouble(erro=PerfilNaoEncontrado("Perfil não encontrado."))
-        excluir = _rota(criar_router(None, executor), "/estudantes/{usuario_id}", "DELETE")
+        excluir = _rota(criar_router(None, executor), "/estudantes/atual", "DELETE")
 
         with self.assertRaises(HTTPException) as contexto:
-            await excluir(uuid4())
+            await excluir(Response(), uuid4())
 
         self.assertEqual(contexto.exception.status_code, 404)
+        self.assertEqual(contexto.exception.detail, "Perfil não encontrado.")
+
+    async def test_principal_ausente_vira_401(self) -> None:
+        """Rejeita a exclusão quando o middleware não instalou identidade.
+
+        A dependência `obter_principal` recebe uma requisição sem
+        `usuario_id` no estado. O teste existe para impedir exclusão anônima
+        caso a rota seja exposta sem o middleware de sessão.
+        """
+        request = Request({"type": "http", "method": "DELETE", "path": "/estudantes/atual", "headers": []})
+
+        with self.assertRaises(HTTPException) as contexto:
+            await obter_principal(request)
+
+        self.assertEqual(contexto.exception.status_code, 401)
+
+    async def test_fabrica_registra_exclusao_sem_id_na_url(self) -> None:
+        """Registra somente `DELETE /estudantes/atual` ao compor a aplicação.
+
+        O OpenAPI do app composto é inspecionado para confirmar a nova rota e a
+        ausência de DELETE por UUID. O teste existe para impedir que a exclusão
+        volte a aceitar identificador fornecido pelo cliente.
+        """
+        app = create_app(excluir_perfil=ExcluirPerfilExecutorDouble())
+
+        caminhos = app.openapi()["paths"]
+
+        self.assertIn("delete", caminhos["/estudantes/atual"])
+        self.assertNotIn("delete", caminhos.get("/estudantes/{usuario_id}", {}))
 
 
 # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
