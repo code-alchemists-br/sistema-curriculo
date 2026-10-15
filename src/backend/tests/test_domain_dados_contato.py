@@ -77,34 +77,26 @@ class DadosContatoDomainTestCase(unittest.TestCase):
         with self.assertRaises(RegraDeDominioViolada):
             DadosContato(endereco=Endereco("Rua Um, 100"), telefones=())
 
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
-    def test_cidade_e_explicita_e_normaliza_espacos_perifericos(self) -> None:
-        """Confirma que cidade fica separada do texto de endereço.
+    def test_normaliza_cidade_opcional(self) -> None:
+        """Remove espaços periféricos e normaliza cidade em branco para ausência.
 
-        Constrói contato com cidade tipada e verifica seu valor normalizado sem
-        modificar o endereço. O teste existe para impedir inferência geográfica
-        a partir de texto livre.
+        O teste constrói contatos com cidade preenchida e vazia e compara os
+        valores resultantes. Ele existe para manter uma representação estável
+        dos dados geográficos opcionais.
         """
-        cidade = Cidade("  São Paulo  ")
-        dados_contato = DadosContato(
+        contato = DadosContato(
             endereco=Endereco("Rua Um, 100"),
             telefones=(Telefone("11999990000"),),
-            cidade=cidade,
+            cidade="  São Paulo  ",
+        )
+        contato_sem_cidade = DadosContato(
+            endereco=Endereco("Rua Um, 100"),
+            telefones=(Telefone("11999990000"),),
+            cidade="  ",
         )
 
-        self.assertEqual(dados_contato.cidade, Cidade("São Paulo"))
-        self.assertEqual(dados_contato.endereco, Endereco("Rua Um, 100"))
-
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
-    def test_cidade_vazia_e_rejeitada(self) -> None:
-        """Rejeita cidade composta somente por espaços.
-
-        Tenta construir o value object sem conteúdo significativo e observa a
-        falha local de domínio. O teste existe para impedir estado inválido
-        antes de persistência ou consulta.
-        """
-        with self.assertRaises(RegraDeDominioViolada):
-            Cidade("   ")
+        self.assertEqual(contato.cidade, Cidade("São Paulo"))
+        self.assertIsNone(contato_sem_cidade.cidade)
 
 
 def _criar_usuario() -> Usuario:

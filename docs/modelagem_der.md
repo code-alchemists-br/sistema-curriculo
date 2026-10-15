@@ -42,6 +42,11 @@ erDiagram
     string nome
     string email UK
     string senha_hash
+    text endereco
+    string cidade
+    json telefones
+    string linkedin
+    string curriculo_lattes
     int tentativas_falhas_login
     timestamp bloqueado_ate
     timestamp created_at

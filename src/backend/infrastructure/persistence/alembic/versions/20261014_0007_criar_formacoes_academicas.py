@@ -4,8 +4,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-revision = "20261014_0007"
-down_revision = "20261014_0006"
+revision = "20261014_0008"
+down_revision = "20261014_0007"
 branch_labels = None
 depends_on = None
 
