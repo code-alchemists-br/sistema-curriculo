@@ -46,6 +46,42 @@ describe("validarPerfilEstudante", () => {
     expect(erros.email).toBe("Informe um e-mail válido.");
   });
 
+  it(
+    "aceita links profissionais absolutos sem limitar plataforma ou domínio",
+    () => {
+      const erros = validarPerfilEstudante({
+        ...valoresValidos,
+        linkedIn: "https://portfolio.exemplo.dev/projetos",
+        curriculoLattes: "https://curriculo.exemplo.org/perfil/ana",
+      });
+
+      expect(erros.linkedIn).toBeUndefined();
+      expect(erros.curriculoLattes).toBeUndefined();
+    },
+  );
+
+  it("aceita links profissionais opcionais vazios", () => {
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      linkedIn: "  ",
+      curriculoLattes: "",
+    });
+
+    expect(erros.linkedIn).toBeUndefined();
+    expect(erros.curriculoLattes).toBeUndefined();
+  });
+
+  it("reporta cada link profissional que não é uma URL absoluta", () => {
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      linkedIn: "portfolio.exemplo.dev/ana",
+      curriculoLattes: "lattes.exemplo.org/ana",
+    });
+
+    expect(erros.linkedIn).toBe("Informe uma URL absoluta válida.");
+    expect(erros.curriculoLattes).toBe("Informe uma URL absoluta válida.");
+  });
+
   it("reporta telefone vazio pelo índice correspondente", () => {
     const erros = validarPerfilEstudante({
       ...valoresValidos,

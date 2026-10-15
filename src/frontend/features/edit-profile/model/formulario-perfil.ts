@@ -17,6 +17,8 @@ export interface ErrosPerfilEstudante {
   enderecoCompleto?: string;
   telefones?: Record<number, string>;
   email?: string;
+  linkedIn?: string;
+  curriculoLattes?: string;
 }
 
 /**
@@ -63,6 +65,16 @@ export function validarPerfilEstudante(
     erros.email = "Informe um e-mail válido.";
   }
 
+  const erroLinkedIn = validarUrlProfissional(valores.linkedIn);
+  if (erroLinkedIn !== undefined) {
+    erros.linkedIn = erroLinkedIn;
+  }
+
+  const erroCurriculoLattes = validarUrlProfissional(valores.curriculoLattes);
+  if (erroCurriculoLattes !== undefined) {
+    erros.curriculoLattes = erroCurriculoLattes;
+  }
+
   const errosDeTelefone: Record<number, string> = {};
   valores.telefones.forEach((telefone, indice) => {
     if (telefone.trim() === "") {
@@ -75,6 +87,32 @@ export function validarPerfilEstudante(
   }
 
   return erros;
+}
+
+/**
+ * Valida um link profissional opcional informado pelo estudante.
+ *
+ * A função remove espaços nas extremidades, aceita a ausência do dado e usa o
+ * construtor nativo `URL` para verificar se o valor restante é absoluto. Ela
+ * existe para orientar o preenchimento sem restringir plataformas, domínios ou
+ * protocolos que não foram definidos nos requisitos do projeto.
+ */
+function validarUrlProfissional(valor: string): string | undefined {
+  if (valor.trim() === "") {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(valor.trim());
+
+    if (url.protocol === "") {
+      return "Informe uma URL absoluta válida.";
+    }
+
+    return undefined;
+  } catch {
+    return "Informe uma URL absoluta válida.";
+  }
 }
 
 /**
