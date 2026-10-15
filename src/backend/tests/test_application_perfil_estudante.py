@@ -8,6 +8,9 @@ from uuid import uuid4
 from backend.application import (
     CadastrarFormacaoAcademica,
     CadastrarFormacaoAcademicaEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    ConsultarPerfilEstudante,
+    ConsultarPerfilEstudanteEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     EmailJaCadastrado,
@@ -16,19 +19,24 @@ from backend.application import (
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 from backend.domain import (
     Email,
     FormacaoAcademica,
     FormacaoAcademicaId,
     HashSenha,
+    NivelFormacaoAcademica,
     Nome,
     Periodo,
+    StatusFormacaoAcademica,
     Usuario,
     UsuarioId,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 
 
 class RepositorioUsuarioSpy:
@@ -412,6 +420,7 @@ def _criar_usuario(email: str = "ana@example.com") -> Usuario:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def _criar_entrada_formacao(
     usuario_id: UsuarioId,
 ) -> CadastrarFormacaoAcademicaEntrada:
@@ -425,9 +434,9 @@ def _criar_entrada_formacao(
         usuario_id=usuario_id,
         instituicao="FATEC",
         curso="Análise e Desenvolvimento de Sistemas",
-        nivel="tecnologo",
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
         periodo=Periodo(date(2024, 2, 1)),
-        status="em_andamento",
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
 
 
@@ -438,3 +447,65 @@ def _instante_exclusao() -> datetime:
     para manter os testes determinísticos em qualquer data de execução.
     """
     return datetime(2026, 9, 20, tzinfo=timezone.utc)
+
+
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+class ConsultarPerfilEstudanteTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a leitura de perfil usando somente a porta substituída.
+
+    A classe fornece agregados por meio do spy em memória e observa ausência de
+    efeitos de atualização. Ela existe para proteger a consulta sem envolver
+    banco, ORM, API ou sessão real.
+    """
+
+    async def test_consulta_perfil_ativo_sem_modifica_lo(self) -> None:
+        """Devolve o agregado ativo e não solicita atualização.
+
+        O cenário fornece um usuário ativo e compara o objeto retornado e o
+        histórico do repositório. Ele existe para assegurar que a consulta seja
+        somente leitura.
+        """
+        usuario = _criar_usuario()
+        repositorio = RepositorioUsuarioSpy([usuario])
+
+        resultado = await ConsultarPerfilEstudante(repositorio).executar(
+            ConsultarPerfilEstudanteEntrada(usuario.id)
+        )
+
+        self.assertIs(resultado, usuario)
+        self.assertEqual(repositorio.usuarios_atualizados, [])
+
+    async def test_rejeita_perfil_ausente_com_falha_generica(self) -> None:
+        """Trata perfil ausente como não encontrado sem atualizar estado.
+
+        O cenário consulta um repositório vazio e observa a falha genérica de
+        perfil. Ele existe para impedir criação implícita ou revelação de
+        detalhes de armazenamento durante uma leitura.
+        """
+        repositorio = RepositorioUsuarioSpy()
+
+        with self.assertRaises(PerfilNaoEncontrado) as capturado:
+            await ConsultarPerfilEstudante(repositorio).executar(
+                ConsultarPerfilEstudanteEntrada(UsuarioId(uuid4()))
+            )
+
+        self.assertEqual(str(capturado.exception), "Perfil não encontrado.")
+        self.assertEqual(repositorio.usuarios_atualizados, [])
+
+    async def test_perfil_excluido_usa_mesma_falha_de_perfil_ausente(self) -> None:
+        """Oculta exclusão lógica usando a mesma falha da ausência.
+
+        O cenário consulta um agregado excluído e compara o resultado público
+        com o erro de perfil ausente. Ele existe para não revelar que a conta
+        consultada chegou a existir.
+        """
+        usuario = _criar_usuario().excluir(_instante_exclusao())
+        repositorio = RepositorioUsuarioSpy([usuario])
+
+        with self.assertRaises(PerfilNaoEncontrado) as capturado:
+            await ConsultarPerfilEstudante(repositorio).executar(
+                ConsultarPerfilEstudanteEntrada(usuario.id)
+            )
+
+        self.assertEqual(str(capturado.exception), "Perfil não encontrado.")
+        self.assertEqual(repositorio.usuarios_atualizados, [])

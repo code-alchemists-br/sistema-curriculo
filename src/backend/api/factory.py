@@ -59,6 +59,7 @@ from backend.api.listagem_versoes_curriculo import (
 from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
     AtualizacaoPerfilCompletoExecutor,
+    ConsultaPerfilExecutor,
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
 )
@@ -123,6 +124,7 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
     excluir_versao_curriculo: ExclusaoVersaoCurriculoExecutor | None = None,
     atualizar_perfil_completo: AtualizacaoPerfilCompletoExecutor | None = None,
+    consultar_perfil: ConsultaPerfilExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -150,6 +152,7 @@ def create_app(
             editar_perfil,
             excluir_perfil,
             atualizar_perfil_completo,
+            consultar_perfil,
         )
     )
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))

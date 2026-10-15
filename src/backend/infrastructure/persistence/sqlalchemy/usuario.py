@@ -1,8 +1,9 @@
 """Mapeia a conta em colunas externas para preservar o domínio imutável."""
 
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, Text, UniqueConstraint, Uuid
+from sqlalchemy import JSON, DateTime, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -43,6 +44,7 @@ class UsuarioRegistro(Base):
     nome: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
     hash_senha: Mapped[str] = mapped_column(Text, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     endereco: Mapped[str | None] = mapped_column(Text, nullable=True)
     cidade: Mapped[str | None] = mapped_column(Text, nullable=True)
     telefones: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
@@ -63,6 +65,7 @@ def para_registro(usuario: Usuario) -> UsuarioRegistro:
         nome=usuario.nome.valor,
         email=usuario.email.valor,
         hash_senha=usuario.hash_senha.valor,
+        deleted_at=usuario.deleted_at,
         endereco=contato.endereco.valor if contato is not None else None,
         cidade=contato.cidade if contato is not None else None,
         telefones=(
@@ -97,5 +100,6 @@ def para_usuario(registro: UsuarioRegistro) -> Usuario:
         nome=Nome(registro.nome),
         email=Email(registro.email),
         hash_senha=HashSenha(registro.hash_senha),
+        deleted_at=registro.deleted_at,
         dados_contato=contato,
     )

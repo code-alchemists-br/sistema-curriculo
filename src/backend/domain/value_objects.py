@@ -262,6 +262,30 @@ class Nome:
             raise RegraDeDominioViolada("Nome não pode ser vazio.")
         object.__setattr__(self, "valor", valor_normalizado)
 
+
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+@dataclass(frozen=True, slots=True)
+class Cidade:
+    """Representa o nome explícito de uma cidade informado pelo usuário.
+
+    O value object remove espaços nas extremidades e rejeita conteúdo vazio,
+    sem inferir região a partir de endereço livre. Ele existe para armazenar
+    cidade como dado próprio do perfil.
+    """
+
+    valor: str
+
+    def __post_init__(self) -> None:
+        """Normaliza espaços periféricos e impede cidade sem conteúdo.
+
+        A validação ocorre na construção e conserva a grafia informada. Ela
+        existe para manter cidades explícitas válidas sem serviço geográfico.
+        """
+        valor_normalizado = self.valor.strip()
+        if not valor_normalizado:
+            raise RegraDeDominioViolada("Cidade não pode ser vazia.")
+        object.__setattr__(self, "valor", valor_normalizado)
+
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Endereco:
@@ -327,7 +351,7 @@ class DadosContato:
     telefones: tuple[Telefone, ...]
     linkedin: str | None = None
     curriculo_lattes: str | None = None
-    cidade: str | None = None
+    cidade: Cidade | str | None = None
 
     def __post_init__(self) -> None:
         """Exige ao menos um telefone e normaliza links opcionais vazios.
@@ -338,7 +362,11 @@ class DadosContato:
         """
         if not self.telefones:
             raise RegraDeDominioViolada("Informe ao menos um telefone de contato.")
-        cidade_normalizada = self.cidade.strip() if self.cidade else None
+        cidade_normalizada = (
+            self.cidade.valor
+            if isinstance(self.cidade, Cidade)
+            else self.cidade.strip() if self.cidade else None
+        )
         linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
         lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
         object.__setattr__(self, "cidade", cidade_normalizada or None)

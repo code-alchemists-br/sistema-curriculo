@@ -19,19 +19,25 @@ from backend.application.ports import (
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
-from backend.domain.itens_perfil import FormacaoAcademica
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+from backend.domain.itens_perfil import (
+    FormacaoAcademica,
+    NivelFormacaoAcademica,
+    StatusFormacaoAcademica,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import Email, Nome, Periodo, UsuarioId
 
 
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
 class PerfilNaoEncontrado(LookupError):
-    """Sinaliza que a identidade informada não corresponde a um perfil.
+    """Sinaliza que o perfil não está disponível para a intenção solicitada.
 
-    A falha é produzida antes de qualquer transição ou atualização quando a
-    porta devolve ausência. Ela existe para distinguir falta do perfil das
-    demais regras sem revelar detalhes de armazenamento.
+    A falha representa ausência de linha e, na consulta de perfil, também
+    exclusão lógica para ocultar se a conta existiu. Ela existe para permitir
+    uma resposta externa genérica sem revelar estado de armazenamento.
     """
 
 
@@ -71,23 +77,37 @@ class ExcluirPerfilEntrada:
     usuario_id: UsuarioId
 
 
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+@dataclass(frozen=True, slots=True)
+class ConsultarPerfilEstudanteEntrada:
+    """Agrupa a identidade já resolvida para consultar o próprio perfil.
+
+    A entrada aceita somente ``UsuarioId`` tipado, sem receber identificador
+    de transporte ou dados de filtro. Ela existe para expressar a intenção de
+    leitura por uma fronteira confiável sem acoplar o caso de uso à API.
+    """
+
+    usuario_id: UsuarioId
+
+
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 @dataclass(frozen=True, slots=True)
 class CadastrarFormacaoAcademicaEntrada:
     """Agrupa os dados de domínio para cadastrar uma formação de um perfil.
 
-    A entrada transporta o proprietário tipado, textos já recebidos por uma
-    fronteira externa e um ``Periodo`` validado, sem incluir HTTP ou ORM. Ela
-    existe para dar contrato explícito ao caso de uso e preservar as invariantes
-    locais da formação no domínio.
+    A entrada transporta proprietário, nível e status tipados, além dos textos
+    e ``Periodo`` preparados pela fronteira externa, sem incluir HTTP ou ORM.
+    Ela existe para dar contrato explícito ao caso de uso e deixar as invariantes
+    da formação protegidas pela entidade de domínio.
     """
 
     usuario_id: UsuarioId
     instituicao: str
     curso: str
-    nivel: str
+    nivel: NivelFormacaoAcademica
     periodo: Periodo
-    status: str
+    status: StatusFormacaoAcademica
 
 
 class EditarPerfil:
@@ -135,6 +155,7 @@ class EditarPerfil:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 class CadastrarFormacaoAcademica:
     """Cria e solicita o salvamento de uma formação para um perfil ativo.
 
@@ -227,3 +248,34 @@ class ExcluirPerfil:
         usuario_excluido = usuario.excluir(self._relogio.agora())
         await self._repositorio_usuario.atualizar(usuario_excluido)
         return usuario_excluido
+
+
+# Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+class ConsultarPerfilEstudante:
+    """Consulta um perfil ativo por identidade sem produzir efeitos colaterais.
+
+    O caso busca o agregado pela porta e converte ausência ou exclusão lógica
+    na mesma falha pública de perfil não encontrado. Ele existe para fornecer
+    os dados do próprio estudante sem permitir leitura de perfil removido.
+    """
+
+    def __init__(self, repositorio_usuario: RepositorioUsuario) -> None:
+        """Recebe a porta que localiza o perfil pelo identificador tipado.
+
+        O construtor guarda somente a abstração interna e não executa I/O. Ele
+        existe para manter a consulta independente do adapter e substituível
+        por doubles em testes unitários.
+        """
+        self._repositorio_usuario = repositorio_usuario
+
+    async def executar(self, entrada: ConsultarPerfilEstudanteEntrada) -> Usuario:
+        """Devolve o agregado ativo ou falha sem distinguir ausência de exclusão.
+
+        O método aguarda a consulta por ID e lança ``PerfilNaoEncontrado`` para
+        linha ausente ou perfil excluído, evitando efeitos de atualização. Ele
+        existe para que a camada externa responda sem revelar estado de contas.
+        """
+        usuario = await self._repositorio_usuario.obter_por_id(entrada.usuario_id)
+        if usuario is None or usuario.excluido:
+            raise PerfilNaoEncontrado("Perfil não encontrado.")
+        return usuario

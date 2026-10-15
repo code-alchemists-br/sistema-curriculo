@@ -98,6 +98,7 @@ class RepositorioUsuarioSqlAlchemy(RepositorioUsuario):
         registro.nome = atualizado.nome
         registro.email = atualizado.email
         registro.hash_senha = atualizado.hash_senha
+        registro.deleted_at = atualizado.deleted_at
         registro.endereco = atualizado.endereco
         registro.cidade = atualizado.cidade
         registro.telefones = atualizado.telefones

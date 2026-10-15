@@ -19,6 +19,11 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
 from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
     ExperienciaProfissionalRegistro,  # noqa: F401
 )
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+from backend.infrastructure.persistence.sqlalchemy.formacao_academica import (
+    FormacaoAcademicaRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401
 )

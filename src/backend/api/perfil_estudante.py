@@ -9,11 +9,12 @@ das regras de domínio e dos casos de uso de perfil.
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
 from backend.application import (
     AtualizarPerfilCompletoEntrada,
+    ConsultarPerfilEstudanteEntrada,
     EditarPerfilEntrada,
     EmailJaCadastrado,
     ExcluirPerfilEntrada,
@@ -79,6 +80,33 @@ class ExclusaoPerfilExecutor(Protocol):
         Implementações aplicam a transição idempotente sem definir resposta
         HTTP. O método existe para que o router traduza apenas a fronteira.
         """
+
+
+class ConsultaPerfilExecutor(Protocol):
+    """Define a capacidade de consulta de perfil consumida pelo router.
+
+    O contrato aceita identidade tipada e devolve o agregado encontrado. Ele
+    existe para manter a consulta HTTP desacoplada de persistência concreta.
+    """
+
+    async def executar(self, entrada: ConsultarPerfilEstudanteEntrada) -> Usuario:
+        """Busca o perfil ativo associado à identidade autenticada.
+
+        A implementação delega ao caso de uso injetado sem I/O no handler. O
+        método existe para tornar a consulta substituível por doubles em testes.
+        """
+
+
+async def obter_principal(request: Request) -> UUID:
+    """Devolve a identidade de usuário instalada pelo middleware de sessão.
+
+    A função valida o tipo do UUID na fronteira e responde 401 quando não há
+    principal autenticado. Ela existe para impedir confiança em IDs do cliente.
+    """
+    usuario_id = getattr(request.state, "usuario_id", None)
+    if not isinstance(usuario_id, UUID):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sessão ausente ou inválida.")
+    return usuario_id
 
 
 class EditarPerfilRequisicao(BaseModel):
@@ -154,10 +182,43 @@ class PerfilCompletoResposta(BaseModel):
     curriculo_lattes: str | None
 
 
+class DadosPessoaisResposta(BaseModel):
+    """Projeta somente os dados pessoais permitidos na resposta de consulta.
+
+    O DTO omite ID, hash e estado de persistência, extraindo os contatos do
+    agregado. Ele existe para controlar explicitamente o payload público.
+    """
+
+    nome: str
+    email: str
+    telefones: list[str]
+    cidade: str | None
+    linkedin: str | None
+    curriculo_lattes: str | None
+
+    @classmethod
+    def de_usuario(cls, usuario: Usuario) -> "DadosPessoaisResposta":
+        """Converte o agregado para os campos aprovados de consulta pessoal.
+
+        Contato ausente vira lista vazia e opcionais nulos, sem serializar a
+        entidade completa. O método existe para evitar vazamento de credenciais.
+        """
+        contato = usuario.dados_contato
+        return cls(
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            telefones=[telefone.valor for telefone in contato.telefones] if contato else [],
+            cidade=contato.cidade if contato else None,
+            linkedin=contato.linkedin if contato else None,
+            curriculo_lattes=contato.curriculo_lattes if contato else None,
+        )
+
+
 def criar_router(
     editar_perfil: EdicaoPerfilExecutor | None,
     excluir_perfil: ExclusaoPerfilExecutor | None,
     atualizar_perfil_completo: AtualizacaoPerfilCompletoExecutor | None = None,
+    consultar_perfil: ConsultaPerfilExecutor | None = None,
 ) -> APIRouter:
     """Cria rotas HTTP de perfil usando casos de uso injetados pela composição.
 
@@ -171,6 +232,28 @@ def criar_router(
     composta sem middleware.
     """
     router = APIRouter()
+
+    @router.get("/estudantes/{usuario_id}", response_model=DadosPessoaisResposta)
+    async def consultar(
+        usuario_id: UUID,
+        principal_id: UUID = Depends(obter_principal),
+    ) -> DadosPessoaisResposta:
+        """Devolve dados pessoais somente ao proprietário autenticado.
+
+        O handler mascara IDs alheios como 404, consulta o caso de uso e projeta
+        o DTO permitido. Ele existe para proteger leitura contra enumeração.
+        """
+        if principal_id != usuario_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil não encontrado.")
+        if consultar_perfil is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Consulta indisponível.")
+        try:
+            usuario = await consultar_perfil.executar(
+                ConsultarPerfilEstudanteEntrada(usuario_id=UsuarioId(principal_id))
+            )
+        except PerfilNaoEncontrado as erro:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil não encontrado.") from erro
+        return DadosPessoaisResposta.de_usuario(usuario)
 
     @router.put("/estudantes/me/perfil", response_model=PerfilCompletoResposta)
     async def atualizar_completo(

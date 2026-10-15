@@ -9,6 +9,8 @@ from backend.application import (
     GerarPreviaVersaoCurriculo,
     GerarPreviaVersaoCurriculoEntrada,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 from backend.domain import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
@@ -26,11 +28,13 @@ from backend.domain import (
     HashSenha,
     Idioma,
     IdiomaId,
+    NivelFormacaoAcademica,
     Nome,
     Periodo,
     ProjetoAcademico,
     ProjetoAcademicoId,
     ReferenciaCurriculo,
+    StatusFormacaoAcademica,
     Usuario,
     UsuarioId,
 )
@@ -172,6 +176,7 @@ def _criar_curriculo(usuario_id: UsuarioId, *itens: object) -> Curriculo:
     return curriculo
 
 
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def _formacao(
     usuario_id: UsuarioId, inicio: date, curso: str = "ADS"
 ) -> FormacaoAcademica:
@@ -185,9 +190,9 @@ def _formacao(
         usuario_id=usuario_id,
         instituicao="FATEC",
         curso=curso,
-        nivel="Graduação",
+        nivel=NivelFormacaoAcademica.GRADUACAO,
         periodo=Periodo(inicio=inicio),
-        status="Em andamento",
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
     )
 
 

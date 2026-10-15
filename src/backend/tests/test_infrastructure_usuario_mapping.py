@@ -34,6 +34,7 @@ class UsuarioMappingTestCase(unittest.TestCase):
                 "nome",
                 "email",
                 "hash_senha",
+                "deleted_at",
                 "endereco",
                 "cidade",
                 "telefones",
@@ -46,7 +47,7 @@ class UsuarioMappingTestCase(unittest.TestCase):
         self.assertTrue(tabela.c.id.type.as_uuid)
         for nome in ("id", "nome", "email", "hash_senha"):
             self.assertFalse(tabela.c[nome].nullable)
-        for nome in ("endereco", "cidade", "telefones", "linkedin", "curriculo_lattes"):
+        for nome in ("deleted_at", "endereco", "cidade", "telefones", "linkedin", "curriculo_lattes"):
             self.assertTrue(tabela.c[nome].nullable)
         for nome in ("nome", "email", "hash_senha", "endereco", "cidade", "linkedin", "curriculo_lattes"):
             self.assertIsInstance(tabela.c[nome].type, Text)

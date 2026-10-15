@@ -18,8 +18,14 @@ from backend.application import (
     EmailJaCadastrado,
 )
 from backend.application.sessoes import CriadorSessao
-from backend.domain import Email, HashSenha, Nome, RegraDeDominioViolada, Usuario
-from backend.domain.value_objects import UsuarioId
+from backend.domain import (
+    Email,
+    HashSenha,
+    Nome,
+    RegraDeDominioViolada,
+    Usuario,
+    UsuarioId,
+)
 
 
 class DerivadorSenha(Protocol):
@@ -58,8 +64,9 @@ class CadastroEstudanteExecutor(Protocol):
 class AcessoEstudanteExecutor(Protocol):
     """Define a capacidade de confirmar acesso que o router precisa invocar.
 
-    O contrato mantém consulta e comparação de senha fora do controller. Ele
-    existe para que a borda HTTP não acesse repositório nem algoritmo de hash.
+    O contrato mantém consulta e comparação de senha fora do controller e
+    devolve a identidade autenticada após sucesso. Ele existe para que a borda
+    emita sessão sem acessar repositório nem repetir validação de senha.
     """
 
     async def executar(self, entrada: AcessarEstudanteEntrada) -> UsuarioId:

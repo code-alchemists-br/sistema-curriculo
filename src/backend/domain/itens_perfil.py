@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from unicodedata import category
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.exceptions import RegraDeDominioViolada
@@ -23,25 +24,116 @@ from backend.domain.value_objects import (
     UsuarioId,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+TAMANHO_MINIMO_TEXTO_FORMACAO = 1
+TAMANHO_MAXIMO_TEXTO_FORMACAO = 200
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+class NivelFormacaoAcademica(str, Enum):
+    """Representa os níveis acadêmicos aceitos para uma formação.
+
+    Cada membro guarda o identificador canônico em snake_case usado pelo
+    domínio e por futuras fronteiras de serialização. Ele existe para impedir
+    que formações mantenham rótulos livres e inconsistentes entre camadas.
+    """
+
+    ENSINO_FUNDAMENTAL = "ensino_fundamental"
+    ENSINO_MEDIO = "ensino_medio"
+    TECNICO = "tecnico"
+    TECNOLOGO = "tecnologo"
+    GRADUACAO = "graduacao"
+    ESPECIALIZACAO = "especializacao"
+    MESTRADO = "mestrado"
+    DOUTORADO = "doutorado"
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+class StatusFormacaoAcademica(str, Enum):
+    """Representa os estados de conclusão válidos para uma formação.
+
+    O enum limita o status aos estados de andamento, conclusão ou interrupção
+    aprovados pelo produto. Ele existe para que a entidade aplique regras de
+    período a partir de valores de domínio explícitos.
+    """
+
+    EM_ANDAMENTO = "em_andamento"
+    CONCLUIDO = "concluido"
+    INTERROMPIDO = "interrompido"
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+def _normalizar_texto_formacao(valor: str, campo: str) -> str:
+    """Normaliza e valida um texto descritivo de formação.
+
+    A função calcula uma única versão sem espaços externos, rejeita controles
+    no valor original e mede o texto normalizado contra os limites públicos.
+    Ela existe para aplicar à instituição e ao curso a mesma regra de conteúdo.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo {campo} da formação deve ser texto.")
+
+    normalizado = valor.strip()
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da formação não pode conter caracteres de controle."
+        )
+    if not normalizado:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da formação não pode ser vazio."
+        )
+    if not TAMANHO_MINIMO_TEXTO_FORMACAO <= len(normalizado) <= TAMANHO_MAXIMO_TEXTO_FORMACAO:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da formação deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_FORMACAO} e {TAMANHO_MAXIMO_TEXTO_FORMACAO} caracteres."
+        )
+    return normalizado
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 @dataclass(frozen=True, slots=True)
 class FormacaoAcademica:
     """Representa uma formação acadêmica reutilizável pertencente a um usuário.
 
-    A entidade combina sua identidade, proprietário e informações descritivas
-    com um ``Periodo`` validado. Ela existe para que uma formação possa aparecer
-    em mais de uma versão de currículo sem se tornar parte interna de um agregado
-    de currículo.
+    A entidade combina identidade e proprietário com instituição/curso
+    normalizados, enums acadêmicos e um ``Periodo`` validado segundo o status.
+    Ela existe para que a formação seja reutilizável em versões de currículo e
+    permaneça válida sem depender de API ou persistência.
     """
 
     id: FormacaoAcademicaId
     usuario_id: UsuarioId
     instituicao: str
     curso: str
-    nivel: str
+    nivel: NivelFormacaoAcademica
     periodo: Periodo
-    status: str
+    status: StatusFormacaoAcademica
+
+    def __post_init__(self) -> None:
+        """Protege vocabulário, conteúdo textual e período da formação.
+
+        A entidade exige enums do domínio, normaliza instituição e curso uma
+        vez e valida que somente formações concluídas dependam de data final.
+        Ela existe para impedir estados inválidos por qualquer caminho de
+        criação, sem delegar invariantes de negócio à API ou persistência.
+        """
+        if not isinstance(self.nivel, NivelFormacaoAcademica):
+            raise RegraDeDominioViolada(
+                "O nível da formação deve pertencer ao vocabulário acadêmico válido."
+            )
+        if not isinstance(self.status, StatusFormacaoAcademica):
+            raise RegraDeDominioViolada(
+                "O status da formação deve pertencer ao vocabulário válido."
+            )
+        instituicao = _normalizar_texto_formacao(self.instituicao, "instituição")
+        curso = _normalizar_texto_formacao(self.curso, "curso")
+        if self.status is StatusFormacaoAcademica.CONCLUIDO and self.periodo.fim is None:
+            raise RegraDeDominioViolada(
+                "Formação concluída exige data final do período."
+            )
+        object.__setattr__(self, "instituicao", instituicao)
+        object.__setattr__(self, "curso", curso)
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001

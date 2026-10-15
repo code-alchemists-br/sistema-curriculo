@@ -192,6 +192,29 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(resposta.status_code, 401)
                 self.assertEqual(autenticador.tokens, [])
 
+    async def test_consulta_perfil_exige_sessao(self) -> None:
+        """Rejeita GET de perfil pessoal quando não há cookie de sessão.
+
+        A rota de consulta é privada por padrão no middleware. O cenário omite
+        credencial e confirma que o autenticador e o handler não são chamados.
+        """
+        autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
+        chamadas = []
+
+        async def proxima(request: Request) -> Response:
+            """Registra encaminhamento que não deve ocorrer sem sessão."""
+            chamadas.append(request)
+            return Response(status_code=200)
+
+        resposta = await self._middleware(autenticador).dispatch(
+            _request("GET", "/estudantes/00000000-0000-0000-0000-000000000001"),
+            proxima,
+        )
+
+        self.assertEqual(resposta.status_code, 401)
+        self.assertEqual(autenticador.tokens, [])
+        self.assertEqual(chamadas, [])
+
     async def test_perfil_so_e_alterado_pelo_estudante_da_sessao(self) -> None:
         """Retorna 403 quando UUID da rota pertence a outro estudante.
 
