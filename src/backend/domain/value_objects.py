@@ -213,6 +213,28 @@ class IdiomaId:
         _validar_uuid(self.valor, "IdiomaId")
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class CertificacaoId:
+    """Representa a identidade imutável de uma certificação do usuário.
+
+    O value object armazena exclusivamente um ``UUID`` e o valida na criação.
+    Ele existe para distinguir certificações dos demais itens de perfil e
+    impedir que outros identificadores sejam usados por engano.
+    """
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        """Valida o UUID para manter o identificador de certificação íntegro.
+
+        A validação acontece ao construir o value object e não depende de banco
+        de dados. Ela existe para que o domínio trabalhe sempre com identidades
+        estruturalmente válidas.
+        """
+        _validar_uuid(self.valor, "CertificacaoId")
+
+
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class DocumentoId:

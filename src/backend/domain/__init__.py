@@ -21,11 +21,17 @@ from backend.domain.itens_perfil import (
     CARGA_HORARIA_MAXIMA_CURSO,
     CARGA_HORARIA_MINIMA_CURSO,
     TAMANHO_MAXIMO_TEXTO_CURSO,
-    TAMANHO_MAXIMO_TEXTO_FORMACAO,
     TAMANHO_MINIMO_TEXTO_CURSO,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    TAMANHO_MAXIMO_TEXTO_CERTIFICACAO,
+    TAMANHO_MAXIMO_TEXTO_FORMACAO,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    TAMANHO_MINIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MINIMO_TEXTO_FORMACAO,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    Certificacao,
     Competencia,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     Curso,
@@ -39,14 +45,20 @@ from backend.domain.itens_perfil import (
     StatusFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     normalizar_chave_curso,
+    normalizar_texto_curso,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    normalizar_chave_certificacao,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    normalizar_texto_certificacao,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     normalizar_idioma,
-    normalizar_texto_curso,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     Cidade,
     CompetenciaId,
@@ -82,6 +94,9 @@ __all__ = [
     "CARGA_HORARIA_MINIMA_CURSO",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "CategoriaCompetencia",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "Certificacao",
+    "CertificacaoId",
     "ClassificacaoAssociacao",
     "Competencia",
     "CompetenciaId",
@@ -107,6 +122,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "normalizar_chave_curso",
     "normalizar_texto_curso",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "normalizar_chave_certificacao",
+    "normalizar_texto_certificacao",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "normalizar_idioma",
     # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -120,6 +138,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "TAMANHO_MAXIMO_TEXTO_CURSO",
     "TAMANHO_MINIMO_TEXTO_CURSO",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "TAMANHO_MAXIMO_TEXTO_CERTIFICACAO",
+    "TAMANHO_MINIMO_TEXTO_CERTIFICACAO",
     "TAMANHO_MAXIMO_TEXTO_FORMACAO",
     "TAMANHO_MINIMO_TEXTO_FORMACAO",
     "Telefone",
