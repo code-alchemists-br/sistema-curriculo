@@ -6,7 +6,16 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain import Email, HashSenha, Nome, Usuario, UsuarioId
+from backend.domain import (
+    DadosContato,
+    Email,
+    Endereco,
+    HashSenha,
+    Nome,
+    Telefone,
+    Usuario,
+    UsuarioId,
+)
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
 )
@@ -56,6 +65,11 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
             nome="Ana Silva",
             email="ana@example.com",
             hash_senha="hash-ja-derivado",
+            endereco=None,
+            cidade=None,
+            telefones=None,
+            linkedin=None,
+            curriculo_lattes=None,
         )
         self.assertIs(resultado, registro.return_value)
         self.assertEqual(usuario, criar_usuario())
@@ -72,11 +86,67 @@ class ConversaoUsuarioTestCase(unittest.TestCase):
             nome=usuario.nome.valor,
             email=usuario.email.valor,
             hash_senha=usuario.hash_senha.valor,
+            endereco=None,
+            cidade=None,
+            telefones=None,
+            linkedin=None,
+            curriculo_lattes=None,
         )
 
         resultado = para_usuario(registro)
 
         self.assertEqual(resultado, usuario)
+
+    def test_converte_dados_de_contato_entre_agregado_e_registro(self) -> None:
+        """Preserva os dados de contato nos dois sentidos do mapper.
+
+        O teste converte um agregado completo e reconstrói outro a partir de
+        uma linha em memória. Ele existe para impedir perda de dados entre API
+        e persistência relacional.
+        """
+        usuario = criar_usuario()
+        contato = DadosContato(
+            endereco=Endereco("Av. Central, 300"),
+            telefones=(Telefone("11988887777"), Telefone("1133332222")),
+            linkedin="https://linkedin.com/in/ana",
+            curriculo_lattes="http://lattes.cnpq.br/123",
+            cidade="São Paulo",
+        )
+        usuario = Usuario(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            hash_senha=usuario.hash_senha,
+            dados_contato=contato,
+        )
+
+        with patch(f"{MODELO}.UsuarioRegistro") as registro:
+            para_registro(usuario)
+
+        registro.assert_called_once_with(
+            id=usuario.id.valor,
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            hash_senha=usuario.hash_senha.valor,
+            endereco="Av. Central, 300",
+            cidade="São Paulo",
+            telefones=["11988887777", "1133332222"],
+            linkedin="https://linkedin.com/in/ana",
+            curriculo_lattes="http://lattes.cnpq.br/123",
+        )
+        linha = MagicMock(
+            id=usuario.id.valor,
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            hash_senha=usuario.hash_senha.valor,
+            endereco="Av. Central, 300",
+            cidade="São Paulo",
+            telefones=["11988887777", "1133332222"],
+            linkedin="https://linkedin.com/in/ana",
+            curriculo_lattes="http://lattes.cnpq.br/123",
+        )
+
+        self.assertEqual(para_usuario(linha), usuario)
 
 
 class RepositorioUsuarioSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
@@ -209,3 +279,95 @@ class RepositorioUsuarioSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(resultado)
         converter.assert_not_called()
+
+    async def test_obtem_agregado_por_id(self) -> None:
+        """Consulta por identidade tipada e converte a linha encontrada.
+
+        O teste substitui consulta e mapper para confirmar o UUID usado e o
+        agregado devolvido, sem banco. Ele existe para suportar o caso de uso
+        integral pela porta de usuário.
+        """
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        with patch(f"{ADAPTER}.select") as select_mock, patch(
+            f"{ADAPTER}.UsuarioRegistro"
+        ) as registro_modelo, patch(
+            f"{ADAPTER}.para_usuario", return_value=sentinel.usuario
+        ) as converter:
+            registro_modelo.id.__eq__.return_value = sentinel.predicado
+            self.session.scalar.return_value = sentinel.registro
+
+            resultado = await self.repositorio.obter_por_id(usuario_id)
+
+        registro_modelo.id.__eq__.assert_called_once_with(usuario_id.valor)
+        select_mock.assert_called_once_with(registro_modelo)
+        select_mock.return_value.where.assert_called_once_with(sentinel.predicado)
+        self.session.scalar.assert_awaited_once_with(
+            select_mock.return_value.where.return_value
+        )
+        converter.assert_called_once_with(sentinel.registro)
+        self.assertIs(resultado, sentinel.usuario)
+
+    async def test_atualiza_agregado_existente_e_aguarda_flush(self) -> None:
+        """Copia os campos do agregado para a linha e envia um único flush.
+
+        O teste substitui consulta e mapper e observa a linha ORM em memória.
+        Ele existe para provar que a Application consegue persistir a transição
+        integral sem inserir duplicatas nem controlar commit.
+        """
+        usuario = criar_usuario()
+        registro = MagicMock()
+        registro.id = usuario.id.valor
+        mapeado = MagicMock(
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            hash_senha=usuario.hash_senha.valor,
+            endereco=None,
+            cidade=None,
+            telefones=None,
+            linkedin=None,
+            curriculo_lattes=None,
+        )
+        with patch(f"{ADAPTER}.select") as select_mock, patch(
+            f"{ADAPTER}.UsuarioRegistro"
+        ) as registro_modelo, patch(
+            f"{ADAPTER}.para_registro", return_value=mapeado
+        ) as converter:
+            registro_modelo.id.__eq__.return_value = sentinel.predicado
+            self.session.scalar.return_value = registro
+
+            resultado = await self.repositorio.atualizar(usuario)
+
+        self.assertIsNone(resultado)
+        select_mock.assert_called_once_with(registro_modelo)
+        select_mock.return_value.where.assert_called_once_with(sentinel.predicado)
+        self.session.scalar.assert_awaited_once_with(
+            select_mock.return_value.where.return_value
+        )
+        converter.assert_called_once_with(usuario)
+        self.assertEqual(registro.nome, mapeado.nome)
+        self.assertEqual(registro.email, mapeado.email)
+        self.assertEqual(registro.hash_senha, mapeado.hash_senha)
+        self.assertEqual(registro.endereco, mapeado.endereco)
+        self.assertEqual(registro.cidade, mapeado.cidade)
+        self.assertEqual(registro.telefones, mapeado.telefones)
+        self.assertEqual(registro.linkedin, mapeado.linkedin)
+        self.assertEqual(registro.curriculo_lattes, mapeado.curriculo_lattes)
+        self.session.flush.assert_awaited_once_with()
+        self.session.add.assert_not_called()
+        self.session.commit.assert_not_called()
+
+    async def test_atualizacao_de_perfil_inexistente_falha_sem_flush(self) -> None:
+        """Não insere um agregado quando o ID já não existe no armazenamento.
+
+        A consulta devolve ausência para simular remoção concorrente. O teste
+        existe para manter atualização distinta de criação e evitar upsert.
+        """
+        with patch(f"{ADAPTER}.select"), patch(f"{ADAPTER}.para_registro") as converter:
+            self.session.scalar.return_value = None
+
+            with self.assertRaises(LookupError):
+                await self.repositorio.atualizar(criar_usuario())
+
+        converter.assert_not_called()
+        self.session.flush.assert_not_awaited()
+        self.session.add.assert_not_called()

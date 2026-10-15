@@ -58,6 +58,7 @@ from backend.api.listagem_versoes_curriculo import (
 )
 from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.perfil_estudante import (
+    AtualizacaoPerfilCompletoExecutor,
     EdicaoPerfilExecutor,
     ExclusaoPerfilExecutor,
 )
@@ -121,11 +122,12 @@ def create_app(
     autenticador_sessao: AutenticadorSessao | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
     excluir_versao_curriculo: ExclusaoVersaoCurriculoExecutor | None = None,
+    atualizar_perfil_completo: AtualizacaoPerfilCompletoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
-    dados de contato, projetos acadêmicos, competências, versões de currículo,
+    dados completos de perfil, contato, projetos acadêmicos, competências, versões de currículo,
     seleção de itens, listagem, exclusão de versão, experiências profissionais
     e prévia com os executores recebidos; ausências permanecem explícitas e são
     traduzidas por cada router em indisponibilidade. Quando um autenticador é
@@ -143,7 +145,13 @@ def create_app(
             cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
         )
     )
-    app.include_router(criar_router_perfil(editar_perfil, excluir_perfil))
+    app.include_router(
+        criar_router_perfil(
+            editar_perfil,
+            excluir_perfil,
+            atualizar_perfil_completo,
+        )
+    )
     app.include_router(criar_router_dados_contato(atualizar_dados_contato))
     app.include_router(criar_router_projeto_academico(cadastrar_projeto_academico))
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002

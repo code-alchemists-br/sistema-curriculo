@@ -9,17 +9,43 @@ das regras de domínio e dos casos de uso de perfil.
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field, field_validator
 
 from backend.application import (
+    AtualizarPerfilCompletoEntrada,
     EditarPerfilEntrada,
     EmailJaCadastrado,
     ExcluirPerfilEntrada,
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
-from backend.domain import Email, Nome, RegraDeDominioViolada, Usuario, UsuarioId
+from backend.domain import (
+    DadosContato,
+    Email,
+    Endereco,
+    Nome,
+    RegraDeDominioViolada,
+    Telefone,
+    Usuario,
+    UsuarioId,
+)
+
+
+class AtualizacaoPerfilCompletoExecutor(Protocol):
+    """Define a capacidade de atualização integral consumida pela rota nova.
+
+    O contrato recebe valores tipados e devolve o agregado atualizado, sem
+    acoplar transporte a persistência concreta. Ele existe para injetar o caso
+    de uso completo e permitir testes isolados da interface HTTP.
+    """
+
+    async def executar(self, entrada: AtualizarPerfilCompletoEntrada) -> Usuario:
+        """Atualiza todos os campos editáveis e devolve o agregado resultante.
+
+        A implementação aplica regras de perfil e persiste pela porta interna.
+        O método existe para manter o handler responsável apenas pela fronteira.
+        """
 
 
 class EdicaoPerfilExecutor(Protocol):
@@ -67,6 +93,36 @@ class EditarPerfilRequisicao(BaseModel):
     email: str = Field(min_length=3, max_length=320)
 
 
+class AtualizarPerfilCompletoRequisicao(BaseModel):
+    """Representa os campos editáveis enviados na atualização integral.
+
+    O DTO exige nome, e-mail, endereço e telefones e aceita links opcionais;
+    ausência de LinkedIn ou Lattes os limpa no PUT. Ele existe para definir
+    substituição completa sem aceitar identidade, senha ou estado interno.
+    """
+
+    nome: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=320)
+    endereco: str = Field(min_length=1, max_length=500)
+    cidade: str = Field(min_length=1, max_length=120)
+    telefones: list[str] = Field(min_length=1, max_length=5)
+    linkedin: str | None = Field(default=None, max_length=300)
+    curriculo_lattes: str | None = Field(default=None, max_length=300)
+
+    @field_validator("cidade")
+    @classmethod
+    def validar_cidade(cls, valor: str) -> str:
+        """Normaliza a cidade e rejeita texto composto somente por espaços.
+
+        A validação remove espaços periféricos antes da conversão ao domínio.
+        Ela existe para que o campo obrigatório não seja persistido como vazio.
+        """
+        cidade = valor.strip()
+        if not cidade:
+            raise ValueError("Cidade não pode ser vazia.")
+        return cidade
+
+
 class PerfilResposta(BaseModel):
     """Representa somente os dados públicos devolvidos após editar um perfil.
 
@@ -80,9 +136,28 @@ class PerfilResposta(BaseModel):
     email: str
 
 
+class PerfilCompletoResposta(BaseModel):
+    """Representa os campos editáveis devolvidos após salvar o perfil completo.
+
+    O DTO inclui identidade, nome, e-mail e contato, mas exclui hash de senha e
+    estado interno. Ele existe para confirmar valores salvos sem serializar o
+    agregado de domínio diretamente.
+    """
+
+    id: UUID
+    nome: str
+    email: str
+    endereco: str
+    cidade: str | None
+    telefones: list[str]
+    linkedin: str | None
+    curriculo_lattes: str | None
+
+
 def criar_router(
     editar_perfil: EdicaoPerfilExecutor | None,
     excluir_perfil: ExclusaoPerfilExecutor | None,
+    atualizar_perfil_completo: AtualizacaoPerfilCompletoExecutor | None = None,
 ) -> APIRouter:
     """Cria rotas HTTP de perfil usando casos de uso injetados pela composição.
 
@@ -90,15 +165,73 @@ def criar_router(
     traduz exceções conhecidas em status seguros. Ela existe para registrar a
     API e permitir testes unitários com doubles, sem sessão de banco real.
 
-    Nota: a identidade do perfil ainda é recebida pela própria rota
-    (``usuario_id`` no caminho), e não derivada de uma sessão autenticada.
-    Autenticação e autorização de entrada permanecem um handoff pendente,
-    conforme prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md.
+    A rota conserva ``usuario_id`` no caminho por compatibilidade, mas exige
+    que ele corresponda à identidade autenticada instalada pelo middleware.
+    Essa checagem local também impede escrita anônima se a aplicação for
+    composta sem middleware.
     """
     router = APIRouter()
 
+    @router.put("/estudantes/me/perfil", response_model=PerfilCompletoResposta)
+    async def atualizar_completo(
+        requisicao: AtualizarPerfilCompletoRequisicao,
+        request: Request,
+    ) -> PerfilCompletoResposta:
+        """Atualiza todos os campos editáveis do estudante autenticado.
+
+        O handler deriva o proprietário de ``request.state``, converte JSON em
+        value objects e traduz falhas de domínio em respostas HTTP. Ele existe
+        para oferecer uma operação integral sem aceitar ID de proprietário do
+        cliente nem alterar os endpoints existentes.
+        """
+        usuario_autenticado = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_autenticado, UUID):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+        if atualizar_perfil_completo is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Atualização indisponível.")
+        try:
+            dados_contato = DadosContato(
+                endereco=Endereco(requisicao.endereco),
+                telefones=tuple(Telefone(telefone) for telefone in requisicao.telefones),
+                linkedin=requisicao.linkedin,
+                curriculo_lattes=requisicao.curriculo_lattes,
+                cidade=requisicao.cidade,
+            )
+            usuario = await atualizar_perfil_completo.executar(
+                AtualizarPerfilCompletoEntrada(
+                    usuario_id=UsuarioId(usuario_autenticado),
+                    nome=Nome(requisicao.nome),
+                    email=Email(requisicao.email),
+                    dados_contato=dados_contato,
+                )
+            )
+        except RegraDeDominioViolada as erro:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
+        except PerfilNaoEncontrado as erro:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+        except PerfilExcluido as erro:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(erro)) from erro
+        except EmailJaCadastrado as erro:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(erro)) from erro
+
+        assert usuario.dados_contato is not None
+        return PerfilCompletoResposta(
+            id=usuario.id.valor,
+            nome=usuario.nome.valor,
+            email=usuario.email.valor,
+            endereco=usuario.dados_contato.endereco.valor,
+            cidade=usuario.dados_contato.cidade,
+            telefones=[telefone.valor for telefone in usuario.dados_contato.telefones],
+            linkedin=usuario.dados_contato.linkedin,
+            curriculo_lattes=usuario.dados_contato.curriculo_lattes,
+        )
+
     @router.put("/estudantes/{usuario_id}", response_model=PerfilResposta)
-    async def editar(usuario_id: UUID, requisicao: EditarPerfilRequisicao) -> PerfilResposta:
+    async def editar(
+        usuario_id: UUID,
+        requisicao: EditarPerfilRequisicao,
+        request: Request,
+    ) -> PerfilResposta:
         """Executa edição HTTP e devolve os dados públicos do perfil atualizado.
 
         O handler cria VOs e identidade tipada, aguarda o caso de uso e traduz
@@ -107,6 +240,11 @@ def criar_router(
         """
         if editar_perfil is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Edição indisponível.")
+        usuario_autenticado = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_autenticado, UUID):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticação necessária.")
+        if usuario_autenticado != usuario_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A sessão não pode alterar este perfil.")
         try:
             entrada = EditarPerfilEntrada(
                 usuario_id=UsuarioId(usuario_id),

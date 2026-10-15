@@ -89,6 +89,35 @@ class AtualizarDadosContatoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resultado.hash_senha, usuario.hash_senha)
         self.assertEqual(repositorio.usuarios_atualizados, [resultado])
 
+    async def test_atualizacao_legada_preserva_cidade_que_nao_esta_no_payload(self) -> None:
+        """Mantém cidade ao usar o contrato antigo que não possui esse campo.
+
+        O perfil começa com cidade salva e a entrada legada substitui os demais
+        dados de contato. O teste existe para que a expansão do agregado não
+        faça o endpoint existente apagar informação silenciosamente.
+        """
+        usuario = _criar_usuario().atualizar_dados_contato(
+            DadosContato(
+                endereco=Endereco("Rua Antiga, 10"),
+                telefones=(Telefone("11999990000"),),
+                cidade="São Paulo",
+            )
+        )
+        repositorio = RepositorioUsuarioSpy([usuario])
+        entrada = AtualizarDadosContatoEntrada(
+            usuario.id,
+            DadosContato(
+                endereco=Endereco("Rua Nova, 20"),
+                telefones=(Telefone("11988887777"),),
+            ),
+        )
+
+        resultado = await AtualizarDadosContato(repositorio).executar(entrada)
+
+        self.assertEqual(resultado.dados_contato.endereco, Endereco("Rua Nova, 20"))
+        self.assertEqual(resultado.dados_contato.cidade, "São Paulo")
+        self.assertEqual(repositorio.usuarios_atualizados, [resultado])
+
     async def test_rejeita_perfil_inexistente_sem_atualizacao(self) -> None:
         """Confirma que ausência interrompe o fluxo antes de qualquer efeito.
 

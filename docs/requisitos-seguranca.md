@@ -641,6 +641,11 @@ flowchart TD
 
 O usuário não deverá visualizar ou modificar dados pertencentes a outra conta.
 
+As operações de atualização de dados pessoais e de contato devem exigir uma
+identidade autenticada e verificar que ela corresponde ao proprietário do
+perfil solicitado. O identificador informado no caminho da requisição, por si
+só, não concede autorização para alterar o recurso.
+
 ## 4.7 Privacidade por padrão
 
 Os currículos deverão ser considerados privados por padrão.

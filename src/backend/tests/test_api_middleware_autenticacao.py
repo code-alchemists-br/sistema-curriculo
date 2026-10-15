@@ -242,6 +242,81 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resposta.status_code, 204)
         self.assertEqual(autenticador.tokens, ["token-valido"])
 
+    async def test_dados_contato_exigem_sessao(self) -> None:
+        """Rejeita atualização de contato sem cookie de sessão válido.
+
+        O caminho corresponde ao PUT existente de dados de contato. O teste
+        existe para assegurar que a operação só seja acessível por estudante
+        autenticado, antes que o handler seja executado.
+        """
+        autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
+        resposta = await self._middleware(autenticador).dispatch(
+            _request(
+                "PUT",
+                "/estudantes/00000000-0000-0000-0000-000000000001/dados-contato",
+            ),
+            lambda _: None,
+        )
+
+        self.assertEqual(resposta.status_code, 401)
+        self.assertEqual(autenticador.tokens, [])
+
+    async def test_dados_contato_so_sao_alterados_pelo_estudante_da_sessao(self) -> None:
+        """Retorna 403 e não encaminha PUT de contato dirigido a outro perfil.
+
+        Uma sessão válida de A tenta alterar o recurso de B. O teste existe
+        para garantir autorização por proprietário além da autenticação.
+        """
+        autenticador = AutenticadorSessaoStub(
+            UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        )
+        chamadas = []
+
+        async def proxima(request: Request) -> Response:
+            """Registra o handler caso o middleware permita o encaminhamento."""
+            chamadas.append(request)
+            return Response(status_code=204)
+
+        resposta = await self._middleware(autenticador).dispatch(
+            _request(
+                "PUT",
+                "/estudantes/00000000-0000-0000-0000-000000000002/dados-contato",
+                "token-valido",
+            ),
+            proxima,
+        )
+
+        self.assertEqual(resposta.status_code, 403)
+        self.assertEqual(autenticador.tokens, ["token-valido"])
+        self.assertEqual(chamadas, [])
+
+    async def test_dados_contato_proprio_e_encaminhado_apos_autenticacao(self) -> None:
+        """Permite PUT de contato quando rota e sessão identificam o mesmo perfil.
+
+        O handler seguinte confirma que a autenticação passou e que o recurso
+        próprio continua disponível. O teste existe para proteger o fluxo
+        positivo ao adicionar a checagem de propriedade.
+        """
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        autenticador = AutenticadorSessaoStub(usuario_id)
+
+        async def proxima(request: Request) -> Response:
+            """Confirma a identidade instalada pelo middleware antes do handler."""
+            self.assertEqual(request.state.usuario_id, usuario_id.valor)
+            return Response(status_code=204)
+
+        resposta = await self._middleware(autenticador).dispatch(
+            _request(
+                "PUT",
+                f"/estudantes/{usuario_id.valor}/dados-contato",
+                "token-valido",
+            ),
+            proxima,
+        )
+
+        self.assertEqual(resposta.status_code, 204)
+        self.assertEqual(autenticador.tokens, ["token-valido"])
+
     async def test_rotas_de_curriculo_exigem_sessao(self) -> None:
         """Rejeita sem cookie leitura e mutações de currículo e itens.
 

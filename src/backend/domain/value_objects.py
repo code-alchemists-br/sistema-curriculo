@@ -315,11 +315,11 @@ class Telefone:
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class DadosContato:
-    """Agrupa endereço, telefones e links profissionais opcionais de contato.
+    """Agrupa endereço, cidade, telefones e links profissionais de contato.
 
     O value object reúne os dados de contato do usuário como uma unidade só e
-    exige ao menos um telefone válido. Ele existe para que endereço, telefones
-    e links nunca fiquem parcialmente preenchidos ou inconsistentes entre si
+    exige ao menos um telefone válido, mantendo cidade e links opcionais. Ele
+    existe para que os dados usados no cabeçalho de currículo permaneçam coesos
     dentro do agregado ``Usuario``.
     """
 
@@ -327,6 +327,7 @@ class DadosContato:
     telefones: tuple[Telefone, ...]
     linkedin: str | None = None
     curriculo_lattes: str | None = None
+    cidade: str | None = None
 
     def __post_init__(self) -> None:
         """Exige ao menos um telefone e normaliza links opcionais vazios.
@@ -337,8 +338,10 @@ class DadosContato:
         """
         if not self.telefones:
             raise RegraDeDominioViolada("Informe ao menos um telefone de contato.")
+        cidade_normalizada = self.cidade.strip() if self.cidade else None
         linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
         lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
+        object.__setattr__(self, "cidade", cidade_normalizada or None)
         object.__setattr__(self, "linkedin", linkedin_normalizado or None)
         object.__setattr__(self, "curriculo_lattes", lattes_normalizado or None)
 

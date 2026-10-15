@@ -42,6 +42,10 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
+from backend.application.perfil_completo import (
+    AtualizarPerfilCompleto,
+    AtualizarPerfilCompletoEntrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.application.exclusao_versao_curriculo import (
@@ -140,6 +144,8 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
     "AtualizarDadosContato",
     "AtualizarDadosContatoEntrada",
+    "AtualizarPerfilCompleto",
+    "AtualizarPerfilCompletoEntrada",
     "CredenciaisInvalidas",
     "EmailJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
