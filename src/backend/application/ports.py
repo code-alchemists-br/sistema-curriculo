@@ -98,12 +98,14 @@ class RepositorioUsuario(Protocol):
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
 class RepositorioFormacaoAcademica(Protocol):
-    """Define a persistência assíncrona de formações acadêmicas válidas.
+    """Define consulta e persistência assíncrona de formações acadêmicas.
 
-    A porta recebe uma entidade de domínio pronta e delega o I/O ao adapter que
-    a implementar, sem escolher ORM, tabela ou transação. Ela existe para que o
-    caso de uso registre formações sem acoplar a Application à infraestrutura.
+    A porta recebe identidades tipadas para consultar por formação e
+    proprietário, e entidades válidas para salvar ou atualizar, sem escolher
+    ORM, tabela ou transação. Ela existe para que os casos de uso cadastrem e
+    editem formações sem acoplar a Application à infraestrutura.
     """
 
     async def salvar(self, formacao: FormacaoAcademica) -> None:
@@ -112,6 +114,26 @@ class RepositorioFormacaoAcademica(Protocol):
         Implementações aguardam o armazenamento e preservam a entidade recebida
         sem criar regras de negócio adicionais. O método existe para separar a
         intenção de cadastrar formação do mecanismo concreto de persistência.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def obter_por_id_e_usuario(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Obtém a formação somente quando pertence ao usuário informado.
+
+        A implementação consulta conjuntamente identidade e proprietário e
+        retorna ausência tanto para ID inexistente quanto alheio. Ela existe
+        para que a edição não revele a existência de formações de outros usuários.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def atualizar(self, formacao: FormacaoAcademica) -> None:
+        """Solicita a atualização de uma formação existente e válida.
+
+        A implementação persiste o estado completo recebido sem alterar
+        invariantes ou controlar a tecnologia/transação. Ela existe para salvar
+        a edição decidida pelo caso de uso através de uma porta interna.
         """
 
 

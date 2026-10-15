@@ -13,7 +13,12 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
-from backend.application.perfil_estudante import CadastrarFormacaoAcademicaEntrada
+from backend.application.perfil_estudante import (
+    CadastrarFormacaoAcademicaEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EditarFormacaoAcademicaEntrada,
+    FormacaoAcademicaNaoEncontrada,
+)
 from backend.domain import (
     TAMANHO_MAXIMO_TEXTO_FORMACAO,
     TAMANHO_MINIMO_TEXTO_FORMACAO,
@@ -23,7 +28,7 @@ from backend.domain import (
     RegraDeDominioViolada,
     StatusFormacaoAcademica,
 )
-from backend.domain.value_objects import UsuarioId
+from backend.domain.value_objects import FormacaoAcademicaId, UsuarioId
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -72,6 +77,24 @@ class CadastroFormacaoAcademicaRequisicao(BaseModel):
         return normalizado
 
 
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+class EdicaoFormacaoAcademicaRequisicao(CadastroFormacaoAcademicaRequisicao):
+    """Define o corpo completo aceito para editar uma formação acadêmica.
+
+    O DTO herda enums e validação dos textos do cadastro e torna `data_fim`
+    obrigatória, embora anulável; `null` limpa a previsão ou data efetiva. Ele
+    existe para impedir que uma substituição incompleta apague dados sem
+    intenção do estudante.
+    """
+
+    data_fim: date | None = Field(
+        description=(
+            "Previsão de conclusão em em_andamento e data efetiva em concluido "
+            "ou interrompido; envie null para limpar o valor."
+        )
+    )
+
+
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 class FormacaoAcademicaResposta(BaseModel):
     """Define os campos públicos devolvidos após cadastrar uma formação.
@@ -116,9 +139,30 @@ class CadastroFormacaoAcademicaExecutor(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+class EdicaoFormacaoAcademicaExecutor(Protocol):
+    """Define o caso de uso de edição consumido pela rota HTTP.
+
+    O contrato recebe a entrada completa e devolve a entidade editada, sem
+    expor o repositório à API. Ele existe para permitir composição externa e
+    testes isolados da tradução de transporte.
+    """
+
+    async def executar(
+        self, entrada: EditarFormacaoAcademicaEntrada
+    ) -> FormacaoAcademica:
+        """Edita uma formação própria a partir da identidade autenticada.
+
+        A implementação aplica a transição de domínio e persiste pela porta.
+        O método existe para manter as regras e a orquestração fora do handler.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def criar_router(
     cadastrar_formacao: CadastroFormacaoAcademicaExecutor | None,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    editar_formacao: EdicaoFormacaoAcademicaExecutor | None = None,
 ) -> APIRouter:
     """Cria a rota protegida que cadastra formações acadêmicas.
 
@@ -169,6 +213,66 @@ def criar_router(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="A formação informada viola as regras de cadastro.",
             ) from erro
+        return FormacaoAcademicaResposta(
+            id=formacao.id.valor,
+            usuario_id=formacao.usuario_id.valor,
+            instituicao=formacao.instituicao,
+            curso=formacao.curso,
+            nivel=formacao.nivel,
+            data_inicio=formacao.periodo.inicio,
+            data_fim=formacao.periodo.fim,
+            status=formacao.status,
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    @router.put(
+        "/formacoes-academicas/{formacao_id}",
+        response_model=FormacaoAcademicaResposta,
+    )
+    async def editar(
+        formacao_id: UUID,
+        requisicao: EdicaoFormacaoAcademicaRequisicao,
+        request: Request,
+    ) -> FormacaoAcademicaResposta:
+        """Substitui os dados editáveis de uma formação da sessão atual.
+
+        O handler obtém o proprietário do estado autenticado, cria a entrada
+        completa e traduz ausência e violações em respostas estáveis. Ele
+        existe para expor a edição sem permitir troca de identidade ou dono.
+        """
+        if editar_formacao is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Edição indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        try:
+            entrada = EditarFormacaoAcademicaEntrada(
+                usuario_id=UsuarioId(usuario_id),
+                formacao_id=FormacaoAcademicaId(formacao_id),
+                instituicao=requisicao.instituicao,
+                curso=requisicao.curso,
+                nivel=requisicao.nivel,
+                periodo=Periodo(requisicao.data_inicio, requisicao.data_fim),
+                status=requisicao.status,
+            )
+            formacao = await editar_formacao.executar(entrada)
+        except FormacaoAcademicaNaoEncontrada as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Formação acadêmica não encontrada.",
+            ) from erro
+        except RegraDeDominioViolada as erro:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="A formação informada viola as regras de edição.",
+            ) from erro
+
         return FormacaoAcademicaResposta(
             id=formacao.id.valor,
             usuario_id=formacao.usuario_id.valor,

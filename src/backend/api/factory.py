@@ -41,7 +41,11 @@ from backend.api.experiencia_profissional import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-from backend.api.formacao_academica import CadastroFormacaoAcademicaExecutor
+from backend.api.formacao_academica import (
+    CadastroFormacaoAcademicaExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EdicaoFormacaoAcademicaExecutor,
+)
 from backend.api.formacao_academica import (
     criar_router as criar_router_formacao_academica,
 )
@@ -129,6 +133,8 @@ def create_app(
     excluir_versao_curriculo: ExclusaoVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
     cadastrar_formacao_academica: CadastroFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    editar_formacao_academica: EdicaoFormacaoAcademicaExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -171,8 +177,12 @@ def create_app(
     app.include_router(
         criar_router_experiencia_profissional(cadastrar_experiencia_profissional)
     )
-    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
-    app.include_router(criar_router_formacao_academica(cadastrar_formacao_academica))
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    app.include_router(
+        criar_router_formacao_academica(
+            cadastrar_formacao_academica, editar_formacao_academica
+        )
+    )
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )
