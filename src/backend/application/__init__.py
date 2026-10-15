@@ -63,6 +63,9 @@ from backend.application.perfil_estudante import (
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     EditarFormacaoAcademica,
     EditarFormacaoAcademicaEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    ConsultarPerfilEstudante,
+    ConsultarPerfilEstudanteEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     ExcluirPerfil,
@@ -154,6 +157,8 @@ __all__ = [
     "EditarFormacaoAcademica",
     "EditarFormacaoAcademicaEntrada",
     "FormacaoAcademicaNaoEncontrada",
+    "ConsultarPerfilEstudante",
+    "ConsultarPerfilEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
     "EditarPerfil",
     "EditarPerfilEntrada",

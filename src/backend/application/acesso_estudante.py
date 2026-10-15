@@ -37,8 +37,8 @@ class AcessarEstudante:
     """Confirma credenciais por meio de repositório e verificador de senha.
 
     O caso de uso busca o usuário pelo e-mail e delega a comparação segura do
-    segredo à porta, retornando sucesso somente quando ambos forem válidos. Ele
-    existe para concentrar a intenção de acesso fora de controllers e adapters.
+    segredo à porta; após sucesso, devolve somente o ID tipado. Ele existe para
+    concentrar o acesso e permitir emissão de sessão na borda sem expor o agregado.
     """
 
     def __init__(self, repositorio_usuario: RepositorioUsuario, verificador_senha: VerificadorSenha) -> None:

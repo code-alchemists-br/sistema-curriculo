@@ -7,7 +7,7 @@ from backend.application.ports import RepositorioUsuario
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
-from backend.domain.value_objects import Email
+from backend.domain.value_objects import Email, UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.usuario import (
     UsuarioRegistro,
     para_registro,
@@ -64,5 +64,17 @@ class RepositorioUsuarioSqlAlchemy(RepositorioUsuario):
         sem fazer a Application conhecer sessão, tabela ou modelo SQLAlchemy.
         """
         consulta = select(UsuarioRegistro).where(UsuarioRegistro.email == email.valor)
+        registro = await self._session.scalar(consulta)
+        return para_usuario(registro) if registro is not None else None
+
+    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
+    async def obter_por_id(self, usuario_id: UsuarioId) -> Usuario | None:
+        """Obtém um perfil pela identidade tipada e converte o registro encontrado.
+
+        A consulta parametrizada filtra pela chave primária e devolve ausência
+        sem invocar o mapper quando não há linha. Ela existe para implementar a
+        porta de leitura por identidade usada pelos fluxos de perfil.
+        """
+        consulta = select(UsuarioRegistro).where(UsuarioRegistro.id == usuario_id.valor)
         registro = await self._session.scalar(consulta)
         return para_usuario(registro) if registro is not None else None
