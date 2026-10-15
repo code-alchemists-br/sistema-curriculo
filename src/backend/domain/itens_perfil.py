@@ -14,6 +14,7 @@ from unicodedata import category
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
+    CertificacaoId,
     CompetenciaId,
     DocumentoId,
     ExperienciaProfissionalId,
@@ -27,6 +28,10 @@ from backend.domain.value_objects import (
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 TAMANHO_MINIMO_TEXTO_FORMACAO = 1
 TAMANHO_MAXIMO_TEXTO_FORMACAO = 200
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+TAMANHO_MINIMO_TEXTO_CERTIFICACAO = 1
+TAMANHO_MAXIMO_TEXTO_CERTIFICACAO = 200
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -384,3 +389,100 @@ class Documento:
     nome_arquivo: str
     tipo_arquivo: str
     url_armazenamento: str
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+def normalizar_texto_certificacao(valor: str, campo: str) -> str:
+    """Normaliza e valida um campo textual de certificação.
+
+    A função rejeita tipos não textuais ou caracteres de controle, remove
+    espaços laterais e verifica se o comprimento resultante cumpre os limites
+    estabelecidos. Ela existe para unificar as regras de integridade e higiene
+    textual para nome e organização emissora de certificações.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo {campo} da certificação deve ser texto.")
+
+    normalizado = valor.strip()
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação não pode conter caracteres de controle."
+        )
+    if not normalizado:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação não pode ser vazio."
+        )
+    if (
+        not TAMANHO_MINIMO_TEXTO_CERTIFICACAO
+        <= len(normalizado)
+        <= TAMANHO_MAXIMO_TEXTO_CERTIFICACAO
+    ):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_CERTIFICACAO} e {TAMANHO_MAXIMO_TEXTO_CERTIFICACAO} caracteres."
+        )
+    return normalizado
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+def normalizar_chave_certificacao(texto: str) -> str:
+    """Colapsa sequências de espaços e aplica minúsculas a um texto de certificação.
+
+    A função agrupa espaços em branco repetidos e converte as letras via
+    ``casefold()`` preservando acentuação. Ela existe para gerar chaves
+    canônicas determinísticas para detecção de duplicidades.
+    """
+    return " ".join(texto.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Certificacao:
+    """Representa uma certificação profissional ou acadêmica do usuário.
+
+    A entidade combina identidade tipada, proprietário, nome da certificação e
+    organização emissora já normalizados e aparados. Ela existe para modelar de
+    forma íntegra as certificações no perfil do estudante sem depender de ORM
+    ou de camadas externas.
+    """
+
+    id: CertificacaoId
+    usuario_id: UsuarioId
+    nome: str
+    organizacao_emissora: str
+
+    def __post_init__(self) -> None:
+        """Valida e apara os campos textuais de uma certificação.
+
+        O método valida e remove espaços excedentes de nome e organização
+        emissora, aplicando invariantes de preenchimento e controle. Ele existe
+        para assegurar que nenhuma entidade de certificação seja instanciada com
+        dados inválidos ou corrompidos.
+        """
+        nome_validado = normalizar_texto_certificacao(self.nome, "nome")
+        emissor_validado = normalizar_texto_certificacao(
+            self.organizacao_emissora, "organização emissora"
+        )
+        object.__setattr__(self, "nome", nome_validado)
+        object.__setattr__(self, "organizacao_emissora", emissor_validado)
+
+    @property
+    def nome_normalizado(self) -> str:
+        """Devolve a versão canônica do nome da certificação para deduplicação.
+
+        A propriedade reaplica o colapso de espaços e ``casefold`` sobre o nome
+        validado. Ela existe para fornecer uma chave determinística de busca e
+        prevenção de duplicatas lógicas.
+        """
+        return normalizar_chave_certificacao(self.nome)
+
+    @property
+    def organizacao_emissora_normalizada(self) -> str:
+        """Devolve a versão canônica da organização emissora para deduplicação.
+
+        A propriedade reaplica o colapso de espaços e ``casefold`` sobre a
+        organização emissora validada. Ela existe para permitir comparação exata
+        entre emissores sem depender de collations de banco.
+        """
+        return normalizar_chave_certificacao(self.organizacao_emissora)
+

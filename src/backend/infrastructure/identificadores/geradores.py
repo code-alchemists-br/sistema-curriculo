@@ -8,12 +8,16 @@ de identidade com uma estratégia concreta e substituível.
 from uuid import uuid4
 
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    GeradorCertificacaoId,
     GeradorCompetenciaId,
     GeradorCurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
 )
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
     CompetenciaId,
     CurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -77,5 +81,25 @@ class GeradorIdiomaIdUuid4(GeradorIdiomaId):
         concreta, substituível e sem estado de identificadores.
         """
         return IdiomaId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class GeradorCertificacaoIdUuid4(GeradorCertificacaoId):
+    """Gera identidades de certificação a partir de UUID versão 4.
+
+    A implementação obtém um identificador pseudoaleatório e o devolve como
+    ``CertificacaoId`` tipado, sem manter estado. Ela existe para fornecer a
+    estratégia padrão de identidade exigida pela porta do caso de uso.
+    """
+
+    def gerar(self) -> CertificacaoId:
+        """Gera um ``CertificacaoId`` novo com UUID4 nativo.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``CertificacaoId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return CertificacaoId(uuid4())
+
 
 
