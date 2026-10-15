@@ -25,6 +25,8 @@ from backend.domain.itens_perfil import (
     ExperienciaProfissional,
     FormacaoAcademica,
     Idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissional,
     ProjetoAcademico,
 )
 from backend.domain.usuario import Usuario
@@ -42,6 +44,8 @@ from backend.domain.value_objects import (
     FormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissionalId,
     ProjetoAcademicoId,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ReferenciaCurriculo,
@@ -395,6 +399,55 @@ class GeradorCursoId(Protocol):
 
     def gerar(self) -> CursoId:
         """Gera a identidade do próximo curso cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class RepositorioLinkProfissional(Protocol):
+    """Define a consulta e a persistência de links profissionais válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    links duplicados para o mesmo estudante e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        url_normalizada: str,
+    ) -> bool:
+        """Informa se já existe link profissional com a URL normalizada para o usuário.
+
+        Implementações consultam o armazenamento usando a identidade do proprietário
+        e a chave canônica da URL, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, link: LinkProfissional) -> None:
+        """Solicita a persistência assíncrona de um link profissional válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class GeradorLinkProfissionalId(Protocol):
+    """Fornece identidades tipadas para novos links profissionais.
+
+    A porta encapsula a origem da identidade e devolve ``LinkProfissionalId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> LinkProfissionalId:
+        """Gera a identidade do próximo link profissional cadastrado.
 
         Implementações escolhem a fonte do UUID e devolvem o value object
         correspondente. O método existe para que a entidade seja construída

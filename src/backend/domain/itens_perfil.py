@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from unicodedata import category
+from urllib.parse import urlsplit, urlunsplit
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.exceptions import RegraDeDominioViolada
@@ -20,10 +21,17 @@ from backend.domain.value_objects import (
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     IdiomaId,
+    LinkProfissionalId,
     Periodo,
     ProjetoAcademicoId,
     UsuarioId,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+TAMANHO_MINIMO_ROTULO_LINK = 1
+TAMANHO_MAXIMO_ROTULO_LINK = 100
+TAMANHO_MAXIMO_URL_LINK = 2048
+ESQUEMAS_URL_PERMITIDOS = frozenset({"http", "https"})
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 TAMANHO_MINIMO_TEXTO_CURSO = 1
@@ -86,10 +94,12 @@ def _normalizar_texto_formacao(valor: str, campo: str) -> str:
             f"O campo {campo} da formação não pode conter caracteres de controle."
         )
     if not normalizado:
-        raise RegraDeDominioViolada(
-            f"O campo {campo} da formação não pode ser vazio."
-        )
-    if not TAMANHO_MINIMO_TEXTO_FORMACAO <= len(normalizado) <= TAMANHO_MAXIMO_TEXTO_FORMACAO:
+        raise RegraDeDominioViolada(f"O campo {campo} da formação não pode ser vazio.")
+    if (
+        not TAMANHO_MINIMO_TEXTO_FORMACAO
+        <= len(normalizado)
+        <= TAMANHO_MAXIMO_TEXTO_FORMACAO
+    ):
         raise RegraDeDominioViolada(
             f"O campo {campo} da formação deve ter entre "
             f"{TAMANHO_MINIMO_TEXTO_FORMACAO} e {TAMANHO_MAXIMO_TEXTO_FORMACAO} caracteres."
@@ -135,7 +145,10 @@ class FormacaoAcademica:
             )
         instituicao = _normalizar_texto_formacao(self.instituicao, "instituição")
         curso = _normalizar_texto_formacao(self.curso, "curso")
-        if self.status is StatusFormacaoAcademica.CONCLUIDO and self.periodo.fim is None:
+        if (
+            self.status is StatusFormacaoAcademica.CONCLUIDO
+            and self.periodo.fim is None
+        ):
             raise RegraDeDominioViolada(
                 "Formação concluída exige data final do período."
             )
@@ -407,11 +420,15 @@ def normalizar_texto_curso(valor: str, campo: str) -> str:
     texto_limpo = valor.strip()
     if not texto_limpo:
         raise RegraDeDominioViolada(f"O campo '{campo}' do curso não pode ser vazio.")
-    if any(category(c).startswith("C") for c in texto_limpo if c not in ("\n", "\r", "\t")):
+    if any(
+        category(c).startswith("C") for c in texto_limpo if c not in ("\n", "\r", "\t")
+    ):
         raise RegraDeDominioViolada(
             f"O campo '{campo}' do curso contém caracteres de controle inválidos."
         )
-    if not (TAMANHO_MINIMO_TEXTO_CURSO <= len(texto_limpo) <= TAMANHO_MAXIMO_TEXTO_CURSO):
+    if not (
+        TAMANHO_MINIMO_TEXTO_CURSO <= len(texto_limpo) <= TAMANHO_MAXIMO_TEXTO_CURSO
+    ):
         raise RegraDeDominioViolada(
             f"O campo '{campo}' do curso deve ter entre {TAMANHO_MINIMO_TEXTO_CURSO} "
             f"e {TAMANHO_MAXIMO_TEXTO_CURSO} caracteres."
@@ -463,9 +480,17 @@ class Curso:
         object.__setattr__(self, "instituicao", instituicao_validada)
 
         if self.carga_horaria is not None:
-            if isinstance(self.carga_horaria, bool) or not isinstance(self.carga_horaria, int):
-                raise RegraDeDominioViolada("A carga horária do curso deve ser um número inteiro.")
-            if not (CARGA_HORARIA_MINIMA_CURSO <= self.carga_horaria <= CARGA_HORARIA_MAXIMA_CURSO):
+            if isinstance(self.carga_horaria, bool) or not isinstance(
+                self.carga_horaria, int
+            ):
+                raise RegraDeDominioViolada(
+                    "A carga horária do curso deve ser um número inteiro."
+                )
+            if not (
+                CARGA_HORARIA_MINIMA_CURSO
+                <= self.carga_horaria
+                <= CARGA_HORARIA_MAXIMA_CURSO
+            ):
                 raise RegraDeDominioViolada(
                     f"A carga horária do curso deve estar entre {CARGA_HORARIA_MINIMA_CURSO} "
                     f"e {CARGA_HORARIA_MAXIMA_CURSO} horas."
@@ -491,3 +516,169 @@ class Curso:
         """
         return normalizar_chave_curso(self.instituicao)
 
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_rotulo_link(rotulo: str) -> str:
+    """Valida, confere caracteres de controle e apara o rótulo de link profissional.
+
+    A função rejeita valores não textuais, strings vazias ou compostas apenas por
+    espaços, caracteres de controle (inclusive quebras de linha e tabulações), e
+    assegura que o texto contenha entre 1 e 100 caracteres após a remoção de espaços
+    periféricos. Ela existe para proteger a integridade e legibilidade da descrição
+    dos links exibidos no perfil.
+    """
+    if not isinstance(rotulo, str):
+        raise RegraDeDominioViolada("O rótulo do link profissional deve ser um texto.")
+    texto_limpo = rotulo.strip()
+    if not texto_limpo:
+        raise RegraDeDominioViolada("O rótulo do link profissional não pode ser vazio.")
+    if (
+        any(category(c).startswith("C") for c in texto_limpo)
+        or "\n" in texto_limpo
+        or "\r" in texto_limpo
+        or "\t" in texto_limpo
+    ):
+        raise RegraDeDominioViolada(
+            "O rótulo do link profissional contém caracteres de controle inválidos."
+        )
+    if not (
+        TAMANHO_MINIMO_ROTULO_LINK <= len(texto_limpo) <= TAMANHO_MAXIMO_ROTULO_LINK
+    ):
+        raise RegraDeDominioViolada(
+            f"O rótulo do link profissional deve ter entre {TAMANHO_MINIMO_ROTULO_LINK} "
+            f"e {TAMANHO_MAXIMO_ROTULO_LINK} caracteres."
+        )
+    return texto_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def validar_e_normalizar_url_link(url: str) -> str:
+    """Valida formato, esquema e host, e sanitiza a URL de link profissional.
+
+    A função valida que a entrada é textual, não vazia, sem caracteres de controle
+    ou quebras de linha, com comprimento de até 2048 caracteres, esquema pertencente
+    a {'http', 'https'} e presença obrigatória de netloc/host válido, retornando a
+    URL com esquema normalizado. Ela existe para prevenir injeções de esquemas
+    maliciosos (javascript, data, file) e garantir destinos web válidos.
+    """
+    if not isinstance(url, str):
+        raise RegraDeDominioViolada("A URL do link profissional deve ser um texto.")
+    if (
+        any(category(c).startswith("C") for c in url)
+        or "\n" in url
+        or "\r" in url
+        or "\t" in url
+    ):
+        raise RegraDeDominioViolada(
+            "A URL do link profissional contém caracteres de controle inválidos."
+        )
+    url_limpa = url.strip()
+    if not url_limpa:
+        raise RegraDeDominioViolada("A URL do link profissional não pode ser vazia.")
+    if len(url_limpa) > TAMANHO_MAXIMO_URL_LINK:
+        raise RegraDeDominioViolada(
+            f"A URL do link profissional não pode exceder {TAMANHO_MAXIMO_URL_LINK} caracteres."
+        )
+    try:
+        parsed = urlsplit(url_limpa)
+    except Exception as erro:
+        raise RegraDeDominioViolada(
+            "A URL do link profissional é malformada."
+        ) from erro
+
+    esquema = parsed.scheme.lower()
+    if esquema not in ESQUEMAS_URL_PERMITIDOS:
+        raise RegraDeDominioViolada(
+            "O esquema da URL do link profissional deve ser 'http' ou 'https'."
+        )
+    netloc = parsed.netloc.strip()
+    if not netloc:
+        raise RegraDeDominioViolada(
+            "A URL do link profissional deve conter um domínio ou host válido."
+        )
+    return urlunsplit((esquema, netloc, parsed.path, parsed.query, parsed.fragment))
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_chave_url(url: str) -> str:
+    """Produz a chave canônica normalizada de uma URL para verificação de duplicidade.
+
+    A função decompõe a URL, converte esquema e netloc/host para minúsculas, remove
+    barra final redundante no caminho quando aplicável e reconstrói o endereço. Ela
+    existe para que o caso de uso e a persistência comparem equivalência lógica entre
+    URLs idênticas que difiram apenas por caixa alta ou barra terminal na raiz.
+    """
+    if not isinstance(url, str):
+        raise RegraDeDominioViolada("A chave de URL exige valor textual.")
+    parsed = urlsplit(url.strip())
+    esquema = parsed.scheme.lower()
+    netloc = parsed.netloc.lower().strip()
+    path = parsed.path
+    if path == "/":
+        path = ""
+    elif path.endswith("/"):
+        path = path.rstrip("/")
+    return urlunsplit((esquema, netloc, path, parsed.query, parsed.fragment))
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_chave_rotulo_link(rotulo: str) -> str:
+    """Colapsa espaços internos e aplica minúsculas a termos de rótulo de link.
+
+    A função divide as palavras por sequências de espaços e reagrupa com espaço
+    único aplicando ``casefold``, preservando caracteres gráficos e pontuação. Ela
+    existe para gerar representação canônica estável do rótulo para comparações.
+    """
+    if not isinstance(rotulo, str):
+        raise RegraDeDominioViolada("A chave de rótulo de link exige valor textual.")
+    return " ".join(rotulo.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class LinkProfissional:
+    """Representa um link profissional externo pertencente a um estudante.
+
+    A entidade armazena a identidade do link, o identificador do usuário proprietário,
+    o rótulo descritivo e o endereço URL validado. Ela existe para compor a seção de
+    informações complementares do currículo com links profissionais autônomos.
+    """
+
+    id: LinkProfissionalId
+    usuario_id: UsuarioId
+    rotulo: str
+    url: str
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os dados de um link profissional, impondo invariantes.
+
+        O método valida os tipos de identificadores, apara o rótulo rejeitando
+        ausência e caracteres de controle, e sanitiza a URL exigindo esquemas HTTP/HTTPS
+        e domínio válido. Ele existe para garantir que instâncias de LinkProfissional
+        permaneçam íntegras desde sua criação.
+        """
+        rotulo_validado = normalizar_rotulo_link(self.rotulo)
+        url_validada = validar_e_normalizar_url_link(self.url)
+        object.__setattr__(self, "rotulo", rotulo_validado)
+        object.__setattr__(self, "url", url_validada)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    @property
+    def rotulo_normalizado(self) -> str:
+        """Devolve a chave canônica do rótulo do link profissional.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre o rótulo.
+        Ela existe para prover ao caso de uso chave estável para deduplicação ou ordenação.
+        """
+        return normalizar_chave_rotulo_link(self.rotulo)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    @property
+    def url_normalizada(self) -> str:
+        """Devolve a chave canônica da URL do link profissional.
+
+        A propriedade normaliza esquema, host e caminho raiz da URL.
+        Ela existe para prover ao caso de uso e repositório a chave canônica de deduplicação.
+        """
+        return normalizar_chave_url(self.url)
