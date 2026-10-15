@@ -10,12 +10,16 @@ from uuid import uuid4
 from backend.application.ports import (
     GeradorCompetenciaId,
     GeradorCurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    GeradorCursoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
 )
 from backend.domain.value_objects import (
     CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    CursoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
 )
@@ -77,5 +81,25 @@ class GeradorIdiomaIdUuid4(GeradorIdiomaId):
         concreta, substituível e sem estado de identificadores.
         """
         return IdiomaId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class GeradorCursoIdUuid4(GeradorCursoId):
+    """Gera identidades de curso com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    curso. Ela existe para satisfazer a porta da Application sem expor a
+    biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> CursoId:
+        """Devolve uma identidade nova e tipada para curso.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``CursoId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return CursoId(uuid4())
+
 
 

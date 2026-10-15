@@ -19,6 +19,13 @@ from backend.application.cadastro_competencia import (
     CadastrarCompetenciaEntrada,
     CompetenciaJaCadastrada,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+from backend.application.cadastro_curso import (
+    CadastrarCurso,
+    CadastrarCursoEntrada,
+    CursoJaCadastrado,
+)
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
     CadastrarEstudanteEntrada,
@@ -100,6 +107,8 @@ from backend.application.ports import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     GeradorCompetenciaId,
     GeradorCurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    GeradorCursoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -110,6 +119,8 @@ from backend.application.ports import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     RepositorioCompetencia,
     RepositorioCurriculo,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    RepositorioCurso,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -152,6 +163,10 @@ __all__ = [
     "CadastrarCompetencia",
     "CadastrarCompetenciaEntrada",
     "CompetenciaJaCadastrada",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "CadastrarCurso",
+    "CadastrarCursoEntrada",
+    "CursoJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "CadastrarIdioma",
     "CadastrarIdiomaEntrada",
@@ -188,6 +203,8 @@ __all__ = [
     "GeradorFormacaoAcademicaId",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "GeradorCompetenciaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "GeradorCursoId",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "GeradorIdiomaId",
     "GeradorUsuarioId",
@@ -201,6 +218,8 @@ __all__ = [
     "RepositorioFormacaoAcademica",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "RepositorioCompetencia",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "RepositorioCurso",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
     "RepositorioUsuario",

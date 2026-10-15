@@ -169,6 +169,28 @@ class CompetenciaId:
         _validar_uuid(self.valor, "CompetenciaId")
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class CursoId:
+    """Representa a identidade imutável de um curso complementar do usuário.
+
+    O value object armazena exclusivamente um ``UUID`` e o valida na criação.
+    Ele existe para distinguir cursos dos demais itens de perfil e
+    impedir que outros identificadores sejam usados por engano.
+    """
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        """Valida o UUID para manter o identificador de curso íntegro.
+
+        A validação acontece ao construir o value object e não depende de banco
+        de dados. Ela existe para que o domínio trabalhe sempre com identidades
+        estruturalmente válidas.
+        """
+        _validar_uuid(self.valor, "CursoId")
+
+
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class IdiomaId:
