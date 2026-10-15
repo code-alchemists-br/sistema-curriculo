@@ -311,6 +311,20 @@ class Competencia:
         return normalizar_descricao_competencia(self.descricao)
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+def normalizar_idioma(idioma: str) -> str:
+    """Colapsa espaços e aplica minúsculas à denominação do idioma.
+
+    A função rejeita valores não textuais, agrupa sequências de espaços e aplica
+    ``casefold`` sem remover acentos, pontuação ou símbolos. Ela existe para
+    tornar a regra de duplicidade determinística e reutilizável pelo domínio e
+    pela orquestração, sem depender de collation do banco.
+    """
+    if not isinstance(idioma, str):
+        raise RegraDeDominioViolada("O idioma exige denominação textual.")
+    return " ".join(idioma.split()).casefold()
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Idioma:
@@ -325,6 +339,34 @@ class Idioma:
     usuario_id: UsuarioId
     idioma: str
     nivel: str
+
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os textos obrigatórios de um idioma.
+
+        O método normaliza o idioma para detectar ausência e remove somente
+        seus espaços de contorno; o nível também deve ser texto não vazio. Ele
+        existe para manter toda entidade de idioma válida antes que a Application
+        consulte ou persista.
+        """
+        denominacao_normalizada = normalizar_idioma(self.idioma)
+        if not denominacao_normalizada:
+            raise RegraDeDominioViolada("O idioma exige denominação preenchida.")
+        if not isinstance(self.nivel, str) or not self.nivel.strip():
+            raise RegraDeDominioViolada("O idioma exige nível preenchido.")
+        object.__setattr__(self, "idioma", self.idioma.strip())
+        object.__setattr__(self, "nivel", self.nivel.strip())
+
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    @property
+    def idioma_normalizado(self) -> str:
+        """Devolve a chave canônica do nome do idioma.
+
+        A propriedade reaplica a política de colapso de espaços e ``casefold``
+        sobre o idioma já validado. Ela existe para dar ao caso de uso uma
+        chave estável de duplicidade sem expor detalhe de infraestrutura.
+        """
+        return normalizar_idioma(self.idioma)
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
