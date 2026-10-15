@@ -11,11 +11,16 @@ from backend.application import (
     # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     ConsultarPerfilEstudante,
     ConsultarPerfilEstudanteEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    EditarFormacaoAcademica,
+    EditarFormacaoAcademicaEntrada,
     EditarPerfil,
     EditarPerfilEntrada,
     EmailJaCadastrado,
     ExcluirPerfil,
     ExcluirPerfilEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    FormacaoAcademicaNaoEncontrada,
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
@@ -29,6 +34,8 @@ from backend.domain import (
     NivelFormacaoAcademica,
     Nome,
     Periodo,
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    RegraDeDominioViolada,
     StatusFormacaoAcademica,
     Usuario,
     UsuarioId,
@@ -112,12 +119,13 @@ class RelogioStub:
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
 class RepositorioFormacaoAcademicaSpy:
-    """Substitui a porta de formação e registra salvamentos solicitados.
+    """Substitui a porta de formação e registra suas operações.
 
-    O double acumula entidades recebidas inteiramente em memória e não acessa
-    banco, ORM ou rede. Ele existe para observar o efeito externo do caso de
-    uso de cadastro sem transformar o teste unitário em teste de integração.
+    O double consulta formações por ID e proprietário e acumula salvamentos e
+    atualizações em memória, sem banco, ORM ou rede. Ele existe para observar
+    os efeitos dos casos de uso sem transformar testes unitários em integração.
     """
 
     def __init__(self) -> None:
@@ -128,6 +136,40 @@ class RepositorioFormacaoAcademicaSpy:
         de persistência feita pela orquestração.
         """
         self.formacoes_salvas: list[FormacaoAcademica] = []
+        # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+        self.formacoes_disponiveis: list[FormacaoAcademica] = []
+        self.formacoes_atualizadas: list[FormacaoAcademica] = []
+        self.forcar_retorno_alheio = False
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def obter_por_id_e_usuario(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Devolve somente formação em memória pertencente ao usuário indicado.
+
+        O método procura simultaneamente pelos dois identificadores e devolve
+        ausência para item alheio ou inexistente. Ele existe para simular a
+        consulta protegida da porta sem acesso externo.
+        """
+        return next(
+            (
+                formacao
+                for formacao in self.formacoes_disponiveis
+                if formacao.id == formacao_id
+                and (formacao.usuario_id == usuario_id or self.forcar_retorno_alheio)
+            ),
+            None,
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def atualizar(self, formacao: FormacaoAcademica) -> None:
+        """Registra a entidade atualizada para asserções do teste.
+
+        O método adiciona o estado recebido a uma lista em memória sem alterar
+        a entidade ou acessar persistência real. Ele existe para tornar
+        observável a decisão de atualizar do caso de uso.
+        """
+        self.formacoes_atualizadas.append(formacao)
 
     async def salvar(self, formacao: FormacaoAcademica) -> None:
         """Registra assincronamente a formação recebida sem persistência real.
@@ -362,7 +404,9 @@ class CadastrarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(repositorio_formacao.formacoes_salvas, [resultado])
         self.assertEqual(gerador.chamadas, 1)
 
-    async def test_rejeita_perfil_inexistente_sem_gerar_ou_salvar_formacao(self) -> None:
+    async def test_rejeita_perfil_inexistente_sem_gerar_ou_salvar_formacao(
+        self,
+    ) -> None:
         """Confirma que ausência do proprietário interrompe o cadastro cedo.
 
         O teste consulta um repositório sem usuário e observa a falha junto à
@@ -402,6 +446,167 @@ class CadastrarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(gerador.chamadas, 0)
         self.assertEqual(repositorio_formacao.formacoes_salvas, [])
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+class EditarFormacaoAcademicaTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a edição de formação com todas as portas substituídas.
+
+    A classe usa um repositório em memória e entidades do domínio sem adapter
+    ou framework. Ela existe para proteger propriedade, delegação de regras e
+    atualização apenas após edição válida.
+    """
+
+    async def test_edita_e_atualiza_formacao_propria_com_todos_os_campos(self) -> None:
+        """Confirma que os seis dados editáveis chegam à nova entidade.
+
+        O teste consulta uma formação do usuário, envia substituição completa e
+        compara cada campo e identidade do resultado. Ele existe para garantir
+        o mapeamento correto da entrada ao Domain e ao método de atualização.
+        """
+        usuario_id = UsuarioId(uuid4())
+        formacao = _criar_formacao_existente(usuario_id)
+        repositorio = RepositorioFormacaoAcademicaSpy()
+        repositorio.formacoes_disponiveis.append(formacao)
+        entrada = EditarFormacaoAcademicaEntrada(
+            usuario_id=usuario_id,
+            formacao_id=formacao.id,
+            instituicao="  Universidade Exemplo  ",
+            curso="  Ciência de Dados  ",
+            nivel=NivelFormacaoAcademica.GRADUACAO,
+            periodo=Periodo(date(2025, 1, 1), date(2030, 6, 1)),
+            status=StatusFormacaoAcademica.CONCLUIDO,
+        )
+
+        resultado = await EditarFormacaoAcademica(repositorio).executar(entrada)
+
+        self.assertIsNot(resultado, formacao)
+        self.assertIs(resultado.id, formacao.id)
+        self.assertIs(resultado.usuario_id, usuario_id)
+        self.assertEqual(resultado.instituicao, "Universidade Exemplo")
+        self.assertEqual(resultado.curso, "Ciência de Dados")
+        self.assertIs(resultado.nivel, entrada.nivel)
+        self.assertEqual(resultado.periodo, entrada.periodo)
+        self.assertIs(resultado.status, entrada.status)
+        self.assertEqual(repositorio.formacoes_atualizadas, [resultado])
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_ausencia_e_propriedade_alheia_usam_a_mesma_falha(self) -> None:
+        """Oculta se a formação existe quando a consulta não retorna item próprio.
+
+        O teste compara uma busca sem registro e outra com registro de terceiro,
+        usando a semântica da porta que filtra pelo proprietário. Ele existe
+        para provar a falha uniforme e a ausência de atualização nos dois casos.
+        """
+        usuario_id = UsuarioId(uuid4())
+        usuario_alheio = UsuarioId(uuid4())
+        formacao_alheia = _criar_formacao_existente(usuario_alheio)
+        resultados: list[tuple[type[Exception], str]] = []
+
+        for disponiveis in ([], [formacao_alheia]):
+            repositorio = RepositorioFormacaoAcademicaSpy()
+            repositorio.formacoes_disponiveis.extend(disponiveis)
+            entrada = _criar_entrada_edicao_formacao(
+                usuario_id=usuario_id,
+                formacao_id=formacao_alheia.id,
+            )
+            with self.assertRaises(FormacaoAcademicaNaoEncontrada) as contexto:
+                await EditarFormacaoAcademica(repositorio).executar(entrada)
+            resultados.append((type(contexto.exception), str(contexto.exception)))
+            self.assertEqual(repositorio.formacoes_atualizadas, [])
+
+        self.assertEqual(resultados[0], resultados[1])
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_bloqueia_repositorio_que_devolva_formacao_de_outro_usuario(
+        self,
+    ) -> None:
+        """Confere propriedade na Application mesmo se a porta falhar no filtro.
+
+        O teste simula uma porta que devolve registro de terceiro para a
+        consulta e confirma que o caso de uso não o atualiza. Ele existe para
+        manter a regra de propriedade próxima à decisão de edição.
+        """
+        usuario_id = UsuarioId(uuid4())
+        formacao_alheia = _criar_formacao_existente(UsuarioId(uuid4()))
+        repositorio = RepositorioFormacaoAcademicaSpy()
+        repositorio.formacoes_disponiveis.append(formacao_alheia)
+        repositorio.forcar_retorno_alheio = True
+        entrada = _criar_entrada_edicao_formacao(
+            usuario_id=usuario_id,
+            formacao_id=formacao_alheia.id,
+        )
+
+        with self.assertRaises(FormacaoAcademicaNaoEncontrada):
+            await EditarFormacaoAcademica(repositorio).executar(entrada)
+
+        self.assertEqual(repositorio.formacoes_atualizadas, [])
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    async def test_violacao_de_dominio_propaga_sem_atualizar(self) -> None:
+        """Deixa a entidade rejeitar dados incoerentes antes da atualização.
+
+        O teste pede status concluído sem data final e observa a falha original
+        de domínio. Ele existe para assegurar que a Application não replique
+        validações nem persista combinações inválidas.
+        """
+        usuario_id = UsuarioId(uuid4())
+        formacao = _criar_formacao_existente(usuario_id)
+        repositorio = RepositorioFormacaoAcademicaSpy()
+        repositorio.formacoes_disponiveis.append(formacao)
+        entrada = EditarFormacaoAcademicaEntrada(
+            usuario_id=usuario_id,
+            formacao_id=formacao.id,
+            instituicao="FATEC",
+            curso="Sistemas",
+            nivel=NivelFormacaoAcademica.TECNOLOGO,
+            periodo=Periodo(date(2024, 2, 1)),
+            status=StatusFormacaoAcademica.CONCLUIDO,
+        )
+
+        with self.assertRaises(RegraDeDominioViolada):
+            await EditarFormacaoAcademica(repositorio).executar(entrada)
+
+        self.assertEqual(repositorio.formacoes_atualizadas, [])
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+def _criar_formacao_existente(usuario_id: UsuarioId) -> FormacaoAcademica:
+    """Cria formação própria válida para os cenários unitários de edição.
+
+    A função monta uma entidade em memória com identidade nova e período
+    coerente. Ela existe para manter cada teste focado no fluxo de atualização.
+    """
+    return FormacaoAcademica(
+        id=FormacaoAcademicaId(uuid4()),
+        usuario_id=usuario_id,
+        instituicao="FATEC",
+        curso="Sistemas",
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
+        periodo=Periodo(date(2024, 2, 1)),
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+def _criar_entrada_edicao_formacao(
+    *, usuario_id: UsuarioId, formacao_id: FormacaoAcademicaId
+) -> EditarFormacaoAcademicaEntrada:
+    """Monta uma entrada completa e válida para os casos de falha uniforme.
+
+    A função usa um período em andamento compatível e permite variar somente
+    as identidades consultadas. Ela existe para reduzir repetição nos testes
+    que comparam ausência e propriedade alheia.
+    """
+    return EditarFormacaoAcademicaEntrada(
+        usuario_id=usuario_id,
+        formacao_id=formacao_id,
+        instituicao="FATEC",
+        curso="Sistemas",
+        nivel=NivelFormacaoAcademica.TECNOLOGO,
+        periodo=Periodo(date(2024, 2, 1)),
+        status=StatusFormacaoAcademica.EM_ANDAMENTO,
+    )
 
 
 def _criar_usuario(email: str = "ana@example.com") -> Usuario:

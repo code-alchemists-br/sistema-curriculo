@@ -135,6 +135,32 @@ class FormacaoAcademica:
         object.__setattr__(self, "instituicao", instituicao)
         object.__setattr__(self, "curso", curso)
 
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    def editar(
+        self,
+        instituicao: str,
+        curso: str,
+        nivel: NivelFormacaoAcademica,
+        periodo: Periodo,
+        status: StatusFormacaoAcademica,
+    ) -> FormacaoAcademica:
+        """Devolve a formação com o conjunto completo de dados editado.
+
+        O método constrói uma nova entidade com a mesma identidade e
+        proprietário, reaplicando por ``__post_init__`` as invariantes de texto,
+        enum e coerência temporal. Ele existe para permitir alterações válidas
+        sem mutar a entidade imutável nem duplicar suas regras de construção.
+        """
+        return FormacaoAcademica(
+            id=self.id,
+            usuario_id=self.usuario_id,
+            instituicao=instituicao,
+            curso=curso,
+            nivel=nivel,
+            periodo=periodo,
+            status=status,
+        )
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)

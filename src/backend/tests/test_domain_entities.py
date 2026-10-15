@@ -194,6 +194,114 @@ class EntidadesDoDominioTestCase(unittest.TestCase):
                     with self.assertRaises(RegraDeDominioViolada):
                         _criar_formacao(**{campo: valor})
 
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    def test_edita_formacao_completa_preservando_identidade_e_proprietario(self) -> None:
+        """Edita todos os campos mutáveis e conserva as duas identidades.
+
+        O teste parte de uma formação válida e aplica dados normalizados em uma
+        nova instância. Ele existe para proteger a imutabilidade e o contrato
+        completo da edição.
+        """
+        formacao = _criar_formacao()
+        periodo = Periodo(date(2025, 1, 1), date(2030, 6, 1))
+
+        editada = formacao.editar(
+            instituicao="  Universidade Exemplo  ",
+            curso="  Ciência de Dados  ",
+            nivel=NivelFormacaoAcademica.GRADUACAO,
+            periodo=periodo,
+            status=StatusFormacaoAcademica.CONCLUIDO,
+        )
+
+        self.assertIsNot(editada, formacao)
+        self.assertIs(editada.id, formacao.id)
+        self.assertIs(editada.usuario_id, formacao.usuario_id)
+        self.assertEqual(editada.instituicao, "Universidade Exemplo")
+        self.assertEqual(editada.curso, "Ciência de Dados")
+        self.assertIs(editada.nivel, NivelFormacaoAcademica.GRADUACAO)
+        self.assertEqual(editada.periodo, periodo)
+        self.assertIs(editada.status, StatusFormacaoAcademica.CONCLUIDO)
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    def test_edicao_revalida_status_e_data_fim_em_conjunto(self) -> None:
+        """Rejeita conclusão sem fim e aceita previsão futura em andamento.
+
+        O teste muda o status junto ao período fornecido e deixa a entidade
+        validar o conjunto completo. Ele existe para evitar combinações
+        temporais inválidas durante a edição.
+        """
+        formacao = _criar_formacao()
+
+        with self.assertRaises(RegraDeDominioViolada):
+            formacao.editar(
+                "FATEC",
+                "Sistemas",
+                NivelFormacaoAcademica.TECNOLOGO,
+                Periodo(date(2024, 1, 1)),
+                StatusFormacaoAcademica.CONCLUIDO,
+            )
+
+        editada = formacao.editar(
+            "FATEC",
+            "Sistemas",
+            NivelFormacaoAcademica.TECNOLOGO,
+            Periodo(date(2024, 1, 1), date(2035, 1, 1)),
+            StatusFormacaoAcademica.EM_ANDAMENTO,
+        )
+        self.assertEqual(editada.periodo.fim, date(2035, 1, 1))
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    def test_edicao_rejeita_cada_regra_de_texto_ja_aplicada_no_cadastro(self) -> None:
+        """Reaplica limites, normalização e rejeição de controles ao editar.
+
+        O teste injeta em cada campo textual os mesmos casos inválidos cobertos
+        no cadastro. Ele existe para comprovar que a edição reutiliza as
+        invariantes da construção da entidade.
+        """
+        valores_invalidos = (
+            "",
+            "   ",
+            "x" * (TAMANHO_MAXIMO_TEXTO_FORMACAO + 1),
+            "\tx",
+            "x\ny",
+        )
+        formacao = _criar_formacao()
+        for campo in ("instituicao", "curso"):
+            for valor in valores_invalidos:
+                with self.subTest(campo=campo, valor=repr(valor)):
+                    dados = {
+                        "instituicao": "FATEC",
+                        "curso": "Sistemas",
+                        "nivel": NivelFormacaoAcademica.TECNOLOGO,
+                        "periodo": Periodo(date(2024, 1, 1)),
+                        "status": StatusFormacaoAcademica.EM_ANDAMENTO,
+                    }
+                    dados[campo] = valor
+                    with self.assertRaises(RegraDeDominioViolada):
+                        formacao.editar(**dados)
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    def test_edicao_rejeita_nivel_e_status_fora_dos_enums(self) -> None:
+        """Impede strings livres de contornarem os enums durante a edição.
+
+        O teste passa os mesmos valores textuais inválidos exercitados no
+        cadastro à operação de edição. Ele existe para manter fechado o
+        vocabulário da entidade em qualquer transição.
+        """
+        formacao = _criar_formacao()
+        argumentos = {
+            "instituicao": "FATEC",
+            "curso": "Sistemas",
+            "nivel": NivelFormacaoAcademica.TECNOLOGO,
+            "periodo": Periodo(date(2024, 1, 1)),
+            "status": StatusFormacaoAcademica.EM_ANDAMENTO,
+        }
+        for campo, valor in (("nivel", "tecnologo"), ("status", "em_andamento")):
+            with self.subTest(campo=campo):
+                dados = {**argumentos, campo: valor}
+                with self.assertRaises(RegraDeDominioViolada):
+                    formacao.editar(**dados)  # type: ignore[arg-type]
+
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def _criar_formacao(
