@@ -147,6 +147,24 @@ class RepositorioConsultaSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("token_hash", sql)
         self.assertIn("expira_em", sql)
 
+    # Proveniência: decision-analysis prompts/backend/20261015-120000-expor-exclusao-perfil-estudante-v001.md#v001
+    async def test_consulta_descarta_sessao_de_perfil_excluido(self) -> None:
+        """Exige junção com usuários e ausência de exclusão lógica do perfil.
+
+        A expressão compilada é inspecionada para confirmar o JOIN com
+        `usuarios` e o filtro `deleted_at IS NULL`. O teste existe para que a
+        exclusão do perfil invalide imediatamente todas as sessões já emitidas.
+        """
+        session = AsyncSessionConsultaDouble(None)
+
+        await RepositorioSessaoSqlAlchemy(session).obter_usuario_ativo(
+            "c" * 64, datetime(2026, 10, 15, tzinfo=timezone.utc)
+        )
+
+        sql = str(session.comando.compile())
+        self.assertIn("JOIN usuarios ON usuarios.id = sessoes.usuario_id", sql)
+        self.assertIn("usuarios.deleted_at IS NULL", sql)
+
     async def test_consulta_retorna_none_sem_registro_ativo(self) -> None:
         """Não produz identidade se a consulta não encontrar sessão elegível.
 

@@ -10,6 +10,7 @@ from backend.application.autenticacao_sessao import ConsultaSessaoAtiva
 from backend.application.sessoes import RepositorioSessao
 from backend.domain.value_objects import UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.sessao import SessaoRegistro
+from backend.infrastructure.persistence.sqlalchemy.usuario import UsuarioRegistro
 
 
 class RepositorioSessaoSqlAlchemy(RepositorioSessao, ConsultaSessaoAtiva):
@@ -28,16 +29,23 @@ class RepositorioSessaoSqlAlchemy(RepositorioSessao, ConsultaSessaoAtiva):
         self._session = session
 
     async def obter_usuario_ativo(self, token_hash: str, instante: datetime) -> UsuarioId | None:
-        """Busca a identidade de sessão não revogada e ainda válida.
+        """Busca a identidade de sessão não revogada, válida e de perfil ativo.
 
-        A consulta filtra pelo resumo, expiração e ausência de revogação, sem
-        materializar o registro inteiro. Ela existe para autenticar requisições
-        usando o estado persistido da sessão.
+        A consulta filtra pelo resumo, expiração e ausência de revogação e faz
+        junção com o usuário para descartar perfis com ``deleted_at``, sem
+        materializar os registros inteiros. Ela existe para autenticar
+        requisições usando o estado persistido e para que a exclusão lógica do
+        perfil invalide imediatamente todas as suas sessões.
         """
-        comando = select(SessaoRegistro.usuario_id).where(
-            SessaoRegistro.token_hash == token_hash,
-            SessaoRegistro.expira_em > instante,
-            SessaoRegistro.revogada_em.is_(None),
+        comando = (
+            select(SessaoRegistro.usuario_id)
+            .join(UsuarioRegistro, UsuarioRegistro.id == SessaoRegistro.usuario_id)
+            .where(
+                SessaoRegistro.token_hash == token_hash,
+                SessaoRegistro.expira_em > instante,
+                SessaoRegistro.revogada_em.is_(None),
+                UsuarioRegistro.deleted_at.is_(None),
+            )
         )
         resultado = await self._session.execute(comando)
         usuario_id = resultado.scalar_one_or_none()

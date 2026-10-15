@@ -14,7 +14,7 @@ from backend.domain.value_objects import Email, UsuarioId
 class CredenciaisInvalidas(ValueError):
     """Sinaliza que as credenciais não permitem confirmar o acesso do estudante.
 
-    A falha agrupa conta inexistente e senha incompatível sob a mesma resposta,
+    A falha agrupa conta inexistente, conta excluída e senha incompatível sob a mesma resposta,
     evitando revelar qual dado falhou. Ela existe para que a borda HTTP traduza
     uma regra de acesso sem expor informação sobre contas cadastradas.
     """
@@ -55,10 +55,16 @@ class AcessarEstudante:
         """Confirma credenciais e devolve a identidade da conta autenticada.
 
         O método busca a conta e compara a senha somente quando o agregado
-        existe; credenciais inválidas produzem falha uniforme. Ele existe para
-        fornecer à fronteira HTTP a identidade validada para criar uma sessão.
+        existe e não foi excluído logicamente; conta ausente, excluída ou senha
+        incompatível produzem a mesma falha. Ele existe para fornecer à
+        fronteira HTTP a identidade validada para criar uma sessão sem revelar
+        se uma conta removida existiu.
         """
         usuario = await self._repositorio_usuario.obter_por_email(entrada.email)
-        if usuario is None or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor):
+        if (
+            usuario is None
+            or usuario.excluido
+            or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor)
+        ):
             raise CredenciaisInvalidas("E-mail ou senha não conferem.")
         return usuario.id

@@ -17,8 +17,9 @@ class ConsultaSessaoAtiva(Protocol):
     async def obter_usuario_ativo(self, token_hash: str, instante: datetime) -> UsuarioId | None:
         """Retorna a identidade somente se a sessão estiver ativa no instante.
 
-        A consulta exclui sessões expiradas ou revogadas e devolve `None` para
-        tokens desconhecidos. Ela existe para fornecer uma decisão de sessão.
+        A consulta exclui sessões expiradas, revogadas ou de perfil excluído
+        logicamente e devolve `None` para tokens desconhecidos. Ela existe para
+        fornecer uma decisão de sessão que respeite a exclusão do perfil.
         """
 
 

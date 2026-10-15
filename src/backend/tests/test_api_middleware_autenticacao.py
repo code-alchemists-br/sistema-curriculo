@@ -176,21 +176,49 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_perfil_exige_sessao_em_edicao_e_exclusao(self) -> None:
         """Rejeita chamadas anônimas às operações de perfil PUT e DELETE.
 
-        O teste usa os caminhos reais do router de perfil e confirma que o
-        middleware não encaminha a requisição sem cookie. Ele existe para
-        proteger edição e exclusão do perfil por autenticação.
+        O teste usa os caminhos reais do router de perfil — edição por UUID e
+        exclusão do perfil atual — e confirma que o middleware não encaminha a
+        requisição sem cookie. Ele existe para proteger edição e exclusão do
+        perfil por autenticação.
         """
-        for metodo in ("PUT", "DELETE"):
+        for metodo, caminho in (
+            ("PUT", "/estudantes/00000000-0000-0000-0000-000000000001"),
+            ("DELETE", "/estudantes/atual"),
+        ):
             with self.subTest(metodo=metodo):
                 autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
                 resposta = await self._middleware(autenticador).dispatch(
-                    _request(
-                        metodo, "/estudantes/00000000-0000-0000-0000-000000000001"
-                    ),
+                    _request(metodo, caminho),
                     lambda _: None,
                 )
                 self.assertEqual(resposta.status_code, 401)
                 self.assertEqual(autenticador.tokens, [])
+
+    # Proveniência: decision-analysis prompts/backend/20261015-120000-expor-exclusao-perfil-estudante-v001.md#v001
+    async def test_exclusao_do_perfil_atual_e_encaminhada_com_identidade_da_sessao(
+        self,
+    ) -> None:
+        """Encaminha `DELETE /estudantes/atual` com o principal da sessão.
+
+        A rota não carrega UUID, então o middleware não aplica comparação de
+        proprietário e apenas instala a identidade validada. O teste existe
+        para garantir que a exclusão chegue ao handler sem 403 indevido e com
+        o estudante autenticado disponível em `request.state`.
+        """
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
+        autenticador = AutenticadorSessaoStub(usuario_id)
+
+        async def proxima(request: Request) -> Response:
+            """Confirma que a identidade validada chega ao handler de exclusão."""
+            self.assertEqual(request.state.usuario_id, usuario_id.valor)
+            return Response(status_code=204)
+
+        resposta = await self._middleware(autenticador).dispatch(
+            _request("DELETE", "/estudantes/atual", "token-valido"), proxima
+        )
+
+        self.assertEqual(resposta.status_code, 204)
+        self.assertEqual(autenticador.tokens, ["token-valido"])
 
     async def test_consulta_perfil_exige_sessao(self) -> None:
         """Rejeita GET de perfil pessoal quando não há cookie de sessão.

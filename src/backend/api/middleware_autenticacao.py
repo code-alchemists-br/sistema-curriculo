@@ -44,14 +44,19 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
         super().__init__(app)
         self._autenticador = autenticador
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """Valida cookie nas rotas privadas antes de encaminhar a requisição.
 
         O método ignora preflight e caminhos explicitamente públicos; nos demais
         exige token ativo e expõe a identidade validada em `request.state`.
         Ele existe para negar operações sem sessão válida.
         """
-        if request.method == "OPTIONS" or (request.method, request.url.path) in ROTAS_PUBLICAS:
+        if (
+            request.method == "OPTIONS"
+            or (request.method, request.url.path) in ROTAS_PUBLICAS
+        ):
             return await call_next(request)
 
         token = request.cookies.get(COOKIE_SESSAO)
@@ -63,9 +68,14 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
             return _resposta_nao_autenticada()
 
         request.state.usuario_id = usuario_id.valor
-        usuario_requisitado = _usuario_id_recurso_estudante(request.method, request.url.path)
+        usuario_requisitado = _usuario_id_recurso_estudante(
+            request.method, request.url.path
+        )
         if usuario_requisitado is not None and usuario_requisitado != usuario_id.valor:
-            return JSONResponse(status_code=403, content={"detail": "A sessão não pode acessar este recurso."})
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "A sessão não pode acessar este recurso."},
+            )
 
         return await call_next(request)
 
@@ -83,20 +93,20 @@ def _resposta_nao_autenticada() -> JSONResponse:
 def _usuario_id_recurso_estudante(metodo: str, caminho: str) -> UUID | None:
     """Extrai identidade de rota para operações de perfil e currículo.
 
-    A função reconhece `PUT` e `DELETE /estudantes/{uuid}`, `PUT` em
+    A função reconhece `PUT /estudantes/{uuid}`, `PUT` em
     `/estudantes/{uuid}/dados-contato` e qualquer método sob
-    `/estudantes/{uuid}/curriculos`. Ela existe para aplicar autorização por
-    proprietário sem alterar handlers ou casos de uso.
+    `/estudantes/{uuid}/curriculos`. A exclusão de perfil usa
+    `/estudantes/atual`, sem UUID, e por isso não passa por esta comparação.
+    Ela existe para aplicar autorização por proprietário sem alterar handlers
+    ou casos de uso.
     """
     segmentos = caminho.strip("/").split("/")
     if len(segmentos) < 2 or segmentos[0] != "estudantes":
         return None
 
-    eh_perfil = len(segmentos) == 2 and metodo in {"PUT", "DELETE"}
+    eh_perfil = len(segmentos) == 2 and metodo == "PUT"
     eh_dados_contato = (
-        len(segmentos) == 3
-        and segmentos[2] == "dados-contato"
-        and metodo == "PUT"
+        len(segmentos) == 3 and segmentos[2] == "dados-contato" and metodo == "PUT"
     )
     eh_curriculo = len(segmentos) >= 3 and segmentos[2] == "curriculos"
     if not eh_perfil and not eh_dados_contato and not eh_curriculo:
