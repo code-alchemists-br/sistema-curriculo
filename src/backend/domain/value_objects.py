@@ -362,14 +362,12 @@ class DadosContato:
         """
         if not self.telefones:
             raise RegraDeDominioViolada("Informe ao menos um telefone de contato.")
-        cidade_normalizada = (
-            self.cidade.valor
-            if isinstance(self.cidade, Cidade)
-            else self.cidade.strip() if self.cidade else None
-        )
+        cidade = self.cidade
+        if isinstance(cidade, str):
+            cidade = Cidade(cidade) if cidade.strip() else None
         linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
         lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
-        object.__setattr__(self, "cidade", cidade_normalizada or None)
+        object.__setattr__(self, "cidade", cidade)
         object.__setattr__(self, "linkedin", linkedin_normalizado or None)
         object.__setattr__(self, "curriculo_lattes", lattes_normalizado or None)
 

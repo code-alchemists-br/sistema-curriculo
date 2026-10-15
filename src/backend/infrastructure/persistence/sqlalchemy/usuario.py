@@ -9,6 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
+    Cidade,
     DadosContato,
     Email,
     Endereco,
@@ -67,7 +68,11 @@ def para_registro(usuario: Usuario) -> UsuarioRegistro:
         hash_senha=usuario.hash_senha.valor,
         deleted_at=usuario.deleted_at,
         endereco=contato.endereco.valor if contato is not None else None,
-        cidade=contato.cidade if contato is not None else None,
+        cidade=(
+            contato.cidade.valor
+            if contato is not None and contato.cidade is not None
+            else None
+        ),
         telefones=(
             [telefone.valor for telefone in contato.telefones]
             if contato is not None
@@ -93,7 +98,7 @@ def para_usuario(registro: UsuarioRegistro) -> Usuario:
             telefones=tuple(Telefone(telefone) for telefone in registro.telefones),
             linkedin=registro.linkedin,
             curriculo_lattes=registro.curriculo_lattes,
-            cidade=registro.cidade,
+            cidade=Cidade(registro.cidade) if registro.cidade is not None else None,
         )
     return Usuario(
         id=UsuarioId(registro.id),

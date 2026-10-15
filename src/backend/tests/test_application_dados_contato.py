@@ -11,6 +11,7 @@ from backend.application import (
     PerfilNaoEncontrado,
 )
 from backend.domain import (
+    Cidade,
     DadosContato,
     Email,
     Endereco,
@@ -115,7 +116,7 @@ class AtualizarDadosContatoTestCase(unittest.IsolatedAsyncioTestCase):
         resultado = await AtualizarDadosContato(repositorio).executar(entrada)
 
         self.assertEqual(resultado.dados_contato.endereco, Endereco("Rua Nova, 20"))
-        self.assertEqual(resultado.dados_contato.cidade, "São Paulo")
+        self.assertEqual(resultado.dados_contato.cidade, Cidade("São Paulo"))
         self.assertEqual(repositorio.usuarios_atualizados, [resultado])
 
     async def test_rejeita_perfil_inexistente_sem_atualizacao(self) -> None:

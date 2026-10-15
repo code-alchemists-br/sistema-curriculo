@@ -40,6 +40,12 @@ from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+from backend.api.formacao_academica import CadastroFormacaoAcademicaExecutor
+from backend.api.formacao_academica import (
+    criar_router as criar_router_formacao_academica,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
 from backend.api.itens_versao_curriculo import (
     DesselecaoItemVersaoCurriculoExecutor,
@@ -117,6 +123,8 @@ def create_app(
     criador_sessao: CriadorSessao | None = None,
     cadastrar_experiencia_profissional: CadastroExperienciaProfissionalExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+    cadastrar_formacao_academica: CadastroFormacaoAcademicaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
@@ -173,6 +181,8 @@ def create_app(
     app.include_router(
         criar_router_experiencia_profissional(cadastrar_experiencia_profissional)
     )
+    # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+    app.include_router(criar_router_formacao_academica(cadastrar_formacao_academica))
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )

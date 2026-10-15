@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.domain import (
+    Cidade,
     DadosContato,
     Email,
     Endereco,
@@ -94,7 +95,7 @@ class DadosContatoDomainTestCase(unittest.TestCase):
             cidade="  ",
         )
 
-        self.assertEqual(contato.cidade, "São Paulo")
+        self.assertEqual(contato.cidade, Cidade("São Paulo"))
         self.assertIsNone(contato_sem_cidade.cidade)
 
 

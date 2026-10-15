@@ -208,7 +208,7 @@ class DadosPessoaisResposta(BaseModel):
             nome=usuario.nome.valor,
             email=usuario.email.valor,
             telefones=[telefone.valor for telefone in contato.telefones] if contato else [],
-            cidade=contato.cidade if contato else None,
+            cidade=contato.cidade.valor if contato and contato.cidade else None,
             linkedin=contato.linkedin if contato else None,
             curriculo_lattes=contato.curriculo_lattes if contato else None,
         )
@@ -303,7 +303,11 @@ def criar_router(
             nome=usuario.nome.valor,
             email=usuario.email.valor,
             endereco=usuario.dados_contato.endereco.valor,
-            cidade=usuario.dados_contato.cidade,
+            cidade=(
+                usuario.dados_contato.cidade.valor
+                if usuario.dados_contato.cidade is not None
+                else None
+            ),
             telefones=[telefone.valor for telefone in usuario.dados_contato.telefones],
             linkedin=usuario.dados_contato.linkedin,
             curriculo_lattes=usuario.dados_contato.curriculo_lattes,
