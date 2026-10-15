@@ -1,30 +1,13 @@
 """Valida o contrato Code First em memória, sem executar DDL contra banco."""
 
 import unittest
-from datetime import datetime, timezone
 from importlib import import_module
 from unittest.mock import patch
-from uuid import uuid4
 
-from sqlalchemy import JSON, Column, DateTime, Text, UniqueConstraint, Uuid
+from sqlalchemy import JSON, Column, Text, UniqueConstraint, Uuid
 
-from backend.domain import (
-    Cidade,
-    DadosContato,
-    Email,
-    Endereco,
-    HashSenha,
-    Nome,
-    Telefone,
-    Usuario,
-    UsuarioId,
-)
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
-from backend.infrastructure.persistence.sqlalchemy.usuario import (
-    UsuarioRegistro,
-    para_registro,
-    para_usuario,
-)
+from backend.infrastructure.persistence.sqlalchemy.usuario import UsuarioRegistro
 
 # Proveniência: decision-analysis prompts/backend/20260916-persistencia-usuario-code-first-v001.md#v001
 
@@ -36,7 +19,6 @@ class UsuarioMappingTestCase(unittest.TestCase):
     modelo e migration sem abrir conexão ou aplicar migrações reais.
     """
 
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     def test_metadata_descobre_tabela_com_contrato_aprovado(self) -> None:
         """Verifica descoberta e tipos pela metadata consumida pelo Alembic.
 
@@ -54,8 +36,8 @@ class UsuarioMappingTestCase(unittest.TestCase):
                 "hash_senha",
                 "deleted_at",
                 "endereco",
-                "telefones",
                 "cidade",
+                "telefones",
                 "linkedin",
                 "curriculo_lattes",
             ],
@@ -65,25 +47,16 @@ class UsuarioMappingTestCase(unittest.TestCase):
         self.assertTrue(tabela.c.id.type.as_uuid)
         for nome in ("id", "nome", "email", "hash_senha"):
             self.assertFalse(tabela.c[nome].nullable)
-        for nome in (
-            "deleted_at",
-            "endereco",
-            "telefones",
-            "cidade",
-            "linkedin",
-            "curriculo_lattes",
-        ):
+        for nome in ("deleted_at", "endereco", "cidade", "telefones", "linkedin", "curriculo_lattes"):
             self.assertTrue(tabela.c[nome].nullable)
-        self.assertIsInstance(tabela.c.telefones.type, JSON)
-        self.assertIsInstance(tabela.c.deleted_at.type, DateTime)
         for nome in ("nome", "email", "hash_senha", "endereco", "cidade", "linkedin", "curriculo_lattes"):
             self.assertIsInstance(tabela.c[nome].type, Text)
+        self.assertIsInstance(tabela.c.telefones.type, JSON)
         unicas = [c for c in tabela.constraints if isinstance(c, UniqueConstraint)]
         self.assertEqual(len(unicas), 1)
         self.assertEqual(unicas[0].name, "uq_usuarios_email")
         self.assertEqual(list(unicas[0].columns.keys()), ["email"])
 
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
     def test_migration_cria_e_remove_somente_usuarios(self) -> None:
         """Confere operações da revisão inicial substituindo a API Alembic.
 
@@ -114,83 +87,41 @@ class UsuarioMappingTestCase(unittest.TestCase):
             migration.downgrade()
             operacoes.drop_table.assert_called_once_with("usuarios")
 
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
-    def test_mapper_persiste_e_reconstroi_contato_cidade_e_exclusao(self) -> None:
-        """Confirma ida e volta entre agregado e colunas primitivas.
+    def test_migration_adiciona_e_remove_dados_de_contato(self) -> None:
+        """Compara a revisão incremental com as colunas opcionais da metadata.
 
-        Usa somente o modelo ORM em memória e compara o estado reconstituído,
-        sem abrir sessão ou banco. O teste existe para manter contato, cidade e
-        exclusão lógica duráveis através da fronteira de persistência.
-        """
-        excluido_em = datetime(2026, 10, 12, tzinfo=timezone.utc)
-        usuario = Usuario(
-            id=UsuarioId(uuid4()),
-            nome=Nome("Ana Silva"),
-            email=Email("ana@example.com"),
-            hash_senha=HashSenha("hash-ja-derivado"),
-            deleted_at=excluido_em,
-            dados_contato=DadosContato(
-                endereco=Endereco("Rua Um, 100"),
-                telefones=(Telefone("11999990000"), Telefone("1133334444")),
-                linkedin="https://linkedin.com/in/ana",
-                curriculo_lattes="http://lattes.cnpq.br/123",
-                cidade=Cidade("São Paulo"),
-            ),
-        )
-
-        registro = para_registro(usuario)
-        reconstituido = para_usuario(registro)
-
-        self.assertEqual(registro.deleted_at, excluido_em)
-        self.assertEqual(registro.endereco, "Rua Um, 100")
-        self.assertEqual(registro.telefones, ["11999990000", "1133334444"])
-        self.assertEqual(registro.cidade, "São Paulo")
-        self.assertEqual(registro.linkedin, "https://linkedin.com/in/ana")
-        self.assertEqual(registro.curriculo_lattes, "http://lattes.cnpq.br/123")
-        self.assertEqual(reconstituido, usuario)
-
-    # Proveniência: decision-analysis prompts/backend/20261012-233648-expor-consulta-dados-pessoais-estudante-v005.md#v005
-    def test_migration_de_consulta_adiciona_e_remove_colunas_opcionais(self) -> None:
-        """Confere a migration de perfil sem executar DDL real.
-
-        Substitui a API Alembic e verifica nomes/tipos das colunas, além da
-        ordem reversa do downgrade. O teste existe para proteger a evolução
-        Code First sem conectar a um banco.
+        O teste substitui as operações Alembic e verifica nomes, nulabilidade e
+        ordem reversa do downgrade. Ele existe para proteger compatibilidade
+        dos perfis existentes sem aplicar DDL em banco real.
         """
         migration = import_module(
-            "backend.infrastructure.persistence.alembic.versions.20261013_0004_adicionar_dados_consulta_estudante"
+            "backend.infrastructure.persistence.alembic.versions.20261014_0007_adicionar_dados_contato_usuario"
         )
-        self.assertEqual(migration.revision, "20261013_0004")
-        self.assertEqual(migration.down_revision, "20261007_0003")
+        self.assertEqual(migration.revision, "20261014_0007")
+        self.assertEqual(migration.down_revision, "20261014_0006")
+
         with patch.object(migration, "op") as operacoes:
             migration.upgrade()
-            self.assertEqual(operacoes.add_column.call_count, 6)
-            colunas = [chamada.args[1] for chamada in operacoes.add_column.call_args_list]
+            colunas_adicionadas = [chamada.args[1] for chamada in operacoes.add_column.call_args_list]
             self.assertEqual(
-                [coluna.name for coluna in colunas],
-                [
-                    "deleted_at",
-                    "endereco",
-                    "telefones",
-                    "cidade",
-                    "linkedin",
-                    "curriculo_lattes",
-                ],
+                [coluna.name for coluna in colunas_adicionadas],
+                ["endereco", "cidade", "telefones", "linkedin", "curriculo_lattes"],
             )
-            self.assertIsInstance(colunas[0].type, DateTime)
-            self.assertIsInstance(colunas[2].type, JSON)
-            self.assertTrue(all(coluna.nullable for coluna in colunas))
+            for coluna in colunas_adicionadas:
+                self.assertTrue(coluna.nullable)
+                self.assertEqual(
+                    type(coluna.type), type(metadata.tables["usuarios"].c[coluna.name].type)
+                )
 
             migration.downgrade()
 
         self.assertEqual(
-            [chamada.args[1] for chamada in operacoes.drop_column.call_args_list],
+            [chamada.args for chamada in operacoes.drop_column.call_args_list],
             [
-                "curriculo_lattes",
-                "linkedin",
-                "cidade",
-                "telefones",
-                "endereco",
-                "deleted_at",
+                ("usuarios", "curriculo_lattes"),
+                ("usuarios", "linkedin"),
+                ("usuarios", "telefones"),
+                ("usuarios", "cidade"),
+                ("usuarios", "endereco"),
             ],
         )

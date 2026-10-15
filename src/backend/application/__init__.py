@@ -54,6 +54,10 @@ from backend.application.listagem_versoes_curriculo import (
     ListarVersoesCurriculo,
     ListarVersoesCurriculoEntrada,
 )
+from backend.application.perfil_completo import (
+    AtualizarPerfilCompleto,
+    AtualizarPerfilCompletoEntrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
@@ -143,6 +147,8 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
     "AtualizarDadosContato",
     "AtualizarDadosContatoEntrada",
+    "AtualizarPerfilCompleto",
+    "AtualizarPerfilCompletoEntrada",
     "CredenciaisInvalidas",
     "EmailJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
