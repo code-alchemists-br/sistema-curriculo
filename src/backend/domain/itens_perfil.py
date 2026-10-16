@@ -313,6 +313,44 @@ class ExperienciaProfissional:
                 )
 
 
+# Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
+def _chave_ordenacao_experiencia(
+    experiencia: ExperienciaProfissional,
+) -> tuple[int, int, int, str]:
+    """Calcula a chave que posiciona uma experiência na ordem do currículo.
+
+    A chave usa a data de início em ordem decrescente (ordinal negado); no
+    empate, coloca antes a experiência sem término, depois o término mais
+    recente, e por fim o identificador textual. A função existe para concentrar
+    a regra de ordenação de experiências em um único ponto do domínio, sem
+    depender de relógio, banco ou ordem de entrada.
+    """
+    periodo = experiencia.periodo
+    em_andamento = periodo.fim is None
+    return (
+        -periodo.inicio.toordinal(),
+        0 if em_andamento else 1,
+        0 if em_andamento else -periodo.fim.toordinal(),
+        str(experiencia.id.valor),
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
+def ordenar_experiencias(
+    experiencias: Iterable[ExperienciaProfissional],
+) -> tuple[ExperienciaProfissional, ...]:
+    """Ordena experiências pela data de início de forma estável e determinística.
+
+    A função coloca primeiro a experiência com início mais recente. Quando os
+    inícios coincidem, a experiência em andamento (sem término) vem antes das
+    encerradas, que seguem do término mais recente para o mais antigo; o
+    identificador desfaz qualquer empate restante, de modo que a mesma coleção
+    produza sempre a mesma sequência. Ela existe para que consultas e
+    currículos apresentem experiências em uma ordem única definida pelo domínio.
+    """
+    return tuple(sorted(experiencias, key=_chave_ordenacao_experiencia))
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
 @dataclass(frozen=True, slots=True)
