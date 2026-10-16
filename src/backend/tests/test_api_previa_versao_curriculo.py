@@ -1,10 +1,11 @@
 """Testa unitariamente a rota HTTP de prévia de versão de currículo."""
 
 import unittest
+from dataclasses import replace
 from datetime import date
 from uuid import uuid4
 
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 
 from backend.api.previa_versao_curriculo import (
     PreviaVersaoCurriculoResposta,
@@ -43,6 +44,8 @@ from backend.domain import (
     Telefone,
     Usuario,
     UsuarioId,
+    # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+    ordenar_formacoes,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
@@ -201,6 +204,30 @@ def _criar_previa(
     )
 
 
+# Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+def _formacao(
+    usuario_id: UsuarioId,
+    status: StatusFormacaoAcademica,
+    inicio: date,
+    fim: date | None = None,
+) -> FormacaoAcademica:
+    """Cria uma formação válida variando apenas situação e período.
+
+    A função fixa instituição, curso e nível com valores neutros. Ela existe
+    para montar cenários em que a ordem das formações depende só dos campos
+    expostos na resposta.
+    """
+    return FormacaoAcademica(
+        id=FormacaoAcademicaId(uuid4()),
+        usuario_id=usuario_id,
+        instituicao="FATEC",
+        curso="ADS",
+        nivel=NivelFormacaoAcademica.GRADUACAO,
+        periodo=Periodo(inicio=inicio, fim=fim),
+        status=status,
+    )
+
+
 class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
     """Verifica a tradução HTTP da prévia pela rota GET.
 
@@ -324,6 +351,86 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         rota = _rota(CAMINHO_PREVIA, "GET", None)
 
         self.assertIs(rota.response_model, PreviaVersaoCurriculoResposta)
+
+    # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+    async def test_preserva_ordem_das_formacoes_com_situacao_e_datas(self) -> None:
+        """Confirma que a resposta mantém a ordem de formações do caso de uso.
+
+        O double devolve formações já ordenadas pela regra de domínio — em
+        andamento, concluída e interrompida — e o teste compara a sequência de
+        identificadores, situações e datas na resposta. Ele existe para garantir
+        que a rota não reordena nem omite os campos que justificam a ordem.
+        """
+        base = _criar_previa()
+        usuario_id = base.usuario.id
+        formacoes = ordenar_formacoes(
+            (
+                _formacao(
+                    usuario_id,
+                    StatusFormacaoAcademica.INTERROMPIDO,
+                    date(2024, 2, 1),
+                    date(2024, 8, 1),
+                ),
+                _formacao(
+                    usuario_id,
+                    StatusFormacaoAcademica.CONCLUIDO,
+                    date(2016, 2, 1),
+                    date(2023, 12, 1),
+                ),
+                _formacao(usuario_id, StatusFormacaoAcademica.EM_ANDAMENTO, date(2018, 2, 1)),
+            )
+        )
+        previa = replace(base, formacoes=formacoes)
+        gerar = _rota(CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)).endpoint
+
+        resposta = await gerar(
+            usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor
+        )
+
+        self.assertEqual(
+            [
+                (formacao.id, formacao.status, formacao.inicio, formacao.fim)
+                for formacao in resposta.formacoes
+            ],
+            [
+                (
+                    formacao.id.valor,
+                    formacao.status.value,
+                    formacao.periodo.inicio,
+                    formacao.periodo.fim,
+                )
+                for formacao in formacoes
+            ],
+        )
+        self.assertEqual(
+            [formacao.status for formacao in resposta.formacoes],
+            ["em_andamento", "concluido", "interrompido"],
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+    async def test_openapi_declara_formacoes_como_lista_com_situacao_e_datas(
+        self,
+    ) -> None:
+        """Confirma o contrato publicado da seção de formações da prévia.
+
+        O teste gera o OpenAPI de uma aplicação com o router e inspeciona o
+        esquema de resposta: `formacoes` é uma lista de itens que exigem
+        identificador, situação, início e término. Ele existe para proteger o
+        contrato consumido pelo cliente que apresenta a ordem das formações.
+        """
+        app = FastAPI()
+        app.include_router(criar_router(None))
+        esquemas = app.openapi()["components"]["schemas"]
+
+        formacoes = esquemas["PreviaVersaoCurriculoResposta"]["properties"]["formacoes"]
+        item = esquemas["FormacaoPreviaResposta"]
+
+        self.assertEqual(formacoes["type"], "array")
+        self.assertEqual(
+            formacoes["items"]["$ref"], "#/components/schemas/FormacaoPreviaResposta"
+        )
+        self.assertTrue({"id", "status", "inicio", "fim"} <= set(item["required"]))
+        self.assertEqual(item["properties"]["inicio"]["format"], "date")
 
     async def test_indisponivel_quando_executor_ausente(self) -> None:
         """Confirma 503 quando nenhum caso de uso de prévia foi injetado.
