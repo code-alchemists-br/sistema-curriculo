@@ -94,6 +94,14 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+from backend.api.revisao_versao_curriculo import (
+    RevisaoVersaoCurriculoExecutor,
+)
+from backend.api.revisao_versao_curriculo import (
+    criar_router as criar_router_revisao_versao_curriculo,
+)
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
@@ -145,13 +153,15 @@ def create_app(
     consultar_perfil: ConsultaPerfilExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     cadastrar_idioma: CadastroIdiomaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    revisar_versao_curriculo: RevisaoVersaoCurriculoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, formações acadêmicas, versões de currículo, seleção de itens,
-    listagem, exclusão de versão, experiências profissionais e prévia com os
+    listagem, exclusão de versão, revisão de campos obrigatórios, experiências profissionais e prévia com os
     executores recebidos; ausências permanecem explícitas e são traduzidas por
     cada router em indisponibilidade. Quando um autenticador é fornecido,
     instala o middleware que valida sessões nas rotas privadas. Ela existe para
@@ -206,5 +216,7 @@ def create_app(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )
     app.include_router(criar_router_exclusao_versao_curriculo(excluir_versao_curriculo))
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    app.include_router(criar_router_revisao_versao_curriculo(revisar_versao_curriculo))
     app.include_router(criar_router_sessoes(revogador_sessao))
     return app
