@@ -169,6 +169,50 @@ class CompetenciaId:
         _validar_uuid(self.valor, "CompetenciaId")
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class CursoId:
+    """Representa a identidade imutável de um curso complementar do usuário.
+
+    O value object armazena exclusivamente um ``UUID`` e o valida na criação.
+    Ele existe para distinguir cursos dos demais itens de perfil e
+    impedir que outros identificadores sejam usados por engano.
+    """
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        """Valida o UUID para manter o identificador de curso íntegro.
+
+        A validação acontece ao construir o value object e não depende de banco
+        de dados. Ela existe para que o domínio trabalhe sempre com identidades
+        estruturalmente válidas.
+        """
+        _validar_uuid(self.valor, "CursoId")
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class LinkProfissionalId:
+    """Representa a identidade imutável de um link profissional do usuário.
+
+    O value object armazena exclusivamente um ``UUID`` e o valida na criação.
+    Ele existe para distinguir links profissionais dos demais itens de perfil e
+    impedir que outros identificadores sejam usados por engano.
+    """
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        """Valida o UUID para manter o identificador de link profissional íntegro.
+
+        A validação acontece ao construir o value object e não depende de banco
+        de dados. Ela existe para que o domínio trabalhe sempre com identidades
+        estruturalmente válidas.
+        """
+        _validar_uuid(self.valor, "LinkProfissionalId")
+
+
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class IdiomaId:
@@ -189,6 +233,28 @@ class IdiomaId:
         seja confundida com qualquer outro item de perfil.
         """
         _validar_uuid(self.valor, "IdiomaId")
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class CertificacaoId:
+    """Representa a identidade imutável de uma certificação do usuário.
+
+    O value object armazena exclusivamente um ``UUID`` e o valida na criação.
+    Ele existe para distinguir certificações dos demais itens de perfil e
+    impedir que outros identificadores sejam usados por engano.
+    """
+
+    valor: UUID
+
+    def __post_init__(self) -> None:
+        """Valida o UUID para manter o identificador de certificação íntegro.
+
+        A validação acontece ao construir o value object e não depende de banco
+        de dados. Ela existe para que o domínio trabalhe sempre com identidades
+        estruturalmente válidas.
+        """
+        _validar_uuid(self.valor, "CertificacaoId")
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
@@ -286,6 +352,7 @@ class Cidade:
             raise RegraDeDominioViolada("Cidade não pode ser vazia.")
         object.__setattr__(self, "valor", valor_normalizado)
 
+
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Endereco:
@@ -366,7 +433,9 @@ class DadosContato:
         if isinstance(cidade, str):
             cidade = Cidade(cidade) if cidade.strip() else None
         linkedin_normalizado = self.linkedin.strip() if self.linkedin else None
-        lattes_normalizado = self.curriculo_lattes.strip() if self.curriculo_lattes else None
+        lattes_normalizado = (
+            self.curriculo_lattes.strip() if self.curriculo_lattes else None
+        )
         object.__setattr__(self, "cidade", cidade)
         object.__setattr__(self, "linkedin", linkedin_normalizado or None)
         object.__setattr__(self, "curriculo_lattes", lattes_normalizado or None)
@@ -462,7 +531,9 @@ class ReferenciaCurriculo:
             DocumentoId,
         )
         if not isinstance(self.item_id, tipos_permitidos):
-            raise RegraDeDominioViolada("Referência deve apontar para um item de perfil.")
+            raise RegraDeDominioViolada(
+                "Referência deve apontar para um item de perfil."
+            )
 
 
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001

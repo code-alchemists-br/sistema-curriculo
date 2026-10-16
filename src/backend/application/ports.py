@@ -18,11 +18,17 @@ from backend.domain.curriculo import Curriculo
 from backend.domain.itens_perfil import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    Certificacao,
     Competencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    Curso,
     Documento,
     ExperienciaProfissional,
     FormacaoAcademica,
     Idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissional,
     ProjetoAcademico,
 )
 from backend.domain.usuario import Usuario
@@ -30,14 +36,20 @@ from backend.domain.usuario import Usuario
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    CursoId,
     Email,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissionalId,
     ProjetoAcademicoId,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ReferenciaCurriculo,
@@ -341,6 +353,155 @@ class GeradorIdiomaId(Protocol):
 
     def gerar(self) -> IdiomaId:
         """Gera a identidade do próximo idioma cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class RepositorioCurso(Protocol):
+    """Define a consulta e a persistência de cursos válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    cursos equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        nome_normalizado: str,
+        instituicao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe curso com a chave lógica de nome e instituição fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, nome e
+        instituição canônicos, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, curso: Curso) -> None:
+        """Solicita a persistência assíncrona de um curso válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class RepositorioCertificacao(Protocol):
+    """Define a consulta e a persistência de certificações válidas.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    certificações equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        nome_normalizado: str,
+        emissor_normalizado: str,
+    ) -> bool:
+        """Informa se já existe certificação com a chave lógica informada.
+
+        Implementações consultam o armazenamento usando proprietário, nome e
+        emissor canônicos, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, certificacao: Certificacao) -> None:
+        """Solicita a persistência assíncrona de uma certificação válida.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class GeradorCursoId(Protocol):
+    """Fornece identidades tipadas para novos cursos.
+
+    A porta encapsula a origem da identidade e devolve ``CursoId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CursoId:
+        """Gera a identidade do próximo curso cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class RepositorioLinkProfissional(Protocol):
+    """Define a consulta e a persistência de links profissionais válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    links duplicados para o mesmo estudante e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        url_normalizada: str,
+    ) -> bool:
+        """Informa se já existe link profissional com a URL normalizada para o usuário.
+
+        Implementações consultam o armazenamento usando a identidade do proprietário
+        e a chave canônica da URL, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, link: LinkProfissional) -> None:
+        """Solicita a persistência assíncrona de um link profissional válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class GeradorLinkProfissionalId(Protocol):
+    """Fornece identidades tipadas para novos links profissionais.
+
+    A porta encapsula a origem da identidade e devolve ``LinkProfissionalId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> LinkProfissionalId:
+        """Gera a identidade do próximo link profissional cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class GeradorCertificacaoId(Protocol):
+    """Fornece identidades tipadas para novas certificações.
+
+    A porta encapsula a origem da identidade e devolve ``CertificacaoId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CertificacaoId:
+        """Gera a identidade da próxima certificação cadastrada.
 
         Implementações escolhem a fonte do UUID e devolvem o value object
         correspondente. O método existe para que a entidade seja construída

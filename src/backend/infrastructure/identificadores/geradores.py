@@ -8,16 +8,28 @@ de identidade com uma estratégia concreta e substituível.
 from uuid import uuid4
 
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    GeradorCertificacaoId,
     GeradorCompetenciaId,
     GeradorCurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    GeradorCursoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    GeradorLinkProfissionalId,
 )
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
     CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    CursoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissionalId,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
@@ -79,3 +91,56 @@ class GeradorIdiomaIdUuid4(GeradorIdiomaId):
         return IdiomaId(uuid4())
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class GeradorCursoIdUuid4(GeradorCursoId):
+    """Gera identidades de curso com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    curso. Ela existe para satisfazer a porta da Application sem expor a
+    biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> CursoId:
+        """Devolve uma identidade nova e tipada para curso.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``CursoId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return CursoId(uuid4())
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class GeradorCertificacaoIdUuid4(GeradorCertificacaoId):
+    """Gera identidades de certificação a partir de UUID versão 4.
+
+    A implementação obtém um identificador pseudoaleatório e o devolve como
+    ``CertificacaoId`` tipado, sem manter estado. Ela existe para fornecer a
+    estratégia padrão de identidade exigida pela porta do caso de uso.
+    """
+
+    def gerar(self) -> CertificacaoId:
+        """Gera um ``CertificacaoId`` novo com UUID4 nativo.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``CertificacaoId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return CertificacaoId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class GeradorLinkProfissionalIdUuid4(GeradorLinkProfissionalId):
+    """Gera identidades de link profissional com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    link profissional. Ela existe para satisfazer a porta da Application sem
+    expor a biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> LinkProfissionalId:
+        """Devolve uma identidade nova e tipada para link profissional.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``LinkProfissionalId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return LinkProfissionalId(uuid4())

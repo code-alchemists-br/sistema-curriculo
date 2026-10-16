@@ -8,13 +8,20 @@ backend.
 # A importação abaixo registra as tabelas de currículos e de seleção de itens em
 # ``Base.metadata``; ela é explícita porque cada módulo de modelo é importado à
 # parte do módulo da base.
-# Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.certificacao import (
+    CertificacaoRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.competencia import (
     CompetenciaRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.curso import (
+    CursoRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
     ExperienciaProfissionalRegistro,  # noqa: F401
@@ -28,6 +35,11 @@ from backend.infrastructure.persistence.sqlalchemy.formacao_academica import (
 # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.idioma import (
     IdiomaRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.link_profissional import (
+    LinkProfissionalRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401

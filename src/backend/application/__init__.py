@@ -13,11 +13,25 @@ from backend.application.acesso_estudante import (
     CredenciaisInvalidas,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+from backend.application.cadastro_certificacao import (
+    CadastrarCertificacao,
+    CadastrarCertificacaoEntrada,
+    CertificacaoJaCadastrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
 from backend.application.cadastro_competencia import (
     CadastrarCompetencia,
     CadastrarCompetenciaEntrada,
     CompetenciaJaCadastrada,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+from backend.application.cadastro_curso import (
+    CadastrarCurso,
+    CadastrarCursoEntrada,
+    CursoJaCadastrado,
 )
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
@@ -36,6 +50,13 @@ from backend.application.cadastro_idioma import (
     CadastrarIdioma,
     CadastrarIdiomaEntrada,
     IdiomaJaCadastrado,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+from backend.application.cadastro_link_profissional import (
+    CadastrarLinkProfissional,
+    CadastrarLinkProfissionalEntrada,
+    LinkProfissionalJaCadastrado,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
@@ -97,23 +118,35 @@ from backend.application.ports import (
     ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    GeradorCertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     GeradorCompetenciaId,
     GeradorCurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    GeradorCursoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    GeradorLinkProfissionalId,
     GeradorProjetoAcademicoId,
     GeradorUsuarioId,
     Relogio,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    RepositorioCertificacao,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     RepositorioCompetencia,
     RepositorioCurriculo,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    RepositorioCurso,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     RepositorioIdioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    RepositorioLinkProfissional,
     RepositorioProjetoAcademico,
     RepositorioUsuario,
     VerificadorSenha,
@@ -148,14 +181,26 @@ from backend.application.versao_curriculo import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "CadastrarCertificacao",
+    "CadastrarCertificacaoEntrada",
+    "CertificacaoJaCadastrada",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "CadastrarCompetencia",
     "CadastrarCompetenciaEntrada",
     "CompetenciaJaCadastrada",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "CadastrarCurso",
+    "CadastrarCursoEntrada",
+    "CursoJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "CadastrarIdioma",
     "CadastrarIdiomaEntrada",
     "IdiomaJaCadastrado",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "CadastrarLinkProfissional",
+    "CadastrarLinkProfissionalEntrada",
+    "LinkProfissionalJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
@@ -186,10 +231,16 @@ __all__ = [
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
     "GeradorFormacaoAcademicaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "GeradorCertificacaoId",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "GeradorCompetenciaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "GeradorCursoId",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "GeradorIdiomaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "GeradorLinkProfissionalId",
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
@@ -198,11 +249,17 @@ __all__ = [
     "PerfilExcluido",
     "PerfilNaoEncontrado",
     "Relogio",
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    "RepositorioCertificacao",
     "RepositorioFormacaoAcademica",
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     "RepositorioCompetencia",
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    "RepositorioCurso",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "RepositorioLinkProfissional",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",
