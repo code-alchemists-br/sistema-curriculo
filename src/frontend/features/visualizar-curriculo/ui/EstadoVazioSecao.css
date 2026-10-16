@@ -1,0 +1,86 @@
+/* Proveniência: F5.10 - Visualização de estado vazio quando a seção selecionada não possui itens */
+
+.estado-vazio-secao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.estado-vazio-secao__indicador {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.estado-vazio-secao__icone {
+  display: block;
+}
+
+.estado-vazio-secao__conteudo {
+  flex: 1 1 14rem;
+}
+
+.estado-vazio-secao__mensagem {
+  margin: 0;
+  color: #475569;
+  font-style: italic;
+}
+
+.estado-vazio-secao__botao {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.estado-vazio-secao__botao:hover {
+  background-color: #f1f5f9;
+  border-color: #64748b;
+}
+
+.estado-vazio-secao__botao:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 32rem) {
+  .estado-vazio-secao {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .estado-vazio-secao__botao {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media print {
+  .estado-vazio-secao {
+    border-style: solid;
+    border-color: #e2e8f0;
+    background-color: transparent;
+  }
+
+  .estado-vazio-secao__botao {
+    display: none;
+  }
+}

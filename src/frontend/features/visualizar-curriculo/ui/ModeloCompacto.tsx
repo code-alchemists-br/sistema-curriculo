@@ -4,11 +4,17 @@ import type {
   DocumentoPreviaCurriculo,
   PreviaCurriculo,
 } from "../../../entities/curriculo";
+import { EstadoVazioSecao } from "./EstadoVazioSecao";
 import "./ModeloCompacto.css";
 
 /** Define os dados recebidos pelo modelo compacto. */
 export interface ModeloCompactoProps {
   previa: PreviaCurriculo;
+  /**
+   * Quando verdadeiro, exibe visualização de estado vazio em seções sem itens,
+   * em vez de ocultá-las silenciosamente. Padrão: false.
+   */
+  exibirSecoesVazias?: boolean;
 }
 
 /**
@@ -18,7 +24,10 @@ export interface ModeloCompactoProps {
  * semânticos de interface. Ele existe para oferecer uma alternativa de layout
  * sem alterar dados, chamar serviços ou criar um contrato próprio.
  */
-export function ModeloCompacto({ previa }: ModeloCompactoProps) {
+export function ModeloCompacto({
+  previa,
+  exibirSecoesVazias = false,
+}: ModeloCompactoProps) {
   const { estudante } = previa;
   const contato = estudante.contato;
 
@@ -52,8 +61,9 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
       </header>
 
       <Secao
-        titulo="Formação acadêmica"
+        exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.formacoes.length > 0}
+        titulo="Formação acadêmica"
       >
         <ul className="modelo-compacto__lista">
           {previa.formacoes.map((formacao) => (
@@ -70,8 +80,9 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
       </Secao>
 
       <Secao
-        titulo="Experiência profissional"
+        exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.experiencias.length > 0}
+        titulo="Experiência profissional"
       >
         <ul className="modelo-compacto__lista">
           {previa.experiencias.map((experiencia) => (
@@ -88,8 +99,9 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
       </Secao>
 
       <Secao
-        titulo="Projetos acadêmicos"
+        exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.projetos.length > 0}
+        titulo="Projetos acadêmicos"
       >
         <ul className="modelo-compacto__lista">
           {previa.projetos.map((projeto) => (
@@ -103,8 +115,9 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
       </Secao>
 
       <Secao
-        titulo="Competências"
+        exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.competencias.length > 0}
+        titulo="Competências"
       >
         <ul className="modelo-compacto__itens-inline">
           {previa.competencias.map((competencia) => (
@@ -116,7 +129,11 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
         </ul>
       </Secao>
 
-      <Secao titulo="Idiomas" possuiConteudo={previa.idiomas.length > 0}>
+      <Secao
+        exibirQuandoVazio={exibirSecoesVazias}
+        possuiConteudo={previa.idiomas.length > 0}
+        titulo="Idiomas"
+      >
         <ul className="modelo-compacto__itens-inline">
           {previa.idiomas.map((idioma) => (
             <li key={idioma.id}>
@@ -128,8 +145,9 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
       </Secao>
 
       <Secao
-        titulo="Documentos complementares"
+        exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.documentos.length > 0}
+        titulo="Documentos complementares"
       >
         <ul className="modelo-compacto__itens-inline">
           {previa.documentos.map((documento) => (
@@ -141,17 +159,19 @@ export function ModeloCompacto({ previa }: ModeloCompactoProps) {
   );
 }
 
-/** Agrupa uma seção somente quando a prévia possui conteúdo para ela. */
+/** Agrupa uma seção da prévia, exibindo conteúdo ou estado vazio quando configurado. */
 function Secao({
   titulo,
   possuiConteudo,
+  exibirQuandoVazio,
   children,
 }: {
   titulo: string;
   possuiConteudo: boolean;
+  exibirQuandoVazio?: boolean;
   children: ReactNode;
 }) {
-  if (!possuiConteudo) return null;
+  if (!possuiConteudo && !exibirQuandoVazio) return null;
 
   return (
     <section
@@ -159,7 +179,7 @@ function Secao({
       className="modelo-compacto__secao"
     >
       <h2 id={`secao-${titulo}`}>{titulo}</h2>
-      {children}
+      {possuiConteudo ? children : <EstadoVazioSecao titulo={titulo} />}
     </section>
   );
 }

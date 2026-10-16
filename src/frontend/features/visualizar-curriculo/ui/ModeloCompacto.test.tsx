@@ -113,4 +113,30 @@ describe("ModeloCompacto", () => {
 
     expect(previa).toEqual(original);
   });
+
+  it("renderiza visualização de estado vazio nas seções quando exibirSecoesVazias for true", () => {
+    const previa = criarPrevia();
+    previa.formacoes = [];
+    previa.experiencias = [];
+
+    render(<ModeloCompacto exibirSecoesVazias previa={previa} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Formação acadêmica" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nenhum item selecionado ou cadastrado para formação acadêmica.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { name: "Experiência profissional" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nenhum item selecionado ou cadastrado para experiência profissional.",
+      ),
+    ).toBeInTheDocument();
+  });
 });
