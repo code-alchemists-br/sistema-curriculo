@@ -17,6 +17,7 @@ from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
     CertificacaoId,
     CompetenciaId,
+    CursoId,
     DocumentoId,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
@@ -25,6 +26,12 @@ from backend.domain.value_objects import (
     ProjetoAcademicoId,
     UsuarioId,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+TAMANHO_MINIMO_TEXTO_CURSO = 1
+TAMANHO_MAXIMO_TEXTO_CURSO = 200
+CARGA_HORARIA_MINIMA_CURSO = 1
+CARGA_HORARIA_MAXIMA_CURSO = 10000
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 TAMANHO_MINIMO_TEXTO_FORMACAO = 1
@@ -423,6 +430,103 @@ class Documento:
     url_armazenamento: str
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+def normalizar_texto_curso(valor: str, campo: str) -> str:
+    """Valida, verifica caracteres de controle e apara textos de curso.
+
+    A função rejeita valores não textuais, caracteres de controle, strings vazias
+    ou compostas apenas por espaços em branco, e valida que o comprimento esteja
+    entre 1 e 200 caracteres, retornando a string com espaços laterais aparados.
+    Ela existe para garantir integridade e qualidade textual no domínio de cursos.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo '{campo}' do curso deve ser um texto.")
+    texto_limpo = valor.strip()
+    if not texto_limpo:
+        raise RegraDeDominioViolada(f"O campo '{campo}' do curso não pode ser vazio.")
+    if any(category(c).startswith("C") for c in texto_limpo if c not in ("\n", "\r", "\t")):
+        raise RegraDeDominioViolada(
+            f"O campo '{campo}' do curso contém caracteres de controle inválidos."
+        )
+    if not (TAMANHO_MINIMO_TEXTO_CURSO <= len(texto_limpo) <= TAMANHO_MAXIMO_TEXTO_CURSO):
+        raise RegraDeDominioViolada(
+            f"O campo '{campo}' do curso deve ter entre {TAMANHO_MINIMO_TEXTO_CURSO} "
+            f"e {TAMANHO_MAXIMO_TEXTO_CURSO} caracteres."
+        )
+    return texto_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+def normalizar_chave_curso(texto: str) -> str:
+    """Colapsa espaços internos e aplica minúsculas a termos de curso.
+
+    A função divide os termos por sequências de espaços e reagrupa com espaço
+    simples aplicando ``casefold``, preservando acentos e pontuação gráfica. Ela
+    existe para gerar chaves de duplicidade determinísticas independentes do banco.
+    """
+    if not isinstance(texto, str):
+        raise RegraDeDominioViolada("A chave de curso exige valor textual.")
+    return " ".join(texto.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Curso:
+    """Representa um curso complementar realizado pelo usuário.
+
+    A entidade armazena a identidade do curso, o identificador do usuário,
+    o nome do curso, a instituição ministrante e uma carga horária opcional em horas.
+    Ela existe para enriquecer o perfil do estudante com cursos e capacitações.
+    """
+
+    id: CursoId
+    usuario_id: UsuarioId
+    nome: str
+    instituicao: str
+    carga_horaria: int | None = None
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os dados de um curso, impondo invariantes de integridade.
+
+        O método valida os tipos de nome e instituição, apara espaços periféricos,
+        e aplica proteção estrita de tipo à carga horária (rejeitando bool e valores
+        não inteiros, além de limitar entre 1 e 10000 horas). Ele existe para garantir
+        que toda instância de Curso seja válida desde sua construção.
+        """
+        nome_validado = normalizar_texto_curso(self.nome, "nome")
+        instituicao_validada = normalizar_texto_curso(self.instituicao, "instituicao")
+        object.__setattr__(self, "nome", nome_validado)
+        object.__setattr__(self, "instituicao", instituicao_validada)
+
+        if self.carga_horaria is not None:
+            if isinstance(self.carga_horaria, bool) or not isinstance(self.carga_horaria, int):
+                raise RegraDeDominioViolada("A carga horária do curso deve ser um número inteiro.")
+            if not (CARGA_HORARIA_MINIMA_CURSO <= self.carga_horaria <= CARGA_HORARIA_MAXIMA_CURSO):
+                raise RegraDeDominioViolada(
+                    f"A carga horária do curso deve estar entre {CARGA_HORARIA_MINIMA_CURSO} "
+                    f"e {CARGA_HORARIA_MAXIMA_CURSO} horas."
+                )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    @property
+    def nome_normalizado(self) -> str:
+        """Devolve a chave canônica do nome do curso.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre o nome.
+        Ela existe para prover ao caso de uso chave estável para deduplicação.
+        """
+        return normalizar_chave_curso(self.nome)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    @property
+    def instituicao_normalizada(self) -> str:
+        """Devolve a chave canônica da instituição do curso.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre a instituição.
+        Ela existe para prover ao caso de uso chave estável para deduplicação.
+        """
+        return normalizar_chave_curso(self.instituicao)
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 def normalizar_texto_certificacao(valor: str, campo: str) -> str:
     """Normaliza e valida um campo textual de certificação.
