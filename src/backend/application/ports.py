@@ -43,6 +43,8 @@ from backend.domain.value_objects import (
     CurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     CursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    DocumentoId,
     Email,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
@@ -750,3 +752,70 @@ class BuscadorVagas(Protocol):
         aguarda a implementação que realiza a consulta. Ela existe para
         manter a Application independente da origem da busca.
         """
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class ArmazenadorDocumentos(Protocol):
+    """Define a capacidade assíncrona de persistir o conteúdo binário de documentos.
+
+    A porta recebe o payload em bytes, o nome e o tipo do arquivo e delega o
+    armazenamento físico (filesystem, bucket ou mock), retornando a URL ou identificador
+    de localização seguro. Ela existe para desacoplar a Application de provedores de storage.
+    """
+
+    async def armazenar(
+        self,
+        conteudo: bytes,
+        nome_arquivo: str,
+        tipo_arquivo: str,
+    ) -> str:
+        """Persiste os bytes do documento e retorna a URL ou caminho de armazenamento.
+
+        A operação deve ser executada de forma assíncrona para não bloquear o loop de
+        eventos da aplicação. Ela existe para isolar detalhes de gravação física ou em nuvem.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class RepositorioDocumento(Protocol):
+    """Define a persistência relacional dos metadados de documentos complementares.
+
+    A porta recebe a entidade já validada e delega a gravação e consulta ao
+    repositório relacional da infraestrutura. Ela existe para manter os casos de uso
+    independentes de banco de dados e ORM.
+    """
+
+    async def salvar(self, documento: Documento) -> None:
+        """Persiste os metadados do documento complementar validado.
+
+        A implementação armazena o registro no banco de dados. O método existe para
+        garantir a persistência relacional das informações do documento.
+        """
+        ...
+
+    async def obter_por_id(self, documento_id: DocumentoId) -> Documento | None:
+        """Recupera um documento complementar ativo pelo seu identificador único.
+
+        A implementação consulta a tabela de documentos ignorando registros excluídos
+        logicamente. O método existe para viabilizar consultas e verificações de existência.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class GeradorDocumentoId(Protocol):
+    """Fornece identificadores tipados para novos documentos complementares.
+
+    A porta separa a geração de identidade da orquestração e devolve um DocumentoId
+    válido. Ela existe para garantir determinismo nos testes e manter o núcleo livre
+    da estratégia concreta de criação de UUID.
+    """
+
+    def gerar(self) -> DocumentoId:
+        """Gera o identificador do próximo documento complementar.
+
+        A implementação escolhe a estratégia concreta e retorna o tipo de domínio.
+        O método existe para que a criação sempre receba uma identidade explícita e válida.
+        """
+        ...

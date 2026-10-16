@@ -37,6 +37,13 @@ from backend.api.dados_contato import (
 from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+from backend.api.documento import (
+    CadastroDocumentoExecutor,
+)
+from backend.api.documento import (
+    criar_router as criar_router_documento,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.api.exclusao_versao_curriculo import (
@@ -175,15 +182,17 @@ def create_app(
     cadastrar_certificacao: CadastroCertificacaoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     excluir_formacao_academica: ExclusaoFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    armazenar_documento: CadastroDocumentoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
-    idiomas, cursos, certificações, links profissionais, formações acadêmicas,
-    versões de currículo, seleção de itens, listagem, exclusão de versão,
-    experiências profissionais e prévia com os executores recebidos; ausências
-    permanecem explícitas e são traduzidas por cada router em indisponibilidade.
+    idiomas, cursos, certificações, links profissionais, documentos complementares,
+    formações acadêmicas, versões de currículo, seleção de itens, listagem,
+    exclusão de versão, experiências profissionais e prévia com os executores recebidos;
+    ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
     nas rotas privadas. Ela existe para concentrar a composição na camada
     externa, mantendo Application e domínio livres do framework.
@@ -218,6 +227,8 @@ def create_app(
     app.include_router(criar_router_link_profissional(cadastrar_link_profissional))
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     app.include_router(criar_router_certificacao(cadastrar_certificacao))
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    app.include_router(criar_router_documento(armazenar_documento))
     app.include_router(
         criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo)
     )

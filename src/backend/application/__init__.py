@@ -38,6 +38,11 @@ from backend.application.cadastro_estudante import (
     CadastrarEstudanteEntrada,
     EmailJaCadastrado,
 )
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+from backend.application.cadastro_documento import (
+    ArmazenarDocumento,
+    ArmazenarDocumentoEntrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.application.cadastro_experiencia_profissional import (
@@ -121,6 +126,8 @@ from backend.application.ports import (
     ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    ArmazenadorDocumentos,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     GeradorCertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
@@ -128,6 +135,8 @@ from backend.application.ports import (
     GeradorCurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     GeradorCursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    GeradorDocumentoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -144,6 +153,8 @@ from backend.application.ports import (
     RepositorioCurriculo,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     RepositorioCurso,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    RepositorioDocumento,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -190,6 +201,9 @@ from backend.application.versao_curriculo import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "ArmazenarDocumento",
+    "ArmazenarDocumentoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     "CadastrarCertificacao",
     "CadastrarCertificacaoEntrada",

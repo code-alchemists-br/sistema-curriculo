@@ -55,6 +55,9 @@ from backend.domain.itens_perfil import (
     NivelFormacaoAcademica,
     ProjetoAcademico,
     StatusFormacaoAcademica,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    TAMANHO_MAXIMO_DOCUMENTO_BYTES,
+    TIPOS_ARQUIVO_PERMITIDOS,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     normalizar_chave_certificacao,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
@@ -193,6 +196,9 @@ __all__ = [
     "TAMANHO_MINIMO_TEXTO_FORMACAO",
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     "TAMANHO_MINIMO_TEXTO_PROJETO",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "TAMANHO_MAXIMO_DOCUMENTO_BYTES",
+    "TIPOS_ARQUIVO_PERMITIDOS",
     "Telefone",
     "Usuario",
     "UsuarioId",

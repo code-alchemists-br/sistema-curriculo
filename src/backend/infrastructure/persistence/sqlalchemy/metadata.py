@@ -18,6 +18,10 @@ from backend.infrastructure.persistence.sqlalchemy.competencia import (
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
 )
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.documento import (
+    DocumentoRegistro,  # noqa: F401
+)
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.curso import (
