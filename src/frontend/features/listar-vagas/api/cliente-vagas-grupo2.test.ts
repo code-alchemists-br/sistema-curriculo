@@ -51,11 +51,20 @@ describe("adaptarRespostaGrupo2", () => {
 });
 
 describe("criarClienteVagasGrupo2", () => {
+  it("encaminha o termo pesquisado ao adaptador de transporte", async () => {
+    const requisitarResposta = vi.fn().mockResolvedValue(respostaValida);
+    const cliente = criarClienteVagasGrupo2(requisitarResposta);
+
+    await cliente.listarSugestoes({ termo: "react" });
+
+    expect(requisitarResposta).toHaveBeenCalledWith({ termo: "react" });
+  });
+
   it("traduz falha de transporte para indisponibilidade", async () => {
     const requisitarResposta = vi.fn().mockRejectedValue(new Error("timeout"));
     const cliente = criarClienteVagasGrupo2(requisitarResposta);
 
-    await expect(cliente.listarSugestoes()).rejects.toEqual(
+    await expect(cliente.listarSugestoes({ termo: "" })).rejects.toEqual(
       new FalhaVagasGrupo2("indisponivel"),
     );
   });

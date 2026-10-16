@@ -3,6 +3,39 @@
   gap: 1.5rem;
 }
 
+.vagas-grupo2__pesquisa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.vagas-grupo2__pesquisa label {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.vagas-grupo2__pesquisa input {
+  min-height: 2.75rem;
+  padding: 0.625rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.vagas-grupo2__pesquisa button,
+.vagas-grupo2__decisoes button {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
 .vagas-grupo2__lista {
   display: grid;
   gap: 1rem;
@@ -42,8 +75,20 @@
   color: #1e3a8a;
 }
 
+.vagas-grupo2__decisoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.vagas-grupo2__decisoes button:last-child {
+  background: #475569;
+}
+
 .vagas-grupo2__acao {
   display: inline-block;
+  margin-top: 1rem;
   padding: 0.625rem 0.875rem;
   border-radius: 0.5rem;
   background: #2563eb;
@@ -52,7 +97,20 @@
   text-decoration: none;
 }
 
-.vagas-grupo2__acao:focus-visible {
+.vagas-grupo2__acao:focus-visible,
+.vagas-grupo2__pesquisa input:focus-visible,
+.vagas-grupo2__pesquisa button:focus-visible,
+.vagas-grupo2__decisoes button:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+  .vagas-grupo2__pesquisa {
+    grid-template-columns: 1fr;
+  }
+
+  .vagas-grupo2__pesquisa label {
+    grid-column: auto;
+  }
 }
