@@ -22,17 +22,23 @@ from backend.domain.itens_perfil import (
     CARGA_HORARIA_MINIMA_CURSO,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
     ESQUEMAS_URL_PERMITIDOS,
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    TAMANHO_MAXIMO_DESCRICAO_PROJETO,
     TAMANHO_MAXIMO_ROTULO_LINK,
+    TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     TAMANHO_MAXIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MAXIMO_TEXTO_CURSO,
     TAMANHO_MAXIMO_TEXTO_FORMACAO,
+    TAMANHO_MAXIMO_TITULO_PROJETO,
     TAMANHO_MAXIMO_URL_LINK,
     TAMANHO_MINIMO_ROTULO_LINK,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     TAMANHO_MINIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MINIMO_TEXTO_CURSO,
     TAMANHO_MINIMO_TEXTO_FORMACAO,
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    TAMANHO_MINIMO_TEXTO_PROJETO,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -180,7 +186,13 @@ __all__ = [
     "TAMANHO_MAXIMO_TEXTO_CERTIFICACAO",
     "TAMANHO_MINIMO_TEXTO_CERTIFICACAO",
     "TAMANHO_MAXIMO_TEXTO_FORMACAO",
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    "TAMANHO_MAXIMO_DESCRICAO_PROJETO",
+    "TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO",
+    "TAMANHO_MAXIMO_TITULO_PROJETO",
     "TAMANHO_MINIMO_TEXTO_FORMACAO",
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    "TAMANHO_MINIMO_TEXTO_PROJETO",
     "Telefone",
     "Usuario",
     "UsuarioId",

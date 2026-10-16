@@ -18,6 +18,8 @@ from backend.application.ports import (
     GeradorIdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
     GeradorLinkProfissionalId,
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    GeradorProjetoAcademicoId,
 )
 from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -30,6 +32,8 @@ from backend.domain.value_objects import (
     IdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
     LinkProfissionalId,
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    ProjetoAcademicoId,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
@@ -125,6 +129,25 @@ class GeradorCertificacaoIdUuid4(GeradorCertificacaoId):
         concreta, substituível e sem estado de identificadores.
         """
         return CertificacaoId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+class GeradorProjetoAcademicoIdUuid4(GeradorProjetoAcademicoId):
+    """Gera identidades de projeto acadêmico com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object do
+    projeto. Ela existe para fornecer a estratégia concreta exigida pela porta
+    sem expor geração de identidade à Application.
+    """
+
+    def gerar(self) -> ProjetoAcademicoId:
+        """Devolve uma identidade nova e tipada de projeto acadêmico.
+
+        O método delega a aleatoriedade ao UUID4 e converte o resultado para o
+        value object esperado. Ele existe para atender o contrato de geração do
+        caso de uso de cadastro.
+        """
+        return ProjetoAcademicoId(uuid4())
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001

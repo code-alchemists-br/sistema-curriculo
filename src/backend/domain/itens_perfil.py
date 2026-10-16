@@ -47,6 +47,12 @@ CARGA_HORARIA_MAXIMA_CURSO = 10000
 TAMANHO_MINIMO_TEXTO_FORMACAO = 1
 TAMANHO_MAXIMO_TEXTO_FORMACAO = 200
 
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+TAMANHO_MINIMO_TEXTO_PROJETO = 1
+TAMANHO_MAXIMO_TITULO_PROJETO = 200
+TAMANHO_MAXIMO_DESCRICAO_PROJETO = 2000
+TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO = 300
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 TAMANHO_MINIMO_TEXTO_CERTIFICACAO = 1
 TAMANHO_MAXIMO_TEXTO_CERTIFICACAO = 200
@@ -308,13 +314,15 @@ class ExperienciaProfissional:
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class ProjetoAcademico:
     """Representa um projeto acadêmico reutilizável pertencente a um usuário.
 
-    A entidade agrupa identidade, proprietário e os textos descritos no DER sem
-    impor vocabulário para tecnologias. Ela existe para permitir que projetos
-    sejam selecionados em diferentes versões de currículo.
+    A entidade agrupa identidade, proprietário e três textos livres, normaliza
+    esses textos e limita seus tamanhos sem impor vocabulário às tecnologias.
+    Ela existe para permitir que projetos válidos sejam reutilizados em
+    diferentes versões de currículo.
     """
 
     id: ProjetoAcademicoId
@@ -324,23 +332,62 @@ class ProjetoAcademico:
     tecnologias: str
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     def __post_init__(self) -> None:
-        """Garante que o projeto acadêmico contenha os textos essenciais.
+        """Normaliza e valida os três textos obrigatórios do projeto.
 
-        A validação percorre título, descrição e tecnologias, removendo espaços
-        para identificar valores ausentes antes que a entidade seja utilizada.
-        Ela existe para impedir que o perfil mantenha projetos sem informação
-        mínima para apresentação em currículos.
+        Cada valor deve ser texto sem controles Unicode Cc; o conteúdo recebe
+        ``strip`` uma vez e é medido contra os limites próprios do campo. A
+        regra existe para manter projetos apresentáveis e coerentes em qualquer
+        fluxo de criação, sem depender da API.
         """
-        for campo, valor in (
-            ("título", self.titulo),
-            ("descrição", self.descricao),
-            ("tecnologias", self.tecnologias),
+        for atributo, campo, valor, tamanho_maximo in (
+            ("titulo", "título", self.titulo, TAMANHO_MAXIMO_TITULO_PROJETO),
+            (
+                "descricao",
+                "descrição",
+                self.descricao,
+                TAMANHO_MAXIMO_DESCRICAO_PROJETO,
+            ),
+            (
+                "tecnologias",
+                "tecnologias",
+                self.tecnologias,
+                TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
+            ),
         ):
-            if not isinstance(valor, str) or not valor.strip():
-                raise RegraDeDominioViolada(
-                    f"O projeto acadêmico exige {campo} preenchido."
-                )
+            normalizado = _normalizar_texto_projeto(valor, campo, tamanho_maximo)
+            object.__setattr__(self, atributo, normalizado)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+def _normalizar_texto_projeto(
+    valor: object, campo: str, tamanho_maximo: int
+) -> str:
+    """Normaliza e valida um texto de projeto segundo seu limite específico.
+
+    A função exige string, rejeita caracteres Unicode Cc, remove espaços
+    externos uma vez e valida o tamanho resultante. Ela existe para aplicar
+    uma regra uniforme aos textos obrigatórios da entidade.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico deve ser texto."
+        )
+
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico não pode conter caracteres de controle."
+        )
+
+    normalizado = valor.strip()
+    if not TAMANHO_MINIMO_TEXTO_PROJETO <= len(normalizado) <= tamanho_maximo:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_PROJETO} e {tamanho_maximo} caracteres após "
+            "remover espaços externos."
+        )
+    return normalizado
 
 
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
