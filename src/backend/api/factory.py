@@ -38,6 +38,14 @@ from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+from backend.api.documento import (
+    ExclusaoDocumentoExecutor,
+)
+from backend.api.documento import (
+    criar_router as criar_router_documento,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.api.exclusao_versao_curriculo import (
     ExclusaoVersaoCurriculoExecutor,
@@ -175,6 +183,8 @@ def create_app(
     cadastrar_certificacao: CadastroCertificacaoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     excluir_formacao_academica: ExclusaoFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    excluir_documento: ExclusaoDocumentoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -244,5 +254,7 @@ def create_app(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo)
     )
     app.include_router(criar_router_exclusao_versao_curriculo(excluir_versao_curriculo))
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    app.include_router(criar_router_documento(excluir_documento))
     app.include_router(criar_router_sessoes(revogador_sessao))
     return app

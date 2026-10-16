@@ -262,7 +262,9 @@ def _chave_ordenacao_formacao(formacao: FormacaoAcademica) -> tuple[int, int, in
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
-def ordenar_formacoes(formacoes: Iterable[FormacaoAcademica]) -> tuple[FormacaoAcademica, ...]:
+def ordenar_formacoes(
+    formacoes: Iterable[FormacaoAcademica],
+) -> tuple[FormacaoAcademica, ...]:
     """Ordena formações por situação e data de forma estável e determinística.
 
     A função coloca primeiro as formações em andamento, da data de início mais
@@ -361,9 +363,7 @@ class ProjetoAcademico:
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
-def _normalizar_texto_projeto(
-    valor: object, campo: str, tamanho_maximo: int
-) -> str:
+def _normalizar_texto_projeto(valor: object, campo: str, tamanho_maximo: int) -> str:
     """Normaliza e valida um texto de projeto segundo seu limite específico.
 
     A função exige string, rejeita caracteres Unicode Cc, remove espaços
@@ -540,6 +540,37 @@ class Documento:
     tipo_arquivo: str
     url_armazenamento: str
 
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida invariantes e tipos dos metadados de um documento complementar.
+
+        O método assegura que os identificadores pertençam aos tipos corretos do domínio,
+        e que os campos textuais não sejam vazios ou nulos, aparando espaços externos.
+        Ele existe para manter a entidade Documento sempre consistente e válida.
+        """
+        if not isinstance(self.id, DocumentoId):
+            raise RegraDeDominioViolada("Identificador de documento inválido.")
+        if not isinstance(self.usuario_id, UsuarioId):
+            raise RegraDeDominioViolada("Identificador de usuário inválido.")
+        if not isinstance(self.nome_arquivo, str) or not self.nome_arquivo.strip():
+            raise RegraDeDominioViolada(
+                "O nome do arquivo do documento deve ser um texto não vazio."
+            )
+        if not isinstance(self.tipo_arquivo, str) or not self.tipo_arquivo.strip():
+            raise RegraDeDominioViolada(
+                "O tipo do arquivo do documento deve ser um texto não vazio."
+            )
+        if (
+            not isinstance(self.url_armazenamento, str)
+            or not self.url_armazenamento.strip()
+        ):
+            raise RegraDeDominioViolada(
+                "A URL de armazenamento do documento deve ser um texto não vazio."
+            )
+        object.__setattr__(self, "nome_arquivo", self.nome_arquivo.strip())
+        object.__setattr__(self, "tipo_arquivo", self.tipo_arquivo.strip())
+        object.__setattr__(self, "url_armazenamento", self.url_armazenamento.strip())
+
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 def normalizar_texto_curso(valor: str, campo: str) -> str:
@@ -650,6 +681,8 @@ class Curso:
         Ela existe para prover ao caso de uso chave estável para deduplicação.
         """
         return normalizar_chave_curso(self.instituicao)
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 def normalizar_texto_certificacao(valor: str, campo: str) -> str:
     """Normaliza e valida um campo textual de certificação.

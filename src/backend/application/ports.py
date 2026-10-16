@@ -43,6 +43,8 @@ from backend.domain.value_objects import (
     CurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     CursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    DocumentoId,
     Email,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
@@ -518,6 +520,38 @@ class GeradorLinkProfissionalId(Protocol):
         Implementações escolhem a fonte do UUID e devolvem o value object
         correspondente. O método existe para que a entidade seja construída
         com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+class RepositorioDocumento(Protocol):
+    """Define a consulta, exclusão e persistência de documentos complementares.
+
+    A porta expõe operações assíncronas para recuperar por identidade, marcar exclusão
+    ou salvar instâncias válidas de Documento. Ela existe para desacoplar os casos
+    de uso do mecanismo de armazenamento relacional e permitir testes com doubles.
+    """
+
+    async def obter_por_id(self, documento_id: DocumentoId) -> Documento | None:
+        """Obtém assincronamente um documento pelo seu identificador único.
+
+        Implementações consultam a fonte de dados e retornam a entidade caso ela
+        exista e não tenha sido excluída, ou None em caso de ausência ou soft-delete.
+        O método existe para validar existência e propriedade antes de alterações.
+        """
+
+    async def excluir(self, documento: Documento) -> None:
+        """Aplica a exclusão assíncrona do documento informado.
+
+        Implementações realizam a remoção lógica ou física do registro correspondente.
+        O método existe para materializar a exclusão decidida pela camada de aplicação.
+        """
+
+    async def salvar(self, documento: Documento) -> None:
+        """Solicita a persistência assíncrona de um documento complementar.
+
+        Implementações registram a entidade na persistência. O método existe para
+        dar suporte à criação de novos documentos de forma independente de ORM.
         """
 
 

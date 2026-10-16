@@ -23,6 +23,11 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
 from backend.infrastructure.persistence.sqlalchemy.curso import (
     CursoRegistro,  # noqa: F401
 )
+
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.documento import (
+    DocumentoRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
     ExperienciaProfissionalRegistro,  # noqa: F401
 )

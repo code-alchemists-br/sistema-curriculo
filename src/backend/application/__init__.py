@@ -71,6 +71,13 @@ from backend.application.dados_contato import (
     AtualizarDadosContatoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+from backend.application.exclusao_documento import (
+    DocumentoNaoEncontrado,
+    ExcluirDocumento,
+    ExcluirDocumentoEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.application.exclusao_versao_curriculo import (
     ExcluirVersaoCurriculo,
@@ -144,6 +151,8 @@ from backend.application.ports import (
     RepositorioCurriculo,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     RepositorioCurso,
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    RepositorioDocumento,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -237,6 +246,10 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
     "EditarPerfil",
     "EditarPerfilEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    "DocumentoNaoEncontrado",
+    "ExcluirDocumento",
+    "ExcluirDocumentoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     "ExcluirFormacaoAcademica",
     "ExcluirFormacaoAcademicaEntrada",
@@ -268,6 +281,8 @@ __all__ = [
     "RepositorioCompetencia",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "RepositorioCurso",
+    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+    "RepositorioDocumento",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
