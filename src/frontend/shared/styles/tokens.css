@@ -1,0 +1,33 @@
+/**
+ * Tokens de design para cores acessíveis do sistema.
+ * Atende às diretrizes WCAG 2.1 (Critérios 1.4.3 Contraste Mínimo e 1.4.11 Contraste Não Textual).
+ */
+:root {
+  /* Cores de Texto (Mínimo 4.5:1 contra fundos padrão) */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #475569;
+  --color-text-inverse: #ffffff;
+
+  /* Cores de Superfície e Fundo */
+  --color-bg-canvas: #f8fafc;
+  --color-bg-surface: #ffffff;
+
+  /* Cores de Foco Acessível (Mínimo 3.0:1 contra fundo) */
+  --color-focus-ring: #1d4ed8;
+  --color-focus-border: #1d4ed8;
+
+  /* Cores de Erro (Texto >= 4.5:1, Borda >= 3.0:1) */
+  --color-error-text: #991b1b;
+  --color-error-bg: #fef2f2;
+  --color-error-border: #dc2626;
+
+  /* Cores de Sucesso (Texto >= 4.5:1, Borda >= 3.0:1) */
+  --color-success-text: #166534;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #16a34a;
+
+  /* Cores de Ação Principal */
+  --color-action-primary: #2563eb;
+  --color-action-primary-hover: #1d4ed8;
+}
