@@ -20,12 +20,12 @@ from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.itens_perfil import (
     CARGA_HORARIA_MAXIMA_CURSO,
     CARGA_HORARIA_MINIMA_CURSO,
-    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
-    TAMANHO_MAXIMO_DESCRICAO_PROJETO,
-    TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
     ESQUEMAS_URL_PERMITIDOS,
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+    TAMANHO_MAXIMO_DESCRICAO_PROJETO,
     TAMANHO_MAXIMO_ROTULO_LINK,
+    TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     TAMANHO_MAXIMO_TEXTO_CERTIFICACAO,
     TAMANHO_MAXIMO_TEXTO_CURSO,
