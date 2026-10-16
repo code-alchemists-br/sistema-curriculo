@@ -262,7 +262,9 @@ def _chave_ordenacao_formacao(formacao: FormacaoAcademica) -> tuple[int, int, in
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
-def ordenar_formacoes(formacoes: Iterable[FormacaoAcademica]) -> tuple[FormacaoAcademica, ...]:
+def ordenar_formacoes(
+    formacoes: Iterable[FormacaoAcademica],
+) -> tuple[FormacaoAcademica, ...]:
     """Ordena formações por situação e data de forma estável e determinística.
 
     A função coloca primeiro as formações em andamento, da data de início mais
@@ -361,9 +363,7 @@ class ProjetoAcademico:
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
-def _normalizar_texto_projeto(
-    valor: object, campo: str, tamanho_maximo: int
-) -> str:
+def _normalizar_texto_projeto(valor: object, campo: str, tamanho_maximo: int) -> str:
     """Normaliza e valida um texto de projeto segundo seu limite específico.
 
     A função exige string, rejeita caracteres Unicode Cc, remove espaços
@@ -524,7 +524,68 @@ class Idioma:
         return normalizar_idioma(self.idioma)
 
 
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+TIPOS_ARQUIVO_PERMITIDOS: frozenset[str] = frozenset(
+    {"application/pdf", "image/png", "image/jpeg"}
+)
+TAMANHO_MAXIMO_DOCUMENTO_BYTES: int = 10 * 1024 * 1024  # 10 MB
+TAMANHO_MINIMO_NOME_ARQUIVO: int = 1
+TAMANHO_MAXIMO_NOME_ARQUIVO: int = 255
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_nome_arquivo(nome: str) -> str:
+    """Valida e sanitiza o nome de arquivo de um documento complementar.
+
+    A função rejeita valores não textuais, caracteres de controle, strings vazias
+    ou tentativas de navegação de diretório (Path Traversal como '..'), retornando
+    o nome aparado. Ela existe para proteger o sistema contra caminhos inseguros e
+    garantir integridade no cadastro de arquivos.
+    """
+    if not isinstance(nome, str):
+        raise RegraDeDominioViolada("O nome do arquivo deve ser um texto.")
+    nome_limpo = nome.strip()
+    if not nome_limpo:
+        raise RegraDeDominioViolada("O nome do arquivo não pode ser vazio.")
+    if any(category(c) == "Cc" for c in nome_limpo):
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter caracteres de controle."
+        )
+    if ".." in nome_limpo or "/" in nome_limpo or "\\" in nome_limpo:
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter barras ou referências relativas de diretório."
+        )
+    if (
+        not TAMANHO_MINIMO_NOME_ARQUIVO
+        <= len(nome_limpo)
+        <= TAMANHO_MAXIMO_NOME_ARQUIVO
+    ):
+        raise RegraDeDominioViolada(
+            f"O nome do arquivo deve ter entre {TAMANHO_MINIMO_NOME_ARQUIVO} e {TAMANHO_MAXIMO_NOME_ARQUIVO} caracteres."
+        )
+    return nome_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_tipo_arquivo(tipo: str) -> str:
+    """Valida se o tipo MIME do arquivo pertence aos formatos autorizados.
+
+    A função converte o tipo para minúsculas aparadas e verifica se pertence ao
+    conjunto permitido (PDF, PNG, JPEG). Ela existe para evitar o upload de arquivos
+    executáveis ou não suportados pelo perfil do estudante.
+    """
+    if not isinstance(tipo, str):
+        raise RegraDeDominioViolada("O tipo do arquivo deve ser um texto.")
+    tipo_limpo = tipo.strip().lower()
+    if tipo_limpo not in TIPOS_ARQUIVO_PERMITIDOS:
+        raise RegraDeDominioViolada(
+            f"Tipo de arquivo não permitido: '{tipo}'. Tipos aceitos: PDF, PNG, JPEG."
+        )
+    return tipo_limpo
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Documento:
     """Representa metadados de um documento reutilizável do usuário.
@@ -539,6 +600,23 @@ class Documento:
     nome_arquivo: str
     tipo_arquivo: str
     url_armazenamento: str
+
+    def __post_init__(self) -> None:
+        """Valida a integridade dos metadados do documento.
+
+        O método verifica se o nome do arquivo, tipo MIME e a URL de armazenamento
+        cumprem as regras de integridade e segurança do domínio. Ele existe para
+        proteger o agregado contra estados inválidos.
+        """
+        validar_nome_arquivo(self.nome_arquivo)
+        validar_tipo_arquivo(self.tipo_arquivo)
+        if (
+            not isinstance(self.url_armazenamento, str)
+            or not self.url_armazenamento.strip()
+        ):
+            raise RegraDeDominioViolada(
+                "A URL de armazenamento do documento não pode ser vazia."
+            )
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
@@ -650,6 +728,8 @@ class Curso:
         Ela existe para prover ao caso de uso chave estável para deduplicação.
         """
         return normalizar_chave_curso(self.instituicao)
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 def normalizar_texto_certificacao(valor: str, campo: str) -> str:
     """Normaliza e valida um campo textual de certificação.

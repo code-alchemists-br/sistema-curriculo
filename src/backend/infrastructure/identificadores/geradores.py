@@ -14,6 +14,8 @@ from backend.application.ports import (
     GeradorCurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     GeradorCursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    GeradorDocumentoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -28,6 +30,8 @@ from backend.domain.value_objects import (
     CurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     CursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    DocumentoId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -112,6 +116,8 @@ class GeradorCursoIdUuid4(GeradorCursoId):
         concreta, substituível e sem estado de identificadores.
         """
         return CursoId(uuid4())
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 class GeradorCertificacaoIdUuid4(GeradorCertificacaoId):
     """Gera identidades de certificação a partir de UUID versão 4.
@@ -167,3 +173,22 @@ class GeradorLinkProfissionalIdUuid4(GeradorLinkProfissionalId):
         concreta, substituível e sem estado de identificadores.
         """
         return LinkProfissionalId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class GeradorDocumentoIdUuid4(GeradorDocumentoId):
+    """Gera identidades de documento complementar com UUID versão 4.
+
+    A implementação cria um UUID aleatório e o encapsula no value object de
+    documento complementar. Ela existe para satisfazer a porta da Application sem
+    expor a biblioteca de geração de identidade às camadas internas.
+    """
+
+    def gerar(self) -> DocumentoId:
+        """Devolve uma identidade nova e tipada para documento complementar.
+
+        O método delega a aleatoriedade ao UUID4 e converte seu resultado para
+        ``DocumentoId``. Ele existe para oferecer ao caso de uso uma origem
+        concreta, substituível e sem estado de identificadores.
+        """
+        return DocumentoId(uuid4())
