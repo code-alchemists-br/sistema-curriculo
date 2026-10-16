@@ -37,6 +37,7 @@ from backend.api.dados_contato import (
 from backend.api.dados_contato import (
     criar_router as criar_router_dados_contato,
 )
+
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.api.documento import (
     CadastroDocumentoExecutor,

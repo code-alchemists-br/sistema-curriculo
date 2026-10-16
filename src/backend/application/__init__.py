@@ -33,15 +33,16 @@ from backend.application.cadastro_curso import (
     CadastrarCursoEntrada,
     CursoJaCadastrado,
 )
-from backend.application.cadastro_estudante import (
-    CadastrarEstudante,
-    CadastrarEstudanteEntrada,
-    EmailJaCadastrado,
-)
+
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.application.cadastro_documento import (
     ArmazenarDocumento,
     ArmazenarDocumentoEntrada,
+)
+from backend.application.cadastro_estudante import (
+    CadastrarEstudante,
+    CadastrarEstudanteEntrada,
+    EmailJaCadastrado,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
@@ -122,12 +123,12 @@ from backend.application.perfil_estudante import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    ArmazenadorDocumentos,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ConsultaProprietarioItem,
-    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
-    ArmazenadorDocumentos,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     GeradorCertificacaoId,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
@@ -256,6 +257,10 @@ __all__ = [
     "ExcluirFormacaoAcademicaEntrada",
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "ArmazenadorDocumentos",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "GeradorDocumentoId",
     "GeradorFormacaoAcademicaId",
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     "GeradorCertificacaoId",
@@ -282,6 +287,8 @@ __all__ = [
     "RepositorioCompetencia",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "RepositorioCurso",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "RepositorioDocumento",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
