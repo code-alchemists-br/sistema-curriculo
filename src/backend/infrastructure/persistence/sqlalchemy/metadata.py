@@ -40,6 +40,9 @@ from backend.infrastructure.persistence.sqlalchemy.idioma import (
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.projeto_academico import (
     ProjetoAcademicoRegistro,  # noqa: F401
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.link_profissional import (
+    LinkProfissionalRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.sessao import (
     SessaoRegistro,  # noqa: F401
