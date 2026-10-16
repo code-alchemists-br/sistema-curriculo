@@ -61,6 +61,8 @@ from backend.domain.itens_perfil import (
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     normalizar_texto_certificacao,
     normalizar_texto_curso,
+    # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+    ordenar_formacoes,
     validar_e_normalizar_url_link,
 )
 
@@ -150,6 +152,8 @@ __all__ = [
     "normalizar_idioma",
     # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
     "NivelFormacaoAcademica",
+    # Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+    "ordenar_formacoes",
     "Periodo",
     "ProjetoAcademico",
     "ProjetoAcademicoId",

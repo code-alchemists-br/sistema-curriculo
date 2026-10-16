@@ -7,8 +7,10 @@ transições da conta e permitir seu crescimento coeso fora de um módulo genér
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum
+from types import MappingProxyType
 from unicodedata import category
 from urllib.parse import urlsplit, urlunsplit
 
@@ -185,6 +187,55 @@ class FormacaoAcademica:
             periodo=periodo,
             status=status,
         )
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+PRIORIDADE_STATUS_FORMACAO: Mapping[StatusFormacaoAcademica, int] = MappingProxyType(
+    {
+        StatusFormacaoAcademica.EM_ANDAMENTO: 0,
+        StatusFormacaoAcademica.CONCLUIDO: 1,
+        StatusFormacaoAcademica.INTERROMPIDO: 2,
+    }
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+def _chave_ordenacao_formacao(formacao: FormacaoAcademica) -> tuple[int, int, int, str]:
+    """Calcula a chave que posiciona uma formação na ordem do currículo.
+
+    A chave combina a prioridade da situação, a data de referência e a data de
+    início em ordem decrescente (ordinais negados) e o identificador textual.
+    Formações em andamento usam o início como referência; concluídas e
+    interrompidas usam o fim, recorrendo ao início quando o fim não existe. A
+    função existe para concentrar a regra de ordenação em um único ponto do
+    domínio, sem depender de relógio, banco ou ordem de entrada.
+    """
+    periodo = formacao.periodo
+    if formacao.status is StatusFormacaoAcademica.EM_ANDAMENTO or periodo.fim is None:
+        referencia = periodo.inicio
+    else:
+        referencia = periodo.fim
+    return (
+        PRIORIDADE_STATUS_FORMACAO[formacao.status],
+        -referencia.toordinal(),
+        -periodo.inicio.toordinal(),
+        str(formacao.id.valor),
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+def ordenar_formacoes(formacoes: Iterable[FormacaoAcademica]) -> tuple[FormacaoAcademica, ...]:
+    """Ordena formações por situação e data de forma estável e determinística.
+
+    A função coloca primeiro as formações em andamento, da data de início mais
+    recente para a mais antiga; depois as concluídas, da data de término mais
+    recente para a mais antiga; e por fim as interrompidas, pelo término ou,
+    na falta dele, pelo início. Empates de situação e datas são desfeitos pela
+    data de início e, por último, pelo identificador, de modo que a mesma
+    coleção produza sempre a mesma sequência. Ela existe para que consultas e
+    currículos apresentem formações em uma ordem única definida pelo domínio.
+    """
+    return tuple(sorted(formacoes, key=_chave_ordenacao_formacao))
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
