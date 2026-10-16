@@ -20,13 +20,13 @@ from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.itens_perfil import (
     CARGA_HORARIA_MAXIMA_CURSO,
     CARGA_HORARIA_MINIMA_CURSO,
-    TAMANHO_MAXIMO_TEXTO_CURSO,
-    TAMANHO_MINIMO_TEXTO_CURSO,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     TAMANHO_MAXIMO_TEXTO_CERTIFICACAO,
+    TAMANHO_MAXIMO_TEXTO_CURSO,
     TAMANHO_MAXIMO_TEXTO_FORMACAO,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     TAMANHO_MINIMO_TEXTO_CERTIFICACAO,
+    TAMANHO_MINIMO_TEXTO_CURSO,
     TAMANHO_MINIMO_TEXTO_FORMACAO,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
@@ -43,15 +43,15 @@ from backend.domain.itens_perfil import (
     NivelFormacaoAcademica,
     ProjetoAcademico,
     StatusFormacaoAcademica,
-    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
-    normalizar_chave_curso,
-    normalizar_texto_curso,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     normalizar_chave_certificacao,
-    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
-    normalizar_texto_certificacao,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    normalizar_chave_curso,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     normalizar_idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    normalizar_texto_certificacao,
+    normalizar_texto_curso,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
