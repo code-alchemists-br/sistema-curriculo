@@ -66,6 +66,15 @@ from backend.domain.itens_perfil import (
     validar_e_normalizar_url_link,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+from backend.domain.revisao_curriculo import (
+    PendenciaRevisao,
+    ResultadoRevisao,
+    SecaoRevisao,
+    SeveridadePendencia,
+    revisar_curriculo,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
@@ -177,4 +186,10 @@ __all__ = [
     "UsuarioId",
     # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
     "VagaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    "PendenciaRevisao",
+    "ResultadoRevisao",
+    "SecaoRevisao",
+    "SeveridadePendencia",
+    "revisar_curriculo",
 ]
