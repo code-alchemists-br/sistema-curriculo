@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SugestaoVaga } from "../../../entities/vaga";
 import type { ClienteDecisoesRecomendacao } from "../api/cliente-decisoes-recomendacao";
-import type { ClienteVagasGrupo2 } from "../api/cliente-vagas-grupo2";
+import {
+  FalhaVagasGrupo2,
+  type ClienteVagasGrupo2,
+} from "../api/cliente-vagas-grupo2";
 import { TelaVagasGrupo2 } from "./TelaVagasGrupo2";
 
 afterEach(cleanup);
@@ -135,5 +138,101 @@ describe("TelaVagasGrupo2", () => {
     expect(
       screen.getByRole("button", { name: "Rejeitar recomendação" }),
     ).toBeEnabled();
+  });
+
+  it("apresenta estado de erro com mensagem amigável sem expor detalhes técnicos da integração", async () => {
+    const cliente: ClienteVagasGrupo2 = {
+      listarSugestoes: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "HTTP 500: Falha interna no endpoint http://integracao.parceiro:8080/vagas - stacktrace trace_id_abc123",
+          ),
+        ),
+    };
+
+    render(<TelaVagasGrupo2 cliente={cliente} />);
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent("Não foi possível carregar as vagas");
+    expect(alerta).toHaveTextContent(
+      "Não foi possível carregar as vagas no momento. Tente novamente mais tarde.",
+    );
+
+    expect(screen.queryByText(/HTTP 500/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/endpoint/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/http:\/\//i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/stacktrace/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/trace_id/i)).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Tentar novamente" }),
+    ).toBeEnabled();
+  });
+
+  it("recupera da falha de busca ao clicar em tentar novamente com os critérios preservados", async () => {
+    const usuario = userEvent.setup();
+    const listarSugestoes = vi
+      .fn()
+      .mockRejectedValueOnce(new FalhaVagasGrupo2("tempo-limite"))
+      .mockResolvedValueOnce([sugestao]);
+
+    const cliente: ClienteVagasGrupo2 = { listarSugestoes };
+
+    render(<TelaVagasGrupo2 cliente={cliente} />);
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent(
+      "O serviço de vagas demorou para responder. Verifique sua conexão e tente novamente.",
+    );
+
+    const botaoRecuperar = screen.getByRole("button", {
+      name: "Tentar novamente",
+    });
+    await usuario.click(botaoRecuperar);
+
+    expect(
+      await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(listarSugestoes).toHaveBeenCalledTimes(2);
+    expect(listarSugestoes).toHaveBeenLastCalledWith({ termo: "" });
+  });
+
+  it("preserva a palavra-chave informada no formulário durante o estado de erro e reexecuta com ela", async () => {
+    const usuario = userEvent.setup();
+    const listarSugestoes = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new FalhaVagasGrupo2("resposta-invalida"))
+      .mockResolvedValueOnce([sugestao]);
+
+    const cliente: ClienteVagasGrupo2 = { listarSugestoes };
+
+    render(<TelaVagasGrupo2 cliente={cliente} />);
+    await screen.findByRole("heading", { name: "Nenhuma vaga encontrada" });
+
+    const campo = screen.getByRole("searchbox", { name: "Palavra-chave" });
+    await usuario.type(campo, "Backend");
+    await usuario.click(
+      screen.getByRole("button", { name: "Pesquisar vagas" }),
+    );
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent(
+      "Recebemos uma resposta inesperada ao consultar as vagas. Tente novamente mais tarde.",
+    );
+    expect(campo).toHaveValue("Backend");
+
+    const botaoRecuperar = screen.getByRole("button", {
+      name: "Tentar novamente",
+    });
+    await usuario.click(botaoRecuperar);
+
+    expect(
+      await screen.findByRole("heading", { name: sugestao.vaga.titulo }),
+    ).toBeInTheDocument();
+    expect(campo).toHaveValue("Backend");
+    expect(listarSugestoes).toHaveBeenLastCalledWith({ termo: "Backend" });
   });
 });

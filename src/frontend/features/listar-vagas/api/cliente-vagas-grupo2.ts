@@ -27,10 +27,19 @@ export interface CriteriosPesquisaVagas {
   termo: string;
 }
 
-/** Enumera as falhas que a tela consegue comunicar ao estudante. */
-export type CodigoFalhaVagasGrupo2 = "indisponivel" | "resposta-invalida";
+/**
+ * Enumera os códigos das falhas que a tela de vagas comunica ao estudante de modo controlado.
+ */
+export type CodigoFalhaVagasGrupo2 =
+  "indisponivel" | "resposta-invalida" | "tempo-limite";
 
-/** Representa uma falha conhecida da fronteira de vagas externas. */
+/**
+ * Representa uma falha conhecida e controlada da fronteira de vagas externas.
+ *
+ * **O que faz:** Encapsula o código de erro mapeado da comunicação externa.
+ * **Como faz:** Estende a classe Error padrão atribuindo o código tipado à propriedade imutável `codigo`.
+ * **Qual finalidade atende:** Permite que a camada de UI identifique o tipo de falha sem receber exceções brutas ou detalhes de rede.
+ */
 export class FalhaVagasGrupo2 extends Error {
   constructor(public readonly codigo: CodigoFalhaVagasGrupo2) {
     super(codigo);
@@ -46,9 +55,9 @@ export interface ClienteVagasGrupo2 {
 /**
  * Cria um cliente de interface a partir de uma função que consulta o Grupo 2.
  *
- * A fábrica recebe os critérios da tela, delega a consulta ao adaptador
- * injetado e converte a resposta externa para o modelo interno. Ela existe
- * para preservar o filtro informado sem acoplar a UI a endpoint ou transporte.
+ * **O que faz:** Encapsula a chamada remota e adapta respostas ou falhas para o contrato da interface.
+ * **Como faz:** Recebe os critérios, delega a consulta para o adaptador injetado, valida a resposta externa via `adaptarRespostaGrupo2` e intercepta erros de transporte ou timeout para instâncias de `FalhaVagasGrupo2`.
+ * **Qual finalidade atende:** Preserva o filtro informado e isola a tela de detalhes de rede, HTTP e serialização externa sem vazar termos técnicos.
  */
 export function criarClienteVagasGrupo2(
   requisitarResposta: (criterios: CriteriosPesquisaVagas) => Promise<unknown>,
@@ -60,6 +69,12 @@ export function criarClienteVagasGrupo2(
         return adaptarRespostaGrupo2(resposta);
       } catch (erro: unknown) {
         if (erro instanceof FalhaVagasGrupo2) throw erro;
+        if (
+          erro instanceof Error &&
+          /timeout|tempo[- ]limite|timed?[\s_-]?out/i.test(erro.message)
+        ) {
+          throw new FalhaVagasGrupo2("tempo-limite");
+        }
         throw new FalhaVagasGrupo2("indisponivel");
       }
     },

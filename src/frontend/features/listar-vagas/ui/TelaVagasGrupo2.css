@@ -24,7 +24,8 @@
 }
 
 .vagas-grupo2__pesquisa button,
-.vagas-grupo2__decisoes button {
+.vagas-grupo2__decisoes button,
+.vagas-grupo2__botao-recuperar {
   min-height: 2.75rem;
   padding: 0.625rem 0.875rem;
   border: 0;
@@ -50,6 +51,19 @@
   border: 1px solid #cbd5e1;
   border-radius: 0.75rem;
   background: #f8fafc;
+}
+
+.vagas-grupo2__estado--erro {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.vagas-grupo2__estado--erro h2 {
+  color: #991b1b;
+}
+
+.vagas-grupo2__estado--erro p {
+  color: #7f1d1d;
 }
 
 .vagas-grupo2__card h2,
@@ -100,7 +114,8 @@
 .vagas-grupo2__acao:focus-visible,
 .vagas-grupo2__pesquisa input:focus-visible,
 .vagas-grupo2__pesquisa button:focus-visible,
-.vagas-grupo2__decisoes button:focus-visible {
+.vagas-grupo2__decisoes button:focus-visible,
+.vagas-grupo2__botao-recuperar:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
 }

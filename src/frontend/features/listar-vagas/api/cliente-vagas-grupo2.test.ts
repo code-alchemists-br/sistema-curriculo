@@ -61,11 +61,24 @@ describe("criarClienteVagasGrupo2", () => {
   });
 
   it("traduz falha de transporte para indisponibilidade", async () => {
-    const requisitarResposta = vi.fn().mockRejectedValue(new Error("timeout"));
+    const requisitarResposta = vi
+      .fn()
+      .mockRejectedValue(new Error("falha generica de rede"));
     const cliente = criarClienteVagasGrupo2(requisitarResposta);
 
     await expect(cliente.listarSugestoes({ termo: "" })).rejects.toEqual(
       new FalhaVagasGrupo2("indisponivel"),
+    );
+  });
+
+  it("traduz falha com timeout para tempo-limite", async () => {
+    const requisitarResposta = vi
+      .fn()
+      .mockRejectedValue(new Error("Request timed out"));
+    const cliente = criarClienteVagasGrupo2(requisitarResposta);
+
+    await expect(cliente.listarSugestoes({ termo: "" })).rejects.toEqual(
+      new FalhaVagasGrupo2("tempo-limite"),
     );
   });
 });
