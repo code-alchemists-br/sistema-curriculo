@@ -1,11 +1,12 @@
+import { FormularioCertificacao } from "../../../features/cadastro-certificacoes";
 import { FormularioCursos } from "../../../features/edit-courses";
 import { FormularioIdiomas } from "../../../features/edit-languages";
 
 /**
  * Compõe a página de cadastro de cursos, certificações e idiomas.
  *
- * A página reúne as duas features independentes em uma única tela do Wizard,
- * delegando toda a lógica de formulário para cada feature. Ela existe para
+ * A página reúne as features independentes de cursos, certificações e idiomas em uma
+ * única tela do Wizard, delegando a lógica de formulário para cada feature. Ela existe para
  * manter a composição de página separada das regras de validação e estado.
  */
 export function PaginaCursosIdiomas() {
@@ -21,6 +22,7 @@ export function PaginaCursosIdiomas() {
           idiomas que domina.
         </p>
         <FormularioCursos />
+        <FormularioCertificacao />
         <FormularioIdiomas />
       </section>
     </main>
