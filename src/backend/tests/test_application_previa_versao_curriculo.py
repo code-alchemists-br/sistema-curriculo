@@ -178,12 +178,17 @@ def _criar_curriculo(usuario_id: UsuarioId, *itens: object) -> Curriculo:
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def _formacao(
-    usuario_id: UsuarioId, inicio: date, curso: str = "ADS"
+    usuario_id: UsuarioId,
+    inicio: date,
+    curso: str = "ADS",
+    status: StatusFormacaoAcademica = StatusFormacaoAcademica.EM_ANDAMENTO,
+    fim: date | None = None,
 ) -> FormacaoAcademica:
-    """Cria uma formação válida do usuário com o início de período indicado.
+    """Cria uma formação válida do usuário com período e situação indicados.
 
-    A função fixa os demais campos com valores neutros. Ela existe para variar
-    apenas o que a ordenação observa.
+    A função fixa instituição e nível com valores neutros e, por padrão, cria
+    uma formação em andamento sem término. Ela existe para variar apenas o que
+    a ordenação observa: situação, início e término.
     """
     return FormacaoAcademica(
         id=FormacaoAcademicaId(uuid4()),
@@ -191,8 +196,8 @@ def _formacao(
         instituicao="FATEC",
         curso=curso,
         nivel=NivelFormacaoAcademica.GRADUACAO,
-        periodo=Periodo(inicio=inicio),
-        status=StatusFormacaoAcademica.EM_ANDAMENTO,
+        periodo=Periodo(inicio=inicio, fim=fim),
+        status=status,
     )
 
 
@@ -340,6 +345,58 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(previa.competencias, (competencia_a, competencia_b))
         self.assertEqual(previa.idiomas, (idioma_a, idioma_b))
         self.assertEqual(previa.documentos, (documento_a, documento_b))
+
+    # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+    async def test_formacoes_seguem_ordenacao_de_dominio_por_situacao_e_data(
+        self,
+    ) -> None:
+        """Confirma que a prévia ordena formações pela regra de domínio.
+
+        O teste seleciona, fora de ordem, uma interrompida recente, duas
+        concluídas e uma em andamento antiga; a prévia deve trazer a em
+        andamento, as concluídas do término mais recente ao mais antigo e a
+        interrompida por último. Ele existe para garantir que a consulta expõe
+        a ordenação por situação e data, e não apenas pelo início.
+        """
+        usuario = _criar_usuario()
+        em_andamento = _formacao(usuario.id, date(2018, 2, 1), "Mestrado")
+        concluida_recente = _formacao(
+            usuario.id,
+            date(2016, 2, 1),
+            "Tecnólogo",
+            StatusFormacaoAcademica.CONCLUIDO,
+            date(2023, 12, 1),
+        )
+        concluida_antiga = _formacao(
+            usuario.id,
+            date(2019, 2, 1),
+            "Técnico",
+            StatusFormacaoAcademica.CONCLUIDO,
+            date(2020, 12, 1),
+        )
+        interrompida = _formacao(
+            usuario.id,
+            date(2024, 2, 1),
+            "Especialização",
+            StatusFormacaoAcademica.INTERROMPIDO,
+            date(2024, 8, 1),
+        )
+        itens = (interrompida, concluida_antiga, em_andamento, concluida_recente)
+        curriculo = _criar_curriculo(usuario.id, *itens)
+        caso = GerarPreviaVersaoCurriculo(
+            RepositorioCurriculoSpy([curriculo]),
+            RepositorioUsuarioStub([usuario]),
+            _consulta_para(*itens),
+        )
+
+        previa = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id)
+        )
+
+        self.assertEqual(
+            previa.formacoes,
+            (em_andamento, concluida_recente, concluida_antiga, interrompida),
+        )
 
     async def test_mesma_selecao_em_ordens_diferentes_produz_a_mesma_previa(
         self,
