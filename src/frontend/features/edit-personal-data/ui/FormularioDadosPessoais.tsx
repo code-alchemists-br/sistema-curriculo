@@ -18,13 +18,7 @@ export interface FormularioDadosPessoaisProps {
   cliente: ClienteDadosPessoais;
 }
 
-/**
- * Renderiza e controla o formulário de dados pessoais e contato.
- *
- * Mantém valores e erros localmente, permite incluir telefones e delega o
- * salvamento ao cliente injetado. Também preserva a navegação por teclado ao
- * transferir o foco para o telefone recém-adicionado.
- */
+/** Renderiza e controla o formulário de dados pessoais e contato. */
 export function FormularioDadosPessoais({
   cliente,
 }: FormularioDadosPessoaisProps) {
@@ -35,15 +29,12 @@ export function FormularioDadosPessoais({
   const [enviando, setEnviando] = useState(false);
   const focoNoNovoTelefone = useRef(false);
 
-  /**
-   * Recebe o último telefone renderizado e transfere o foco quando ele acabou
-   * de ser incluído pelo botão de adicionar.
-   */
+  /** Move o foco para o telefone recém-adicionado, depois que ele for renderizado. */
   function definirUltimoTelefone(elemento: HTMLInputElement | null): void {
-    if (elemento === null || !focoNoNovoTelefone.current) return;
-
-    elemento.focus();
-    focoNoNovoTelefone.current = false;
+    if (elemento !== null && focoNoNovoTelefone.current) {
+      elemento.focus();
+      focoNoNovoTelefone.current = false;
+    }
   }
 
   /** Atualiza um campo simples e remove o feedback anterior daquele campo. */
@@ -64,7 +55,6 @@ export function FormularioDadosPessoais({
         indiceAtual === indice ? telefone : valor,
       ),
     }));
-
     setErros((atuais) => {
       const errosDeTelefone = { ...atuais.telefones };
       delete errosDeTelefone[indice];
@@ -77,23 +67,19 @@ export function FormularioDadosPessoais({
             : errosDeTelefone,
       };
     });
-
     setMensagem(null);
   }
 
-  /** Inclui um telefone e agenda o foco no novo campo. */
+  /** Inclui um novo telefone e sinaliza que ele deve receber foco. */
   function adicionarTelefone(): void {
     focoNoNovoTelefone.current = true;
-
     setValores((atuais) => ({
       ...atuais,
       telefones: [...atuais.telefones, ""],
     }));
   }
 
-  /**
-   * Valida e salva os dados, preservando o formulário se houver falha.
-   */
+  /** Valida e salva os dados, preservando os valores para uma tentativa posterior em caso de falha. */
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -121,7 +107,7 @@ export function FormularioDadosPessoais({
   }
 
   return (
-    <form noValidate onSubmit={enviarFormulario}>
+    <form aria-busy={enviando} noValidate onSubmit={enviarFormulario}>
       <CampoTexto
         erro={erros.nomeCompleto}
         id="nome-completo"
@@ -130,7 +116,6 @@ export function FormularioDadosPessoais({
         required
         value={valores.nomeCompleto}
       />
-
       <CampoTexto
         erro={erros.enderecoCompleto}
         id="endereco-completo"
@@ -139,10 +124,8 @@ export function FormularioDadosPessoais({
         required
         value={valores.enderecoCompleto}
       />
-
       <div className="field">
         <span>Telefones</span>
-
         {valores.telefones.map((telefone, indice) => {
           const id = `telefone-${indice}`;
           const erro = erros.telefones?.[indice];
@@ -152,7 +135,6 @@ export function FormularioDadosPessoais({
           return (
             <div key={id}>
               <label htmlFor={id}>Telefone {indice + 1}</label>
-
               <input
                 aria-describedby={erro === undefined ? undefined : idErro}
                 aria-invalid={erro === undefined ? undefined : true}
@@ -166,7 +148,6 @@ export function FormularioDadosPessoais({
                 type="tel"
                 value={telefone}
               />
-
               {erro !== undefined && (
                 <p className="field__error" id={idErro}>
                   {erro}
@@ -175,12 +156,10 @@ export function FormularioDadosPessoais({
             </div>
           );
         })}
-
         <button onClick={adicionarTelefone} type="button">
           + Adicionar telefone
         </button>
       </div>
-
       <CampoTexto
         erro={erros.email}
         id="email"
@@ -190,7 +169,6 @@ export function FormularioDadosPessoais({
         type="email"
         value={valores.email}
       />
-
       <CampoTexto
         ajuda="Informe o endereço público do seu perfil profissional, se possuir um."
         id="linkedin"
@@ -199,7 +177,6 @@ export function FormularioDadosPessoais({
         type="url"
         value={valores.linkedIn}
       />
-
       <CampoTexto
         ajuda="Informe o endereço público do seu currículo na Plataforma Lattes, se possuir um."
         id="curriculo-lattes"
@@ -208,7 +185,7 @@ export function FormularioDadosPessoais({
         type="url"
         value={valores.curriculoLattes}
       />
-
+      {enviando && <p role="status">Salvando dados pessoais...</p>}
       {mensagem !== null && (
         <p
           className="form-message"
@@ -217,7 +194,6 @@ export function FormularioDadosPessoais({
           {mensagem}
         </p>
       )}
-
       <button disabled={enviando} type="submit">
         {enviando ? "Salvando dados..." : "Salvar dados pessoais"}
       </button>
@@ -237,7 +213,7 @@ interface CampoTextoProps {
   value: string;
 }
 
-/** Renderiza um campo com rótulo, ajuda opcional e erro associado. */
+/** Renderiza um campo textual, incluindo ajuda e feedback de erro acessíveis. */
 function CampoTexto({
   ajuda,
   erro,
@@ -266,13 +242,11 @@ function CampoTexto({
           </span>
         )}
       </label>
-
       {ajuda !== undefined && (
         <span hidden id={idAjuda}>
           {ajuda}
         </span>
       )}
-
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
@@ -282,7 +256,6 @@ function CampoTexto({
         type={type}
         value={value}
       />
-
       {erro !== undefined && (
         <p className="field__error" id={idErro}>
           {erro}
