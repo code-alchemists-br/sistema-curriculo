@@ -1,9 +1,11 @@
 /* Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001 */
 
+@import "../../shared/styles/tokens.css";
+
 :root {
-  color: #1f2937;
-  background: #f8fafc;
-  font-family: Arial, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-body);
+  font-family: var(--font-family-base);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -15,7 +17,12 @@
 body {
   min-width: 320px;
   min-height: 100vh;
-  margin: 0;
+  margin: var(--space-0);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-body);
 }
 
 button,
@@ -26,82 +33,84 @@ input {
 .app-shell {
   display: grid;
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: var(--space-6);
   place-items: center;
 }
 
 .app-shell__content {
   width: min(100%, 42rem);
-  padding: 2rem;
-  border-radius: 0.75rem;
-  background: #ffffff;
-  box-shadow: 0 0.5rem 1.5rem rgb(15 23 42 / 12%);
+  padding: var(--space-8);
+  border-radius: var(--space-3);
+  background: var(--color-bg-surface);
+  box-shadow: 0 var(--space-2) var(--space-6) rgb(15 23 42 / 12%);
 }
 
 .eyebrow {
-  margin: 0;
-  color: #2563eb;
-  font-weight: 700;
+  margin: var(--space-0);
+  color: var(--color-focus-outline);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .tabs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-  margin: 2rem 0 1.5rem;
+  gap: var(--space-2);
+  margin: var(--space-8) var(--space-0) var(--space-6);
 }
 
 .tabs__button,
 form button {
   min-height: 2.75rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--space-2);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .tabs__button {
-  background: #e2e8f0;
+  background: var(--color-border-subtle);
   color: #1e293b;
 }
 
 .tabs__button[aria-selected="true"],
 form button {
-  background: #2563eb;
+  background: var(--color-focus-outline);
   color: #fff;
 }
 
 .account-form form {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .field {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .field input {
   width: 100%;
   min-height: 2.75rem;
-  padding: 0.625rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--space-2);
 }
 
 .field__error,
 .form-message {
-  margin: 0;
+  margin: var(--space-0);
+  font-size: var(--font-size-sm);
 }
 
 .field__error,
 .form-message--error {
-  color: #b91c1c;
+  color: var(--color-error-text);
 }
 
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid #93c5fd;
+  outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -113,19 +122,19 @@ button:disabled {
 /* Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001 */
 .field textarea {
   width: 100%;
-  padding: 0.625rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--space-2);
   font: inherit;
   resize: vertical;
 }
 
 @media (max-width: 30rem) {
   .app-shell {
-    padding: 0.75rem;
+    padding: var(--space-3);
   }
 
   .app-shell__content {
-    padding: 1.25rem;
+    padding: var(--space-5);
   }
 }
