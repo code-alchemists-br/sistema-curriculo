@@ -21,6 +21,8 @@ from backend.domain.itens_perfil import (
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     Certificacao,
     Competencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    Curso,
     Documento,
     ExperienciaProfissional,
     FormacaoAcademica,
@@ -37,6 +39,8 @@ from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    CursoId,
     Email,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
@@ -352,6 +356,38 @@ class GeradorIdiomaId(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class RepositorioCurso(Protocol):
+    """Define a consulta e a persistência de cursos válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    cursos equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        nome_normalizado: str,
+        instituicao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe curso com a chave lógica de nome e instituição fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, nome e
+        instituição canônicos, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, curso: Curso) -> None:
+        """Solicita a persistência assíncrona de um curso válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 class RepositorioCertificacao(Protocol):
     """Define a consulta e a persistência de certificações válidas.
@@ -381,6 +417,24 @@ class RepositorioCertificacao(Protocol):
         Implementações armazenam a entidade recebida sem acrescentar regra de
         negócio. O método existe para separar a intenção de cadastro do adapter
         que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class GeradorCursoId(Protocol):
+    """Fornece identidades tipadas para novos cursos.
+
+    A porta encapsula a origem da identidade e devolve ``CursoId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CursoId:
+        """Gera a identidade do próximo curso cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
         """
 
 

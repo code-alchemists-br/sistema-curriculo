@@ -27,6 +27,10 @@ from backend.api.certificacao import (
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
 from backend.api.competencia import CadastroCompetenciaExecutor
 from backend.api.competencia import criar_router as criar_router_competencia
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+from backend.api.curso import CadastroCursoExecutor
+from backend.api.curso import criar_router as criar_router_curso
 from backend.api.dados_contato import (
     AtualizacaoDadosContatoExecutor,
 )
@@ -153,6 +157,8 @@ def create_app(
     consultar_perfil: ConsultaPerfilExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     cadastrar_idioma: CadastroIdiomaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    cadastrar_curso: CadastroCursoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     cadastrar_certificacao: CadastroCertificacaoExecutor | None = None,
 ) -> FastAPI:
@@ -160,9 +166,9 @@ def create_app(
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
-    idiomas, certificações, formações acadêmicas, versões de currículo, seleção
-    de itens, listagem, exclusão de versão, experiências profissionais e prévia
-    com os executores recebidos; ausências permanecem explícitas e são traduzidas
+    idiomas, cursos, certificações, formações acadêmicas, versões de currículo,
+    seleção de itens, listagem, exclusão de versão, experiências profissionais e
+    prévia com os executores recebidos; ausências permanecem explícitas e são traduzidas
     por cada router em indisponibilidade. Quando um autenticador é fornecido,
     instala o middleware que valida sessões nas rotas privadas. Ela existe para
     concentrar a composição na camada externa, mantendo Application e domínio
@@ -192,6 +198,8 @@ def create_app(
     app.include_router(criar_router_competencia(cadastrar_competencia))
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     app.include_router(criar_router_idioma(cadastrar_idioma))
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    app.include_router(criar_router_curso(cadastrar_curso))
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     app.include_router(criar_router_certificacao(cadastrar_certificacao))
     app.include_router(
