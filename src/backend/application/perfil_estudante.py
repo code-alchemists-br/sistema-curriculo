@@ -59,12 +59,13 @@ class PerfilExcluido(ValueError):
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
 class FormacaoAcademicaNaoEncontrada(LookupError):
-    """Sinaliza que a formação não existe ou não pertence ao usuário solicitante.
+    """Sinaliza formação ausente, excluída no fluxo ativo ou de outro usuário.
 
     A falha representa ambos os resultados de busca sob o mesmo tipo e
     mensagem, sem expor detalhes de propriedade. Ela existe para interromper a
-    edição de formações ausentes ou alheias de modo seguro.
+    edição ou exclusão de formações ausentes ou alheias de modo seguro.
     """
 
 
@@ -144,6 +145,20 @@ class EditarFormacaoAcademicaEntrada:
     nivel: NivelFormacaoAcademica
     periodo: Periodo
     status: StatusFormacaoAcademica
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+@dataclass(frozen=True, slots=True)
+class ExcluirFormacaoAcademicaEntrada:
+    """Agrupa proprietário e formação para a intenção de exclusão lógica.
+
+    A entrada contém somente IDs tipados já resolvidos pela fronteira externa.
+    Ela existe para manter a exclusão própria independente de HTTP e impedir
+    que a Application receba identidade de transporte sem validação.
+    """
+
+    usuario_id: UsuarioId
+    formacao_id: FormacaoAcademicaId
 
 
 class EditarPerfil:
@@ -265,6 +280,7 @@ class EditarFormacaoAcademica:
         """
         self._repositorio_formacao = repositorio_formacao
 
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     async def executar(
         self, entrada: EditarFormacaoAcademicaEntrada
     ) -> FormacaoAcademica:
@@ -290,8 +306,82 @@ class EditarFormacaoAcademica:
             periodo=entrada.periodo,
             status=entrada.status,
         )
-        await self._repositorio_formacao.atualizar(formacao_editada)
+        atualizada = await self._repositorio_formacao.atualizar(formacao_editada)
+        if not atualizada:
+            raise FormacaoAcademicaNaoEncontrada(
+                "Formação acadêmica não encontrada."
+            )
         return formacao_editada
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+class ExcluirFormacaoAcademica:
+    """Exclui logicamente uma formação própria e trata repetição como sucesso.
+
+    O caso busca inclusive registros excluídos sob ID e proprietário, usa o
+    relógio somente na primeira transição e relê após conflito concorrente.
+    Ele existe para remover formação ativa sem purga e sem revelar itens alheios.
+    """
+
+    def __init__(
+        self,
+        repositorio_formacao: RepositorioFormacaoAcademica,
+        relogio: Relogio,
+    ) -> None:
+        """Recebe as portas de formação e tempo usadas pela exclusão.
+
+        O construtor guarda abstrações que podem ser substituídas por doubles.
+        Ele existe para manter a orquestração independente de persistência e
+        tornar instante e concorrência determinísticos nos testes.
+        """
+        self._repositorio_formacao = repositorio_formacao
+        self._relogio = relogio
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def executar(
+        self, entrada: ExcluirFormacaoAcademicaEntrada
+    ) -> FormacaoAcademica:
+        """Exclui a formação própria ou devolve seu estado já excluído.
+
+        A operação consulta por ID e proprietário incluindo tombstones, marca
+        somente registros ativos e relê em caso de disputa para preservar o
+        primeiro instante. Ela existe para tornar DELETE idempotente e evitar
+        distinguir ausência de propriedade alheia.
+        """
+        formacao = await self._repositorio_formacao.obter_por_id_e_usuario_incluindo_excluidas(
+            entrada.formacao_id, entrada.usuario_id
+        )
+        if formacao is None or formacao.usuario_id != entrada.usuario_id:
+            raise FormacaoAcademicaNaoEncontrada(
+                "Formação acadêmica não encontrada."
+            )
+        if formacao.excluida:
+            return formacao
+
+        instante_exclusao = self._relogio.agora()
+        formacao_excluida = formacao.excluir(instante_exclusao)
+        marcada = await self._repositorio_formacao.marcar_excluida(
+            entrada.formacao_id,
+            entrada.usuario_id,
+            instante_exclusao,
+        )
+        if marcada:
+            return formacao_excluida
+
+        formacao_recarregada = (
+            await self._repositorio_formacao.obter_por_id_e_usuario_incluindo_excluidas(
+                entrada.formacao_id, entrada.usuario_id
+            )
+        )
+        if (
+            formacao_recarregada is None
+            or formacao_recarregada.usuario_id != entrada.usuario_id
+            or not formacao_recarregada.excluida
+        ):
+            raise FormacaoAcademicaNaoEncontrada(
+                "Formação acadêmica não encontrada."
+            )
+        return formacao_recarregada
 
 
 class ExcluirPerfil:

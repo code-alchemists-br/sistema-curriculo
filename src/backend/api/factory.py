@@ -53,6 +53,8 @@ from backend.api.formacao_academica import (
     CadastroFormacaoAcademicaExecutor,
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     EdicaoFormacaoAcademicaExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    ExclusaoFormacaoAcademicaExecutor,
 )
 from backend.api.formacao_academica import (
     criar_router as criar_router_formacao_academica,
@@ -155,15 +157,17 @@ def create_app(
     cadastrar_idioma: CadastroIdiomaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     cadastrar_certificacao: CadastroCertificacaoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    excluir_formacao_academica: ExclusaoFormacaoAcademicaExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, certificações, formações acadêmicas, versões de currículo, seleção
-    de itens, listagem, exclusão de versão, experiências profissionais e prévia
-    com os executores recebidos; ausências permanecem explícitas e são traduzidas
-    por cada router em indisponibilidade. Quando um autenticador é fornecido,
+    de itens, listagem, exclusões, experiências profissionais e prévia com os
+    executores recebidos; ausências permanecem explícitas e são traduzidas por
+    cada router em indisponibilidade. Quando um autenticador é fornecido,
     instala o middleware que valida sessões nas rotas privadas. Ela existe para
     concentrar a composição na camada externa, mantendo Application e domínio
     livres do framework.
@@ -211,7 +215,9 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     app.include_router(
         criar_router_formacao_academica(
-            cadastrar_formacao_academica, editar_formacao_academica
+            cadastrar_formacao_academica,
+            editar_formacao_academica,
+            excluir_formacao_academica,
         )
     )
     app.include_router(

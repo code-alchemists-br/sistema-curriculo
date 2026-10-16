@@ -6,7 +6,9 @@ persistência relacional mantendo a transação sob controle da composição.
 """
 
 # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.ports import RepositorioFormacaoAcademica
@@ -64,6 +66,25 @@ class RepositorioFormacaoAcademicaSqlAlchemy(RepositorioFormacaoAcademica):
         consulta = select(FormacaoAcademicaRegistro).where(
             FormacaoAcademicaRegistro.id == formacao_id.valor,
             FormacaoAcademicaRegistro.usuario_id == usuario_id.valor,
+            FormacaoAcademicaRegistro.deleted_at.is_(None),
+        )
+        registro = await self._session.scalar(consulta)
+        if registro is None:
+            return None
+        return para_formacao_academica(registro)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Obtém formação ativa ou excluída após conferir identidade e dono.
+
+        A consulta restringe simultaneamente ID e usuário sem filtro de exclusão,
+        permitindo à operação de exclusão repetir-se sem revelar registros alheios.
+        """
+        consulta = select(FormacaoAcademicaRegistro).where(
+            FormacaoAcademicaRegistro.id == formacao_id.valor,
+            FormacaoAcademicaRegistro.usuario_id == usuario_id.valor,
         )
         registro = await self._session.scalar(consulta)
         if registro is None:
@@ -71,26 +92,56 @@ class RepositorioFormacaoAcademicaSqlAlchemy(RepositorioFormacaoAcademica):
         return para_formacao_academica(registro)
 
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    async def atualizar(self, formacao: FormacaoAcademica) -> None:
-        """Altera somente os campos mutáveis do registro já persistido.
+    async def atualizar(self, formacao: FormacaoAcademica) -> bool:
+        """Atualiza condicionalmente os seis campos de uma formação ativa.
 
-        O adapter localiza o modelo pela identidade e proprietário da entidade,
-        copia os seis valores editáveis e aguarda ``flush`` sem adicionar outro
-        registro nem alterar IDs. Ele existe para salvar a edição na sessão e
-        deixar o commit sob responsabilidade da composição.
+        Um UPDATE atômico confere ID, proprietário e estado ativo, sincroniza
+        objetos carregados e faz flush sem commit. O booleano permite à
+        Application traduzir concorrência ou ausência como não encontrada.
         """
-        consulta = select(FormacaoAcademicaRegistro).where(
-            FormacaoAcademicaRegistro.id == formacao.id.valor,
-            FormacaoAcademicaRegistro.usuario_id == formacao.usuario_id.valor,
+        instrucao = (
+            update(FormacaoAcademicaRegistro)
+            .where(
+                FormacaoAcademicaRegistro.id == formacao.id.valor,
+                FormacaoAcademicaRegistro.usuario_id == formacao.usuario_id.valor,
+                FormacaoAcademicaRegistro.deleted_at.is_(None),
+            )
+            .values(
+                instituicao=formacao.instituicao,
+                curso=formacao.curso,
+                nivel=formacao.nivel.value,
+                data_inicio=formacao.periodo.inicio,
+                data_fim=formacao.periodo.fim,
+                status=formacao.status.value,
+            )
+            .execution_options(synchronize_session="fetch")
         )
-        registro = await self._session.scalar(consulta)
-        if registro is None:
-            return
-
-        registro.instituicao = formacao.instituicao
-        registro.curso = formacao.curso
-        registro.nivel = formacao.nivel.value
-        registro.data_inicio = formacao.periodo.inicio
-        registro.data_fim = formacao.periodo.fim
-        registro.status = formacao.status.value
+        resultado = await self._session.execute(instrucao)
         await self._session.flush()
+        return resultado.rowcount == 1
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def marcar_excluida(
+        self,
+        formacao_id: FormacaoAcademicaId,
+        usuario_id: UsuarioId,
+        deleted_at: datetime,
+    ) -> bool:
+        """Marca como excluída somente uma formação ativa do proprietário.
+
+        O UPDATE condicional preserva o primeiro instante em concorrências,
+        sincroniza identidades ORM e faz flush sem controlar o commit externo.
+        """
+        instrucao = (
+            update(FormacaoAcademicaRegistro)
+            .where(
+                FormacaoAcademicaRegistro.id == formacao_id.valor,
+                FormacaoAcademicaRegistro.usuario_id == usuario_id.valor,
+                FormacaoAcademicaRegistro.deleted_at.is_(None),
+            )
+            .values(deleted_at=deleted_at)
+            .execution_options(synchronize_session="fetch")
+        )
+        resultado = await self._session.execute(instrucao)
+        await self._session.flush()
+        return resultado.rowcount == 1

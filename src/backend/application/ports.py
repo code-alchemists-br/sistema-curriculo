@@ -123,23 +123,53 @@ class RepositorioFormacaoAcademica(Protocol):
         """
 
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     async def obter_por_id_e_usuario(
         self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
     ) -> FormacaoAcademica | None:
         """Obtém a formação somente quando pertence ao usuário informado.
 
-        A implementação consulta conjuntamente identidade e proprietário e
-        retorna ausência tanto para ID inexistente quanto alheio. Ela existe
-        para que a edição não revele a existência de formações de outros usuários.
+        A implementação consulta conjuntamente identidade e proprietário,
+        ignora formações excluídas e retorna ausência para ID inexistente,
+        alheio ou excluído. Ela existe para que edição trate esses estados
+        como não encontrados sem revelar dados de terceiros.
         """
 
-    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    async def atualizar(self, formacao: FormacaoAcademica) -> None:
-        """Solicita a atualização de uma formação existente e válida.
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Obtém formação própria ativa ou excluída, sem revelar itens alheios.
 
-        A implementação persiste o estado completo recebido sem alterar
-        invariantes ou controlar a tecnologia/transação. Ela existe para salvar
-        a edição decidida pelo caso de uso através de uma porta interna.
+        A implementação restringe a mesma consulta por ID e proprietário e
+        inclui estados logicamente excluídos, retornando ``None`` para ausência
+        ou outro dono. Ela existe exclusivamente para tornar a exclusão
+        idempotente sem distinguir existência de registros de terceiros.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def marcar_excluida(
+        self,
+        formacao_id: FormacaoAcademicaId,
+        usuario_id: UsuarioId,
+        deleted_at: datetime,
+    ) -> bool:
+        """Marca como excluída somente uma formação própria ainda ativa.
+
+        A implementação condiciona a escrita à identidade, proprietário e
+        ausência de marcador, devolvendo ``True`` se uma linha foi alterada ou
+        ``False`` se nenhuma foi. Ela existe para tornar a exclusão concorrente
+        idempotente sem sobrescrever o primeiro instante.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def atualizar(self, formacao: FormacaoAcademica) -> bool:
+        """Atualiza uma formação própria somente enquanto ela estiver ativa.
+
+        A implementação condiciona a escrita à identidade, proprietário e
+        ausência de exclusão, devolvendo ``True`` se atualizou ou ``False`` se
+        não afetou linha. Ela existe para que edições concorrentes não
+        ressuscitem registros e possam ser traduzidas como não encontradas.
         """
 
 
@@ -565,9 +595,11 @@ class ConsultaItemPerfil(Protocol):
         """Obtém assincronamente o item referenciado, quando ele existir.
 
         Implementações consultam o armazenamento do tipo indicado pela
-        referência e devolvem a entidade ou ausência, sem aplicar regras de
-        propriedade. O método existe para que o caso de uso leia o conteúdo dos
-        itens selecionados e decida sozinho o que pode ser exibido.
+        referência e devolvem a entidade ou ausência. Para uma formação
+        excluída, a implementação futura de prévia/exportação deve incluí-la
+        somente quando uma seleção persistida a referenciar e o proprietário
+        conferir. O método existe para ler itens selecionados sem expor dados
+        de outro estudante.
         """
 
 

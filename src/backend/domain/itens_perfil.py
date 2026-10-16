@@ -7,7 +7,8 @@ transições da conta e permitir seu crescimento coeso fora de um módulo genér
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime
 from enum import Enum
 from unicodedata import category
 
@@ -97,6 +98,7 @@ def _normalizar_texto_formacao(valor: str, campo: str) -> str:
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
 @dataclass(frozen=True, slots=True)
 class FormacaoAcademica:
     """Representa uma formação acadêmica reutilizável pertencente a um usuário.
@@ -114,6 +116,7 @@ class FormacaoAcademica:
     nivel: NivelFormacaoAcademica
     periodo: Periodo
     status: StatusFormacaoAcademica
+    deleted_at: datetime | None = None
 
     def __post_init__(self) -> None:
         """Protege vocabulário, conteúdo textual e período da formação.
@@ -141,6 +144,7 @@ class FormacaoAcademica:
         object.__setattr__(self, "curso", curso)
 
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     def editar(
         self,
         instituicao: str,
@@ -164,7 +168,35 @@ class FormacaoAcademica:
             nivel=nivel,
             periodo=periodo,
             status=status,
+            deleted_at=self.deleted_at,
         )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    @property
+    def excluida(self) -> bool:
+        """Informa se a formação está logicamente excluída.
+
+        A propriedade deriva o estado da presença de ``deleted_at`` sem
+        consultar persistência ou relógio. Ela existe para orientar as
+        transições de perfil e tornar exclusões repetidas explícitas.
+        """
+        return self.deleted_at is not None
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def excluir(self, excluida_em: datetime) -> FormacaoAcademica:
+        """Produz a exclusão lógica da formação, preservando o primeiro instante.
+
+        A transição exige um datetime com fuso e usa ``replace`` somente
+        enquanto a entidade estiver ativa; chamadas repetidas devolvem a mesma
+        entidade. Ela existe para retirar o item do perfil sem purga física.
+        """
+        if self.excluida:
+            return self
+        if excluida_em.tzinfo is None or excluida_em.utcoffset() is None:
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=excluida_em)
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001

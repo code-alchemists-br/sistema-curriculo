@@ -1,8 +1,8 @@
-"""Expõe o cadastro autenticado de formações acadêmicas por HTTP.
+"""Expõe cadastro, edição e exclusão autenticados de formações acadêmicas.
 
-O módulo traduz DTOs de transporte para a entrada da Application e apresenta
-um DTO público explícito. Ele existe para disponibilizar o cadastro sem expor
-entidades ou permitir que o cliente escolha o proprietário.
+O módulo traduz DTOs e identidades da sessão para os casos de uso, e apresenta
+um DTO público explícito para operações com resposta. Ele existe para expor
+essas capacidades sem permitir que o cliente escolha o proprietário.
 """
 
 from datetime import date
@@ -17,6 +17,8 @@ from backend.application.perfil_estudante import (
     CadastrarFormacaoAcademicaEntrada,
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     EditarFormacaoAcademicaEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    ExcluirFormacaoAcademicaEntrada,
     FormacaoAcademicaNaoEncontrada,
 )
 from backend.domain import (
@@ -158,17 +160,35 @@ class EdicaoFormacaoAcademicaExecutor(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+class ExclusaoFormacaoAcademicaExecutor(Protocol):
+    """Define o caso de uso de exclusão lógica consumido pela API.
+
+    O contrato recebe o proprietário autenticado e a formação solicitada sem
+    expor a persistência ao handler; ele existe para isolar o transporte HTTP.
+    """
+
+    async def executar(self, entrada: ExcluirFormacaoAcademicaEntrada) -> FormacaoAcademica:
+        """Exclui logicamente uma formação própria e devolve seu estado.
+
+        O caso de uso garante idempotência e propriedade. O método existe para
+        que a API delegue a operação sem incorporar regras de negócio.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def criar_router(
     cadastrar_formacao: CadastroFormacaoAcademicaExecutor | None,
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     editar_formacao: EdicaoFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    excluir_formacao: ExclusaoFormacaoAcademicaExecutor | None = None,
 ) -> APIRouter:
-    """Cria a rota protegida que cadastra formações acadêmicas.
+    """Cria as rotas protegidas de formação acadêmica.
 
-    O handler obtém o proprietário do estado autenticado da requisição,
-    converte o payload na entrada interna e traduz violações conhecidas em
-    respostas HTTP. Ele existe para expor somente o contrato público de criação.
+    Os handlers obtêm o proprietário do estado autenticado, traduzem as
+    entradas e convertem falhas conhecidas em respostas HTTP. A função existe
+    para expor cadastro, edição e exclusão com contratos públicos explícitos.
     """
     router = APIRouter()
 
@@ -283,5 +303,41 @@ def criar_router(
             data_fim=formacao.periodo.fim,
             status=formacao.status,
         )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    @router.delete(
+        "/formacoes-academicas/{formacao_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def excluir(formacao_id: UUID, request: Request) -> None:
+        """Exclui formação do proprietário da sessão e não retorna conteúdo.
+
+        O handler obtém o dono exclusivamente do estado autenticado, delega a
+        exclusão e converte ausência uniforme em 404. Ele existe para expor a
+        operação idempotente sem aceitar identidade do cliente.
+        """
+        if excluir_formacao is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Exclusão indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        try:
+            await excluir_formacao.executar(
+                ExcluirFormacaoAcademicaEntrada(
+                    usuario_id=UsuarioId(usuario_id),
+                    formacao_id=FormacaoAcademicaId(formacao_id),
+                )
+            )
+        except FormacaoAcademicaNaoEncontrada as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Formação acadêmica não encontrada.",
+            ) from erro
 
     return router
