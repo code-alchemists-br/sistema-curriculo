@@ -1,7 +1,7 @@
 """Testa a construção unitária das entidades independentes do perfil."""
 
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -69,6 +69,58 @@ class EntidadesDoDominioTestCase(unittest.TestCase):
 
         self.assertIs(formacao.usuario_id, usuario_id)
         self.assertIsNone(formacao.periodo.fim)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def test_excluir_formacao_marca_instante_e_preserva_primeiro_valor(self) -> None:
+        """Marca a formação uma vez e torna chamadas posteriores idempotentes.
+
+        O teste usa um instante UTC fixo e compara estado e identidade nas duas
+        chamadas. Ele existe para proteger a exclusão lógica sem substituir a
+        data original em uma repetição.
+        """
+        formacao = _criar_formacao()
+        instante = datetime(2026, 10, 15, 12, tzinfo=timezone.utc)
+
+        excluida = formacao.excluir(instante)
+        repetida = excluida.excluir(datetime(2026, 10, 16, tzinfo=timezone.utc))
+
+        self.assertIsNot(excluida, formacao)
+        self.assertEqual(excluida.deleted_at, instante)
+        self.assertTrue(excluida.excluida)
+        self.assertIs(repetida, excluida)
+        self.assertEqual(repetida.deleted_at, instante)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def test_editar_formacao_preserva_marcador_de_exclusao(self) -> None:
+        """Mantém o ciclo de vida ao construir uma versão editada da entidade.
+
+        O teste exclui uma entidade e chama a edição já existente com dados
+        válidos. Ele existe para garantir que a cópia imutável não apague
+        acidentalmente o marcador de exclusão.
+        """
+        instante = datetime(2026, 10, 15, 12, tzinfo=timezone.utc)
+        formacao = _criar_formacao().excluir(instante)
+
+        editada = formacao.editar(
+            "FATEC",
+            "Sistemas",
+            NivelFormacaoAcademica.TECNOLOGO,
+            Periodo(date(2024, 1, 1)),
+            StatusFormacaoAcademica.EM_ANDAMENTO,
+        )
+
+        self.assertIsNot(editada, formacao)
+        self.assertEqual(editada.deleted_at, instante)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def test_excluir_formacao_rejeita_instante_sem_fuso_horario(self) -> None:
+        """Rejeita timestamp ambíguo antes de alterar o estado da formação.
+
+        O teste fornece um datetime ingênuo e espera a falha de domínio. Ele
+        existe para que a coluna de exclusão represente um instante inequívoco.
+        """
+        with self.assertRaises(RegraDeDominioViolada):
+            _criar_formacao().excluir(datetime(2026, 10, 15, 12))
 
     def test_aceita_todos_os_niveis_academicos(self) -> None:
         """Confirma que o vocabulário contém e aceita cada nível aprovado.

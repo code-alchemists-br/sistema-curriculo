@@ -1,11 +1,11 @@
 """Testa o mapeamento SQLAlchemy e os metadados de formação acadêmica."""
 
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, String, Text
+from sqlalchemy import CheckConstraint, DateTime, String, Text
 from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.schema import CreateTable
@@ -73,6 +73,7 @@ class MapeamentoFormacaoAcademicaTestCase(unittest.TestCase):
         self.assertEqual(registro.nivel, "tecnologo")
         self.assertEqual(registro.status, "em_andamento")
         self.assertEqual(registro.data_fim, date(2030, 12, 1))
+        self.assertIsNone(registro.deleted_at)
 
     def test_reconstroi_entidade_com_enums_e_periodo_tipados(self) -> None:
         """Reconstrói tipos de domínio a partir das colunas SQLAlchemy.
@@ -83,6 +84,21 @@ class MapeamentoFormacaoAcademicaTestCase(unittest.TestCase):
         self.assertEqual(
             para_formacao_academica(para_registro(criar_formacao())), criar_formacao()
         )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def test_mapeia_deleted_at_nos_dois_sentidos(self) -> None:
+        """Preserva instante de exclusão na conversão em ambos os sentidos.
+
+        A conversão parte de entidade marcada e reconstrói o registro e a
+        entidade. O teste existe para não perder o estado lógico na persistência.
+        """
+        instante = datetime(2026, 10, 15, 12, tzinfo=timezone.utc)
+        excluida = criar_formacao().excluir(instante)
+
+        registro = para_registro(excluida)
+
+        self.assertEqual(registro.deleted_at, instante)
+        self.assertEqual(para_formacao_academica(registro).deleted_at, instante)
 
     def test_colunas_e_checks_refletem_o_contrato(self) -> None:
         """Confere tamanhos, armazenamento textual e nomes/expressões dos CHECKs.
@@ -103,6 +119,9 @@ class MapeamentoFormacaoAcademicaTestCase(unittest.TestCase):
         self.assertEqual(tabela.c.curso.type.length, 200)
         self.assertIsInstance(tabela.c.nivel.type, Text)
         self.assertIsInstance(tabela.c.status.type, Text)
+        self.assertIsInstance(tabela.c.deleted_at.type, DateTime)
+        self.assertTrue(tabela.c.deleted_at.type.timezone)
+        self.assertTrue(tabela.c.deleted_at.nullable)
         self.assertIn("length(trim(instituicao)) BETWEEN 1 AND 200", checks[
             "ck_formacoes_instituicao_tamanho"
         ])
@@ -163,7 +182,6 @@ class RepositorioFormacaoAcademicaSqlAlchemyTestCase(unittest.IsolatedAsyncioTes
         self.assertIsInstance(registro, FormacaoAcademicaRegistro)
         session.flush.assert_awaited_once_with()
         session.commit.assert_not_called()
-
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     async def test_obtem_formacao_por_id_e_usuario_e_reconstroi_entidade(self) -> None:
         """Filtra simultaneamente identidade e proprietário na consulta.
@@ -220,40 +238,140 @@ class RepositorioFormacaoAcademicaSqlAlchemyTestCase(unittest.IsolatedAsyncioTes
                 consulta = session.scalar.await_args.args[0]
                 self.assertIn("formacoes_academicas.id", str(consulta))
                 self.assertIn("formacoes_academicas.usuario_id", str(consulta))
+                self.assertIn("formacoes_academicas.deleted_at IS NULL", str(consulta))
 
-    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
-    async def test_atualiza_campos_mutaveis_preservando_identidades_e_sem_commit(
-        self,
-    ) -> None:
-        """Atualiza as seis propriedades mutáveis no registro carregado.
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def test_obtem_incluindo_excluidas_filtrando_id_e_proprietario(self) -> None:
+        """Reconstrói a própria formação sem filtrar sua marca de exclusão.
 
-        O teste usa um registro mapeado existente e verifica os novos textos,
-        enums e datas, além de identidade, proprietário, flush e ausência de
-        commit. Ele existe para proteger a tradução persistente da edição.
+        A sessão double devolve registro marcado e a expressão SQL é inspecionada
+        para confirmar filtro de dono e ausência de consulta apenas por ID.
         """
-        formacao_original = criar_formacao()
-        formacao_editada = formacao_original.editar(
+        registro = para_registro(criar_formacao())
+        registro.deleted_at = datetime(2026, 10, 15, tzinfo=timezone.utc)
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = registro
+        repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario_incluindo_excluidas(
+            FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertEqual(resultado.deleted_at, registro.deleted_at)
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("formacoes_academicas.id", str(consulta))
+        self.assertIn("formacoes_academicas.usuario_id", str(consulta))
+        self.assertNotIn("deleted_at IS NULL", str(consulta))
+        self.assertIn(ID_FORMACAO, consulta.compile().params.values())
+        self.assertIn(ID_USUARIO, consulta.compile().params.values())
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def test_obtem_incluindo_excluidas_devolve_none_para_ausente_ou_alheia(self) -> None:
+        """Não revela registro ausente nem de outro proprietário.
+
+        A consulta conjunta retorna vazio para os cenários indistinguíveis e
+        confirma ambos os filtros na instrução.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = None
+        repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario_incluindo_excluidas(
+            FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertIsNone(resultado)
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("formacoes_academicas.id", str(consulta))
+        self.assertIn("formacoes_academicas.usuario_id", str(consulta))
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def test_atualiza_com_update_condicional_somente_campos_editaveis(self) -> None:
+        """Atualiza seis campos ativos sem carregar ou substituir identidades.
+
+        A instrução SQL e o rowcount do double representam a unidade do adapter,
+        sem executar banco ou alterar objetos ORM carregados.
+        """
+        original = criar_formacao()
+        editada = original.editar(
             instituicao="Universidade Exemplo",
             curso="Ciência de Dados",
             nivel=NivelFormacaoAcademica.GRADUACAO,
             periodo=Periodo(date(2025, 1, 1), date(2031, 6, 1)),
             status=StatusFormacaoAcademica.CONCLUIDO,
         )
-        registro = para_registro(formacao_original)
         session = MagicMock(spec=AsyncSession)
-        session.scalar.return_value = registro
+        session.execute.return_value.rowcount = 1
         repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
 
-        await repositorio.atualizar(formacao_editada)
+        resultado = await repositorio.atualizar(editada)
 
-        self.assertEqual(registro.id, ID_FORMACAO)
-        self.assertEqual(registro.usuario_id, ID_USUARIO)
-        self.assertEqual(registro.instituicao, "Universidade Exemplo")
-        self.assertEqual(registro.curso, "Ciência de Dados")
-        self.assertEqual(registro.nivel, "graduacao")
-        self.assertEqual(registro.data_inicio, date(2025, 1, 1))
-        self.assertEqual(registro.data_fim, date(2031, 6, 1))
-        self.assertEqual(registro.status, "concluido")
-        session.add.assert_not_called()
+        self.assertTrue(resultado)
+        instrucao = session.execute.await_args.args[0]
+        sql = str(instrucao)
+        self.assertIn("formacoes_academicas.id", sql)
+        self.assertIn("formacoes_academicas.usuario_id", sql)
+        self.assertIn("formacoes_academicas.deleted_at IS NULL", sql)
+        valores = instrucao.compile().params
+        self.assertEqual(
+            set(valores),
+            {"id_1", "usuario_id_1", "instituicao", "curso", "nivel", "data_inicio", "data_fim", "status"},
+        )
+        self.assertNotIn("deleted_at", valores)
+        self.assertNotIn("id", valores)
+        self.assertNotIn("usuario_id", valores)
+        self.assertEqual(valores["instituicao"], "Universidade Exemplo")
+        session.scalar.assert_not_awaited()
         session.flush.assert_awaited_once_with()
+        session.commit.assert_not_called()
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def test_atualizar_devolve_false_quando_update_nao_afeta_linha(self) -> None:
+        """Representa ausência, propriedade divergente ou exclusão concorrente.
+
+        O resultado SQL de zero linhas é devolvido sem nova leitura, para que a
+        Application converta a condição em formação não encontrada.
+        """
+        for estado in ("excluída", "inexistente", "de outro usuário"):
+            with self.subTest(estado=estado):
+                session = MagicMock(spec=AsyncSession)
+                session.execute.return_value.rowcount = 0
+                repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+                resultado = await repositorio.atualizar(criar_formacao())
+
+                self.assertFalse(resultado)
+                instrucao = session.execute.await_args.args[0]
+                self.assertIn("formacoes_academicas.deleted_at IS NULL", str(instrucao))
+                self.assertIn("formacoes_academicas.usuario_id", str(instrucao))
+                session.scalar.assert_not_awaited()
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def test_marcar_excluida_preserva_instante_na_repeticao(self) -> None:
+        """Usa predicado ativo e retorna o rowcount sem sobrescrever repetição.
+
+        Duas execuções simuladas mostram o primeiro sucesso e o zero seguinte;
+        a instrução da segunda tentativa ainda exige coluna nula.
+        """
+        instante = datetime(2026, 10, 15, 12, tzinfo=timezone.utc)
+        session = MagicMock(spec=AsyncSession)
+        session.execute.side_effect = [MagicMock(rowcount=1), MagicMock(rowcount=0)]
+        repositorio = RepositorioFormacaoAcademicaSqlAlchemy(session)
+
+        primeira = await repositorio.marcar_excluida(
+            FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO), instante
+        )
+        segunda = await repositorio.marcar_excluida(
+            FormacaoAcademicaId(ID_FORMACAO), UsuarioId(ID_USUARIO), instante
+        )
+
+        self.assertTrue(primeira)
+        self.assertFalse(segunda)
+        for chamada in session.execute.await_args_list:
+            instrucao = chamada.args[0]
+            self.assertIn("formacoes_academicas.id", str(instrucao))
+            self.assertIn("formacoes_academicas.usuario_id", str(instrucao))
+            self.assertIn("formacoes_academicas.deleted_at IS NULL", str(instrucao))
+            self.assertEqual(instrucao.compile().params["deleted_at"], instante)
+        self.assertEqual(session.flush.await_count, 2)
         session.commit.assert_not_called()

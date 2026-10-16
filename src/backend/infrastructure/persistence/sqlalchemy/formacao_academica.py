@@ -5,12 +5,13 @@ relacionais com CHECKs coerentes com o contrato do domínio. Ele existe para
 persistir formações sem expor SQLAlchemy às camadas internas.
 """
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
     Date,
+    DateTime,
     ForeignKey,
     String,
     Text,
@@ -91,6 +92,10 @@ class FormacaoAcademicaRegistro(Base):
     data_inicio: Mapped[date] = mapped_column(Date, nullable=False)
     data_fim: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -109,6 +114,8 @@ def para_registro(formacao: FormacaoAcademica) -> FormacaoAcademicaRegistro:
         data_inicio=formacao.periodo.inicio,
         data_fim=formacao.periodo.fim,
         status=formacao.status.value,
+        # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+        deleted_at=formacao.deleted_at,
     )
 
 
@@ -130,4 +137,6 @@ def para_formacao_academica(
         nivel=NivelFormacaoAcademica(registro.nivel),
         periodo=Periodo(registro.data_inicio, registro.data_fim),
         status=StatusFormacaoAcademica(registro.status),
+        # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+        deleted_at=registro.deleted_at,
     )
