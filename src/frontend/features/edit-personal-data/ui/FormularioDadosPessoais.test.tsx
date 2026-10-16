@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +23,34 @@ async function preencherCamposObrigatorios(
 }
 
 describe("FormularioDadosPessoais", () => {
+  it("adiciona telefones e envia todos os valores ao double de sucesso", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<FormularioDadosPessoais cliente={cliente} />);
+
+    await preencherCamposObrigatorios(usuario);
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar telefone" }),
+    );
+    await usuario.type(screen.getByLabelText("Telefone 2"), "(11) 98888-0000");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "salvos com sucesso",
+    );
+    expect(cliente.salvar).toHaveBeenCalledWith({
+      nomeCompleto: "Ana Silva",
+      enderecoCompleto: "Rua das Flores, 10",
+      telefones: ["(11) 99999-0000", "(11) 98888-0000"],
+      email: "ana@exemplo.com",
+    });
+  });
+
   it("informa o envio em andamento e evita um segundo envio", async () => {
     const usuario = userEvent.setup();
     let concluirSalvamento: (() => void) | undefined;
@@ -36,6 +64,7 @@ describe("FormularioDadosPessoais", () => {
     };
 
     const { container } = render(<FormularioDadosPessoais cliente={cliente} />);
+
     await preencherCamposObrigatorios(usuario);
     await usuario.click(
       screen.getByRole("button", { name: "Salvar dados pessoais" }),
@@ -52,10 +81,12 @@ describe("FormularioDadosPessoais", () => {
       "true",
     );
 
-    concluirSalvamento?.();
+    await act(async () => {
+      concluirSalvamento?.();
+    });
 
     expect(
-      await screen.findByText("Dados pessoais salvos com sucesso."),
+      screen.getByText("Dados pessoais salvos com sucesso."),
     ).toBeInTheDocument();
   });
 
@@ -69,6 +100,7 @@ describe("FormularioDadosPessoais", () => {
     };
 
     render(<FormularioDadosPessoais cliente={cliente} />);
+
     await preencherCamposObrigatorios(usuario);
     await usuario.click(
       screen.getByRole("button", { name: "Salvar dados pessoais" }),
