@@ -52,6 +52,13 @@ from backend.application.cadastro_idioma import (
     IdiomaJaCadastrado,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+from backend.application.cadastro_link_profissional import (
+    CadastrarLinkProfissional,
+    CadastrarLinkProfissionalEntrada,
+    LinkProfissionalJaCadastrado,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.application.cadastro_projeto_academico import (
     CadastrarProjetoAcademico,
@@ -125,6 +132,8 @@ from backend.application.ports import (
     GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    GeradorLinkProfissionalId,
     GeradorProjetoAcademicoId,
     GeradorUsuarioId,
     Relogio,
@@ -139,6 +148,8 @@ from backend.application.ports import (
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     RepositorioIdioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    RepositorioLinkProfissional,
     RepositorioProjetoAcademico,
     RepositorioUsuario,
     VerificadorSenha,
@@ -149,6 +160,12 @@ from backend.application.previa_versao_curriculo import (
     GerarPreviaVersaoCurriculo,
     GerarPreviaVersaoCurriculoEntrada,
     PreviaVersaoCurriculo,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+from backend.application.revisao_versao_curriculo import (
+    RevisarVersaoCurriculo,
+    RevisarVersaoCurriculoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -189,6 +206,10 @@ __all__ = [
     "CadastrarIdioma",
     "CadastrarIdiomaEntrada",
     "IdiomaJaCadastrado",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "CadastrarLinkProfissional",
+    "CadastrarLinkProfissionalEntrada",
+    "LinkProfissionalJaCadastrado",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
@@ -230,6 +251,8 @@ __all__ = [
     "GeradorCursoId",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "GeradorIdiomaId",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "GeradorLinkProfissionalId",
     "GeradorUsuarioId",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "GeradorExperienciaProfissionalId",
@@ -247,6 +270,8 @@ __all__ = [
     "RepositorioCurso",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    "RepositorioLinkProfissional",
     "RepositorioUsuario",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "RepositorioExperienciaProfissional",
@@ -280,4 +305,7 @@ __all__ = [
     "GerarPreviaVersaoCurriculo",
     "GerarPreviaVersaoCurriculoEntrada",
     "PreviaVersaoCurriculo",
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    "RevisarVersaoCurriculo",
+    "RevisarVersaoCurriculoEntrada",
 ]

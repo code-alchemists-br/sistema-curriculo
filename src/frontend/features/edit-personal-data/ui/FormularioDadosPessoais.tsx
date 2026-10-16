@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import {
   FalhaDadosPessoais,
@@ -21,9 +21,9 @@ export interface FormularioDadosPessoaisProps {
 /**
  * Renderiza e controla o formulário de dados pessoais e contato.
  *
- * O componente mantém os valores e erros localmente, permite incluir telefones
- * e delega o salvamento ao cliente injetado. Ele existe para oferecer uma etapa
- * acessível do Wizard sem acoplar a interface a HTTP ou ao backend inexistente.
+ * Mantém valores e erros localmente, permite incluir telefones e delega o
+ * salvamento ao cliente injetado. Também preserva a navegação por teclado ao
+ * transferir o foco para o telefone recém-adicionado.
  */
 export function FormularioDadosPessoais({
   cliente,
@@ -33,6 +33,18 @@ export function FormularioDadosPessoais({
   const [erros, setErros] = useState<ErrosDadosPessoais>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const focoNoNovoTelefone = useRef(false);
+
+  /**
+   * Recebe o último telefone renderizado e transfere o foco quando ele acabou
+   * de ser incluído pelo botão de adicionar.
+   */
+  function definirUltimoTelefone(elemento: HTMLInputElement | null): void {
+    if (elemento === null || !focoNoNovoTelefone.current) return;
+
+    elemento.focus();
+    focoNoNovoTelefone.current = false;
+  }
 
   /** Atualiza um campo simples e remove o feedback anterior daquele campo. */
   function atualizarCampo(
@@ -52,6 +64,7 @@ export function FormularioDadosPessoais({
         indiceAtual === indice ? telefone : valor,
       ),
     }));
+
     setErros((atuais) => {
       const errosDeTelefone = { ...atuais.telefones };
       delete errosDeTelefone[indice];
@@ -64,11 +77,14 @@ export function FormularioDadosPessoais({
             : errosDeTelefone,
       };
     });
+
     setMensagem(null);
   }
 
-  /** Inclui um novo campo vazio para que o estudante informe outro telefone. */
+  /** Inclui um telefone e agenda o foco no novo campo. */
   function adicionarTelefone(): void {
+    focoNoNovoTelefone.current = true;
+
     setValores((atuais) => ({
       ...atuais,
       telefones: [...atuais.telefones, ""],
@@ -77,10 +93,6 @@ export function FormularioDadosPessoais({
 
   /**
    * Valida e salva os dados, preservando o formulário se houver falha.
-   *
-   * O envio impede o comportamento nativo, converte valores em `Student` e
-   * chama somente o contrato injetado. Ele existe para manter a regra de
-   * experiência testável enquanto a persistência real não está disponível.
    */
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>,
@@ -118,6 +130,7 @@ export function FormularioDadosPessoais({
         required
         value={valores.nomeCompleto}
       />
+
       <CampoTexto
         erro={erros.enderecoCompleto}
         id="endereco-completo"
@@ -126,16 +139,20 @@ export function FormularioDadosPessoais({
         required
         value={valores.enderecoCompleto}
       />
+
       <div className="field">
         <span>Telefones</span>
+
         {valores.telefones.map((telefone, indice) => {
           const id = `telefone-${indice}`;
           const erro = erros.telefones?.[indice];
           const idErro = `${id}-erro`;
+          const eUltimoTelefone = indice === valores.telefones.length - 1;
 
           return (
             <div key={id}>
               <label htmlFor={id}>Telefone {indice + 1}</label>
+
               <input
                 aria-describedby={erro === undefined ? undefined : idErro}
                 aria-invalid={erro === undefined ? undefined : true}
@@ -144,10 +161,12 @@ export function FormularioDadosPessoais({
                 onChange={(evento) =>
                   atualizarTelefone(indice, evento.target.value)
                 }
+                ref={eUltimoTelefone ? definirUltimoTelefone : undefined}
                 required
                 type="tel"
                 value={telefone}
               />
+
               {erro !== undefined && (
                 <p className="field__error" id={idErro}>
                   {erro}
@@ -156,10 +175,12 @@ export function FormularioDadosPessoais({
             </div>
           );
         })}
+
         <button onClick={adicionarTelefone} type="button">
           + Adicionar telefone
         </button>
       </div>
+
       <CampoTexto
         erro={erros.email}
         id="email"
@@ -169,6 +190,7 @@ export function FormularioDadosPessoais({
         type="email"
         value={valores.email}
       />
+
       <CampoTexto
         ajuda="Informe o endereço público do seu perfil profissional, se possuir um."
         id="linkedin"
@@ -177,6 +199,7 @@ export function FormularioDadosPessoais({
         type="url"
         value={valores.linkedIn}
       />
+
       <CampoTexto
         ajuda="Informe o endereço público do seu currículo na Plataforma Lattes, se possuir um."
         id="curriculo-lattes"
@@ -185,6 +208,7 @@ export function FormularioDadosPessoais({
         type="url"
         value={valores.curriculoLattes}
       />
+
       {mensagem !== null && (
         <p
           className="form-message"
@@ -193,6 +217,7 @@ export function FormularioDadosPessoais({
           {mensagem}
         </p>
       )}
+
       <button disabled={enviando} type="submit">
         {enviando ? "Salvando dados..." : "Salvar dados pessoais"}
       </button>
@@ -212,13 +237,7 @@ interface CampoTextoProps {
   value: string;
 }
 
-/**
- * Renderiza um campo com rótulo, tooltip explicativo opcional e erro associado.
- *
- * O componente usa controles HTML nativos, um título exibido ao passar o mouse
- * e descrição acessível para leitores de tela. Ele existe para manter a
- * semântica e a apresentação dos campos consistentes dentro desta feature.
- */
+/** Renderiza um campo com rótulo, ajuda opcional e erro associado. */
 function CampoTexto({
   ajuda,
   erro,
@@ -247,11 +266,13 @@ function CampoTexto({
           </span>
         )}
       </label>
+
       {ajuda !== undefined && (
         <span hidden id={idAjuda}>
           {ajuda}
         </span>
       )}
+
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
@@ -261,6 +282,7 @@ function CampoTexto({
         type={type}
         value={value}
       />
+
       {erro !== undefined && (
         <p className="field__error" id={idErro}>
           {erro}

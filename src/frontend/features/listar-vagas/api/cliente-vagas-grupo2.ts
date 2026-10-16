@@ -22,16 +22,15 @@ const respostaGrupo2Schema = z.object({
   ),
 });
 
+/** Representa o único critério de pesquisa confirmado pela interface atual. */
+export interface CriteriosPesquisaVagas {
+  termo: string;
+}
+
 /** Enumera as falhas que a tela consegue comunicar ao estudante. */
 export type CodigoFalhaVagasGrupo2 = "indisponivel" | "resposta-invalida";
 
-/**
- * Representa uma falha conhecida da fronteira de vagas externas.
- *
- * A classe carrega um código estável, sem propagar detalhes internos da
- * integração. Ela existe para que a interface ofereça uma recuperação clara
- * quando o Grupo 2 estiver indisponível ou responder fora do contrato.
- */
+/** Representa uma falha conhecida da fronteira de vagas externas. */
 export class FalhaVagasGrupo2 extends Error {
   constructor(public readonly codigo: CodigoFalhaVagasGrupo2) {
     super(codigo);
@@ -41,23 +40,23 @@ export class FalhaVagasGrupo2 extends Error {
 
 /** Define o contrato consumido pela tela para obter sugestões de vagas. */
 export interface ClienteVagasGrupo2 {
-  listarSugestoes(): Promise<SugestaoVaga[]>;
+  listarSugestoes(criterios: CriteriosPesquisaVagas): Promise<SugestaoVaga[]>;
 }
 
 /**
  * Cria um cliente de interface a partir de uma função que consulta o Grupo 2.
  *
- * A fábrica recebe uma função assíncrona para que o futuro adaptador HTTP fique
- * fora da UI, valida o JSON devolvido e o converte para o modelo interno. Ela
- * existe para manter a página independente de endpoint, autenticação e rede.
+ * A fábrica recebe os critérios da tela, delega a consulta ao adaptador
+ * injetado e converte a resposta externa para o modelo interno. Ela existe
+ * para preservar o filtro informado sem acoplar a UI a endpoint ou transporte.
  */
 export function criarClienteVagasGrupo2(
-  requisitarResposta: () => Promise<unknown>,
+  requisitarResposta: (criterios: CriteriosPesquisaVagas) => Promise<unknown>,
 ): ClienteVagasGrupo2 {
   return {
-    async listarSugestoes() {
+    async listarSugestoes(criterios) {
       try {
-        const resposta = await requisitarResposta();
+        const resposta = await requisitarResposta(criterios);
         return adaptarRespostaGrupo2(resposta);
       } catch (erro: unknown) {
         if (erro instanceof FalhaVagasGrupo2) throw erro;
@@ -71,8 +70,7 @@ export function criarClienteVagasGrupo2(
  * Cria o cliente padrão enquanto o endpoint real do Grupo 2 não está definido.
  *
  * A implementação falha de modo controlado em vez de inventar uma URL ou uma
- * resposta local. Ela existe para tornar explícita a dependência pendente e
- * permitir que os testes injetem doubles determinísticos.
+ * resposta local. Ela existe para tornar explícita a dependência pendente.
  */
 export function criarClienteVagasGrupo2Indisponivel(): ClienteVagasGrupo2 {
   return {
@@ -82,13 +80,7 @@ export function criarClienteVagasGrupo2Indisponivel(): ClienteVagasGrupo2 {
   };
 }
 
-/**
- * Valida e converte a resposta externa na entidade usada pela interface.
- *
- * A função confere o envelope `associacoes`, preserva o currículo associado e
- * transforma `url_candidatura` em `urlCandidatura`. Ela existe para impedir que
- * o DTO externo se espalhe para os componentes visuais.
- */
+/** Valida e converte a resposta externa na entidade usada pela interface. */
 export function adaptarRespostaGrupo2(resposta: unknown): SugestaoVaga[] {
   const resultado = respostaGrupo2Schema.safeParse(resposta);
 
