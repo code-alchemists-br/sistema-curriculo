@@ -80,6 +80,7 @@ class CadastrarProjetoAcademicoTestCase(IsolatedAsyncioTestCase):
     invariante de domínio sem adapters. Ela existe para proteger o fluxo interno.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     async def test_cria_e_salva_projeto_com_identidade_gerada(self) -> None:
         """Persiste e devolve o projeto válido com a identidade do stub.
@@ -95,12 +96,19 @@ class CadastrarProjetoAcademicoTestCase(IsolatedAsyncioTestCase):
             repositorio=repositorio,
             gerador_id=GeradorProjetoAcademicoIdStub(identificador),
         )
-        entrada = self._criar_entrada()
+        entrada = self._criar_entrada(
+            titulo="  Sistema Currículo  ",
+            descricao="  Organiza informações acadêmicas.  ",
+            tecnologias="  Python, FastAPI  ",
+        )
 
         projeto = await caso_de_uso.executar(entrada)
 
         self.assertEqual(projeto.id, identificador)
         self.assertEqual(projeto.usuario_id, entrada.usuario_id)
+        self.assertEqual(projeto.titulo, "Sistema Currículo")
+        self.assertEqual(projeto.descricao, "Organiza informações acadêmicas.")
+        self.assertEqual(projeto.tecnologias, "Python, FastAPI")
         self.assertEqual(repositorio.projetos_salvos, [projeto])
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
@@ -125,9 +133,13 @@ class CadastrarProjetoAcademicoTestCase(IsolatedAsyncioTestCase):
 
         self.assertEqual(repositorio.projetos_salvos, [])
 
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     def _criar_entrada(
-        self, titulo: str = "Sistema Currículo"
+        self,
+        titulo: str = "Sistema Currículo",
+        descricao: str = "Organiza informações acadêmicas.",
+        tecnologias: str = "Python, FastAPI",
     ) -> CadastrarProjetoAcademicoEntrada:
         """Produz entrada válida e determinística para cenários assíncronos.
 
@@ -137,6 +149,6 @@ class CadastrarProjetoAcademicoTestCase(IsolatedAsyncioTestCase):
         return CadastrarProjetoAcademicoEntrada(
             usuario_id=UsuarioId(UUID("40000000-0000-0000-0000-000000000003")),
             titulo=titulo,
-            descricao="Organiza informações acadêmicas.",
-            tecnologias="Python, FastAPI",
+            descricao=descricao,
+            tecnologias=tecnologias,
         )
