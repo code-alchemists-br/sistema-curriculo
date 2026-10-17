@@ -1,8 +1,8 @@
-"""Descreve o isolamento A/B de versões de currículo pela API integrada.
+"""Verifica o isolamento A/B de versões de currículo pela API integrada.
 
-Os cenários compõem a aplicação ASGI com os casos de uso reais e um repositório
-em memória com estado observável. Eles existem para manter ativo o acesso
-próprio e registrar as garantias de autenticação ainda ausentes.
+Os cenários compõem a aplicação ASGI com os casos de uso reais, autenticação
+por cookie e um repositório em memória. Eles existem para confirmar acesso
+próprio e recusar acesso cruzado sem expor dados ou alterar estado alheio.
 """
 
 import json
@@ -10,15 +10,41 @@ import unittest
 from uuid import UUID
 
 from backend.api.factory import create_app
+from backend.api.sessoes import COOKIE_SESSAO
 from backend.application import EditarVersaoCurriculo, ListarVersoesCurriculo
+from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.domain import Curriculo, CurriculoId, UsuarioId
 
 # Proveniência: decision-analysis prompts/backend/20261010-183257-isolamento-dados-estudantes-integracao-v004.md#v004
 
-MOTIVO_FALHA_AUTENTICACAO = "identidade vem do usuario_id da rota; falta dependência de autenticação injetável"
 CREDENCIAL_ESTUDANTE_A = "credencial-sintetica-estudante-a"
 CREDENCIAL_INVALIDA = "credencial-sintetica-invalida"
 CORPO_EDICAO = {"titulo_versao": "Currículo atualizado por A", "layout": "moderno", "is_public": False}
+
+
+class AutenticadorEstudanteA(AutenticadorSessao):
+    """Autentica somente a credencial sintética do estudante A.
+
+    O double devolve a identidade de A para um token conhecido e ``None`` para
+    qualquer outro valor. Ele existe para testar o middleware com identidade
+    independente do UUID informado na rota.
+    """
+
+    def __init__(self, usuario_id: UsuarioId) -> None:
+        """Armazena a identidade aceita pelo cenário integrado.
+
+        O construtor recebe um value object já válido sem consultar serviços.
+        Ele existe para fixar o ator autenticado em cada teste.
+        """
+        self.usuario_id = usuario_id
+
+    async def autenticar(self, token: str) -> UsuarioId | None:
+        """Devolve A apenas para o token sintético conhecido.
+
+        O método compara o segredo apresentado e não lê a identidade do caminho.
+        Ele existe para verificar que a autorização usa a sessão autenticada.
+        """
+        return self.usuario_id if token == CREDENCIAL_ESTUDANTE_A else None
 
 
 class RepositorioCurriculoEmMemoriaComEstado:
@@ -72,15 +98,15 @@ class RepositorioCurriculoEmMemoriaComEstado:
 
 
 def _cabecalhos_de_identidade(credencial: str | None) -> list[tuple[bytes, bytes]]:
-    """Centraliza a representação HTTP da identidade usada pelo cenário.
+    """Centraliza a representação HTTP da credencial de sessão do cenário.
 
-    Atualmente a helper envia a credencial sintética em Authorization ou não
-    envia cabeçalho quando ausente; ela existe como único ponto de substituição
-    quando a API passar a derivar o ator por autenticação injetável.
+    A função envia a credencial no cookie reconhecido pelo middleware ou omite
+    o cabeçalho quando ausente. Ela existe para exercitar o contrato real de
+    autenticação sem depender de cliente HTTP externo.
     """
     if credencial is None:
         return []
-    return [(b"authorization", f"Bearer {credencial}".encode())]
+    return [(b"cookie", f"{COOKIE_SESSAO}={credencial}".encode())]
 
 
 def _criar_curriculo(curriculo_id: int, usuario_id: int, titulo: str) -> Curriculo:
@@ -99,15 +125,19 @@ def _criar_curriculo(curriculo_id: int, usuario_id: int, titulo: str) -> Curricu
     )
 
 
-def _criar_app(repo: RepositorioCurriculoEmMemoriaComEstado):
+def _criar_app(
+    repo: RepositorioCurriculoEmMemoriaComEstado,
+    autenticador: AutenticadorSessao,
+):
     """Compõe FastAPI com os casos de uso reais e a porta de teste.
 
-    A fábrica recebe os casos de listagem e edição que compartilham o repositório
-    stateful. Ela existe para exercitar rotas HTTP reais sem infraestrutura externa.
+    A fábrica recebe casos de uso que compartilham o repositório stateful e um
+    autenticador de teste. Ela existe para exercitar rotas protegidas sem banco.
     """
     return create_app(
         editar_versao_curriculo=EditarVersaoCurriculo(repo),
         listar_versoes_curriculo=ListarVersoesCurriculo(repo),
+        autenticador_sessao=autenticador,
     )
 
 
@@ -172,11 +202,11 @@ async def _requisitar(
 
 
 class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
-    """Verifica acesso próprio e descreve as recusas esperadas entre A e B.
+    """Verifica acesso próprio e recusa de operações cruzadas entre A e B.
 
-    Cada teste compõe a API e casos de uso reais com estado sintético privado.
-    A classe existe para manter o contrato de isolamento visível até a entrada
-    de autenticação na fronteira HTTP.
+    Cada teste compõe API, casos de uso e middleware reais com identidade
+    autenticada e estado sintético. A classe existe para proteger a privacidade
+    e a integridade dos currículos por estudante.
     """
 
     def setUp(self) -> None:
@@ -191,7 +221,8 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         self.curriculo_a = _criar_curriculo(201, 101, "MARCADOR-PRIVADO-A")
         self.curriculo_b = _criar_curriculo(202, 102, "MARCADOR-PRIVADO-B")
         self.repo = RepositorioCurriculoEmMemoriaComEstado((self.curriculo_a, self.curriculo_b))
-        self.app = _criar_app(self.repo)
+        self.autenticador = AutenticadorEstudanteA(self.usuario_a)
+        self.app = _criar_app(self.repo, self.autenticador)
 
     async def test_estudante_a_le_e_altera_o_proprio_curriculo(self) -> None:
         """Confirma que o controle positivo lê e atualiza dados próprios.
@@ -223,14 +254,12 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(corpo_edicao["titulo_versao"], CORPO_EDICAO["titulo_versao"])  # type: ignore[index]
         self.assertEqual(self.repo.estado(self.curriculo_a.id), ("Currículo atualizado por A", "moderno", False))
 
-    # Motivo esperado: MOTIVO_FALHA_AUTENTICACAO.
-    @unittest.expectedFailure
     async def test_estudante_a_nao_le_curriculo_de_b(self) -> None:
         """Exige que A não leia o recurso privado de B.
 
         A credencial de A é enviada à rota do recurso de B, e asserções verificam
         recusa e ausência do marcador de B. O caso existe para documentar a
-        autorização de leitura ainda ausente na API.
+        autorização de leitura antes de consultar o caso de uso.
         """
         caminho_b = f"/estudantes/{self.usuario_b.valor}/curriculos"
         status, corpo = await _requisitar(
@@ -244,8 +273,6 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         conteudo_de_b_exposto = "MARCADOR-PRIVADO-B" in json.dumps(corpo)
         self.assertTrue(acesso_negado and not conteudo_de_b_exposto)
 
-    # Motivo esperado: MOTIVO_FALHA_AUTENTICACAO.
-    @unittest.expectedFailure
     async def test_estudante_a_nao_altera_curriculo_de_b(self) -> None:
         """Exige recusa da edição cruzada e preservação do estado de B.
 
@@ -269,8 +296,6 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         estado_b_preservado = self.repo.estado(self.curriculo_b.id) == estado_inicial_b
         self.assertTrue(acesso_negado and estado_b_preservado)
 
-    # Motivo esperado: MOTIVO_FALHA_AUTENTICACAO.
-    @unittest.expectedFailure
     async def test_requisicao_sem_credencial_nao_le_curriculo_de_b(self) -> None:
         """Exige que chamada sem credencial não receba dados privados de B.
 
@@ -290,8 +315,6 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         conteudo_de_b_exposto = "MARCADOR-PRIVADO-B" in json.dumps(corpo)
         self.assertTrue(acesso_negado and not conteudo_de_b_exposto)
 
-    # Motivo esperado: MOTIVO_FALHA_AUTENTICACAO.
-    @unittest.expectedFailure
     async def test_credencial_invalida_nao_le_curriculo_de_b(self) -> None:
         """Exige recusa quando a requisição apresenta credencial inválida.
 
