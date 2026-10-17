@@ -1,4 +1,4 @@
-"""Expõe cadastro e edição de experiências profissionais por HTTP autenticado."""
+"""Expõe cadastro, edição e exclusão de experiências profissionais por HTTP autenticado."""
 
 from datetime import date
 from typing import Protocol
@@ -13,6 +13,9 @@ from backend.application.cadastro_experiencia_profissional import (
 from backend.application.edicao_experiencia_profissional import (
     EditarExperienciaProfissionalEntrada,
     ExperienciaProfissionalNaoEncontrada,
+)
+from backend.application.exclusao_experiencia_profissional import (
+    ExcluirExperienciaProfissionalEntrada,
 )
 from backend.domain import ExperienciaProfissional, Periodo, RegraDeDominioViolada
 from backend.domain.value_objects import ExperienciaProfissionalId, UsuarioId
@@ -102,6 +105,24 @@ class EdicaoExperienciaProfissionalExecutor(Protocol):
         """
 
 
+class ExclusaoExperienciaProfissionalExecutor(Protocol):
+    """Define a execução da exclusão lógica de experiência na fronteira HTTP.
+
+    O contrato recebe a entrada tipada com solicitante e experiência e devolve
+    a entidade no estado excluído, sem expor persistência ou relógio à API. Ele
+    existe para permitir injeção do caso de uso e testes isolados da rota.
+    """
+
+    async def executar(
+        self, entrada: ExcluirExperienciaProfissionalEntrada
+    ) -> ExperienciaProfissional:
+        """Exclui logicamente uma experiência do solicitante e devolve seu estado.
+
+        A implementação valida o proprietário e garante idempotência. O método
+        existe para que o handler apenas traduza transporte e erros.
+        """
+
+
 def _resposta(experiencia: ExperienciaProfissional) -> ExperienciaProfissionalResposta:
     """Projeta a entidade nos campos públicos da resposta HTTP.
 
@@ -138,15 +159,16 @@ def _usuario_autenticado(request: Request) -> UUID:
 def criar_router(
     cadastrar_experiencia: CadastroExperienciaProfissionalExecutor | None,
     editar_experiencia: EdicaoExperienciaProfissionalExecutor | None = None,
+    excluir_experiencia: ExclusaoExperienciaProfissionalExecutor | None = None,
 ) -> APIRouter:
-    """Cria as rotas POST e PUT de experiência protegidas por sessão autenticada.
+    """Cria as rotas POST, PUT e DELETE de experiência protegidas por sessão.
 
     As rotas recebem o principal que o middleware autenticador instalou em
-    ``request.state``, convertem o corpo em entrada de Application e invocam o
-    executor injetado; a edição também converte ausência ou propriedade alheia
-    em 404 e violações de domínio em 422 com mensagem genérica. A função existe
-    para impedir que o cliente escolha o dono da experiência, sem acoplar a API
-    à persistência ou à sessão concreta.
+    ``request.state``, convertem rota e corpo em entrada de Application e
+    invocam o executor injetado; edição e exclusão convertem ausência ou
+    propriedade alheia em 404, e a edição converte violações de domínio em 422
+    com mensagem genérica. A função existe para impedir que o cliente escolha o
+    dono da experiência, sem acoplar a API à persistência ou à sessão concreta.
     """
     router = APIRouter()
 
@@ -231,5 +253,37 @@ def criar_router(
                 detail="A experiência informada viola as regras de edição.",
             ) from erro
         return _resposta(experiencia)
+
+    @router.delete(
+        "/experiencias-profissionais/{experiencia_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def excluir(experiencia_id: UUID, request: Request) -> None:
+        """Exclui logicamente uma experiência da sessão atual sem devolver corpo.
+
+        O handler exige executor e principal autenticado, delega a exclusão com
+        o ID da rota e o dono da sessão e converte ausência ou propriedade
+        alheia em 404 genérico; repetir a exclusão também responde 204. Ele
+        existe para expor a operação idempotente sem aceitar identidade do
+        cliente nem revelar experiências de terceiros.
+        """
+        if excluir_experiencia is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Exclusão indisponível.",
+            )
+        usuario_id = _usuario_autenticado(request)
+        try:
+            await excluir_experiencia.executar(
+                ExcluirExperienciaProfissionalEntrada(
+                    usuario_id=UsuarioId(usuario_id),
+                    experiencia_id=ExperienciaProfissionalId(experiencia_id),
+                )
+            )
+        except ExperienciaProfissionalNaoEncontrada as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Experiência profissional não encontrada.",
+            ) from erro
 
     return router

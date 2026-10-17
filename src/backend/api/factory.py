@@ -78,6 +78,7 @@ from backend.api.exclusao_versao_curriculo import (
 from backend.api.experiencia_profissional import (
     CadastroExperienciaProfissionalExecutor,
     EdicaoExperienciaProfissionalExecutor,
+    ExclusaoExperienciaProfissionalExecutor,
 )
 from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
@@ -214,6 +215,8 @@ def create_app(
     excluir_documento: ExclusaoDocumentoExecutor | None = None,
     editar_experiencia_profissional: EdicaoExperienciaProfissionalExecutor
     | None = None,
+    excluir_experiencia_profissional: ExclusaoExperienciaProfissionalExecutor
+    | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -221,7 +224,7 @@ def create_app(
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, experiências profissionais (cadastro e edição) e prévia
+    exclusão de versão, experiências profissionais (cadastro, edição e exclusão) e prévia
     com os executores recebidos;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
@@ -303,7 +306,9 @@ def create_app(
     )
     app.include_router(
         criar_router_experiencia_profissional(
-            cadastrar_experiencia_profissional, editar_experiencia_profissional
+            cadastrar_experiencia_profissional,
+            editar_experiencia_profissional,
+            excluir_experiencia_profissional,
         ),
         tags=[TAG_EXPERIENCIAS_PROFISSIONAIS],
     )
