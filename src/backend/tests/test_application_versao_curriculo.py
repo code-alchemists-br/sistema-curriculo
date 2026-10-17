@@ -68,7 +68,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             usuario_id=curriculo.usuario_id,
             curriculo_id=curriculo.id,
             titulo_versao="Gestão de Projetos",
-            layout="moderno",
+            layout="compacto",
             is_public=True,
         )
 
@@ -76,7 +76,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(resultado, curriculo)
         self.assertEqual(resultado.titulo_versao, "Gestão de Projetos")
-        self.assertEqual(resultado.layout, "moderno")
+        self.assertEqual(resultado.layout, "compacto")
         self.assertTrue(resultado.is_public)
         self.assertEqual(repositorio.curriculos_atualizados, [curriculo])
 
@@ -91,7 +91,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             usuario_id=UsuarioId(uuid4()),
             curriculo_id=CurriculoId(uuid4()),
             titulo_versao="Gestão de Projetos",
-            layout="moderno",
+            layout="compacto",
             is_public=True,
         )
 
@@ -113,7 +113,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             usuario_id=UsuarioId(uuid4()),
             curriculo_id=curriculo.id,
             titulo_versao="Invasor",
-            layout="moderno",
+            layout="compacto",
             is_public=True,
         )
 
@@ -136,7 +136,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             usuario_id=curriculo.usuario_id,
             curriculo_id=curriculo.id,
             titulo_versao="   ",
-            layout="moderno",
+            layout="compacto",
             is_public=True,
         )
 

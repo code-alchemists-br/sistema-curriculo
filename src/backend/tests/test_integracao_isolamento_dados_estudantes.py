@@ -19,7 +19,7 @@ from backend.domain import Curriculo, CurriculoId, UsuarioId
 
 CREDENCIAL_ESTUDANTE_A = "credencial-sintetica-estudante-a"
 CREDENCIAL_INVALIDA = "credencial-sintetica-invalida"
-CORPO_EDICAO = {"titulo_versao": "Currículo atualizado por A", "layout": "moderno", "is_public": False}
+CORPO_EDICAO = {"titulo_versao": "Currículo atualizado por A", "layout": "compacto", "is_public": False}
 
 
 class AutenticadorEstudanteA(AutenticadorSessao):
@@ -252,7 +252,7 @@ class IsolamentoDadosEstudantesIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
 
         self.assertEqual(status_edicao, 200)
         self.assertEqual(corpo_edicao["titulo_versao"], CORPO_EDICAO["titulo_versao"])  # type: ignore[index]
-        self.assertEqual(self.repo.estado(self.curriculo_a.id), ("Currículo atualizado por A", "moderno", False))
+        self.assertEqual(self.repo.estado(self.curriculo_a.id), ("Currículo atualizado por A", "compacto", False))
 
     async def test_estudante_a_nao_le_curriculo_de_b(self) -> None:
         """Exige que A não leia o recurso privado de B.

@@ -17,7 +17,7 @@ from backend.domain import Curriculo, CurriculoId, UsuarioId
 
 # Proveniência: Issue #419 (F9.3) — cenário de rejeição de referência de currículo inválida.
 
-CORPO_VALIDO = {"titulo_versao": "Gestão de Projetos", "layout": "moderno", "is_public": True}
+CORPO_VALIDO = {"titulo_versao": "Gestão de Projetos", "layout": "compacto", "is_public": True}
 
 
 class RepositorioCurriculoEmMemoria:
