@@ -13,6 +13,9 @@ from backend.infrastructure.persistence.sqlalchemy.repositorio_sessao import (
 from backend.infrastructure.security.autenticador_sessao import (
     AutenticadorSessaoPersistida,
 )
+from backend.infrastructure.security.autenticador_sessao_indisponivel import (
+    AutenticadorSessaoIndisponivel,
+)
 
 
 class ConsultaSessaoStub(ConsultaSessaoAtiva):
@@ -119,6 +122,22 @@ class AutenticadorSessaoPersistidaTestCase(unittest.IsolatedAsyncioTestCase):
         consulta = ConsultaSessaoStub(None)
 
         resultado = await AutenticadorSessaoPersistida(consulta).autenticar("token-invalido")
+
+        self.assertIsNone(resultado)
+
+
+class AutenticadorSessaoIndisponivelTestCase(unittest.IsolatedAsyncioTestCase):
+    """Garante que a ausência de persistência rejeita qualquer token."""
+
+    async def test_rejeita_token_sem_consultar_sessao(self) -> None:
+        """Devolve ausência de identidade para manter o fallback fechado.
+
+        O teste chama o adapter diretamente com um token arbitrário. Ele existe
+        para impedir que uma aplicação sem persistência aceite credenciais.
+        """
+        autenticador = AutenticadorSessaoIndisponivel()
+
+        resultado = await autenticador.autenticar("token-qualquer")
 
         self.assertIsNone(resultado)
 

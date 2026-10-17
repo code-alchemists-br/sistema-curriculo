@@ -11,6 +11,10 @@ from backend.api.middleware_autenticacao import MiddlewareAutenticacaoSessao
 from backend.api.sessoes import COOKIE_SESSAO
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.domain.value_objects import UsuarioId
+from backend.infrastructure.security.autenticador_sessao_indisponivel import (
+    AutenticadorSessaoIndisponivel,
+)
+from backend.main import app as app_asgi
 
 
 class AutenticadorSessaoStub(AutenticadorSessao):
@@ -511,4 +515,21 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
                 middleware.cls is MiddlewareAutenticacaoSessao
                 for middleware in app.user_middleware
             )
+        )
+
+    async def test_app_exportada_instala_autenticador_fechado(self) -> None:
+        """Confirma que a aplicação ASGI real não desativa autenticação.
+
+        O teste inspeciona o middleware da aplicação exportada e verifica que
+        usa o adapter fechado enquanto não há persistência de sessões. Ele
+        existe para impedir exposição de rotas privadas por composição vazia.
+        """
+        middleware = next(
+            middleware
+            for middleware in app_asgi.user_middleware
+            if middleware.cls is MiddlewareAutenticacaoSessao
+        )
+
+        self.assertIsInstance(
+            middleware.kwargs["autenticador"], AutenticadorSessaoIndisponivel
         )
