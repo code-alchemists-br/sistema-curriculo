@@ -1,10 +1,11 @@
-"""Expoe DTOs e handlers HTTP para cadastro e verificacao de acesso de estudante.
+"""Expõe DTOs e handlers HTTP para cadastro e acesso de estudante.
 
-O modulo converte JSON em tipos da Application, deriva senha na borda e traduz
-falhas conhecidas em respostas HTTP sem expor entidades ou hashes. Ele existe
-para manter transporte e segurança fora das regras de domínio e casos de uso.
+O módulo converte JSON em tipos da Application, deriva senhas na borda, traduz
+falhas em respostas HTTP e registra recusas de acesso sem dados sensíveis. Ele
+existe para manter transporte e segurança fora das regras de domínio e casos de uso.
 """
 
+import logging
 from typing import Protocol
 from uuid import UUID
 
@@ -26,6 +27,8 @@ from backend.domain import (
     Usuario,
     UsuarioId,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DerivadorSenha(Protocol):
@@ -121,9 +124,9 @@ def criar_router(
 ) -> APIRouter:
     """Cria rotas HTTP usando casos de uso injetados pela composição externa.
 
-    A função deriva senhas apenas no cadastro e converte exceções conhecidas em
-    status seguros. Ela existe para registrar a API e permitir testes unitários
-    com doubles sem criar sessão de banco ou servidor real.
+    A função deriva senhas apenas no cadastro, converte exceções conhecidas em
+    status seguros e registra recusas de login sem credenciais. Ela existe para
+    registrar a API e permitir testes unitários sem banco ou servidor real.
     """
     router = APIRouter()
 
@@ -152,8 +155,9 @@ def criar_router(
         """Confirma credenciais HTTP e envia cookie da sessão autenticada.
 
         O handler converte e-mail e senha, solicita a identidade validada e cria
-        uma sessão pela porta injetada. Ele existe para transportar a credencial
-        sem expô-la no corpo ou em armazenamento acessível ao JavaScript.
+        uma sessão pela porta injetada; falhas recebem um evento genérico sem
+        credenciais. Ele existe para transportar a credencial com segurança e
+        registrar tentativas recusadas sem expor dados sensíveis.
         """
         if acessar_estudante is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Acesso indisponível.")
@@ -164,6 +168,13 @@ def criar_router(
                 AcessarEstudanteEntrada(email=Email(requisicao.email), senha=requisicao.senha)
             )
         except (RegraDeDominioViolada, CredenciaisInvalidas) as erro:
+            logger.warning(
+                "falha_autenticacao operacao=acesso_estudante",
+                extra={
+                    "evento": "falha_autenticacao",
+                    "operacao": "acesso_estudante",
+                },
+            )
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha não conferem.") from erro
         token = await criador_sessao.criar(usuario_id)
         resposta.set_cookie(
