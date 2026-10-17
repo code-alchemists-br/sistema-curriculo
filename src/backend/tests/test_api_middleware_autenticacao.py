@@ -265,14 +265,14 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
             chamadas.append(request)
             return Response(status_code=204)
 
+        request = _request(
+            "PUT",
+            "/estudantes/00000000-0000-0000-0000-000000000002",
+            "token-super-secreto",
+        )
         with self.assertLogs(logger, level="WARNING") as logs:
             resposta = await self._middleware(autenticador).dispatch(
-                _request(
-                    "PUT",
-                    "/estudantes/00000000-0000-0000-0000-000000000002",
-                    "token-super-secreto",
-                ),
-                proxima,
+                request, proxima
             )
 
         self.assertEqual(resposta.status_code, 403)
@@ -283,6 +283,10 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(logs.records[0].rota, "PUT /estudantes/{uuid}")
         self.assertEqual(logs.records[0].motivo, "proprietario_diferente")
         self.assertEqual(logs.records[0].ator_id, str(usuario_autenticado.valor))
+        self.assertEqual(
+            logs.records[0].correlation_id,
+            resposta.headers["X-Correlation-ID"],
+        )
         self.assertNotIn("token-super-secreto", logs.output[0])
 
     async def test_perfil_proprio_e_encaminhado_apos_autenticacao(self) -> None:
