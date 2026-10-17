@@ -1,6 +1,38 @@
 import { describe, expect, it } from "vitest";
 
-import { calcularRazaoContraste, hexParaRgb, TOKENS_COR } from "./tokens";
+import {
+  calcularRazaoContraste,
+  hexParaRgb,
+  remParaPixels,
+  TOKENS_COR,
+  TOKENS_ESPACO,
+  TOKENS_TIPOGRAFIA,
+  validarEscalaCrescente,
+} from "./tokens";
+
+describe("Tokens de espaçamento e tipografia", () => {
+  it("mantém escalas modulares e crescentes", () => {
+    const espacos = Object.values(TOKENS_ESPACO).map(remParaPixels);
+    const tamanhos = Object.values(TOKENS_TIPOGRAFIA.tamanho).map(
+      remParaPixels,
+    );
+
+    expect(validarEscalaCrescente(espacos)).toBe(true);
+    expect(validarEscalaCrescente(tamanhos)).toBe(true);
+    espacos.slice(1).forEach((valor) => expect(valor % 4).toBe(0));
+  });
+
+  it("converte rem e rejeita valores inválidos", () => {
+    expect(remParaPixels("1.5rem")).toBe(24);
+    expect(() => remParaPixels("invalido")).toThrow("Valor de rem inválido");
+  });
+
+  it("fornece tipografia legível e fontes de fallback", () => {
+    expect(TOKENS_TIPOGRAFIA.familia.base).toContain("sans-serif");
+    expect(TOKENS_TIPOGRAFIA.familia.mono).toContain("monospace");
+    expect(TOKENS_TIPOGRAFIA.alturaLinha.normal).toBeGreaterThanOrEqual(1.5);
+  });
+});
 
 describe("Tokens de Cor — Acessibilidade e Contraste WCAG 2.1", () => {
   describe("Cálculo de Contraste e Conversão", () => {

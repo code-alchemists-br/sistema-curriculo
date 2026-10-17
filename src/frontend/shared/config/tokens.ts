@@ -37,6 +37,83 @@ export const TOKENS_COR = {
 } as const;
 
 /**
+ * Define a escala de espaçamento modular usada pela interface.
+ *
+ * O objeto mapeia múltiplos de quatro pixels em valores CSS rem. Ele existe para
+ * preservar ritmo visual consistente entre componentes sem fixar pixels locais.
+ */
+export const TOKENS_ESPACO = {
+  espaco0: "0",
+  espaco1: "0.25rem",
+  espaco2: "0.5rem",
+  espaco3: "0.75rem",
+  espaco4: "1rem",
+  espaco5: "1.25rem",
+  espaco6: "1.5rem",
+  espaco8: "2rem",
+  espaco10: "2.5rem",
+  espaco12: "3rem",
+  espaco16: "4rem",
+} as const;
+
+/**
+ * Define famílias, tamanhos, pesos e alturas de linha padronizados.
+ *
+ * O objeto agrupa uma escala tipográfica acessível e baseada em fontes do
+ * sistema. Ele existe para dar hierarquia legível às telas de forma consistente.
+ */
+export const TOKENS_TIPOGRAFIA = {
+  familia: {
+    base: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  },
+  tamanho: {
+    xs: "0.75rem",
+    sm: "0.875rem",
+    base: "1rem",
+    md: "1.125rem",
+    lg: "1.25rem",
+    xl: "1.5rem",
+    "2xl": "1.875rem",
+    "3xl": "2.25rem",
+  },
+  peso: { regular: 400, medium: 500, semibold: 600, bold: 700 },
+  alturaLinha: { tight: 1.25, normal: 1.5, relaxed: 1.75 },
+} as const;
+
+/** Representa a estrutura pública dos tokens de cor. */
+export type TokensCor = typeof TOKENS_COR;
+/** Representa a estrutura pública dos tokens de espaçamento. */
+export type TokensEspaco = typeof TOKENS_ESPACO;
+/** Representa a estrutura pública dos tokens tipográficos. */
+export type TokensTipografia = typeof TOKENS_TIPOGRAFIA;
+
+/**
+ * Converte um valor CSS em rem para pixels usando a base de 16 pixels.
+ *
+ * A função valida a representação textual e multiplica seu fator pela base.
+ * Ela existe para verificar programaticamente as escalas de design nos testes.
+ */
+export function remParaPixels(valorRem: string): number {
+  if (valorRem === "0") return 0;
+  const match = /^(\d+(?:\.\d+)?)rem$/.exec(valorRem.trim());
+  if (!match) throw new Error(`Valor de rem inválido: ${valorRem}`);
+  return Number.parseFloat(match[1]) * 16;
+}
+
+/**
+ * Informa se os valores de uma escala são estritamente crescentes.
+ *
+ * A função compara cada item ao anterior e falha em repetições ou regressões.
+ * Ela existe para proteger a progressão visual dos tokens de espaçamento e tipo.
+ */
+export function validarEscalaCrescente(valores: number[]): boolean {
+  return valores.every(
+    (valor, indice) => indice === 0 || valor > valores[indice - 1],
+  );
+}
+
+/**
  * Converte uma representação hexadecimal de cor (#RGB ou #RRGGBB) em valores inteiros RGB.
  *
  * **O que faz:** Decodifica a string hexadecimal em três canais numéricos de 0 a 255.

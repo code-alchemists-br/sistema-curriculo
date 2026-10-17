@@ -2,9 +2,9 @@
 @import "../../shared/styles/tokens.css";
 
 :root {
-  color: var(--color-text-primary, #0f172a);
-  background: var(--color-bg-canvas, #f8fafc);
-  font-family: Arial, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-canvas);
+  font-family: var(--font-family-base);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
