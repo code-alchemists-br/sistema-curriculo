@@ -24,7 +24,7 @@ from backend.infrastructure.persistence.sqlalchemy.curso import (
     CursoRegistro,  # noqa: F401
 )
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.documento import (
     DocumentoRegistro,  # noqa: F401
 )

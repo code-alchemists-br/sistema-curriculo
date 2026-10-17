@@ -3,14 +3,14 @@
 import sqlalchemy as sa
 from alembic import op
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 revision = "20261016_0013"
 down_revision = "20261015_0012"
 branch_labels = None
 depends_on = None
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def upgrade() -> None:
     """Cria a tabela de documentos complementares e suas chaves estrangeiras.
 
@@ -42,7 +42,7 @@ def upgrade() -> None:
     )
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def downgrade() -> None:
     """Remove a tabela de documentos complementares em rollback explícito.
 

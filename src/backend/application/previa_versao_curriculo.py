@@ -24,6 +24,8 @@ from backend.domain.itens_perfil import (
     FormacaoAcademica,
     Idioma,
     ProjetoAcademico,
+    # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+    ordenar_formacoes,
 )
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import CurriculoId, UsuarioId
@@ -100,9 +102,11 @@ class GerarPreviaVersaoCurriculo:
         O método trata versão ausente, versão alheia e estudante ausente ou
         excluído como a mesma falha, antes de consultar qualquer item. Em
         seguida lê cada referência, mantém apenas o item existente que pertence
-        ao solicitante e corresponde à referência pedida, e ordena cada seção.
-        Ele existe para impedir que a prévia exiba dados de outro estudante e
-        para que a mesma versão sempre produza a mesma saída.
+        ao solicitante e corresponde à referência pedida, e ordena cada seção;
+        formações seguem a regra de domínio ``ordenar_formacoes`` (situação e
+        data), enquanto experiências usam o início mais recente. Ele existe para
+        impedir que a prévia exiba dados de outro estudante e para que a mesma
+        versão sempre produza a mesma saída.
         """
         curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
         if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
@@ -126,7 +130,8 @@ class GerarPreviaVersaoCurriculo:
         return PreviaVersaoCurriculo(
             usuario=usuario,
             curriculo=curriculo,
-            formacoes=_ordenar_por_periodo(
+            # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
+            formacoes=ordenar_formacoes(
                 item for item in itens if isinstance(item, FormacaoAcademica)
             ),
             experiencias=_ordenar_por_periodo(
@@ -153,8 +158,9 @@ def _ordenar_por_periodo(itens):
 
     A função usa a data de início do período como chave principal, em ordem
     decrescente, e o identificador como desempate estável. Ela existe para que
-    formações e experiências apareçam sempre da mais recente para a mais antiga,
-    independentemente da ordem do conjunto de referências.
+    experiências apareçam sempre da mais recente para a mais antiga,
+    independentemente da ordem do conjunto de referências; formações usam a
+    regra de domínio ``ordenar_formacoes``.
     """
     return tuple(
         sorted(

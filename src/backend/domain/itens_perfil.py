@@ -524,7 +524,68 @@ class Idioma:
         return normalizar_idioma(self.idioma)
 
 
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+TIPOS_ARQUIVO_PERMITIDOS: frozenset[str] = frozenset(
+    {"application/pdf", "image/png", "image/jpeg"}
+)
+TAMANHO_MAXIMO_DOCUMENTO_BYTES: int = 10 * 1024 * 1024  # 10 MB
+TAMANHO_MINIMO_NOME_ARQUIVO: int = 1
+TAMANHO_MAXIMO_NOME_ARQUIVO: int = 255
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_nome_arquivo(nome: str) -> str:
+    """Valida e sanitiza o nome de arquivo de um documento complementar.
+
+    A função rejeita valores não textuais, caracteres de controle, strings vazias
+    ou tentativas de navegação de diretório (Path Traversal como '..'), retornando
+    o nome aparado. Ela existe para proteger o sistema contra caminhos inseguros e
+    garantir integridade no cadastro de arquivos.
+    """
+    if not isinstance(nome, str):
+        raise RegraDeDominioViolada("O nome do arquivo deve ser um texto.")
+    nome_limpo = nome.strip()
+    if not nome_limpo:
+        raise RegraDeDominioViolada("O nome do arquivo não pode ser vazio.")
+    if any(category(c) == "Cc" for c in nome_limpo):
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter caracteres de controle."
+        )
+    if ".." in nome_limpo or "/" in nome_limpo or "\\" in nome_limpo:
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter barras ou referências relativas de diretório."
+        )
+    if (
+        not TAMANHO_MINIMO_NOME_ARQUIVO
+        <= len(nome_limpo)
+        <= TAMANHO_MAXIMO_NOME_ARQUIVO
+    ):
+        raise RegraDeDominioViolada(
+            f"O nome do arquivo deve ter entre {TAMANHO_MINIMO_NOME_ARQUIVO} e {TAMANHO_MAXIMO_NOME_ARQUIVO} caracteres."
+        )
+    return nome_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_tipo_arquivo(tipo: str) -> str:
+    """Valida se o tipo MIME do arquivo pertence aos formatos autorizados.
+
+    A função converte o tipo para minúsculas aparadas e verifica se pertence ao
+    conjunto permitido (PDF, PNG, JPEG). Ela existe para evitar o upload de arquivos
+    executáveis ou não suportados pelo perfil do estudante.
+    """
+    if not isinstance(tipo, str):
+        raise RegraDeDominioViolada("O tipo do arquivo deve ser um texto.")
+    tipo_limpo = tipo.strip().lower()
+    if tipo_limpo not in TIPOS_ARQUIVO_PERMITIDOS:
+        raise RegraDeDominioViolada(
+            f"Tipo de arquivo não permitido: '{tipo}'. Tipos aceitos: PDF, PNG, JPEG."
+        )
+    return tipo_limpo
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Documento:
     """Representa metadados de um documento reutilizável do usuário.
@@ -540,35 +601,26 @@ class Documento:
     tipo_arquivo: str
     url_armazenamento: str
 
-    # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
     def __post_init__(self) -> None:
-        """Valida invariantes e tipos dos metadados de um documento complementar.
+        """Valida a integridade dos metadados do documento.
 
-        O método assegura que os identificadores pertençam aos tipos corretos do domínio,
-        e que os campos textuais não sejam vazios ou nulos, aparando espaços externos.
-        Ele existe para manter a entidade Documento sempre consistente e válida.
+        O método verifica se o nome do arquivo, tipo MIME e a URL de armazenamento
+        cumprem as regras de integridade e segurança do domínio. Ele existe para
+        proteger o agregado contra estados inválidos.
         """
-        if not isinstance(self.id, DocumentoId):
-            raise RegraDeDominioViolada("Identificador de documento inválido.")
-        if not isinstance(self.usuario_id, UsuarioId):
-            raise RegraDeDominioViolada("Identificador de usuário inválido.")
-        if not isinstance(self.nome_arquivo, str) or not self.nome_arquivo.strip():
-            raise RegraDeDominioViolada(
-                "O nome do arquivo do documento deve ser um texto não vazio."
-            )
-        if not isinstance(self.tipo_arquivo, str) or not self.tipo_arquivo.strip():
-            raise RegraDeDominioViolada(
-                "O tipo do arquivo do documento deve ser um texto não vazio."
-            )
+        object.__setattr__(
+            self, "nome_arquivo", validar_nome_arquivo(self.nome_arquivo)
+        )
+        object.__setattr__(
+            self, "tipo_arquivo", validar_tipo_arquivo(self.tipo_arquivo)
+        )
         if (
             not isinstance(self.url_armazenamento, str)
             or not self.url_armazenamento.strip()
         ):
             raise RegraDeDominioViolada(
-                "A URL de armazenamento do documento deve ser um texto não vazio."
+                "A URL de armazenamento do documento não pode ser vazia."
             )
-        object.__setattr__(self, "nome_arquivo", self.nome_arquivo.strip())
-        object.__setattr__(self, "tipo_arquivo", self.tipo_arquivo.strip())
         object.__setattr__(self, "url_armazenamento", self.url_armazenamento.strip())
 
 

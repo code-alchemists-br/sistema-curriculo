@@ -24,6 +24,8 @@ from backend.domain.itens_perfil import (
     ESQUEMAS_URL_PERMITIDOS,
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     TAMANHO_MAXIMO_DESCRICAO_PROJETO,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    TAMANHO_MAXIMO_DOCUMENTO_BYTES,
     TAMANHO_MAXIMO_ROTULO_LINK,
     TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -39,6 +41,7 @@ from backend.domain.itens_perfil import (
     TAMANHO_MINIMO_TEXTO_FORMACAO,
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     TAMANHO_MINIMO_TEXTO_PROJETO,
+    TIPOS_ARQUIVO_PERMITIDOS,
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     CategoriaCompetencia,
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -193,6 +196,9 @@ __all__ = [
     "TAMANHO_MINIMO_TEXTO_FORMACAO",
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     "TAMANHO_MINIMO_TEXTO_PROJETO",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "TAMANHO_MAXIMO_DOCUMENTO_BYTES",
+    "TIPOS_ARQUIVO_PERMITIDOS",
     "Telefone",
     "Usuario",
     "UsuarioId",

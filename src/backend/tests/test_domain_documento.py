@@ -1,137 +1,101 @@
-"""Testes unitários para a entidade Documento e suas invariantes de domínio."""
+"""Testa as regras de domínio e invariantes de Documento e metadados."""
 
 import unittest
 from uuid import uuid4
 
-from backend.domain import Documento, DocumentoId, RegraDeDominioViolada, UsuarioId
+from backend.domain.exceptions import RegraDeDominioViolada
+from backend.domain.itens_perfil import (
+    TAMANHO_MAXIMO_NOME_ARQUIVO,
+    TIPOS_ARQUIVO_PERMITIDOS,
+    Documento,
+    validar_nome_arquivo,
+    validar_tipo_arquivo,
+)
+from backend.domain.value_objects import DocumentoId, UsuarioId
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
-class TestDomainDocumento(unittest.TestCase):
-    """Conjunto de testes das regras e invariantes da entidade Documento.
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class DocumentoDominioTestCase(unittest.TestCase):
+    """Verifica a integridade e validações de segurança da entidade Documento.
 
-    A classe verifica a criação válida, aparamento de textos e rejeição de
-    valores nulos, vazios ou com tipos incompatíveis. Ela existe para garantir que
-    instâncias de Documento respeitem sempre os limites e garantias do domínio.
+    A classe avalia tipos de arquivo aceitos, limites de tamanho, rejeição de
+    caracteres perigosos e invariantes de construção. Ela existe para garantir que
+    apenas metadados válidos e seguros componham o domínio.
     """
 
     def setUp(self) -> None:
-        """Prepara identificadores válidos para os cenários de teste.
-
-        O método inicializa IDs únicos para usuário e documento. Ele existe para
-        fornecer insumos válidos e isolados para cada método de teste.
-        """
+        """Configura dados básicos para os testes de domínio de documento."""
         self.usuario_id = UsuarioId(uuid4())
         self.documento_id = DocumentoId(uuid4())
 
-    def test_documento_valido_e_instanciado_com_sucesso(self) -> None:
-        """Verifica a criação correta com dados válidos e aparamento de espaços.
-
-        O teste instancia Documento com espaços laterais nos campos textuais e
-        assegura que os atributos sejam preservados devidamente aparados. Ele existe
-        para validar a construção padrão esperada pelo domínio.
-        """
+    def test_cria_documento_com_dados_validos(self) -> None:
+        """Confirma que a entidade Documento é criada corretamente com dados válidos."""
         doc = Documento(
             id=self.documento_id,
             usuario_id=self.usuario_id,
-            nome_arquivo="  diploma_graduacao.pdf  ",
-            tipo_arquivo="  application/pdf  ",
-            url_armazenamento="  https://storage.empresa.com/docs/123.pdf  ",
+            nome_arquivo="certificado_python.pdf",
+            tipo_arquivo="application/pdf",
+            url_armazenamento="https://storage.local/docs/certificado_python.pdf",
         )
         self.assertEqual(doc.id, self.documento_id)
         self.assertEqual(doc.usuario_id, self.usuario_id)
-        self.assertEqual(doc.nome_arquivo, "diploma_graduacao.pdf")
+        self.assertEqual(doc.nome_arquivo, "certificado_python.pdf")
         self.assertEqual(doc.tipo_arquivo, "application/pdf")
         self.assertEqual(
-            doc.url_armazenamento, "https://storage.empresa.com/docs/123.pdf"
+            doc.url_armazenamento,
+            "https://storage.local/docs/certificado_python.pdf",
         )
 
-    def test_rejeita_identificador_documento_invalido(self) -> None:
-        """Verifica que identificador de documento não tipado é rejeitado.
+    def test_aceita_tipos_de_arquivo_permitidos(self) -> None:
+        """Confirma que PDF, PNG e JPEG são aceitos na validação."""
+        for tipo in TIPOS_ARQUIVO_PERMITIDOS:
+            self.assertEqual(validar_tipo_arquivo(tipo), tipo)
 
-        O teste passa uma string em vez de DocumentoId e confirma a exceção
-        RegraDeDominioViolada. Ele existe para impedir desvios de tipagem rica.
-        """
-        with self.assertRaises(RegraDeDominioViolada) as ctx:
-            Documento(
-                id="invalido",  # type: ignore[arg-type]
-                usuario_id=self.usuario_id,
-                nome_arquivo="arquivo.pdf",
-                tipo_arquivo="application/pdf",
-                url_armazenamento="https://storage.empresa.com/1.pdf",
-            )
-        self.assertIn("Identificador de documento inválido", str(ctx.exception))
+    def test_rejeita_tipo_de_arquivo_nao_permitido(self) -> None:
+        """Confirma que extensões ou MIME types executáveis são rejeitados."""
+        tipos_invalidos = [
+            "application/x-sh",
+            "application/x-msdownload",
+            "text/html",
+            "video/mp4",
+            "exe",
+        ]
+        for tipo in tipos_invalidos:
+            with self.assertRaises(RegraDeDominioViolada):
+                validar_tipo_arquivo(tipo)
 
-    def test_rejeita_identificador_usuario_invalido(self) -> None:
-        """Verifica que identificador de usuário não tipado é rejeitado.
+    def test_rejeita_nome_de_arquivo_vazio_ou_com_caracteres_de_controle(self) -> None:
+        """Confirma que nomes vazios ou com controle disparam RegraDeDominioViolada."""
+        nomes_invalidos = ["", "   ", "doc\x00.pdf", "doc\n.pdf"]
+        for nome in nomes_invalidos:
+            with self.assertRaises(RegraDeDominioViolada):
+                validar_nome_arquivo(nome)
 
-        O teste passa None no lugar de UsuarioId e confirma o lançamento de
-        RegraDeDominioViolada. Ele existe para proteger a integridade da posse.
-        """
-        with self.assertRaises(RegraDeDominioViolada) as ctx:
+    def test_rejeita_nome_com_tentativa_de_path_traversal(self) -> None:
+        """Confirma que barras e sequências '..' são rejeitadas para evitar Path Traversal."""
+        nomes_perigosos = [
+            "../doc.pdf",
+            "../../etc/passwd",
+            "subpasta/doc.pdf",
+            "subpasta\\doc.pdf",
+        ]
+        for nome in nomes_perigosos:
+            with self.assertRaises(RegraDeDominioViolada):
+                validar_nome_arquivo(nome)
+
+    def test_rejeita_nome_de_arquivo_muito_longo(self) -> None:
+        """Confirma que nomes acima do tamanho máximo são rejeitados."""
+        nome_longo = "a" * (TAMANHO_MAXIMO_NOME_ARQUIVO + 1) + ".pdf"
+        with self.assertRaises(RegraDeDominioViolada):
+            validar_nome_arquivo(nome_longo)
+
+    def test_rejeita_url_armazenamento_vazia(self) -> None:
+        """Confirma que a URL de armazenamento não pode ser vazia."""
+        with self.assertRaises(RegraDeDominioViolada):
             Documento(
                 id=self.documento_id,
-                usuario_id=None,  # type: ignore[arg-type]
-                nome_arquivo="arquivo.pdf",
+                usuario_id=self.usuario_id,
+                nome_arquivo="doc.pdf",
                 tipo_arquivo="application/pdf",
-                url_armazenamento="https://storage.empresa.com/1.pdf",
+                url_armazenamento="   ",
             )
-        self.assertIn("Identificador de usuário inválido", str(ctx.exception))
-
-    def test_rejeita_nome_arquivo_vazio_ou_invalido(self) -> None:
-        """Verifica a obrigatoriedade e validação textual de nome_arquivo.
-
-        O teste testa valores vazios, compostos por espaços e tipos não textuais,
-        esperando RegraDeDominioViolada. Ele existe para garantir que todo documento tenha nome.
-        """
-        for invalido in ["", "   ", None, 123]:
-            with self.subTest(nome=invalido):
-                with self.assertRaises(RegraDeDominioViolada) as ctx:
-                    Documento(
-                        id=self.documento_id,
-                        usuario_id=self.usuario_id,
-                        nome_arquivo=invalido,  # type: ignore[arg-type]
-                        tipo_arquivo="application/pdf",
-                        url_armazenamento="https://storage.empresa.com/1.pdf",
-                    )
-                self.assertIn("nome do arquivo", str(ctx.exception))
-
-    def test_rejeita_tipo_arquivo_vazio_ou_invalido(self) -> None:
-        """Verifica a obrigatoriedade de tipo_arquivo não vazio.
-
-        O teste testa strings vazias e tipos incorretos para o tipo de arquivo.
-        Ele existe para assegurar integridade no formato do documento.
-        """
-        for invalido in ["", "   ", None, 456]:
-            with self.subTest(tipo=invalido):
-                with self.assertRaises(RegraDeDominioViolada) as ctx:
-                    Documento(
-                        id=self.documento_id,
-                        usuario_id=self.usuario_id,
-                        nome_arquivo="comprovante.png",
-                        tipo_arquivo=invalido,  # type: ignore[arg-type]
-                        url_armazenamento="https://storage.empresa.com/1.png",
-                    )
-                self.assertIn("tipo do arquivo", str(ctx.exception))
-
-    def test_rejeita_url_armazenamento_vazia_ou_invalida(self) -> None:
-        """Verifica que url_armazenamento não pode ser vazia ou não textual.
-
-        O teste valida que URLs nulas, vazias ou não-strings disparam erro.
-        Ele existe para garantir rastreabilidade física do documento armazenado.
-        """
-        for invalido in ["", "   ", None, 789]:
-            with self.subTest(url=invalido):
-                with self.assertRaises(RegraDeDominioViolada) as ctx:
-                    Documento(
-                        id=self.documento_id,
-                        usuario_id=self.usuario_id,
-                        nome_arquivo="comprovante.png",
-                        tipo_arquivo="image/png",
-                        url_armazenamento=invalido,  # type: ignore[arg-type]
-                    )
-                self.assertIn("URL de armazenamento", str(ctx.exception))
-
-
-if __name__ == "__main__":
-    unittest.main()

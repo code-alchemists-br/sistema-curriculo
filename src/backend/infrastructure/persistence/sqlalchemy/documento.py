@@ -1,10 +1,11 @@
-"""Mapeamento objeto-relacional para documentos complementares de estudantes.
+"""Mapeia documentos complementares entre o domínio e as colunas SQLAlchemy externas.
 
-O módulo define o modelo DocumentoRegistro compatível com a tabela 'documentos'
-do banco de dados relacional e funções puras de conversão bidirecional entre
-o registro do ORM e a entidade Documento do domínio. Ele existe para isolar
-detalhes do SQLAlchemy da lógica de negócio.
+O módulo conserva detalhes de tabela e chave técnica fora do domínio. Ele existe
+para persistir os metadados de documentos complementares sem permitir que modelos
+ORM atravessem as fronteiras internas da aplicação.
 """
+
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from uuid import UUID
@@ -17,13 +18,14 @@ from backend.domain.value_objects import DocumentoId, UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 class DocumentoRegistro(Base):
-    """Representa a tabela relacional 'documentos' mapeada via SQLAlchemy.
+    """Representa um documento complementar nas colunas relacionais da aplicação.
 
-    A classe declara as colunas correspondentes à modelagem do DER, incluindo
-    identificador UUID, chave estrangeira para o usuário e data de exclusão lógica
-    (deleted_at). Ela existe para servir de base às consultas e persistência do ORM.
+    O mapeamento armazena chave primária UUID, referência de proprietário (usuario_id),
+    nome do arquivo, tipo MIME, URL de armazenamento gerada e carimbos de data/hora,
+    incluindo deleted_at para suporte a exclusão lógica conforme o DER. Ele existe para
+    materializar no banco a tabela DOCUMENTO.
     """
 
     __tablename__ = "documentos"
@@ -31,7 +33,7 @@ class DocumentoRegistro(Base):
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     usuario_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("usuarios.id"),
+        ForeignKey("usuarios.id", name="fk_documentos_usuario_id_usuarios"),
         nullable=False,
         index=True,
     )
@@ -50,12 +52,12 @@ class DocumentoRegistro(Base):
     )
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def para_registro(documento: Documento) -> DocumentoRegistro:
-    """Converte a entidade de domínio Documento para o registro ORM DocumentoRegistro.
+    """Converte um documento complementar de domínio para seu registro persistível no SQLAlchemy.
 
-    A função extrai valores primitivos e UUIDs dos value objects da entidade e instancia
-    o modelo SQLAlchemy. Ela existe para desacoplar a camada de persistência da representação do domínio.
+    A função extrai identificadores tipados e campos primitivos para o modelo ORM.
+    Ela existe para evitar que o banco receba entidades de domínio diretamente.
     """
     return DocumentoRegistro(
         id=documento.id.valor,
@@ -66,13 +68,13 @@ def para_registro(documento: Documento) -> DocumentoRegistro:
     )
 
 
-# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def para_documento(registro: DocumentoRegistro) -> Documento:
-    """Reconstrói a entidade Documento a partir do registro ORM persistido.
+    """Reconstrói um documento complementar de domínio a partir de um registro ORM persistido.
 
-    A função instancia os value objects DocumentoId e UsuarioId e monta a entidade
-    com os campos armazenados no banco. Ela existe para garantir que a aplicação
-    receba apenas objetos válidos do domínio ao consultar o repositório.
+    A função recria os value objects tipados, reexecutando as invariantes da
+    entidade ao cruzar a fronteira para dentro. Ela existe para isolar o domínio
+    de instâncias instrumentadas do SQLAlchemy.
     """
     return Documento(
         id=DocumentoId(registro.id),
