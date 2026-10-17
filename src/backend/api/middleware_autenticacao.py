@@ -42,6 +42,7 @@ ROTAS_PUBLICAS = frozenset(
         ("GET", "/docs/oauth2-redirect"),
         ("GET", "/openapi.json"),
         ("GET", "/redoc"),
+        ("GET", "/health"),
     }
 )
 

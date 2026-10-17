@@ -5,6 +5,8 @@ externa, sem fazer a API abrir conexões ou conhecer persistência. Ela existe
 para manter o ponto ASGI importável e permitir que ambientes escolham adapters.
 """
 
+from collections.abc import Sequence
+
 from fastapi import FastAPI
 
 from backend.api.cadastro_acesso import (
@@ -54,6 +56,7 @@ from backend.api.documentacao_openapi import (
     TAG_PERFIL_ESTUDANTE,
     TAG_PREVIA_VERSAO_CURRICULO,
     TAG_PROJETOS_ACADEMICOS,
+    TAG_SAUDE,
     TAG_SESSOES,
     TAG_VERSOES_CURRICULO,
     configurar_documentacao,
@@ -151,6 +154,7 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+from backend.api.saude import criar_router as criar_router_saude
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
@@ -163,6 +167,7 @@ from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.saude import VerificadorSaude
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
 
@@ -217,6 +222,7 @@ def create_app(
     | None = None,
     excluir_experiencia_profissional: ExclusaoExperienciaProfissionalExecutor
     | None = None,
+    verificadores_saude: Sequence[VerificadorSaude] = (),
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -224,15 +230,16 @@ def create_app(
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, experiências profissionais (cadastro, edição e exclusão) e prévia
-    com os executores recebidos;
+    exclusão de versão, experiências profissionais (cadastro, edição e exclusão), prévia
+    e health check com os verificadores recebidos;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
     nas rotas privadas. Cada router recebe uma tag que o agrupa no Swagger, e a
     documentação OpenAPI marca com o cookie de sessão as rotas fora de
     `ROTAS_PUBLICAS` sempre que o middleware estiver ativo. Ela existe para
     concentrar a composição na camada externa, mantendo Application e domínio
-    livres do framework.
+    livres do framework. Sem verificadores de saúde, a rota indica apenas que a
+    API está ativa.
     """
     app = FastAPI(
         title="Sistema de Currículos",
@@ -330,4 +337,5 @@ def create_app(
         tags=[TAG_VERSOES_CURRICULO],
     )
     app.include_router(criar_router_sessoes(revogador_sessao), tags=[TAG_SESSOES])
+    app.include_router(criar_router_saude(verificadores_saude), tags=[TAG_SAUDE])
     return app
