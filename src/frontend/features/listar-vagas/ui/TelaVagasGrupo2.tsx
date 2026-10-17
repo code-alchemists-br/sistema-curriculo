@@ -6,11 +6,11 @@ import {
   type ClienteDecisoesRecomendacao,
   type DecisaoRecomendacao,
 } from "../api/cliente-decisoes-recomendacao";
-import {
-  FalhaVagasGrupo2,
-  type ClienteVagasGrupo2,
-  type CriteriosPesquisaVagas,
+import type {
+  ClienteVagasGrupo2,
+  CriteriosPesquisaVagas,
 } from "../api/cliente-vagas-grupo2";
+import { obterMensagemErroVagas } from "../model/mensagem-erro-vagas";
 import "./TelaVagasGrupo2.css";
 
 /** Define as dependências remotas recebidas pela tela de vagas. */
@@ -23,7 +23,7 @@ type EstadoVagasGrupo2 =
   | { tipo: "carregando" }
   | { tipo: "resultado"; sugestoes: SugestaoVaga[] }
   | { tipo: "vazio"; criterios: CriteriosPesquisaVagas }
-  | { tipo: "erro"; mensagem: string };
+  | { tipo: "erro"; mensagem: string; criterios: CriteriosPesquisaVagas };
 
 type EstadoDecisao =
   | { tipo: "ocioso" }
@@ -60,7 +60,11 @@ export function TelaVagasGrupo2({
           ? { tipo: "vazio", criterios }
           : { tipo: "resultado", sugestoes };
       } catch (erro: unknown) {
-        return { tipo: "erro", mensagem: mensagemDeErro(erro) };
+        return {
+          tipo: "erro",
+          mensagem: obterMensagemErroVagas(erro),
+          criterios,
+        };
       }
     },
     [cliente],
@@ -94,7 +98,10 @@ export function TelaVagasGrupo2({
   }
 
   function tentarNovamente(): void {
-    const criterios = estado.tipo === "vazio" ? estado.criterios : { termo };
+    const criterios =
+      estado.tipo === "vazio" || estado.tipo === "erro"
+        ? estado.criterios
+        : { termo: termo.trim() };
     executarPesquisa(criterios);
   }
 
@@ -189,13 +196,17 @@ function renderizarEstado(
     return (
       <section
         aria-labelledby="titulo-erro-vagas"
-        className="vagas-grupo2__estado"
+        className="vagas-grupo2__estado vagas-grupo2__estado--erro"
         role="alert"
       >
         <h2 id="titulo-erro-vagas">Não foi possível carregar as vagas</h2>
         <p>{estado.mensagem}</p>
 
-        <button onClick={aoTentarNovamente} type="button">
+        <button
+          className="vagas-grupo2__botao-recuperar"
+          onClick={aoTentarNovamente}
+          type="button"
+        >
           Tentar novamente
         </button>
       </section>
@@ -329,13 +340,4 @@ function chaveDaSugestao(sugestao: SugestaoVaga): string {
 /** Traduz o valor técnico da decisão para a frase apresentada à pessoa usuária. */
 function textoDaDecisao(decisao: DecisaoRecomendacao): string {
   return decisao === "aceitar" ? "aceita" : "rejeitada";
-}
-
-/** Converte uma falha de integração para uma mensagem segura de interface. */
-function mensagemDeErro(erro: unknown): string {
-  if (erro instanceof FalhaVagasGrupo2 && erro.codigo === "resposta-invalida") {
-    return "Recebemos uma resposta inesperada. Tente novamente mais tarde.";
-  }
-
-  return "A integração de vagas está indisponível no momento. Tente novamente mais tarde.";
 }
