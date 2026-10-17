@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from backend.domain.exceptions import RegraDeDominioViolada
+# Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
+from backend.domain.exceptions import (
+    ReferenciaDeOutroProprietario,
+    RegraDeDominioViolada,
+)
 from backend.domain.value_objects import CurriculoId, ReferenciaCurriculo, UsuarioId
 
 
@@ -94,6 +98,25 @@ class Curriculo:
         if referencia in self._referencias:
             raise RegraDeDominioViolada("Item já está incluído no currículo.")
         self._referencias.add(referencia)
+
+    # Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
+    def incluir_referencia_do_proprietario(
+        self, referencia: ReferenciaCurriculo, proprietario_do_item: UsuarioId
+    ) -> None:
+        """Inclui a referência somente se o item pertencer ao dono do currículo.
+
+        O método compara o proprietário do item, resolvido por quem orquestra a
+        consulta, com o dono do agregado e recusa a inclusão quando diferem; só
+        então delega a ``incluir_referencia``, que cuida da duplicidade. Ele
+        existe para que a regra de que uma versão reúne apenas itens do próprio
+        estudante seja uma invariante do domínio, sem o agregado consultar
+        outros agregados.
+        """
+        if proprietario_do_item != self.usuario_id:
+            raise ReferenciaDeOutroProprietario(
+                "Item pertence a outro estudante e não pode compor este currículo."
+            )
+        self.incluir_referencia(referencia)
 
     def remover_referencia(self, referencia: ReferenciaCurriculo) -> None:
         """Remove uma referência existente da versão de currículo.
