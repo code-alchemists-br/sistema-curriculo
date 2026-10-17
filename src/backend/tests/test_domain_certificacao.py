@@ -1,12 +1,14 @@
 """Testa invariantes e normalização da entidade de certificação e seu value object."""
 
 import unittest
+from dataclasses import FrozenInstanceError
 from uuid import UUID
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.domain import (
     Certificacao,
     CertificacaoId,
+    FormacaoAcademicaId,
     RegraDeDominioViolada,
     UsuarioId,
     normalizar_chave_certificacao,
@@ -143,19 +145,138 @@ class CertificacaoTestCase(unittest.TestCase):
         chave = normalizar_chave_certificacao("  SCRUM   MASTER   PROFESSIONAL  ")
         self.assertEqual(chave, "scrum master professional")
 
-    def _criar_certificacao(
-        self,
-        nome: str = "Certificação Python",
-        organizacao_emissora: str = "Python Software Foundation",
-    ) -> Certificacao:
+    def test_aceita_textos_nos_limites_minimo_e_maximo(self) -> None:
+        """Aceita nome e emissor com exatamente 1 e exatamente 200 caracteres.
+
+        O cenário constrói certificações nos dois limites para cada campo e
+        confere que o valor é preservado. Ele existe para que uma alteração de
+        comparação nos limites seja detectada, já que o lado de rejeição sozinho
+        não cobre a fronteira.
+        """
+        for tamanho in (1, 200):
+            with self.subTest(tamanho=tamanho):
+                texto = "A" * tamanho
+                certificacao = self._criar_certificacao(
+                    nome=texto, organizacao_emissora=texto
+                )
+                self.assertEqual(certificacao.nome, texto)
+                self.assertEqual(certificacao.organizacao_emissora, texto)
+
+    def test_limite_e_medido_depois_de_aparar_espacos(self) -> None:
+        """Aceita 200 caracteres úteis mesmo com espaços externos excedentes.
+
+        O cenário envolve um texto de 200 caracteres em espaços laterais, que
+        são removidos antes da medição. Ele existe para fixar que o limite vale
+        para o conteúdo normalizado, e não para a entrada bruta.
+        """
+        texto = "A" * 200
+
+        certificacao = self._criar_certificacao(nome=f"   {texto}   ")
+
+        self.assertEqual(certificacao.nome, texto)
+
+    def test_rejeita_caracteres_de_controle_na_organizacao_emissora(self) -> None:
+        """Impede caracteres de controle também no campo do emissor.
+
+        O cenário injeta um caractere nulo no emissor e espera rejeição. Ele
+        existe para que a regra de higiene textual valha para os dois campos.
+        """
+        with self.assertRaises(RegraDeDominioViolada):
+            self._criar_certificacao(organizacao_emissora="Amazon\x00Web Services")
+
+    def test_rejeita_quebra_de_linha_interna(self) -> None:
+        """Impede quebra de linha no meio do nome da certificação.
+
+        O cenário usa um texto válido nas pontas com ``\\n`` interno, que não é
+        removido pelo aparo lateral. Ele existe para impedir que nomes
+        multilinha cheguem à apresentação do currículo.
+        """
+        with self.assertRaises(RegraDeDominioViolada):
+            self._criar_certificacao(nome="AWS\nCertified")
+
+    def test_chave_normalizada_preserva_acentos(self) -> None:
+        """Gera a mesma chave para variações de caixa sem perder acentuação.
+
+        O cenário compara nomes em minúsculas e maiúsculas com "ç" e "ã". Ele
+        existe para que a deduplicação não confunda palavras acentuadas com
+        versões sem acento.
+        """
+        minuscula = self._criar_certificacao(nome="Certificação em Gestão")
+        maiuscula = self._criar_certificacao(nome="CERTIFICAÇÃO EM GESTÃO")
+
+        self.assertEqual(minuscula.nome_normalizado, "certificação em gestão")
+        self.assertEqual(maiuscula.nome_normalizado, minuscula.nome_normalizado)
+
+    def test_variacoes_de_caixa_e_espacos_produzem_as_mesmas_chaves(self) -> None:
+        """Identifica como duplicadas certificações com escrita diferente.
+
+        O cenário cria duas certificações cujo nome e emissor diferem apenas em
+        caixa e espaços internos. Ele existe para sustentar a detecção de
+        duplicidade usada pelo cadastro.
+        """
+        primeira = self._criar_certificacao(
+            nome="Scrum Master", organizacao_emissora="Scrum Alliance"
+        )
+        segunda = self._criar_certificacao(
+            nome="  scrum   MASTER ", organizacao_emissora="SCRUM   alliance"
+        )
+
+        self.assertEqual(
+            (primeira.nome_normalizado, primeira.organizacao_emissora_normalizada),
+            (segunda.nome_normalizado, segunda.organizacao_emissora_normalizada),
+        )
+
+    def test_entidade_e_imutavel(self) -> None:
+        """Impede alterar os campos depois da construção.
+
+        O cenário tenta atribuir um novo nome à certificação criada. Ele existe
+        para garantir que as invariantes validadas na criação não sejam
+        contornadas por mutação posterior.
+        """
+        certificacao = self._criar_certificacao()
+
+        with self.assertRaises(FrozenInstanceError):
+            certificacao.nome = "Outro nome"  # type: ignore[misc]
+
+    def test_rejeita_identidade_de_outro_tipo(self) -> None:
+        """Impede usar como identidade um ID de outro item ou um UUID cru.
+
+        O cenário fornece um ``FormacaoAcademicaId`` e um ``UUID`` no lugar do
+        ``CertificacaoId``. Ele existe para que uma certificação nunca seja
+        criada com a identidade de outro tipo de item do perfil.
+        """
+        for identidade in (
+            FormacaoAcademicaId(UUID("70000000-0000-0000-0000-000000000001")),
+            UUID("70000000-0000-0000-0000-000000000001"),
+        ):
+            with self.subTest(identidade=type(identidade).__name__):
+                with self.assertRaises(RegraDeDominioViolada):
+                    self._criar_certificacao(id=identidade)  # type: ignore[arg-type]
+
+    def test_rejeita_proprietario_ausente_ou_de_outro_tipo(self) -> None:
+        """Impede certificação sem dono ou com dono não tipado.
+
+        O cenário fornece ``None`` e um ``UUID`` cru no lugar do ``UsuarioId``.
+        Ele existe para que toda certificação pertença a um estudante válido,
+        base do isolamento de dados entre estudantes.
+        """
+        for proprietario in (None, UUID("70000000-0000-0000-0000-000000000002")):
+            with self.subTest(proprietario=proprietario):
+                with self.assertRaises(RegraDeDominioViolada):
+                    self._criar_certificacao(usuario_id=proprietario)  # type: ignore[arg-type]
+
+    def _criar_certificacao(self, **alteracoes: object) -> Certificacao:
         """Constrói uma certificação com identificadores válidos para os testes.
 
-        O método encapsula a instanciação padrão determinística para isolar as
-        asserções em cada regra específica. Ele existe para evitar redundância nos testes.
+        O método parte de campos padrão determinísticos e permite substituir
+        qualquer um deles por argumento nomeado, isolando as asserções em cada
+        regra específica. Ele existe para evitar redundância nos testes.
         """
-        return Certificacao(
-            id=CertificacaoId(UUID("70000000-0000-0000-0000-000000000001")),
-            usuario_id=UsuarioId(UUID("70000000-0000-0000-0000-000000000002")),
-            nome=nome,
-            organizacao_emissora=organizacao_emissora,
-        )
+        campos: dict[str, object] = {
+            "id": CertificacaoId(UUID("70000000-0000-0000-0000-000000000001")),
+            "usuario_id": UsuarioId(UUID("70000000-0000-0000-0000-000000000002")),
+            "nome": "Certificação Python",
+            "organizacao_emissora": "Python Software Foundation",
+        }
+        campos.update(alteracoes)
+        return Certificacao(**campos)  # type: ignore[arg-type]
