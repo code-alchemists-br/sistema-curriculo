@@ -24,6 +24,8 @@ from backend.domain.itens_perfil import (
     FormacaoAcademica,
     Idioma,
     ProjetoAcademico,
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+    ordenar_experiencias,
     # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
     ordenar_formacoes,
 )
@@ -104,7 +106,8 @@ class GerarPreviaVersaoCurriculo:
         seguida lê cada referência, mantém apenas o item existente que pertence
         ao solicitante e corresponde à referência pedida, e ordena cada seção;
         formações seguem a regra de domínio ``ordenar_formacoes`` (situação e
-        data), enquanto experiências usam o início mais recente. Ele existe para
+        data) e experiências seguem ``ordenar_experiencias`` (início mais
+        recente, com as em andamento antes no empate). Ele existe para
         impedir que a prévia exiba dados de outro estudante e para que a mesma
         versão sempre produza a mesma saída.
         """
@@ -134,7 +137,8 @@ class GerarPreviaVersaoCurriculo:
             formacoes=ordenar_formacoes(
                 item for item in itens if isinstance(item, FormacaoAcademica)
             ),
-            experiencias=_ordenar_por_periodo(
+            # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+            experiencias=ordenar_experiencias(
                 item for item in itens if isinstance(item, ExperienciaProfissional)
             ),
             projetos=_ordenar_por_texto(
@@ -150,24 +154,6 @@ class GerarPreviaVersaoCurriculo:
                 (item for item in itens if isinstance(item, Documento)), "nome_arquivo"
             ),
         )
-
-
-# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
-def _ordenar_por_periodo(itens):
-    """Ordena itens com período do início mais recente para o mais antigo.
-
-    A função usa a data de início do período como chave principal, em ordem
-    decrescente, e o identificador como desempate estável. Ela existe para que
-    experiências apareçam sempre da mais recente para a mais antiga,
-    independentemente da ordem do conjunto de referências; formações usam a
-    regra de domínio ``ordenar_formacoes``.
-    """
-    return tuple(
-        sorted(
-            itens,
-            key=lambda item: (-item.periodo.inicio.toordinal(), str(item.id.valor)),
-        )
-    )
 
 
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001

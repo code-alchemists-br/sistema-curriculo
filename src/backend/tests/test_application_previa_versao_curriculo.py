@@ -2,7 +2,7 @@
 
 import unittest
 from datetime import date, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from backend.application import (
     CurriculoNaoEncontrado,
@@ -201,19 +201,26 @@ def _formacao(
     )
 
 
-def _experiencia(usuario_id: UsuarioId, inicio: date) -> ExperienciaProfissional:
-    """Cria uma experiência válida do usuário com o início de período indicado.
+def _experiencia(
+    usuario_id: UsuarioId,
+    inicio: date,
+    fim: date | None = None,
+    item_id: UUID | None = None,
+) -> ExperienciaProfissional:
+    """Cria uma experiência válida do usuário com o período indicado.
 
-    A função fixa os demais campos com valores neutros. Ela existe para variar
-    apenas o que a ordenação observa.
+    A função fixa os textos com valores neutros e, por padrão, cria uma
+    experiência em andamento com identificador aleatório; término e
+    identificador podem ser fixados. Ela existe para variar apenas o que a
+    ordenação observa.
     """
     return ExperienciaProfissional(
-        id=ExperienciaProfissionalId(uuid4()),
+        id=ExperienciaProfissionalId(item_id or uuid4()),
         usuario_id=usuario_id,
         empresa="Empresa",
         cargo="Estagiária",
         descricao="Desenvolvimento de APIs.",
-        periodo=Periodo(inicio=inicio),
+        periodo=Periodo(inicio=inicio, fim=fim),
     )
 
 
@@ -397,6 +404,39 @@ class GerarPreviaVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             previa.formacoes,
             (em_andamento, concluida_recente, concluida_antiga, interrompida),
         )
+
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+    async def test_experiencias_seguem_ordenacao_de_dominio_com_andamento_no_empate(
+        self,
+    ) -> None:
+        """Confirma que a prévia ordena experiências pela regra de domínio.
+
+        O teste seleciona, fora de ordem, uma experiência antiga e duas que
+        começaram no mesmo dia: a encerrada recebe o menor identificador, de
+        modo que um desempate só por identificador a colocaria primeiro. A
+        prévia deve trazer a em andamento antes da encerrada e a antiga por
+        último. Ele existe para garantir que a consulta expõe o desempate de
+        domínio, e não apenas a ordem por início.
+        """
+        usuario = _criar_usuario()
+        antiga = _experiencia(usuario.id, date(2019, 3, 1), date(2020, 6, 1))
+        encerrada = _experiencia(
+            usuario.id, date(2023, 2, 1), date(2023, 12, 1), UUID(int=1)
+        )
+        em_andamento = _experiencia(usuario.id, date(2023, 2, 1), item_id=UUID(int=2))
+        itens = (antiga, encerrada, em_andamento)
+        curriculo = _criar_curriculo(usuario.id, *itens)
+        caso = GerarPreviaVersaoCurriculo(
+            RepositorioCurriculoSpy([curriculo]),
+            RepositorioUsuarioStub([usuario]),
+            _consulta_para(*itens),
+        )
+
+        previa = await caso.executar(
+            GerarPreviaVersaoCurriculoEntrada(usuario.id, curriculo.id)
+        )
+
+        self.assertEqual(previa.experiencias, (em_andamento, encerrada, antiga))
 
     async def test_mesma_selecao_em_ordens_diferentes_produz_a_mesma_previa(
         self,
