@@ -675,9 +675,13 @@ token=...
 Também deverão ser evitadas informações pessoais que não sejam necessárias ao objetivo do log.
 
 O backend deverá mascarar e-mails, CPFs, telefones e valores registrados em
-campos pessoais ou de credenciais, incluindo nome, endereço, identificador de
-ator, senha, token e cookies. O mascaramento não substitui a minimização: corpos
-de requisição e dados pessoais não necessários não devem ser registrados.
+campos pessoais ou de credenciais, incluindo nome, endereço, IDs de conta,
+senha, token, cookies e cabeçalhos de autorização. Negações de autorização
+podem registrar uma referência HMAC do ator, calculada com uma chave secreta
+compartilhada, para permitir auditoria sem gravar o identificador original.
+Essa referência permanece dado pseudonimizado e deve ter acesso controlado. O
+mascaramento não substitui a minimização: corpos de requisição e dados pessoais
+não necessários não devem ser registrados.
 
 Logs operacionais e de segurança deverão ser mantidos por até **30 dias** no
 destino de coleta e excluídos ao fim do prazo, incluindo cópias temporárias

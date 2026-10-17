@@ -5,7 +5,8 @@ externa, sem fazer a API abrir conexões ou conhecer persistência. Ela existe
 para manter o ponto ASGI importável e permitir que ambientes escolham adapters.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from typing import AsyncContextManager
 
 from fastapi import FastAPI
 
@@ -224,6 +225,7 @@ def create_app(
     | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
+    lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -240,12 +242,14 @@ def create_app(
     `ROTAS_PUBLICAS` sempre que o middleware estiver ativo. Ela existe para
     concentrar a composição na camada externa, mantendo Application e domínio
     livres do framework. Sem verificadores gerais, health indica apenas que a
-    API está ativa; sem verificador de persistência, readiness falha.
+    API está ativa; sem verificador de persistência, readiness falha. O lifespan
+    opcional é encaminhado ao FastAPI para liberar recursos externos no shutdown.
     """
     app = FastAPI(
         title="Sistema de Currículos",
         description=DESCRICAO_API,
         openapi_tags=METADADOS_TAGS,
+        lifespan=lifespan,
     )
     if autenticador_sessao is not None:
         app.add_middleware(
