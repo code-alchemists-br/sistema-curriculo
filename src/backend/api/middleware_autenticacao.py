@@ -2,8 +2,7 @@
 
 import logging
 from contextvars import ContextVar, Token
-from uuid import UUID
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
