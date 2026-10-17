@@ -204,6 +204,21 @@ PYTHONPATH=src LOG_LEVEL=DEBUG uvicorn backend.main:app
 Um valor fora da lista interrompe a inicialização com uma mensagem que informa
 as opções aceitas.
 
+### Mascaramento e retenção
+
+O backend mascara e-mails, CPFs, telefones e valores associados a campos como
+`nome`, `endereco`, `ator_id`, `senha`, `token`, `cookie` e
+`authorization` antes de enviar registros aos handlers padrão. A aplicação
+emite logs para a saída padrão; portanto, a retenção deve ser aplicada pelo
+coletor configurado no ambiente de implantação. O prazo operacional definido
+para logs de aplicação e segurança é de **30 dias**, seguido de exclusão também
+das cópias temporárias controladas pelo coletor. A implantação deve configurar
+esse prazo no destino de logs; o backend não mantém arquivos locais de log.
+
+Logs devem conter apenas os campos necessários à operação ou auditoria. A
+mascaração é uma defesa adicional e não autoriza incluir dados pessoais,
+credenciais ou corpos de requisição em mensagens de log.
+
 ## Health check
 
 A API expõe `GET /health` sem autenticação. A resposta contém somente
