@@ -283,11 +283,12 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(chamadas, [])
 
     async def test_perfil_so_e_alterado_pelo_estudante_da_sessao(self) -> None:
-        """Registra rota, motivo e ator técnico ao negar perfil de outro estudante.
+        """Registra rota, motivo e referência protegida ao negar outro perfil.
 
         Uma sessão válida tenta usar o caminho real do perfil de outra pessoa;
-        o middleware deve registrar os metadados e negar o handler. O teste
-        existe para auditar autorização sem gravar o token da sessão.
+        o middleware deve registrar uma referência HMAC do ator e negar o
+        handler. O teste existe para auditar autorização sem gravar a identidade
+        original ou o token da sessão.
         """
         usuario_autenticado = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
         autenticador = AutenticadorSessaoStub(usuario_autenticado)
@@ -316,7 +317,8 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(logs.records[0].evento, "negacao_autorizacao")
         self.assertEqual(logs.records[0].rota, "PUT /estudantes/{uuid}")
         self.assertEqual(logs.records[0].motivo, "proprietario_diferente")
-        self.assertEqual(logs.records[0].ator_id, str(usuario_autenticado.valor))
+        self.assertRegex(logs.records[0].ator_referencia, r"^[0-9a-f]{24}$")
+        self.assertNotIn(str(usuario_autenticado.valor), logs.output[0])
         self.assertEqual(
             logs.records[0].correlation_id,
             resposta.headers["X-Correlation-ID"],

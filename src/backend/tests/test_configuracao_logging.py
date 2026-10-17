@@ -4,11 +4,13 @@ import logging
 import os
 import sys
 import unittest
+from io import StringIO
 from unittest.mock import patch
 
 from backend.configuracao_logging import (
     FiltroMascaramentoDadosPessoais,
     configurar_logging,
+    pseudonimizar_identificador_ator,
 )
 
 
@@ -98,6 +100,21 @@ class ConfiguracaoLoggingTestCase(unittest.TestCase):
         FiltroMascaramentoDadosPessoais().filter(registro_autorizacao)
         self.assertEqual(registro_autorizacao.getMessage(), "authorization=[REDACTED]")
 
+        for cabecalho in (
+            "Authorization: Bearer segredo-super-secreto",
+            "Set-Cookie: __Host-sessao=token-super-secreto; Path=/; Secure",
+            "email=ana%40example.com&access_token=token-super-secreto",
+        ):
+            with self.subTest(cabecalho=cabecalho):
+                registro_cabecalho = logging.LogRecord(
+                    "teste", logging.INFO, __file__, 1, cabecalho, (), None
+                )
+                FiltroMascaramentoDadosPessoais().filter(registro_cabecalho)
+                mensagem = registro_cabecalho.getMessage()
+                self.assertNotIn("segredo-super-secreto", mensagem)
+                self.assertNotIn("token-super-secreto", mensagem)
+                self.assertNotIn("ana%40example.com", mensagem)
+
     def test_mascara_campos_sensiveis_em_extras_aninhados(self) -> None:
         """Protege chaves sensíveis mesmo dentro de estruturas extras.
 
@@ -144,16 +161,24 @@ class ConfiguracaoLoggingTestCase(unittest.TestCase):
         self.assertIsNone(registro.exc_info)
         self.assertNotIn("ana@example.com", registro.exc_text)
 
-    def test_configuracao_instala_filtro_nos_handlers_raiz(self) -> None:
-        """Instala a sanitização em handlers já presentes na inicialização.
+    def test_configuracao_instala_filtro_em_handlers_nomeados_e_raiz(self) -> None:
+        """Instala a sanitização nos handlers raiz e de loggers nomeados.
 
-        O teste adiciona um handler temporário e consulta seus filtros após a
-        configuração. Ele existe para garantir que a proteção seja ativada na
-        execução normal do backend.
+        O teste cria handlers temporários nos dois níveis e consulta seus
+        filtros após a configuração. Ele existe para proteger também logs de
+        servidores ASGI que usam handlers próprios, como o access logger.
         """
         logger_raiz = logging.getLogger()
-        handler = logging.NullHandler()
-        logger_raiz.addHandler(handler)
+        logger_nomeado = logging.getLogger("uvicorn.access")
+        handler_raiz = logging.NullHandler()
+        saida = StringIO()
+        handler_nomeado = logging.StreamHandler(saida)
+        nivel_original = logger_nomeado.level
+        propagacao_original = logger_nomeado.propagate
+        logger_nomeado.setLevel(logging.WARNING)
+        logger_nomeado.propagate = False
+        logger_raiz.addHandler(handler_raiz)
+        logger_nomeado.addHandler(handler_nomeado)
         try:
             with (
                 patch.dict(os.environ, {"LOG_LEVEL": "INFO"}),
@@ -164,12 +189,42 @@ class ConfiguracaoLoggingTestCase(unittest.TestCase):
             self.assertTrue(
                 any(
                     isinstance(filtro, FiltroMascaramentoDadosPessoais)
-                    for filtro in handler.filters
+                    for filtro in handler_raiz.filters
                 )
             )
+            self.assertTrue(
+                any(
+                    isinstance(filtro, FiltroMascaramentoDadosPessoais)
+                    for filtro in handler_nomeado.filters
+                )
+            )
+            logger_nomeado.warning("Authorization: Bearer segredo-super-secreto")
+            self.assertIn("Authorization: [REDACTED]", saida.getvalue())
+            self.assertNotIn("segredo-super-secreto", saida.getvalue())
         finally:
-            logger_raiz.removeHandler(handler)
-            handler.close()
+            logger_raiz.removeHandler(handler_raiz)
+            logger_nomeado.removeHandler(handler_nomeado)
+            logger_nomeado.setLevel(nivel_original)
+            logger_nomeado.propagate = propagacao_original
+            handler_raiz.close()
+            handler_nomeado.close()
+
+    def test_pseudonimiza_identificador_de_ator_de_forma_estavel(self) -> None:
+        """Produz referência estável sem reproduzir o identificador original.
+
+        O cenário transforma duas vezes o mesmo identificador técnico e
+        compara forma e estabilidade do HMAC. Ele existe para manter vínculo de
+        auditoria sem registrar diretamente a identidade da conta.
+        """
+        identificador = "00000000-0000-0000-0000-000000000001"
+
+        referencia = pseudonimizar_identificador_ator(identificador)
+
+        self.assertEqual(
+            pseudonimizar_identificador_ator(identificador), referencia
+        )
+        self.assertRegex(referencia, r"^[0-9a-f]{24}$")
+        self.assertNotEqual(referencia, identificador)
 
     def test_usa_info_quando_log_level_nao_esta_definida(self) -> None:
         """Aplica INFO como padrão quando não há configuração no ambiente.

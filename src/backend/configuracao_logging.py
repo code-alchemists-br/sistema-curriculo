@@ -1,8 +1,11 @@
 """Configura o nível de logging da aplicação a partir do ambiente."""
 
+import hashlib
+import hmac
 import logging
 import os
 import re
+import secrets
 from collections.abc import Mapping
 from typing import Any
 
@@ -20,29 +23,54 @@ _PADROES_DADOS_PESSOAIS = (
     ),
 )
 _PADRAO_CAMPO_SENSIVEL = re.compile(
-    r"(?i)\b((?:ator_id|authorization|cookie|cpf|email|endereco|nome|"
-    r"password|senha|set_cookie|telefone|token)\s*=\s*)[^\s,;]+"
+    r"(?i)\b((?:access_token|actor_id|api[_-]?key|ator_id|authorization|"
+    r"cookie|cpf|credential|email(?:_address)?|endereco|hash_senha|name|"
+    r"nome|password|phone(?:_number)?|refresh_token|senha|set[-_]cookie|"
+    r"telefone|token|user_id|usuario_id)\s*[:=]\s*)[^\s,;&]+"
 )
-_PADRAO_AUTORIZACAO = re.compile(r"(?i)\b(authorization\s*=\s*)[^,;]+")
+_PADRAO_AUTORIZACAO = re.compile(
+    r"(?i)\b(authorization\s*[:=]\s*)[^,;]+"
+)
 _CHAVES_SENSIVEIS = frozenset(
     {
+        "access_token",
+        "actor_id",
+        "api_key",
+        "api-key",
         "ator_id",
         "authorization",
         "cookie",
         "cpf",
+        "credential",
         "email",
+        "email_address",
         "endereco",
+        "hash_senha",
+        "name",
         "nome",
         "password",
+        "phone",
+        "phone_number",
+        "refresh_token",
         "senha",
         "set-cookie",
         "set_cookie",
         "telefone",
         "token",
+        "user_id",
+        "usuario_id",
     }
 )
 _MASCARA = "[REDACTED]"
 _CAMPOS_LOG_PADRAO = frozenset(logging.makeLogRecord({}).__dict__)
+_CHAVE_PSEUDONIMIZACAO_ATOR = os.environ.get("LOG_ACTOR_HMAC_KEY")
+_CHAVE_PSEUDONIMIZACAO_ATOR_BYTES = (
+    _CHAVE_PSEUDONIMIZACAO_ATOR.encode("utf-8")
+    if _CHAVE_PSEUDONIMIZACAO_ATOR
+    else secrets.token_bytes(32)
+)
+if _CHAVE_PSEUDONIMIZACAO_ATOR and len(_CHAVE_PSEUDONIMIZACAO_ATOR_BYTES) < 32:
+    raise ValueError("LOG_ACTOR_HMAC_KEY deve conter ao menos 32 bytes.")
 
 
 class FiltroMascaramentoDadosPessoais(logging.Filter):
@@ -114,6 +142,20 @@ def _mascarar_valor(valor: Any) -> Any:
     return valor
 
 
+def pseudonimizar_identificador_ator(identificador: str) -> str:
+    """Gera uma referência estável e não reversível do ator para auditoria.
+
+    A função calcula um HMAC-SHA256 com chave configurada no ambiente ou uma
+    chave aleatória válida pelo processo. Ela existe para permitir relacionar
+    eventos de um mesmo ator sem gravar seu identificador técnico original.
+    """
+    return hmac.new(
+        _CHAVE_PSEUDONIMIZACAO_ATOR_BYTES,
+        identificador.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:24]
+
+
 def configurar_logging() -> None:
     """Configura o nível do logger raiz usando a variável `LOG_LEVEL`.
 
@@ -133,7 +175,16 @@ def configurar_logging() -> None:
     logging.basicConfig(level=logging.getLevelName(nivel))
     logger_raiz = logging.getLogger()
     logger_raiz.setLevel(logging.getLevelName(nivel))
-    for handler in logger_raiz.handlers:
+    loggers = (
+        logger
+        for logger in logging.Logger.manager.loggerDict.values()
+        if isinstance(logger, logging.Logger)
+    )
+    handlers = set(logger_raiz.handlers)
+    for logger in loggers:
+        handlers.update(logger.handlers)
+
+    for handler in handlers:
         if not any(
             isinstance(filtro, FiltroMascaramentoDadosPessoais)
             for filtro in handler.filters

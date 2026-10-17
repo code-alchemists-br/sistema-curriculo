@@ -10,6 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from backend.api.sessoes import COOKIE_SESSAO
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.configuracao_logging import pseudonimizar_identificador_ator
 
 DETALHE_NAO_AUTENTICADO = "Sessão ausente ou inválida."
 _contexto_correlacao: ContextVar[str | None] = ContextVar(
@@ -57,8 +58,9 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
     `request.state.correlation_id`. O identificador também fica disponível em
     `LogRecord.correlation_id` e no cabeçalho `X-Correlation-ID`. Nas rotas de
     perfil e currículo, exige que o UUID da rota corresponda ao estudante
-    autenticado. Quando nega acesso, registra rota, motivo e ID técnico do ator.
-    Ele existe para proteger recursos, auditar decisões e localizar seus logs.
+    autenticado. Quando nega acesso, registra rota, motivo e referência
+    pseudonimizada do ator. Ele existe para proteger recursos, auditar decisões
+    e localizar seus logs sem gravar o identificador original.
     """
 
     def __init__(self, app, autenticador: AutenticadorSessao) -> None:
@@ -109,17 +111,19 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
             ):
                 rota = _rota_para_log(request.method, request.url.path)
                 motivo = "proprietario_diferente"
-                ator_id = str(usuario_id.valor)
+                ator_referencia = pseudonimizar_identificador_ator(
+                    str(usuario_id.valor)
+                )
                 logger.warning(
-                    "negacao_autorizacao rota=%s motivo=%s ator_id=%s",
+                    "negacao_autorizacao rota=%s motivo=%s ator_referencia=%s",
                     rota,
                     motivo,
-                    ator_id,
+                    ator_referencia,
                     extra={
                         "evento": "negacao_autorizacao",
                         "rota": rota,
                         "motivo": motivo,
-                        "ator_id": ator_id,
+                        "ator_referencia": ator_referencia,
                     },
                 )
                 resposta = JSONResponse(

@@ -217,9 +217,17 @@ as opções aceitas.
 ### Mascaramento e retenção
 
 O backend mascara e-mails, CPFs, telefones e valores associados a campos como
-`nome`, `endereco`, `ator_id`, `senha`, `token`, `cookie` e
-`authorization` antes de enviar registros aos handlers padrão. A aplicação
-emite logs para a saída padrão; portanto, a retenção deve ser aplicada pelo
+`nome`, `endereco`, `ator_id`, `senha`, `token`, cookies, IDs de usuário e
+credenciais de acesso. A sanitização é instalada nos handlers existentes,
+incluindo os handlers nomeados do servidor ASGI. Negações de autorização
+registram `ator_referencia`, um HMAC do identificador original, para permitir
+auditoria sem expor o ID da conta. Configure `LOG_ACTOR_HMAC_KEY` como segredo
+compartilhado com ao menos 32 bytes entre as instâncias para manter referências
+estáveis entre processos e reinicializações. Se a variável faltar, cada
+processo usa uma chave aleatória temporária e as referências não serão
+correlacionáveis após reinício.
+
+A aplicação emite logs para a saída padrão; portanto, a retenção deve ser aplicada pelo
 coletor configurado no ambiente de implantação. O prazo operacional definido
 para logs de aplicação e segurança é de **30 dias**, seguido de exclusão também
 das cópias temporárias controladas pelo coletor. A implantação deve configurar
@@ -241,9 +249,12 @@ configurados; nesse caso, o endpoint confirma apenas que a API está ativa.
 ## Readiness da persistência
 
 A API expõe `GET /ready` sem autenticação. A rota retorna `{"status":"ok"}`
-somente quando um verificador de persistência injetado confirma disponibilidade.
+somente quando o banco configurado responde a uma consulta assíncrona `SELECT 1`.
+Configure `DATABASE_URL` com uma URL PostgreSQL compatível com SQLAlchemy e
+Psycopg, preferencialmente no formato `postgresql+psycopg://...`; URLs
+`postgresql://...` são convertidas para esse driver na composição.
 Se o verificador estiver ausente, retornar falso, lançar exceção ou exceder dois
 segundos, a resposta será HTTP 503 com `{"status":"indisponivel"}`. A resposta
 não inclui URL, credenciais, nome do banco ou mensagem da exceção. Como a
-composição atual ainda não conecta persistência em runtime, `/ready` retorna 503
-até que o probe correspondente seja injetado.
+URL é opcional para desenvolvimento local, sua ausência mantém `/ready` em 503.
+O pool assíncrono é liberado no encerramento da aplicação.
