@@ -157,8 +157,18 @@ ambiente dedicado:
 nix develop .#quality
 ```
 
-Ele disponibiliza Ruff, Bandit, Radon e coverage.py; os testes existentes
-continuam executados com `python -m unittest`.
+Ele disponibiliza Ruff, Bandit, Radon, coverage.py, Gitleaks e as ferramentas
+do frontend; os testes existentes continuam executados com
+`python -m unittest`.
+
+O workflow do GitHub Actions varre o histórico completo do Git com Gitleaks em
+pull requests e falha com código de saída `1` quando encontra um segredo. A
+saída da varredura é redigida para não repetir o valor detectado. A mesma
+verificação pode ser executada localmente com:
+
+```bash
+nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
+```
 
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 

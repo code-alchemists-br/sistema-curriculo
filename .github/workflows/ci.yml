@@ -75,4 +75,4 @@ jobs:
         uses: cachix/install-nix-action@v31
 
       - name: Scan Git history for secrets
-        run: nix develop .#quality --command gitleaks git --redact --no-banner
+        run: nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
