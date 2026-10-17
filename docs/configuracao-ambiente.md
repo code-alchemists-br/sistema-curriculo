@@ -203,3 +203,12 @@ PYTHONPATH=src LOG_LEVEL=DEBUG uvicorn backend.main:app
 
 Um valor fora da lista interrompe a inicialização com uma mensagem que informa
 as opções aceitas.
+
+## Health check
+
+A API expõe `GET /health` sem autenticação. A resposta contém somente
+`{"status":"ok"}` quando todos os verificadores injetados concluem com sucesso,
+ou `{"status":"indisponivel"}` com HTTP 503 quando algum falha, lança exceção ou
+ultrapassa dois segundos. A resposta não informa nomes, endereços ou mensagens
+de erro das dependências. A composição atual não possui probes externos
+configurados; nesse caso, o endpoint confirma apenas que a API está ativa.
