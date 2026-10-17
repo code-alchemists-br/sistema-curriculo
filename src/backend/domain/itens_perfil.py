@@ -314,6 +314,30 @@ class ExperienciaProfissional:
                     f"A experiência profissional exige {campo} preenchido."
                 )
 
+    def editar(
+        self,
+        empresa: str,
+        cargo: str,
+        descricao: str,
+        periodo: Periodo,
+    ) -> ExperienciaProfissional:
+        """Devolve a experiência com o conjunto completo de dados editado.
+
+        O método constrói uma nova entidade com a mesma identidade e o mesmo
+        proprietário, reaplicando por ``__post_init__`` a exigência de textos
+        preenchidos; a cronologia já é garantida pelo ``Periodo``. Ele existe
+        para permitir alterações válidas sem mutar a entidade imutável, sem
+        trocar seu dono e sem duplicar as regras de construção.
+        """
+        return ExperienciaProfissional(
+            id=self.id,
+            usuario_id=self.usuario_id,
+            empresa=empresa,
+            cargo=cargo,
+            descricao=descricao,
+            periodo=periodo,
+        )
+
 
 # Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
 def _chave_ordenacao_experiencia(

@@ -111,3 +111,96 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
 
         with self.assertRaises(RuntimeError):
             await repositorio.salvar(criar_experiencia())
+
+    async def test_obtem_experiencia_por_id_e_usuario_e_reconstroi_entidade(self) -> None:
+        """Filtra simultaneamente identidade e proprietário na consulta.
+
+        O teste configura um registro ORM e confere a entidade convertida e os
+        parâmetros da instrução. Ele existe para assegurar que a busca nunca
+        localize experiência apenas pelo ID informado pelo cliente.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = para_registro(criar_experiencia())
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario(
+            ExperienciaProfissionalId(ID_EXPERIENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertEqual(resultado, criar_experiencia())
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("experiencias_profissionais.id", str(consulta))
+        self.assertIn("experiencias_profissionais.usuario_id", str(consulta))
+        self.assertIn(ID_EXPERIENCIA, consulta.compile().params.values())
+        self.assertIn(ID_USUARIO, consulta.compile().params.values())
+
+    async def test_devolve_none_quando_id_ou_usuario_nao_correspondem(self) -> None:
+        """Devolve ausência quando a consulta conjunta não encontra registro.
+
+        A sessão sem resultado representa experiência inexistente ou de outro
+        usuário, que o adapter não distingue. O teste existe para manter
+        experiências alheias invisíveis no contrato da porta.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = None
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario(
+            ExperienciaProfissionalId(ID_EXPERIENCIA),
+            UsuarioId(UUID("00000000-0000-0000-0000-000000000099")),
+        )
+
+        self.assertIsNone(resultado)
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("experiencias_profissionais.usuario_id", str(consulta))
+
+    async def test_atualiza_com_update_condicional_somente_campos_editaveis(self) -> None:
+        """Atualiza textos e datas filtrando por ID e proprietário, sem commit.
+
+        A instrução SQL e o rowcount do double representam a unidade do adapter,
+        sem executar banco. O teste existe para garantir que a escrita não
+        altere identidade nem dono e que só atinja a experiência do usuário.
+        """
+        editada = criar_experiencia().editar(
+            empresa="Nova Empresa",
+            cargo="Analista",
+            descricao="Mantém APIs em produção.",
+            periodo=Periodo(date(2024, 3, 1)),
+        )
+        session = MagicMock(spec=AsyncSession)
+        session.execute.return_value.rowcount = 1
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.atualizar(editada)
+
+        self.assertTrue(resultado)
+        instrucao = session.execute.await_args.args[0]
+        sql = str(instrucao)
+        self.assertIn("experiencias_profissionais.id", sql)
+        self.assertIn("experiencias_profissionais.usuario_id", sql)
+        valores = instrucao.compile().params
+        self.assertEqual(
+            set(valores),
+            {"id_1", "usuario_id_1", "empresa", "cargo", "descricao", "data_inicio", "data_fim"},
+        )
+        self.assertEqual(valores["empresa"], "Nova Empresa")
+        self.assertEqual(valores["id_1"], ID_EXPERIENCIA)
+        self.assertEqual(valores["usuario_id_1"], ID_USUARIO)
+        self.assertIsNone(valores["data_fim"])
+        session.flush.assert_awaited_once_with()
+        session.commit.assert_not_called()
+
+    async def test_atualizar_devolve_false_quando_update_nao_afeta_linha(self) -> None:
+        """Representa ausência, propriedade divergente ou concorrência.
+
+        O resultado SQL de zero linhas é devolvido sem nova leitura, para que a
+        Application converta a condição em experiência não encontrada.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.execute.return_value.rowcount = 0
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.atualizar(criar_experiencia())
+
+        self.assertFalse(resultado)
+        session.scalar.assert_not_awaited()

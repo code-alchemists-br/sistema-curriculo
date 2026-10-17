@@ -256,11 +256,13 @@ class GeradorFormacaoAcademicaId(Protocol):
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
-    """Define a persistência necessária ao cadastro de uma experiência.
+    """Define consulta e persistência assíncrona de experiências profissionais.
 
-    A porta recebe a entidade já validada e delega seu armazenamento a uma
-    implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
-    para manter o caso de uso independente da tecnologia de persistência.
+    A porta recebe entidades já validadas para salvar ou atualizar e
+    identidades tipadas para consultar por experiência e proprietário,
+    delegando o armazenamento a uma implementação externa sem conhecer banco ou
+    ORM. Ela existe para que os casos de uso cadastrem e editem experiências
+    independentes da tecnologia de persistência.
     """
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
@@ -271,6 +273,26 @@ class RepositorioExperienciaProfissional(Protocol):
         entidade pelo caso de uso, preservando o contrato assíncrono. O método
         existe para registrar a nova experiência sem acoplar a aplicação a um
         mecanismo de armazenamento específico.
+        """
+
+    async def obter_por_id_e_usuario(
+        self, experiencia_id: ExperienciaProfissionalId, usuario_id: UsuarioId
+    ) -> ExperienciaProfissional | None:
+        """Obtém a experiência somente quando pertence ao usuário informado.
+
+        A implementação consulta identidade e proprietário na mesma operação e
+        devolve ``None`` tanto para ID inexistente quanto para experiência de
+        outro usuário. O método existe para que a edição trate os dois casos
+        como não encontrados, sem revelar dados de terceiros.
+        """
+
+    async def atualizar(self, experiencia: ExperienciaProfissional) -> bool:
+        """Substitui os dados de uma experiência própria já existente.
+
+        A implementação condiciona a escrita ao ID e ao proprietário da
+        entidade e devolve ``True`` quando uma linha foi alterada ou ``False``
+        quando nenhuma correspondeu. O método existe para que a Application
+        trate ausência ou concorrência como experiência não encontrada.
         """
 
 

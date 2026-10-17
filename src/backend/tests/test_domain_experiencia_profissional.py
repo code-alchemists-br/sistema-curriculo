@@ -73,6 +73,53 @@ class ExperienciaProfissionalTestCase(TestCase):
         with self.assertRaises(RegraDeDominioViolada):
             Periodo(inicio=date(2025, 2, 1), fim=date(2025, 1, 31))
 
+    def test_editar_substitui_dados_preservando_identidade_e_proprietario(self) -> None:
+        """Devolve nova experiência com os dados editados e a mesma identidade.
+
+        O teste edita todos os campos editáveis e compara o resultado com a
+        entidade original, que deve permanecer inalterada. Ele existe para
+        garantir que a edição não troque o dono nem mute a entidade imutável.
+        """
+        original = self._criar_experiencia()
+        periodo = Periodo(inicio=date(2024, 3, 1))
+
+        editada = original.editar(
+            empresa="Nova Empresa",
+            cargo="Analista",
+            descricao="Mantém APIs em produção.",
+            periodo=periodo,
+        )
+
+        self.assertEqual(
+            (editada.id, editada.usuario_id), (original.id, original.usuario_id)
+        )
+        self.assertEqual(
+            (editada.empresa, editada.cargo, editada.descricao, editada.periodo),
+            ("Nova Empresa", "Analista", "Mantém APIs em produção.", periodo),
+        )
+        self.assertEqual(original.empresa, "Instituto Exemplo")
+
+    def test_editar_rejeita_textos_obrigatorios_vazios(self) -> None:
+        """Recusa edição que deixe empresa, cargo ou descrição em branco.
+
+        O teste edita cada texto para um valor formado por espaços e observa a
+        mesma regra aplicada na criação. Ele existe para impedir que a edição
+        produza uma experiência impossível de apresentar no currículo.
+        """
+        original = self._criar_experiencia()
+        for campo in ("empresa", "cargo", "descricao"):
+            with self.subTest(campo=campo):
+                dados = {
+                    "empresa": "Nova Empresa",
+                    "cargo": "Analista",
+                    "descricao": "Mantém APIs em produção.",
+                    "periodo": original.periodo,
+                }
+                dados[campo] = "   "
+
+                with self.assertRaises(RegraDeDominioViolada):
+                    original.editar(**dados)
+
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     def _criar_experiencia(
         self,
