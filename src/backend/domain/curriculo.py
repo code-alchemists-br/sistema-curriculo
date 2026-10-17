@@ -17,6 +17,9 @@ from backend.domain.exceptions import (
 
 # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
 from backend.domain.modelo_curriculo import ModeloCurriculo
+
+# Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+from backend.domain.secao_curriculo import ORDEM_PADRAO_SECOES, SecaoCurriculo
 from backend.domain.value_objects import CurriculoId, ReferenciaCurriculo, UsuarioId
 
 
@@ -26,9 +29,10 @@ class Curriculo:
     """Representa o aggregate root de uma versão de currículo de um usuário.
 
     O agregado recebe identidade e proprietário obrigatórios, mantém título,
-    layout e visibilidade sem impor vocabulários não definidos, e encapsula as
-    referências selecionadas. Ele existe para concentrar regras locais de
-    edição e inclusão sem conhecer persistência ou validar propriedade
+    layout e visibilidade sem impor vocabulários não definidos, a ordem
+    explícita das seções (a ordem padrão, até o estudante definir outra) e
+    encapsula as referências selecionadas. Ele existe para concentrar regras
+    locais de edição e inclusão sem conhecer persistência ou validar propriedade
     transagregados.
     """
 
@@ -37,6 +41,8 @@ class Curriculo:
     titulo_versao: str
     layout: str
     is_public: bool
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    ordem_secoes: tuple[SecaoCurriculo, ...] = ORDEM_PADRAO_SECOES
     _referencias: set[ReferenciaCurriculo] = field(
         default_factory=set,
         init=False,
@@ -48,10 +54,38 @@ class Curriculo:
 
         O método delega ao validador compartilhado com a edição, exigindo título
         não vazio e uma flag booleana, e deixa layout como texto porque seus
-        valores ainda não foram definidos. Ele existe para que o agregado não
-        seja construído com uma versão anônima ou ambígua.
+        valores ainda não foram definidos; também confere que a ordem das seções
+        contém cada seção exatamente uma vez. Ele existe para que o agregado não
+        seja construído com uma versão anônima, ambígua ou com ordem inválida.
         """
         self._validar_dados_da_versao(self.titulo_versao, self.is_public)
+        self._validar_ordem_secoes(self.ordem_secoes)
+
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    @staticmethod
+    def _validar_ordem_secoes(ordem: tuple[SecaoCurriculo, ...]) -> None:
+        """Garante que a ordem lista cada seção suportada exatamente uma vez.
+
+        A função compara o tamanho da sequência com o conjunto de seções
+        recebido e com o conjunto de ``SecaoCurriculo``, sem alterar o estado do
+        agregado. Ela existe para que nenhuma seção seja omitida, repetida ou
+        inventada na ordem de apresentação do currículo.
+        """
+        if len(ordem) != len(set(ordem)) or set(ordem) != set(SecaoCurriculo):
+            raise RegraDeDominioViolada(
+                "A ordem das seções deve conter cada seção exatamente uma vez."
+            )
+
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    def definir_ordem_secoes(self, ordem: tuple[SecaoCurriculo, ...]) -> None:
+        """Substitui a ordem explícita das seções preservando o restante da versão.
+
+        O método valida a nova ordem antes de aplicá-la, de modo que uma ordem
+        inválida não altera o agregado. Ele existe para que a ordem de
+        apresentação mude somente pela raiz do agregado e possa ser persistida.
+        """
+        self._validar_ordem_secoes(ordem)
+        self.ordem_secoes = ordem
 
     @staticmethod
     def _validar_dados_da_versao(titulo_versao: str, is_public: bool) -> None:

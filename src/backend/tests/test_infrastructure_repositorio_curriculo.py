@@ -8,6 +8,8 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain import (
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    ORDEM_PADRAO_SECOES,
     CompetenciaId,
     Curriculo,
     CurriculoId,
@@ -24,6 +26,8 @@ from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoItemRegistro,
     CurriculoRegistro,
     atualizar_registro,
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    ordem_secoes_para_texto,
     para_curriculo,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     para_referencia,
@@ -54,6 +58,9 @@ REFERENCIA_IDIOMA = ReferenciaCurriculo(IdiomaId(ID_IDIOMA))
 
 # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
 ID_CURRICULO_B = UUID("00000000-0000-0000-0000-0000000000c2")
+
+# Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+ORDEM_SECOES_TEXTO = ordem_secoes_para_texto(ORDEM_PADRAO_SECOES)
 
 
 def linha_projeto() -> SimpleNamespace:
@@ -112,6 +119,7 @@ def criar_registro() -> MagicMock:
         titulo_versao="Estágio em TI",
         layout="classico",
         is_public=False,
+        ordem_secoes=ORDEM_SECOES_TEXTO,
     )
 
 
@@ -129,6 +137,7 @@ def criar_registro_da_listagem(curriculo_id: UUID, titulo: str) -> MagicMock:
         titulo_versao=titulo,
         layout="classico",
         is_public=False,
+        ordem_secoes=ORDEM_SECOES_TEXTO,
     )
 
 
@@ -173,6 +182,7 @@ class ConversaoCurriculoTestCase(unittest.TestCase):
             titulo_versao="Antigo",
             layout="antigo",
             is_public=False,
+            ordem_secoes=ORDEM_SECOES_TEXTO,
         )
         curriculo = criar_curriculo()
         curriculo.editar_versao("Gestão de Projetos", "compacto", True)
@@ -737,6 +747,7 @@ class ConversaoParaRegistroTestCase(unittest.TestCase):
             titulo_versao="Estágio em TI",
             layout="classico",
             is_public=False,
+            ordem_secoes=ORDEM_SECOES_TEXTO,
         )
         self.assertIs(resultado, registro.return_value)
         self.assertEqual(curriculo, criar_curriculo())

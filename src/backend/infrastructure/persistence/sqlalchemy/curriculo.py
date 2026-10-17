@@ -8,6 +8,9 @@ from sqlalchemy import Boolean, ForeignKey, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.domain.curriculo import Curriculo
+
+# Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+from backend.domain.secao_curriculo import ORDEM_PADRAO_SECOES, SecaoCurriculo
 from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     CompetenciaId,
@@ -23,6 +26,32 @@ from backend.domain.value_objects import (
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
+
+SEPARADOR_ORDEM_SECOES = ","
+
+
+# Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+def ordem_secoes_para_texto(ordem: tuple[SecaoCurriculo, ...]) -> str:
+    """Converte a ordem das seções no texto gravado na coluna ``ordem_secoes``.
+
+    A função junta os identificadores textuais das seções, na sequência recebida,
+    separados por vírgula, que não aparece em nenhum identificador. Ela existe
+    para que a ordem explícita seja gravada em uma única coluna de texto,
+    portável entre os bancos suportados.
+    """
+    return SEPARADOR_ORDEM_SECOES.join(secao.value for secao in ordem)
+
+
+# Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+def texto_para_ordem_secoes(texto: str) -> tuple[SecaoCurriculo, ...]:
+    """Converte o texto da coluna ``ordem_secoes`` na ordem de seções do domínio.
+
+    A função separa o texto pelo separador e reconstrói cada ``SecaoCurriculo``
+    pelo identificador, recusando identificador desconhecido com ``ValueError``.
+    Ela existe para que a ordem persistida volte ao agregado como vocabulário
+    fechado do domínio, que ainda valida se a ordem está completa.
+    """
+    return tuple(SecaoCurriculo(valor) for valor in texto.split(SEPARADOR_ORDEM_SECOES))
 
 
 class CurriculoRegistro(Base):
@@ -45,6 +74,12 @@ class CurriculoRegistro(Base):
     titulo_versao: Mapped[str] = mapped_column(Text, nullable=False)
     layout: Mapped[str] = mapped_column(Text, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # Proveniência: decision-analysis prompts/backend/20261017-180000-persistir-ordem-secoes-curriculo-v001.md#v001
+    ordem_secoes: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        server_default=ordem_secoes_para_texto(ORDEM_PADRAO_SECOES),
+    )
 
 
 def para_curriculo(
@@ -54,11 +89,11 @@ def para_curriculo(
 ) -> Curriculo:
     """Converte o registro ORM e suas seleções em agregado de domínio.
 
-    A função recria os value objects de identidade a partir das colunas e inclui
-    no agregado, pelo próprio comportamento do domínio, uma referência para cada
-    linha de seleção recebida. Ela existe para preservar a fronteira entre
-    persistência SQLAlchemy e Application e para que o agregado carregado
-    reflita a seleção persistida.
+    A função recria os value objects de identidade e a ordem das seções a partir
+    das colunas e inclui no agregado, pelo próprio comportamento do domínio, uma
+    referência para cada linha de seleção recebida. Ela existe para preservar a
+    fronteira entre persistência SQLAlchemy e Application e para que o agregado
+    carregado reflita a seleção e a ordem persistidas.
     """
     curriculo = Curriculo(
         id=CurriculoId(registro.id),
@@ -66,6 +101,7 @@ def para_curriculo(
         titulo_versao=registro.titulo_versao,
         layout=registro.layout,
         is_public=registro.is_public,
+        ordem_secoes=texto_para_ordem_secoes(registro.ordem_secoes),
     )
     for item in itens:
         curriculo.incluir_referencia(para_referencia(item.tipo, item.item_id))
@@ -73,16 +109,17 @@ def para_curriculo(
 
 
 def atualizar_registro(registro: CurriculoRegistro, curriculo: Curriculo) -> None:
-    """Copia título, layout e visibilidade do agregado para o registro existente.
+    """Copia título, layout, visibilidade e ordem das seções para o registro existente.
 
-    A função altera somente as três colunas editáveis e preserva a identidade e
-    o proprietário do registro, deixando a sessão ORM detectar a mudança. Ela
+    A função altera somente as quatro colunas editáveis e preserva a identidade
+    e o proprietário do registro, deixando a sessão ORM detectar a mudança. Ela
     existe para que a atualização não toque associações nem colunas que a edição
     não gerencia.
     """
     registro.titulo_versao = curriculo.titulo_versao
     registro.layout = curriculo.layout
     registro.is_public = curriculo.is_public
+    registro.ordem_secoes = ordem_secoes_para_texto(curriculo.ordem_secoes)
 
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
@@ -91,8 +128,9 @@ def para_registro(curriculo: Curriculo) -> CurriculoRegistro:
 
     A conversão cria uma instância externa sem modificar o agregado e sem as
     referências, convertidas à parte por ``para_registros_itens``, para que a
-    sessão ORM insira UUIDs, título, layout e visibilidade. Ela existe para
-    preservar a fronteira entre o domínio e o modelo SQLAlchemy na criação.
+    sessão ORM insira UUIDs, título, layout, visibilidade e ordem das seções.
+    Ela existe para preservar a fronteira entre o domínio e o modelo SQLAlchemy
+    na criação.
     """
     return CurriculoRegistro(
         id=curriculo.id.valor,
@@ -100,6 +138,7 @@ def para_registro(curriculo: Curriculo) -> CurriculoRegistro:
         titulo_versao=curriculo.titulo_versao,
         layout=curriculo.layout,
         is_public=curriculo.is_public,
+        ordem_secoes=ordem_secoes_para_texto(curriculo.ordem_secoes),
     )
 
 
