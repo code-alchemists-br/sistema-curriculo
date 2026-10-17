@@ -7,7 +7,9 @@ Ele existe para conectar a camada Application ao banco de dados relacional sem e
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.ports import RepositorioDocumento
@@ -62,3 +64,21 @@ class RepositorioDocumentoSqlAlchemy(RepositorioDocumento):
         if registro is None:
             return None
         return para_documento(registro)
+
+    async def excluir(self, documento: Documento) -> None:
+        """Marca como excluído o documento ativo usando o instante UTC atual.
+
+        O método atualiza somente o registro ainda ativo e descarrega a alteração
+        na sessão. Ele existe para aplicar o soft-delete exigido pelo caso de uso.
+        """
+        instrucao = (
+            update(DocumentoRegistro)
+            .where(
+                DocumentoRegistro.id == documento.id.valor,
+                DocumentoRegistro.deleted_at.is_(None),
+            )
+            .values(deleted_at=datetime.now(timezone.utc))
+            .execution_options(synchronize_session="fetch")
+        )
+        await self._session.execute(instrucao)
+        await self._session.flush()

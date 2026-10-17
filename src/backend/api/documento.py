@@ -14,9 +14,13 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 
 from backend.application.cadastro_documento import ArmazenarDocumentoEntrada
+from backend.application.exclusao_documento import (
+    DocumentoNaoEncontrado,
+    ExcluirDocumentoEntrada,
+)
 from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.itens_perfil import Documento
-from backend.domain.value_objects import UsuarioId
+from backend.domain.value_objects import DocumentoId, UsuarioId
 
 
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
@@ -64,9 +68,26 @@ class CadastroDocumentoExecutor(Protocol):
         ...
 
 
+class ExclusaoDocumentoExecutor(Protocol):
+    """Define a execução da exclusão de documentos solicitada pela API.
+
+    O contrato recebe a identidade do usuário e do documento em um DTO tipado.
+    Ele existe para que o transporte delegue a regra de propriedade ao caso de uso.
+    """
+
+    async def executar(self, entrada: ExcluirDocumentoEntrada) -> None:
+        """Executa a exclusão do documento quando ele pertence ao usuário.
+
+        A implementação valida a propriedade e aplica a exclusão no repositório.
+        O método existe para manter essa regra fora do handler HTTP.
+        """
+        ...
+
+
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def criar_router(
-    armazenar_documento: CadastroDocumentoExecutor | None,
+    armazenar_documento: CadastroDocumentoExecutor | None = None,
+    excluir_documento: ExclusaoDocumentoExecutor | None = None,
 ) -> APIRouter:
     """Cria a rota POST protegida por sessão para upload de documentos complementares.
 
@@ -123,5 +144,40 @@ def criar_router(
             tipo_arquivo=documento.tipo_arquivo,
             url_armazenamento=documento.url_armazenamento,
         )
+
+    @router.delete(
+        "/documentos/{documento_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def excluir(documento_id: UUID, request: Request) -> None:
+        """Exclui logicamente um documento que pertença ao usuário autenticado.
+
+        O handler obtém a sessão, encaminha identidades tipadas ao caso de uso e
+        converte ausência ou falta de propriedade em 404 uniforme. Ele existe para
+        expor uma remoção segura sem permitir enumeração de documentos alheios.
+        """
+        if excluir_documento is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Exclusão indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        try:
+            await excluir_documento.executar(
+                ExcluirDocumentoEntrada(
+                    usuario_id=UsuarioId(usuario_id),
+                    documento_id=DocumentoId(documento_id),
+                )
+            )
+        except DocumentoNaoEncontrado as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Documento não encontrado.",
+            ) from erro
 
     return router

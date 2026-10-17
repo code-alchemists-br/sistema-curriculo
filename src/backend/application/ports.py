@@ -802,6 +802,15 @@ class RepositorioDocumento(Protocol):
         """
         ...
 
+    async def excluir(self, documento: Documento) -> None:
+        """Marca como excluído o documento ativo informado.
+
+        A implementação aplica a estratégia de exclusão lógica sem expor ORM ou
+        banco de dados. O método existe para materializar a exclusão autorizada
+        pelo caso de uso.
+        """
+        ...
+
 
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 class GeradorDocumentoId(Protocol):

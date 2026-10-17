@@ -608,8 +608,12 @@ class Documento:
         cumprem as regras de integridade e segurança do domínio. Ele existe para
         proteger o agregado contra estados inválidos.
         """
-        validar_nome_arquivo(self.nome_arquivo)
-        validar_tipo_arquivo(self.tipo_arquivo)
+        object.__setattr__(
+            self, "nome_arquivo", validar_nome_arquivo(self.nome_arquivo)
+        )
+        object.__setattr__(
+            self, "tipo_arquivo", validar_tipo_arquivo(self.tipo_arquivo)
+        )
         if (
             not isinstance(self.url_armazenamento, str)
             or not self.url_armazenamento.strip()
@@ -617,6 +621,7 @@ class Documento:
             raise RegraDeDominioViolada(
                 "A URL de armazenamento do documento não pode ser vazia."
             )
+        object.__setattr__(self, "url_armazenamento", self.url_armazenamento.strip())
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001

@@ -62,6 +62,7 @@ from backend.api.documentacao_openapi import (
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.api.documento import (
     CadastroDocumentoExecutor,
+    ExclusaoDocumentoExecutor,
 )
 from backend.api.documento import (
     criar_router as criar_router_documento,
@@ -209,6 +210,7 @@ def create_app(
     excluir_formacao_academica: ExclusaoFormacaoAcademicaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     armazenar_documento: CadastroDocumentoExecutor | None = None,
+    excluir_documento: ExclusaoDocumentoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -278,7 +280,7 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     app.include_router(
-        criar_router_documento(armazenar_documento),
+        criar_router_documento(armazenar_documento, excluir_documento),
         tags=[TAG_DOCUMENTOS_COMPLEMENTARES],
     )
     app.include_router(

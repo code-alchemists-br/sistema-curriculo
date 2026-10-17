@@ -77,6 +77,13 @@ from backend.application.dados_contato import (
     AtualizarDadosContatoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+from backend.application.exclusao_documento import (
+    DocumentoNaoEncontrado,
+    ExcluirDocumento,
+    ExcluirDocumentoEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.application.exclusao_versao_curriculo import (
     ExcluirVersaoCurriculo,
@@ -321,6 +328,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
     "ExcluirVersaoCurriculo",
     "ExcluirVersaoCurriculoEntrada",
+    "DocumentoNaoEncontrado",
+    "ExcluirDocumento",
+    "ExcluirDocumentoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     "ConsultaItemPerfil",
     "GerarPreviaVersaoCurriculo",
