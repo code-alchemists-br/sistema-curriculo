@@ -30,6 +30,7 @@ TAG_DOCUMENTOS_COMPLEMENTARES = "Documentos complementares"
 TAG_VERSOES_CURRICULO = "Versões de currículo"
 TAG_ITENS_VERSAO_CURRICULO = "Itens da versão de currículo"
 TAG_PREVIA_VERSAO_CURRICULO = "Prévia da versão de currículo"
+TAG_SAUDE = "Saúde"
 
 ESQUEMA_SESSAO = "sessaoCookie"
 
@@ -43,6 +44,10 @@ METADADOS_TAGS: list[dict[str, str]] = [
         ),
     },
     {"name": TAG_SESSOES, "description": "Encerramento da sessão atual (logout)."},
+    {
+        "name": TAG_SAUDE,
+        "description": "Verificação agregada de disponibilidade da aplicação.",
+    },
     {
         "name": TAG_PERFIL_ESTUDANTE,
         "description": "Consulta, edição e exclusão do perfil do estudante.",

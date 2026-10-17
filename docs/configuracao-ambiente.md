@@ -157,8 +157,18 @@ ambiente dedicado:
 nix develop .#quality
 ```
 
-Ele disponibiliza Ruff, Bandit, Radon e coverage.py; os testes existentes
-continuam executados com `python -m unittest`.
+Ele disponibiliza Ruff, Bandit, Radon, coverage.py, Gitleaks e as ferramentas
+do frontend; os testes existentes continuam executados com
+`python -m unittest`.
+
+O workflow do GitHub Actions varre o histórico completo do Git com Gitleaks em
+pull requests e falha com código de saída `1` quando encontra um segredo. A
+saída da varredura é redigida para não repetir o valor detectado. A mesma
+verificação pode ser executada localmente com:
+
+```bash
+nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
+```
 
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
@@ -177,3 +187,74 @@ exit
 ```
 
 Ao sair, as ferramentas disponibilizadas exclusivamente pelo ambiente deixam de estar disponíveis no terminal atual.
+
+## Nível de logging do backend
+
+O backend lê a variável de ambiente `LOG_LEVEL` durante a inicialização para
+definir o nível mínimo enviado ao logging padrão do Python. Se a variável não
+estiver definida, o valor utilizado será `INFO`. Os valores são aceitos sem
+diferenciação entre maiúsculas e minúsculas e com espaços externos ignorados.
+
+Valores permitidos:
+
+| Valor | Uso |
+|---|---|
+| `DEBUG` | Diagnóstico detalhado para desenvolvimento. |
+| `INFO` | Eventos normais de execução; nível padrão. |
+| `WARNING` | Situações inesperadas que não interrompem o fluxo. |
+| `ERROR` | Falhas que impedem uma operação. |
+| `CRITICAL` | Falhas graves que podem comprometer a aplicação. |
+
+Exemplo para iniciar o backend com logs de diagnóstico:
+
+```bash
+PYTHONPATH=src LOG_LEVEL=DEBUG uvicorn backend.main:app
+```
+
+Um valor fora da lista interrompe a inicialização com uma mensagem que informa
+as opções aceitas.
+
+### Mascaramento e retenção
+
+O backend mascara e-mails, CPFs, telefones e valores associados a campos como
+`nome`, `endereco`, `ator_id`, `senha`, `token`, cookies, IDs de usuário e
+credenciais de acesso. A sanitização é instalada nos handlers existentes,
+incluindo os handlers nomeados do servidor ASGI. Negações de autorização
+registram `ator_referencia`, um HMAC do identificador original, para permitir
+auditoria sem expor o ID da conta. Configure `LOG_ACTOR_HMAC_KEY` como segredo
+compartilhado com ao menos 32 bytes entre as instâncias para manter referências
+estáveis entre processos e reinicializações. Se a variável faltar, cada
+processo usa uma chave aleatória temporária e as referências não serão
+correlacionáveis após reinício.
+
+A aplicação emite logs para a saída padrão; portanto, a retenção deve ser aplicada pelo
+coletor configurado no ambiente de implantação. O prazo operacional definido
+para logs de aplicação e segurança é de **30 dias**, seguido de exclusão também
+das cópias temporárias controladas pelo coletor. A implantação deve configurar
+esse prazo no destino de logs; o backend não mantém arquivos locais de log.
+
+Logs devem conter apenas os campos necessários à operação ou auditoria. A
+mascaração é uma defesa adicional e não autoriza incluir dados pessoais,
+credenciais ou corpos de requisição em mensagens de log.
+
+## Health check
+
+A API expõe `GET /health` sem autenticação. A resposta contém somente
+`{"status":"ok"}` quando todos os verificadores injetados concluem com sucesso,
+ou `{"status":"indisponivel"}` com HTTP 503 quando algum falha, lança exceção ou
+ultrapassa dois segundos. A resposta não informa nomes, endereços ou mensagens
+de erro das dependências. A composição atual não possui probes externos
+configurados; nesse caso, o endpoint confirma apenas que a API está ativa.
+
+## Readiness da persistência
+
+A API expõe `GET /ready` sem autenticação. A rota retorna `{"status":"ok"}`
+somente quando o banco configurado responde a uma consulta assíncrona `SELECT 1`.
+Configure `DATABASE_URL` com uma URL PostgreSQL compatível com SQLAlchemy e
+Psycopg, preferencialmente no formato `postgresql+psycopg://...`; URLs
+`postgresql://...` são convertidas para esse driver na composição.
+Se o verificador estiver ausente, retornar falso, lançar exceção ou exceder dois
+segundos, a resposta será HTTP 503 com `{"status":"indisponivel"}`. A resposta
+não inclui URL, credenciais, nome do banco ou mensagem da exceção. Como a
+URL é opcional para desenvolvimento local, sua ausência mantém `/ready` em 503.
+O pool assíncrono é liberado no encerramento da aplicação.

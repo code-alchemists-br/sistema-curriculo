@@ -1,6 +1,7 @@
 """Verifica autenticação HTTP por sessão persistida."""
 
 import json
+import logging
 import unittest
 from uuid import UUID
 
@@ -177,6 +178,40 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resposta.status_code, 204)
         self.assertEqual(autenticador.tokens, ["token-valido"])
 
+    async def test_contexto_de_correlacao_chega_aos_logs_da_requisicao(self) -> None:
+        """Propaga a correlação do middleware aos logs do handler.
+
+        O handler registra um evento enquanto o contexto está ativo e o teste
+        compara o campo estruturado do log com `request.state` e a resposta.
+        Ele existe para permitir localizar todos os registros de uma chamada.
+        """
+        autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
+        request = _request("GET", "/privado", "token-valido")
+        logger = logging.getLogger("backend.api.middleware_autenticacao")
+
+        async def proxima(requisicao: Request) -> Response:
+            """Emite um log de handler e confirma o contexto da requisição."""
+            self.assertRegex(requisicao.state.correlation_id, r"^[0-9a-f-]{36}$")
+            logger.info("log do handler")
+            return Response(status_code=204)
+
+        with self.assertLogs(logger, level="INFO") as logs:
+            resposta = await self._middleware(autenticador).dispatch(request, proxima)
+            logger.info("log após a requisição")
+
+        correlation_id = request.state.correlation_id
+        log_handler = next(
+            registro for registro in logs.records
+            if registro.getMessage() == "log do handler"
+        )
+        log_posterior = next(
+            registro for registro in logs.records
+            if registro.getMessage() == "log após a requisição"
+        )
+        self.assertEqual(resposta.headers["X-Correlation-ID"], correlation_id)
+        self.assertEqual(log_handler.correlation_id, correlation_id)
+        self.assertEqual(log_posterior.correlation_id, "-")
+
     async def test_perfil_exige_sessao_em_edicao_e_exclusao(self) -> None:
         """Rejeita chamadas anônimas às operações de perfil PUT e DELETE.
 
@@ -248,33 +283,47 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(chamadas, [])
 
     async def test_perfil_so_e_alterado_pelo_estudante_da_sessao(self) -> None:
-        """Retorna 403 quando UUID da rota pertence a outro estudante.
+        """Registra rota, motivo e referência protegida ao negar outro perfil.
 
         Uma sessão válida tenta usar o caminho real do perfil de outra pessoa;
-        o handler seguinte não deve ser chamado. O teste existe para proteger
-        autorização do recurso além da autenticação da sessão.
+        o middleware deve registrar uma referência HMAC do ator e negar o
+        handler. O teste existe para auditar autorização sem gravar a identidade
+        original ou o token da sessão.
         """
         usuario_autenticado = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
         autenticador = AutenticadorSessaoStub(usuario_autenticado)
         chamadas = []
+        logger = logging.getLogger("backend.api.middleware_autenticacao")
 
         async def proxima(request: Request) -> Response:
             """Registra acesso ao handler para comprovar bloqueio anterior."""
             chamadas.append(request)
             return Response(status_code=204)
 
-        resposta = await self._middleware(autenticador).dispatch(
-            _request(
-                "PUT",
-                "/estudantes/00000000-0000-0000-0000-000000000002",
-                "token-valido",
-            ),
-            proxima,
+        request = _request(
+            "PUT",
+            "/estudantes/00000000-0000-0000-0000-000000000002",
+            "token-super-secreto",
         )
+        with self.assertLogs(logger, level="WARNING") as logs:
+            resposta = await self._middleware(autenticador).dispatch(
+                request, proxima
+            )
 
         self.assertEqual(resposta.status_code, 403)
-        self.assertEqual(autenticador.tokens, ["token-valido"])
+        self.assertEqual(autenticador.tokens, ["token-super-secreto"])
         self.assertEqual(chamadas, [])
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].evento, "negacao_autorizacao")
+        self.assertEqual(logs.records[0].rota, "PUT /estudantes/{uuid}")
+        self.assertEqual(logs.records[0].motivo, "proprietario_diferente")
+        self.assertRegex(logs.records[0].ator_referencia, r"^[0-9a-f]{24}$")
+        self.assertNotIn(str(usuario_autenticado.valor), logs.output[0])
+        self.assertEqual(
+            logs.records[0].correlation_id,
+            resposta.headers["X-Correlation-ID"],
+        )
+        self.assertNotIn("token-super-secreto", logs.output[0])
 
     async def test_perfil_proprio_e_encaminhado_apos_autenticacao(self) -> None:
         """Permite edição do perfil quando rota e sessão identificam o mesmo usuário.
@@ -461,14 +510,16 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """Encaminha rotas públicas sem exigir token ou chamar autenticador.
 
         Os métodos e caminhos públicos cobrem fluxos prévios à autenticação,
-        saída da sessão, documentação e preflight CORS. O teste existe para
-        manter esses fluxos acessíveis quando a proteção está ativa.
+        saída da sessão, documentação, health/readiness e preflight CORS. O teste
+        existe para manter esses fluxos acessíveis quando a proteção está ativa.
         """
         cenarios = (
             ("POST", "/estudantes"),
             ("POST", "/acessos"),
             ("DELETE", "/sessao/atual"),
             ("GET", "/docs"),
+            ("GET", "/health"),
+            ("GET", "/ready"),
             ("OPTIONS", "/privado"),
         )
         for metodo, caminho in cenarios:

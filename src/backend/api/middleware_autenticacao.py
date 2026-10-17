@@ -1,6 +1,8 @@
 """Autentica requisições usando a sessão persistida no cookie seguro."""
 
-from uuid import UUID
+import logging
+from contextvars import ContextVar, Token
+from uuid import UUID, uuid4
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
@@ -8,8 +10,29 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from backend.api.sessoes import COOKIE_SESSAO
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.configuracao_logging import pseudonimizar_identificador_ator
 
 DETALHE_NAO_AUTENTICADO = "Sessão ausente ou inválida."
+_contexto_correlacao: ContextVar[str | None] = ContextVar(
+    "contexto_correlacao", default=None
+)
+_fabrica_log_original = logging.getLogRecordFactory()
+
+
+def _fabricar_log_com_contexto(*args, **kwargs) -> logging.LogRecord:
+    """Acrescenta a correlação ativa a cada registro de log.
+
+    A função encadeia a fábrica já configurada e atribui seu identificador
+    contextual ao registro criado. Ela existe para que logs emitidos durante
+    uma requisição autenticada possam ser filtrados pela mesma correlação.
+    """
+    registro = _fabrica_log_original(*args, **kwargs)
+    registro.correlation_id = _contexto_correlacao.get() or "-"
+    return registro
+
+
+logging.setLogRecordFactory(_fabricar_log_com_contexto)
+logger = logging.getLogger(__name__)
 
 ROTAS_PUBLICAS = frozenset(
     {
@@ -20,6 +43,8 @@ ROTAS_PUBLICAS = frozenset(
         ("GET", "/docs/oauth2-redirect"),
         ("GET", "/openapi.json"),
         ("GET", "/redoc"),
+        ("GET", "/health"),
+        ("GET", "/ready"),
     }
 )
 
@@ -29,10 +54,13 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
 
     O middleware libera login, cadastro, logout e documentação; nas demais
     rotas valida o cookie por meio da porta injetada e grava o `UsuarioId` em
-    `request.state.usuario_id`. Nas rotas de perfil e currículo, exige que o
-    UUID da rota corresponda ao estudante autenticado para perfil e dados de
-    contato, além de recursos de currículo. Ele existe para centralizar
-    autenticação e proteger recursos privados do próprio estudante.
+    `request.state.usuario_id` e um identificador de correlação em
+    `request.state.correlation_id`. O identificador também fica disponível em
+    `LogRecord.correlation_id` e no cabeçalho `X-Correlation-ID`. Nas rotas de
+    perfil e currículo, exige que o UUID da rota corresponda ao estudante
+    autenticado. Quando nega acesso, registra rota, motivo e referência
+    pseudonimizada do ator. Ele existe para proteger recursos, auditar decisões
+    e localizar seus logs sem gravar o identificador original.
     """
 
     def __init__(self, app, autenticador: AutenticadorSessao) -> None:
@@ -47,11 +75,12 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        """Valida cookie nas rotas privadas antes de encaminhar a requisição.
+        """Valida sessão, autoriza o recurso e propaga correlação da requisição.
 
         O método ignora preflight e caminhos explicitamente públicos; nos demais
-        exige token ativo e expõe a identidade validada em `request.state`.
-        Ele existe para negar operações sem sessão válida.
+        valida o cookie, instala identidade e correlação, compara a propriedade
+        do recurso e registra rota, motivo e ator em caso de negação. Ele existe
+        para negar operações sem sessão, auditar decisões e rastrear chamadas.
         """
         if (
             request.method == "OPTIONS"
@@ -68,16 +97,46 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
             return _resposta_nao_autenticada()
 
         request.state.usuario_id = usuario_id.valor
-        usuario_requisitado = _usuario_id_recurso_estudante(
-            request.method, request.url.path
-        )
-        if usuario_requisitado is not None and usuario_requisitado != usuario_id.valor:
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "A sessão não pode acessar este recurso."},
+        correlation_id = str(uuid4())
+        request.state.correlation_id = correlation_id
+        token_contexto: Token[str | None] = _contexto_correlacao.set(correlation_id)
+        try:
+            logger.info("Requisição autenticada correlation_id=%s", correlation_id)
+            usuario_requisitado = _usuario_id_recurso_estudante(
+                request.method, request.url.path
             )
+            if (
+                usuario_requisitado is not None
+                and usuario_requisitado != usuario_id.valor
+            ):
+                rota = _rota_para_log(request.method, request.url.path)
+                motivo = "proprietario_diferente"
+                ator_referencia = pseudonimizar_identificador_ator(
+                    str(usuario_id.valor)
+                )
+                logger.warning(
+                    "negacao_autorizacao rota=%s motivo=%s ator_referencia=%s",
+                    rota,
+                    motivo,
+                    ator_referencia,
+                    extra={
+                        "evento": "negacao_autorizacao",
+                        "rota": rota,
+                        "motivo": motivo,
+                        "ator_referencia": ator_referencia,
+                    },
+                )
+                resposta = JSONResponse(
+                    status_code=403,
+                    content={"detail": "A sessão não pode acessar este recurso."},
+                )
+            else:
+                resposta = await call_next(request)
 
-        return await call_next(request)
+            resposta.headers["X-Correlation-ID"] = correlation_id
+            return resposta
+        finally:
+            _contexto_correlacao.reset(token_contexto)
 
 
 def _resposta_nao_autenticada() -> JSONResponse:
@@ -88,6 +147,23 @@ def _resposta_nao_autenticada() -> JSONResponse:
     em todos os casos sem autenticação.
     """
     return JSONResponse(status_code=401, content={"detail": DETALHE_NAO_AUTENTICADO})
+
+
+def _rota_para_log(metodo: str, caminho: str) -> str:
+    """Monta uma rota de log sem IDs UUID presentes no caminho.
+
+    A função preserva segmentos fixos e troca UUIDs por `{uuid}`, sem incluir
+    query string ou valores de credencial. Ela existe para identificar a rota
+    de uma negação sem registrar dados específicos do recurso acessado.
+    """
+    segmentos = caminho.strip("/").split("/")
+    for indice, segmento in enumerate(segmentos):
+        try:
+            UUID(segmento)
+        except ValueError:
+            continue
+        segmentos[indice] = "{uuid}"
+    return f"{metodo} /{'/'.join(segmentos)}"
 
 
 def _usuario_id_recurso_estudante(metodo: str, caminho: str) -> UUID | None:
