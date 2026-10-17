@@ -76,6 +76,11 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
+from backend.application.edicao_experiencia_profissional import (
+    EditarExperienciaProfissional,
+    EditarExperienciaProfissionalEntrada,
+    ExperienciaProfissionalNaoEncontrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
 from backend.application.exclusao_documento import (
@@ -235,6 +240,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     "CadastrarExperienciaProfissional",
     "CadastrarExperienciaProfissionalEntrada",
+    "EditarExperienciaProfissional",
+    "EditarExperienciaProfissionalEntrada",
+    "ExperienciaProfissionalNaoEncontrada",
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "CadastrarProjetoAcademico",
     "CadastrarProjetoAcademicoEntrada",
