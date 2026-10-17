@@ -1,6 +1,7 @@
 """Verifica autenticação HTTP por sessão persistida."""
 
 import json
+import logging
 import unittest
 from uuid import UUID
 
@@ -176,6 +177,40 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(resposta.status_code, 204)
         self.assertEqual(autenticador.tokens, ["token-valido"])
+
+    async def test_contexto_de_correlacao_chega_aos_logs_da_requisicao(self) -> None:
+        """Propaga a correlação do middleware aos logs do handler.
+
+        O handler registra um evento enquanto o contexto está ativo e o teste
+        compara o campo estruturado do log com `request.state` e a resposta.
+        Ele existe para permitir localizar todos os registros de uma chamada.
+        """
+        autenticador = AutenticadorSessaoStub(UsuarioId(UUID(int=1)))
+        request = _request("GET", "/privado", "token-valido")
+        logger = logging.getLogger("backend.api.middleware_autenticacao")
+
+        async def proxima(requisicao: Request) -> Response:
+            """Emite um log de handler e confirma o contexto da requisição."""
+            self.assertRegex(requisicao.state.correlation_id, r"^[0-9a-f-]{36}$")
+            logger.info("log do handler")
+            return Response(status_code=204)
+
+        with self.assertLogs(logger, level="INFO") as logs:
+            resposta = await self._middleware(autenticador).dispatch(request, proxima)
+            logger.info("log após a requisição")
+
+        correlation_id = request.state.correlation_id
+        log_handler = next(
+            registro for registro in logs.records
+            if registro.getMessage() == "log do handler"
+        )
+        log_posterior = next(
+            registro for registro in logs.records
+            if registro.getMessage() == "log após a requisição"
+        )
+        self.assertEqual(resposta.headers["X-Correlation-ID"], correlation_id)
+        self.assertEqual(log_handler.correlation_id, correlation_id)
+        self.assertEqual(log_posterior.correlation_id, "-")
 
     async def test_perfil_exige_sessao_em_edicao_e_exclusao(self) -> None:
         """Rejeita chamadas anônimas às operações de perfil PUT e DELETE.
