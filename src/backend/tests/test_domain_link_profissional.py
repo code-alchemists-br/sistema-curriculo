@@ -6,6 +6,8 @@ from uuid import UUID
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
 from backend.domain import (
     TAMANHO_MAXIMO_ROTULO_LINK,
+    TAMANHO_MAXIMO_URL_LINK,
+    CertificacaoId,
     LinkProfissional,
     LinkProfissionalId,
     RegraDeDominioViolada,
@@ -273,6 +275,134 @@ class LinkProfissionalEntidadeTestCase(unittest.TestCase):
                 rotulo="Link Inseguro",
                 url="javascript:alert(1)",
             )
+
+    def test_rejeita_identidade_de_outro_tipo(self) -> None:
+        """Impede usar como identidade um ID de outro item ou um UUID cru.
+
+        O cenário fornece ``CertificacaoId`` e ``UUID`` no lugar do
+        ``LinkProfissionalId``. Ele existe para que o link nunca receba a
+        identidade de outro tipo de item do perfil.
+        """
+        for identidade in (CertificacaoId(ID_VALIDO), ID_VALIDO):
+            with self.subTest(identidade=type(identidade).__name__):
+                with self.assertRaises(RegraDeDominioViolada):
+                    LinkProfissional(
+                        id=identidade,  # type: ignore[arg-type]
+                        usuario_id=UsuarioId(USUARIO_ID_VALIDO),
+                        rotulo="GitHub",
+                        url="https://github.com/usuario",
+                    )
+
+    def test_rejeita_proprietario_ausente_ou_de_outro_tipo(self) -> None:
+        """Impede link sem dono ou com dono não tipado.
+
+        O cenário fornece ``None`` e um ``UUID`` cru no lugar do ``UsuarioId``.
+        Ele existe para que todo link pertença a um estudante válido.
+        """
+        for proprietario in (None, USUARIO_ID_VALIDO):
+            with self.subTest(proprietario=proprietario):
+                with self.assertRaises(RegraDeDominioViolada):
+                    LinkProfissional(
+                        id=LinkProfissionalId(ID_VALIDO),
+                        usuario_id=proprietario,  # type: ignore[arg-type]
+                        rotulo="GitHub",
+                        url="https://github.com/usuario",
+                    )
+
+
+class ValidacaoEndurecidaUrlLinkTestCase(unittest.TestCase):
+    """Verifica as regras de host, credenciais, espaços e porta da URL do link.
+
+    Os cenários cobrem URLs que eram aceitas indevidamente e URLs legítimas que
+    precisam continuar válidas. A classe existe para garantir que o link
+    aponte para um destino real e não exponha credenciais.
+    """
+
+    def test_rejeita_url_sem_host_real(self) -> None:
+        """Recusa URLs cujo host é ausente ou formado só por pontuação.
+
+        O cenário usa netlocs não vazios mas sem host de verdade. Ele existe
+        para impedir links sem destino que passavam pela checagem de netloc.
+        """
+        for url in ("http://:80", "https://@", "https://.", "https://-", "https://exem_plo.com"):
+            with self.subTest(url=url):
+                with self.assertRaises(RegraDeDominioViolada):
+                    validar_e_normalizar_url_link(url)
+
+    def test_rejeita_usuario_e_senha_embutidos(self) -> None:
+        """Recusa URLs com credenciais ou com ``@`` disfarçando o domínio real.
+
+        O cenário inclui usuário, usuário e senha e o truque de domínio falso
+        antes do ``@``. Ele existe para não vazar credenciais no currículo nem
+        permitir links enganosos.
+        """
+        for url in (
+            "https://user:senha@site.com",
+            "https://user@site.com",
+            "https://banco.com@site-falso.com",
+        ):
+            with self.subTest(url=url):
+                with self.assertRaises(RegraDeDominioViolada):
+                    validar_e_normalizar_url_link(url)
+
+    def test_rejeita_espacos_internos(self) -> None:
+        """Recusa espaços no host ou no caminho da URL.
+
+        O cenário coloca espaço em diferentes partes da URL já aparada. Ele
+        existe para exigir que espaços sejam codificados como ``%20``.
+        """
+        for url in (
+            "https://exa mple.com",
+            "https://exemplo.com/caminho com espaco",
+            "https://exemplo.com/?q=a b",
+        ):
+            with self.subTest(url=url):
+                with self.assertRaises(RegraDeDominioViolada):
+                    validar_e_normalizar_url_link(url)
+
+    def test_rejeita_porta_invalida(self) -> None:
+        """Recusa porta não numérica, zero ou acima de 65535.
+
+        O cenário usa portas fora do intervalo válido. Ele existe para que o
+        link sempre aponte para um endereço utilizável.
+        """
+        for url in ("http://host.com:abc", "http://host.com:0", "http://host.com:70000"):
+            with self.subTest(url=url):
+                with self.assertRaises(RegraDeDominioViolada):
+                    validar_e_normalizar_url_link(url)
+
+    def test_aceita_urls_legitimas(self) -> None:
+        """Mantém válidas URLs comuns após o endurecimento da validação.
+
+        O cenário cobre porta válida, subdomínio, espaço codificado, query e
+        fragmento, host em maiúsculas, IPv4 e IPv6. Ele existe para que as novas
+        regras não rejeitem links profissionais legítimos.
+        """
+        casos = {
+            "https://exemplo.com:8443/x": "https://exemplo.com:8443/x",
+            "https://pt.linkedin.com/in/usuario": "https://pt.linkedin.com/in/usuario",
+            "https://exemplo.com/caminho%20codificado": "https://exemplo.com/caminho%20codificado",
+            "https://exemplo.com/p?tab=readme#secao": "https://exemplo.com/p?tab=readme#secao",
+            "HTTPS://Exemplo.COM/Perfil": "https://Exemplo.COM/Perfil",
+            "http://192.168.0.1/portfolio": "http://192.168.0.1/portfolio",
+            "http://[::1]:8080/": "http://[::1]:8080/",
+            "https://meu-site.com.br": "https://meu-site.com.br",
+        }
+        for entrada, esperado in casos.items():
+            with self.subTest(url=entrada):
+                self.assertEqual(validar_e_normalizar_url_link(entrada), esperado)
+
+    def test_aceita_url_no_limite_de_2048_caracteres(self) -> None:
+        """Aceita URL com exatamente 2048 caracteres.
+
+        O cenário monta uma URL no tamanho máximo permitido. Ele existe para
+        cobrir a fronteira do limite, já que só o excesso era testado.
+        """
+        prefixo = "https://exemplo.com/"
+        url = prefixo + "a" * (TAMANHO_MAXIMO_URL_LINK - len(prefixo))
+
+        self.assertEqual(len(url), TAMANHO_MAXIMO_URL_LINK)
+        self.assertEqual(validar_e_normalizar_url_link(url), url)
 
 
 if __name__ == "__main__":

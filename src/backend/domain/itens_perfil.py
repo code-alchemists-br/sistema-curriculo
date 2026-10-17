@@ -967,13 +967,16 @@ def normalizar_rotulo_link(rotulo: str) -> str:
 
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
 def validar_e_normalizar_url_link(url: str) -> str:
-    """Valida formato, esquema e host, e sanitiza a URL de link profissional.
+    """Valida formato, esquema, host e porta, e sanitiza a URL de link profissional.
 
     A função valida que a entrada é textual, não vazia, sem caracteres de controle
-    ou quebras de linha, com comprimento de até 2048 caracteres, esquema pertencente
-    a {'http', 'https'} e presença obrigatória de netloc/host válido, retornando a
-    URL com esquema normalizado. Ela existe para prevenir injeções de esquemas
-    maliciosos (javascript, data, file) e garantir destinos web válidos.
+    ou espaços internos, com comprimento de até 2048 caracteres e esquema
+    pertencente a {'http', 'https'}; em seguida exige um host real (com ao menos
+    um caractere alfanumérico e apenas letras, dígitos, ponto e hífen, ou um
+    endereço IPv6), recusa usuário e senha embutidos e aceita somente porta entre
+    1 e 65535, retornando a URL com esquema normalizado. Ela existe para prevenir
+    esquemas maliciosos (javascript, data, file), URLs sem destino e links que
+    exponham credenciais ou disfarcem o domínio real.
     """
     if not isinstance(url, str):
         raise RegraDeDominioViolada("A URL do link profissional deve ser um texto.")
@@ -989,6 +992,10 @@ def validar_e_normalizar_url_link(url: str) -> str:
     url_limpa = url.strip()
     if not url_limpa:
         raise RegraDeDominioViolada("A URL do link profissional não pode ser vazia.")
+    if any(caractere.isspace() for caractere in url_limpa):
+        raise RegraDeDominioViolada(
+            "A URL do link profissional não pode conter espaços; codifique-os como %20."
+        )
     if len(url_limpa) > TAMANHO_MAXIMO_URL_LINK:
         raise RegraDeDominioViolada(
             f"A URL do link profissional não pode exceder {TAMANHO_MAXIMO_URL_LINK} caracteres."
@@ -1005,12 +1012,43 @@ def validar_e_normalizar_url_link(url: str) -> str:
         raise RegraDeDominioViolada(
             "O esquema da URL do link profissional deve ser 'http' ou 'https'."
         )
-    netloc = parsed.netloc.strip()
-    if not netloc:
+    netloc = parsed.netloc
+    if "@" in netloc:
+        raise RegraDeDominioViolada(
+            "A URL do link profissional não pode conter usuário ou senha."
+        )
+    if not _host_url_link_valido(parsed.hostname):
         raise RegraDeDominioViolada(
             "A URL do link profissional deve conter um domínio ou host válido."
         )
+    try:
+        porta = parsed.port
+    except ValueError as erro:
+        raise RegraDeDominioViolada(
+            "A porta da URL do link profissional é inválida."
+        ) from erro
+    if porta is not None and not 1 <= porta <= 65535:
+        raise RegraDeDominioViolada(
+            "A porta da URL do link profissional é inválida."
+        )
     return urlunsplit((esquema, netloc, parsed.path, parsed.query, parsed.fragment))
+
+
+def _host_url_link_valido(host: str | None) -> bool:
+    """Informa se o host extraído da URL identifica um destino real.
+
+    A função aceita endereços IPv6 (que contêm ``:``) e, nos demais casos, exige
+    ao menos um caractere alfanumérico e somente letras, dígitos, ponto e hífen,
+    o que rejeita hosts ausentes ou formados só por pontuação. Ela existe para
+    impedir links sem destino, como ``http://:80`` ou ``https://.``.
+    """
+    if not host:
+        return False
+    if ":" in host:
+        return True
+    return any(caractere.isalnum() for caractere in host) and all(
+        caractere.isalnum() or caractere in ".-" for caractere in host
+    )
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -1067,11 +1105,20 @@ class LinkProfissional:
     def __post_init__(self) -> None:
         """Valida e apara os dados de um link profissional, impondo invariantes.
 
-        O método valida os tipos de identificadores, apara o rótulo rejeitando
-        ausência e caracteres de controle, e sanitiza a URL exigindo esquemas HTTP/HTTPS
-        e domínio válido. Ele existe para garantir que instâncias de LinkProfissional
-        permaneçam íntegras desde sua criação.
+        O método exige ``LinkProfissionalId`` e ``UsuarioId`` tipados, apara o
+        rótulo rejeitando ausência e caracteres de controle, e sanitiza a URL
+        exigindo esquemas HTTP/HTTPS, host real e ausência de credenciais. Ele
+        existe para garantir que instâncias de LinkProfissional tenham identidade
+        própria, dono válido e destino seguro desde sua criação.
         """
+        if not isinstance(self.id, LinkProfissionalId):
+            raise RegraDeDominioViolada(
+                "A identidade do link profissional deve ser um LinkProfissionalId."
+            )
+        if not isinstance(self.usuario_id, UsuarioId):
+            raise RegraDeDominioViolada(
+                "O proprietário do link profissional deve ser um UsuarioId."
+            )
         rotulo_validado = normalizar_rotulo_link(self.rotulo)
         url_validada = validar_e_normalizar_url_link(self.url)
         object.__setattr__(self, "rotulo", rotulo_validado)
