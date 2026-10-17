@@ -1,10 +1,11 @@
 """Orquestra a seleção e a desseleção de itens do perfil em uma versão de currículo.
 
 O módulo localiza o agregado ``Curriculo`` por porta, confere que ele pertence
-ao usuário solicitante, verifica por outra porta que o item é do mesmo usuário e
-delega a alteração ao domínio, sem conhecer HTTP ou persistência. Ele existe
-para concentrar as intenções de selecionar e desselecionar itens e a regra de
-propriedade transagregados fora do domínio, de controllers e de adapters.
+ao usuário solicitante, obtém por outra porta o dono do item e delega ao domínio
+a alteração e a regra de que o item é do mesmo usuário, sem conhecer HTTP ou
+persistência. Ele existe para concentrar as intenções de selecionar e
+desselecionar itens e a consulta transagregados fora do domínio, de controllers
+e de adapters.
 """
 
 from dataclasses import dataclass
@@ -13,6 +14,9 @@ from dataclasses import dataclass
 from backend.application.ports import ConsultaProprietarioItem, RepositorioCurriculo
 from backend.application.versao_curriculo import CurriculoNaoEncontrado
 from backend.domain.curriculo import Curriculo
+
+# Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
+from backend.domain.exceptions import ReferenciaDeOutroProprietario
 from backend.domain.value_objects import CurriculoId, ReferenciaCurriculo, UsuarioId
 
 
@@ -86,19 +90,24 @@ class SelecionarItemVersaoCurriculo:
         """Seleciona o item e devolve a versão com a seleção atualizada e persistida.
 
         O método trata ausência e propriedade alheia da versão do mesmo modo,
-        faz o mesmo com o item, deixa o domínio recusar duplicidade e só então
-        solicita a atualização. Ele existe para garantir que somente itens do
-        próprio usuário componham a versão.
+        consulta o dono do item e trata item ausente e item de outro estudante
+        como a mesma falha, deixando ao domínio a regra de propriedade e a de
+        duplicidade, e só então solicita a atualização. Ele existe para
+        garantir que somente itens do próprio usuário componham a versão sem
+        revelar que o item de outro estudante existe.
         """
         curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
         if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
             raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
 
         proprietario = await self._consulta_proprietario.obter_proprietario(entrada.referencia)
-        if proprietario is None or proprietario != entrada.usuario_id:
+        if proprietario is None:
             raise ItemNaoEncontrado("Item do perfil não encontrado.")
 
-        curriculo.incluir_referencia(entrada.referencia)
+        try:
+            curriculo.incluir_referencia_do_proprietario(entrada.referencia, proprietario)
+        except ReferenciaDeOutroProprietario as erro:
+            raise ItemNaoEncontrado("Item do perfil não encontrado.") from erro
         await self._repositorio_curriculo.atualizar(curriculo)
         return curriculo
 

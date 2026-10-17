@@ -15,3 +15,14 @@ class RegraDeDominioViolada(ValueError):
     persistência. Ela existe para tornar essas violações distinguíveis nas
     camadas que futuramente as orquestrarão.
     """
+
+
+# Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
+class ReferenciaDeOutroProprietario(RegraDeDominioViolada):
+    """Sinaliza que um item selecionado pertence a outro estudante.
+
+    A classe especializa ``RegraDeDominioViolada`` para distinguir a recusa por
+    propriedade das demais violações de composição, como a duplicidade. Ela
+    existe para que quem orquestra a seleção traduza esse caso específico sem
+    inspecionar a mensagem da falha.
+    """
