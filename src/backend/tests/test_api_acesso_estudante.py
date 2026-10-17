@@ -105,20 +105,32 @@ class AcessoEstudanteRotaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("HttpOnly", cookie)
         self.assertIn("SameSite=lax", cookie)
 
-    async def test_credenciais_invalidas_nao_criam_sessao_nem_cookie(self) -> None:
-        """Retorna 401 e não chama o emissor quando as credenciais falham.
+    async def test_falha_de_acesso_registra_evento_sem_dados_sensiveis(self) -> None:
+        """Registra a recusa sem incluir credenciais ou dados pessoais no log.
 
-        O double levanta a falha uniforme conhecida e o handler usa Response em
-        memória. O teste existe para impedir emissão após login recusado.
+        O double levanta a falha uniforme e inclui valores sensíveis em sua
+        mensagem; o handler deve registrar somente um evento categórico. O
+        teste existe para auditar recusas sem vazar credenciais ou identidade.
         """
-        acesso = AcessoExecutorStub(CredenciaisInvalidas("credenciais inválidas"))
+        email = "pessoa-privada@example.com"
+        senha = "senha-super-secreta"
+        token = "token-super-secreto"
+        acesso = AcessoExecutorStub(
+            CredenciaisInvalidas(f"{email} {senha} {token}")
+        )
         sessoes = CriadorSessaoStub()
         handler = _rota(criar_router(None, acesso, criador_sessao=sessoes), "/acessos", "POST")
         resposta = Response()
 
-        with self.assertRaises(HTTPException) as erro:
-            await handler(AcessoEstudanteRequisicao(email="ana@example.com", senha="senha-errada"), resposta)
+        with self.assertLogs("backend.api.cadastro_acesso", level="WARNING") as logs:
+            with self.assertRaises(HTTPException) as erro:
+                await handler(AcessoEstudanteRequisicao(email=email, senha=senha), resposta)
 
         self.assertEqual(erro.exception.status_code, 401)
         self.assertEqual(sessoes.usuario_ids, [])
         self.assertNotIn("set-cookie", resposta.headers)
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].evento, "falha_autenticacao")
+        self.assertEqual(logs.records[0].operacao, "acesso_estudante")
+        for dado_sensivel in (email, senha, token):
+            self.assertNotIn(dado_sensivel, logs.output[0])
