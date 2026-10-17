@@ -175,12 +175,12 @@ class ConversaoCurriculoTestCase(unittest.TestCase):
             is_public=False,
         )
         curriculo = criar_curriculo()
-        curriculo.editar_versao("Gestão de Projetos", "moderno", True)
+        curriculo.editar_versao("Gestão de Projetos", "compacto", True)
 
         atualizar_registro(registro, curriculo)  # type: ignore[arg-type]
 
         self.assertEqual(registro.titulo_versao, "Gestão de Projetos")
-        self.assertEqual(registro.layout, "moderno")
+        self.assertEqual(registro.layout, "compacto")
         self.assertTrue(registro.is_public)
         self.assertEqual(registro.id, ID_CURRICULO)
         self.assertEqual(registro.usuario_id, ID_USUARIO)
@@ -248,13 +248,13 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         registro = criar_registro()
         self.session.get.return_value = registro
         curriculo = criar_curriculo()
-        curriculo.editar_versao("Gestão de Projetos", "moderno", True)
+        curriculo.editar_versao("Gestão de Projetos", "compacto", True)
 
         await self.repositorio.atualizar(curriculo)
 
         self.session.get.assert_awaited_once_with(CurriculoRegistro, ID_CURRICULO)
         self.assertEqual(registro.titulo_versao, "Gestão de Projetos")
-        self.assertEqual(registro.layout, "moderno")
+        self.assertEqual(registro.layout, "compacto")
         self.assertTrue(registro.is_public)
         self.session.flush.assert_awaited_once_with()
         self.session.add.assert_not_called()
@@ -405,7 +405,7 @@ class RepositorioCurriculoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         curriculo = criar_curriculo()
         curriculo.incluir_referencia(REFERENCIA_PROJETO)
         curriculo.incluir_referencia(REFERENCIA_IDIOMA)
-        curriculo.editar_versao("Gestão de Projetos", "moderno", True)
+        curriculo.editar_versao("Gestão de Projetos", "compacto", True)
 
         await self.repositorio.atualizar(curriculo)
 

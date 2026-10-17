@@ -10,6 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from backend.domain.exceptions import RegraDeDominioViolada
+
+# Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+from backend.domain.modelo_curriculo import ModeloCurriculo
 from backend.domain.value_objects import CurriculoId, ReferenciaCurriculo, UsuarioId
 
 
@@ -60,15 +63,29 @@ class Curriculo:
         if not isinstance(is_public, bool):
             raise RegraDeDominioViolada("Visibilidade do currículo deve ser booleana.")
 
-    def editar_versao(self, titulo_versao: str, layout: str, is_public: bool) -> None:
-        """Atualiza título, layout e visibilidade preservando identidade e referências.
+    # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+    @staticmethod
+    def _validar_modelo(layout: str) -> None:
+        """Garante que o modelo escolhido pertença aos modelos suportados.
 
-        O método valida os novos valores antes de alterar qualquer atributo, de
-        modo que uma edição inválida não deixa o agregado parcialmente
-        modificado. Ele existe para que a edição da versão ocorra somente pela
-        raiz do agregado, sem permitir troca de identidade ou de proprietário.
+        A função compara o texto recebido com os valores de ``ModeloCurriculo``,
+        sem alterar o estado do agregado. Ela existe para recusar, na edição,
+        um modelo desconhecido antes que ele seja gravado na versão.
+        """
+        if layout not in {modelo.value for modelo in ModeloCurriculo}:
+            raise RegraDeDominioViolada("Modelo de currículo desconhecido.")
+
+    def editar_versao(self, titulo_versao: str, layout: str, is_public: bool) -> None:
+        """Atualiza título, modelo e visibilidade preservando identidade e referências.
+
+        O método valida os novos valores, inclusive se o modelo é um dos
+        suportados, antes de alterar qualquer atributo, de modo que uma edição
+        inválida não deixa o agregado parcialmente modificado. Ele existe para
+        que a edição da versão ocorra somente pela raiz do agregado, sem
+        permitir troca de identidade ou de proprietário nem modelo inexistente.
         """
         self._validar_dados_da_versao(titulo_versao, is_public)
+        self._validar_modelo(layout)
         self.titulo_versao = titulo_versao
         self.layout = layout
         self.is_public = is_public
