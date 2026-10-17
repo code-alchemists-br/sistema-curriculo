@@ -18,7 +18,14 @@ from backend.application import (
     CurriculoNaoEncontrado,
     EditarVersaoCurriculoEntrada,
 )
-from backend.domain import Curriculo, CurriculoId, RegraDeDominioViolada, UsuarioId
+from backend.domain import (
+    Curriculo,
+    CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+    ModeloCurriculo,
+    RegraDeDominioViolada,
+    UsuarioId,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 
@@ -43,14 +50,16 @@ class EdicaoVersaoCurriculoExecutor(Protocol):
 class EditarVersaoCurriculoRequisicao(BaseModel):
     """Representa o JSON aceito para editar uma versão de currículo.
 
-    O DTO limita presença e tamanho na fronteira antes da conversão ao caso de
-    uso e não aceita identidade, proprietário nem referências, que permanecem
-    fora deste contrato. Ele existe para separar transporte do núcleo de edição
-    de versão.
+    O DTO limita presença e tamanho na fronteira, restringe o modelo aos valores
+    de ``ModeloCurriculo`` (que o OpenAPI passa a listar) e não aceita
+    identidade, proprietário nem referências, que permanecem fora deste
+    contrato. Ele existe para separar transporte do núcleo de edição de versão e
+    recusar um modelo desconhecido já na fronteira.
     """
 
     titulo_versao: str = Field(min_length=1, max_length=200)
-    layout: str = Field(min_length=1, max_length=100)
+    # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+    layout: ModeloCurriculo
     is_public: bool
 
 
@@ -147,7 +156,7 @@ def criar_router(
             usuario_id=UsuarioId(usuario_id),
             curriculo_id=CurriculoId(curriculo_id),
             titulo_versao=requisicao.titulo_versao,
-            layout=requisicao.layout,
+            layout=requisicao.layout.value,
             is_public=requisicao.is_public,
         )
         try:

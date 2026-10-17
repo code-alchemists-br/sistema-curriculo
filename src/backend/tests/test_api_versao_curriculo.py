@@ -100,14 +100,14 @@ class EditarVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             curriculo_id=curriculo.id.valor,
             requisicao=EditarVersaoCurriculoRequisicao(
                 titulo_versao="Gestão de Projetos",
-                layout="moderno",
+                layout="compacto",
                 is_public=True,
             ),
         )
 
         self.assertEqual(resposta.id, curriculo.id.valor)
         self.assertEqual(resposta.titulo_versao, "Gestão de Projetos")
-        self.assertEqual(resposta.layout, "moderno")
+        self.assertEqual(resposta.layout, "compacto")
         self.assertTrue(resposta.is_public)
         self.assertEqual(repositorio.curriculos_atualizados, [curriculo])
 
@@ -123,7 +123,7 @@ class EditarVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             await editar(
                 usuario_id=uuid4(),
                 curriculo_id=uuid4(),
-                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="X", layout="Y", is_public=True),
+                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="X", layout="classico", is_public=True),
             )
 
         self.assertEqual(contexto.exception.status_code, 503)
@@ -143,7 +143,7 @@ class EditarVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             await editar(
                 usuario_id=curriculo.usuario_id.valor,
                 curriculo_id=curriculo.id.valor,
-                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="   ", layout="moderno", is_public=True),
+                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="   ", layout="compacto", is_public=True),
             )
 
         self.assertEqual(contexto.exception.status_code, 422)
@@ -163,7 +163,7 @@ class EditarVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             await editar(
                 usuario_id=uuid4(),
                 curriculo_id=uuid4(),
-                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="Gestão", layout="moderno", is_public=True),
+                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="Gestão", layout="compacto", is_public=True),
             )
 
         self.assertEqual(contexto.exception.status_code, 404)
@@ -185,7 +185,7 @@ class EditarVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             await editar(
                 usuario_id=uuid4(),
                 curriculo_id=curriculo.id.valor,
-                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="Invasor", layout="moderno", is_public=True),
+                requisicao=EditarVersaoCurriculoRequisicao(titulo_versao="Invasor", layout="compacto", is_public=True),
             )
 
         self.assertEqual(contexto.exception.status_code, 404)

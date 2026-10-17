@@ -82,6 +82,9 @@ from backend.domain.itens_perfil import (
     validar_e_normalizar_url_link,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+from backend.domain.modelo_curriculo import ModeloCurriculo
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.domain.revisao_curriculo import (
     PendenciaRevisao,
@@ -167,6 +170,8 @@ __all__ = [
     "ESQUEMAS_URL_PERMITIDOS",
     "LinkProfissional",
     "LinkProfissionalId",
+    # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
+    "ModeloCurriculo",
     "Nome",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "normalizar_chave_curso",
