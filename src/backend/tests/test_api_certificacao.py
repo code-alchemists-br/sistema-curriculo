@@ -1,9 +1,11 @@
 """Testa unitariamente a fronteira HTTP de cadastro de certificações."""
 
+import json
 import unittest
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+from pydantic import ValidationError
 from starlette.requests import Request
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -172,25 +174,24 @@ class CadastroCertificacaoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             contexto.exception.detail, "A certificação já está cadastrada."
         )
 
-    async def test_traduz_regra_de_dominio_violada_para_422(self) -> None:
-        """Apresenta 422 quando o domínio rejeita os dados da certificação.
+    async def test_traduz_regra_de_dominio_violada_para_422_generico(self) -> None:
+        """Apresenta 422 genérico quando o domínio rejeita a certificação.
 
-        O cenário simula a falha de validação de domínio e observa a resposta
-        HTTP unprocessable. Ele existe para traduzir erros de regra de negócio
-        em respostas compreensíveis ao cliente HTTP.
+        O cenário recebe uma requisição válida na fronteira, mas o executor
+        sinaliza uma regra violada com texto confidencial; a resposta usa
+        mensagem genérica. Ele existe para não expor o texto interno das
+        regras de domínio ao cliente HTTP.
         """
         cadastrar = _rota(
             criar_router(
-                CadastroCertificacaoStub(
-                    erro_dominio="O campo nome da certificação não pode ser vazio."
-                )
+                CadastroCertificacaoStub(erro_dominio="detalhe interno confidencial")
             )
         )
 
         with self.assertRaises(HTTPException) as contexto:
             await cadastrar(
                 CadastroCertificacaoRequisicao(
-                    nome="   ",
+                    nome="AWS Certified Solutions Architect",
                     organizacao_emissora="Amazon Web Services",
                 ),
                 _request(ID_USUARIO),
@@ -199,8 +200,9 @@ class CadastroCertificacaoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(contexto.exception.status_code, 422)
         self.assertEqual(
             contexto.exception.detail,
-            "O campo nome da certificação não pode ser vazio.",
+            "A certificação informada viola as regras de cadastro.",
         )
+        self.assertNotIn("confidencial", contexto.exception.detail)
 
     async def test_rejeita_requisicao_sem_principal(self) -> None:
         """Retorna 401 sem invocar o executor para requisição anônima.
@@ -256,3 +258,155 @@ class CadastroCertificacaoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         app = create_app()
 
         self.assertIn("/certificacoes", app.openapi()["paths"])
+
+
+def _payload(**alteracoes: object) -> dict[str, object]:
+    """Monta um corpo JSON válido com alterações pontuais.
+
+    O dicionário parte de nome e emissor válidos e permite sobrescrever ou
+    acrescentar campos. Ele existe para manter os cenários de validação
+    focados no campo observado.
+    """
+    dados: dict[str, object] = {
+        "nome": "AWS Certified Solutions Architect",
+        "organizacao_emissora": "Amazon Web Services",
+    }
+    dados.update(alteracoes)
+    return dados
+
+
+async def _enviar_json(app: object, corpo: dict[str, object]) -> int:
+    """Envia um POST /certificacoes diretamente à aplicação ASGI.
+
+    A função serializa o corpo, entrega-o uma única vez e captura apenas o
+    status da resposta. Ela existe para exercitar a validação da requisição
+    feita pelo FastAPI sem servidor nem cliente externo.
+    """
+    corpo_bytes = json.dumps(corpo).encode()
+    escopo = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": "/certificacoes",
+        "raw_path": b"/certificacoes",
+        "query_string": b"",
+        "headers": [
+            (b"content-type", b"application/json"),
+            (b"content-length", str(len(corpo_bytes)).encode()),
+        ],
+        "client": ("testclient", 50000),
+        "server": ("testserver", 80),
+    }
+    recebido = False
+    status = 0
+
+    async def receber() -> dict[str, object]:
+        """Entrega o corpo da chamada ASGI uma única vez."""
+        nonlocal recebido
+        if recebido:
+            return {"type": "http.disconnect"}
+        recebido = True
+        return {"type": "http.request", "body": corpo_bytes, "more_body": False}
+
+    async def enviar(mensagem: dict[str, object]) -> None:
+        """Captura o status emitido pela aplicação."""
+        nonlocal status
+        if mensagem["type"] == "http.response.start":
+            status = int(mensagem["status"])
+
+    await app(escopo, receber, enviar)  # type: ignore[operator]
+    return status
+
+
+class ValidacaoRequisicaoCertificacaoTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a validação do corpo de cadastro de certificação na fronteira.
+
+    Os cenários validam o DTO diretamente e pela aplicação montada. A classe
+    existe para garantir que requisições malformadas sejam barradas com 422
+    antes de chegar ao caso de uso.
+    """
+
+    def test_rejeita_campos_invalidos(self) -> None:
+        """Rejeita ausência, tipo errado, vazio, excesso e caractere de controle.
+
+        Cada cenário altera um campo do corpo válido e exige
+        ``ValidationError``. O teste existe para cobrir formato, tipo e campos
+        obrigatórios exigidos na fronteira.
+        """
+        sem_nome = _payload()
+        del sem_nome["nome"]
+        sem_emissor = _payload()
+        del sem_emissor["organizacao_emissora"]
+        cenarios = {
+            "nome ausente": sem_nome,
+            "emissor ausente": sem_emissor,
+            "nome numérico": _payload(nome=123),
+            "emissor nulo": _payload(organizacao_emissora=None),
+            "nome só com espaços": _payload(nome="   "),
+            "emissor vazio": _payload(organizacao_emissora=""),
+            "nome acima de 200": _payload(nome="A" * 201),
+            "emissor acima de 200": _payload(organizacao_emissora="A" * 201),
+            "controle no nome": _payload(nome="AWS\x00Architect"),
+            "quebra de linha no emissor": _payload(organizacao_emissora="Amazon\nWeb"),
+        }
+        for descricao, dados in cenarios.items():
+            with self.subTest(cenario=descricao):
+                with self.assertRaises(ValidationError):
+                    CadastroCertificacaoRequisicao.model_validate(dados)
+
+    def test_apara_espacos_e_aceita_limite_de_200(self) -> None:
+        """Remove espaços externos e aceita textos com exatamente 200 caracteres.
+
+        O cenário envia textos com espaços nas pontas e no limite máximo. Ele
+        existe para que a fronteira use a mesma regra de tamanho do domínio,
+        medida depois do aparo.
+        """
+        texto = "A" * 200
+
+        requisicao = CadastroCertificacaoRequisicao.model_validate(
+            _payload(nome=f"  {texto}  ", organizacao_emissora="  Amazon Web Services ")
+        )
+
+        self.assertEqual(requisicao.nome, texto)
+        self.assertEqual(requisicao.organizacao_emissora, "Amazon Web Services")
+
+    def test_ignora_usuario_id_enviado_no_corpo(self) -> None:
+        """Descarta o proprietário enviado pelo cliente no corpo da requisição.
+
+        O cenário inclui ``usuario_id`` no JSON e confere que o DTO não o
+        guarda. Ele existe para que o dono venha somente da sessão autenticada.
+        """
+        requisicao = CadastroCertificacaoRequisicao.model_validate(
+            _payload(usuario_id=str(UUID(int=999)))
+        )
+
+        self.assertFalse(hasattr(requisicao, "usuario_id"))
+
+    async def test_requisicao_invalida_responde_422_sem_chamar_executor(self) -> None:
+        """Responde 422 pela aplicação montada sem acionar o caso de uso.
+
+        O teste envia um corpo com nome em branco à aplicação criada pela
+        fábrica e confere o status e o histórico vazio do executor. Ele existe
+        para provar que a validação acontece antes da Application.
+        """
+        executor = CadastroCertificacaoStub()
+        app = create_app(cadastrar_certificacao=executor)
+
+        status = await _enviar_json(app, _payload(nome="   "))
+
+        self.assertEqual(status, 422)
+        self.assertEqual(executor.entradas, [])
+
+    def test_openapi_exige_nome_e_organizacao_emissora(self) -> None:
+        """Publica nome e organização emissora como campos obrigatórios.
+
+        O teste inspeciona o esquema da requisição no OpenAPI da aplicação. Ele
+        existe para que o contrato documentado reflita a validação aplicada.
+        """
+        esquemas = create_app().openapi()["components"]["schemas"]
+
+        obrigatorios = set(esquemas["CadastroCertificacaoRequisicao"]["required"])
+
+        self.assertEqual(obrigatorios, {"nome", "organizacao_emissora"})
