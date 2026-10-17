@@ -9,14 +9,19 @@ from typing import Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
 from backend.application.cadastro_link_profissional import (
     CadastrarLinkProfissionalEntrada,
     LinkProfissionalJaCadastrado,
 )
-from backend.domain import LinkProfissional, RegraDeDominioViolada
+from backend.domain import (
+    LinkProfissional,
+    RegraDeDominioViolada,
+    normalizar_rotulo_link,
+    validar_e_normalizar_url_link,
+)
 from backend.domain.value_objects import UsuarioId
 
 
@@ -24,21 +29,52 @@ from backend.domain.value_objects import UsuarioId
 class CadastroLinkProfissionalRequisicao(BaseModel):
     """Representa os campos externos necessários para cadastrar um link profissional.
 
-    O DTO valida a forma do JSON e mantém o dono fora do payload, deixando a
-    regra de conteúdo para o domínio. Ele existe para separar o contrato HTTP
-    do comando interno e impedir que o cliente escolha outro proprietário.
+    O DTO exige rótulo e URL e os valida na fronteira com as mesmas regras do
+    domínio (texto, tamanho, ausência de controle, esquema http/https, host
+    real, sem credenciais, espaços ou porta inválida), mantendo o dono fora do
+    payload. Ele existe para barrar requisições malformadas com 422 antes do
+    caso de uso e impedir que o cliente escolha outro proprietário.
     """
 
     rotulo: str
     url: str
+
+    @field_validator("rotulo", mode="before")
+    @classmethod
+    def validar_rotulo(cls, valor: object) -> str:
+        """Valida e apara o rótulo pela regra do domínio.
+
+        O validador delega a ``normalizar_rotulo_link`` e converte a falha em
+        erro de validação do Pydantic. Ele existe para responder 422 na
+        fronteira sem duplicar os limites definidos pela entidade.
+        """
+        try:
+            return normalizar_rotulo_link(valor)  # type: ignore[arg-type]
+        except RegraDeDominioViolada as erro:
+            raise ValueError(str(erro)) from erro
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def validar_url(cls, valor: object) -> str:
+        """Valida e normaliza a URL pela regra do domínio.
+
+        O validador delega a ``validar_e_normalizar_url_link`` e converte a
+        falha em erro de validação do Pydantic. Ele existe para recusar URLs
+        inseguras ou sem destino na fronteira, com a mesma política do domínio.
+        """
+        try:
+            return validar_e_normalizar_url_link(valor)  # type: ignore[arg-type]
+        except RegraDeDominioViolada as erro:
+            raise ValueError(str(erro)) from erro
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
 class LinkProfissionalResposta(BaseModel):
     """Representa o link profissional público devolvido após seu cadastro.
 
-    O DTO extrai valores primitivos da entidade validada, sem serializá-la
-    diretamente. Ele existe para tornar o contrato HTTP independente da
+    O DTO extrai apenas identidade, dono, rótulo e URL já tratados pelo
+    domínio, sem serializar a entidade nem a chave normalizada usada para
+    duplicidade. Ele existe para tornar o contrato HTTP público independente da
     representação e dos value objects internos do domínio.
     """
 
@@ -92,9 +128,10 @@ def criar_router(
         """Cadastra o link profissional para a identidade autenticada da requisição.
 
         O handler exige executor e UUID instalados pelo mecanismo existente,
-        cria a entrada interna e apresenta erros de domínio ou duplicidade com
-        códigos estáveis. Ele existe para preservar a propriedade do dado e a
-        resposta pública do endpoint.
+        cria a entrada interna e apresenta duplicidade como 409 e violações de
+        domínio como 422 com mensagem genérica, sem repetir o texto interno da
+        regra. Ele existe para preservar a propriedade do dado e a resposta
+        pública do endpoint.
         """
         if cadastrar_link_profissional is None:
             raise HTTPException(
@@ -123,7 +160,7 @@ def criar_router(
         except RegraDeDominioViolada as erro:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=str(erro),
+                detail="O link profissional informado viola as regras de cadastro.",
             ) from erro
         return LinkProfissionalResposta(
             id=link.id.valor,
