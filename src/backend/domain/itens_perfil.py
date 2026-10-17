@@ -875,10 +875,10 @@ def normalizar_chave_certificacao(texto: str) -> str:
 class Certificacao:
     """Representa uma certificação profissional ou acadêmica do usuário.
 
-    A entidade combina identidade tipada, proprietário, nome da certificação e
-    organização emissora já normalizados e aparados. Ela existe para modelar de
-    forma íntegra as certificações no perfil do estudante sem depender de ORM
-    ou de camadas externas.
+    A entidade combina identidade e proprietário obrigatoriamente tipados, nome
+    da certificação e organização emissora já normalizados e aparados. Ela
+    existe para modelar de forma íntegra as certificações no perfil do
+    estudante sem depender de ORM ou de camadas externas.
     """
 
     id: CertificacaoId
@@ -887,13 +887,22 @@ class Certificacao:
     organizacao_emissora: str
 
     def __post_init__(self) -> None:
-        """Valida e apara os campos textuais de uma certificação.
+        """Valida identidade, proprietário e campos textuais de uma certificação.
 
-        O método valida e remove espaços excedentes de nome e organização
-        emissora, aplicando invariantes de preenchimento e controle. Ele existe
-        para assegurar que nenhuma entidade de certificação seja instanciada com
-        dados inválidos ou corrompidos.
+        O método exige ``CertificacaoId`` e ``UsuarioId`` tipados e, em seguida,
+        valida e remove espaços excedentes de nome e organização emissora,
+        aplicando invariantes de preenchimento e controle. Ele existe para
+        assegurar que nenhuma certificação seja instanciada sem identidade
+        própria, sem dono válido ou com dados inválidos ou corrompidos.
         """
+        if not isinstance(self.id, CertificacaoId):
+            raise RegraDeDominioViolada(
+                "A identidade da certificação deve ser um CertificacaoId."
+            )
+        if not isinstance(self.usuario_id, UsuarioId):
+            raise RegraDeDominioViolada(
+                "O proprietário da certificação deve ser um UsuarioId."
+            )
         nome_validado = normalizar_texto_certificacao(self.nome, "nome")
         emissor_validado = normalizar_texto_certificacao(
             self.organizacao_emissora, "organização emissora"
