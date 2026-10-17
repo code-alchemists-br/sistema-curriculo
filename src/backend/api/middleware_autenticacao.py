@@ -43,6 +43,7 @@ ROTAS_PUBLICAS = frozenset(
         ("GET", "/openapi.json"),
         ("GET", "/redoc"),
         ("GET", "/health"),
+        ("GET", "/ready"),
     }
 )
 

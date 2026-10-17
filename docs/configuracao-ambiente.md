@@ -212,3 +212,13 @@ ou `{"status":"indisponivel"}` com HTTP 503 quando algum falha, lança exceção
 ultrapassa dois segundos. A resposta não informa nomes, endereços ou mensagens
 de erro das dependências. A composição atual não possui probes externos
 configurados; nesse caso, o endpoint confirma apenas que a API está ativa.
+
+## Readiness da persistência
+
+A API expõe `GET /ready` sem autenticação. A rota retorna `{"status":"ok"}`
+somente quando um verificador de persistência injetado confirma disponibilidade.
+Se o verificador estiver ausente, retornar falso, lançar exceção ou exceder dois
+segundos, a resposta será HTTP 503 com `{"status":"indisponivel"}`. A resposta
+não inclui URL, credenciais, nome do banco ou mensagem da exceção. Como a
+composição atual ainda não conecta persistência em runtime, `/ready` retorna 503
+até que o probe correspondente seja injetado.
