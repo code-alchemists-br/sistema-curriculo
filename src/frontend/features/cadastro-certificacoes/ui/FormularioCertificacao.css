@@ -1,0 +1,63 @@
+/* Proveniência: F4.17 - Formulário acessível de certificação */
+
+.formulario-certificacao {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.formulario-certificacao h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.formulario-certificacao__grupo {
+  display: grid;
+  gap: 1rem;
+}
+
+.formulario-certificacao__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.formulario-certificacao button[type="submit"] {
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.formulario-certificacao button[type="submit"]:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.formulario-certificacao button[type="submit"]:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.formulario-certificacao button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.formulario-certificacao .form-message--sucesso {
+  color: #166534;
+  font-weight: 600;
+}
+
+.formulario-certificacao .form-message--erro {
+  color: #991b1b;
+  font-weight: 600;
+}
