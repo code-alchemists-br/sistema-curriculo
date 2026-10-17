@@ -77,6 +77,7 @@ from backend.api.exclusao_versao_curriculo import (
 )
 from backend.api.experiencia_profissional import (
     CadastroExperienciaProfissionalExecutor,
+    EdicaoExperienciaProfissionalExecutor,
 )
 from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
@@ -211,6 +212,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     armazenar_documento: CadastroDocumentoExecutor | None = None,
     excluir_documento: ExclusaoDocumentoExecutor | None = None,
+    editar_experiencia_profissional: EdicaoExperienciaProfissionalExecutor
+    | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -218,7 +221,8 @@ def create_app(
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, experiências profissionais e prévia com os executores recebidos;
+    exclusão de versão, experiências profissionais (cadastro e edição) e prévia
+    com os executores recebidos;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
     nas rotas privadas. Cada router recebe uma tag que o agrupa no Swagger, e a
@@ -298,7 +302,9 @@ def create_app(
         tags=[TAG_VERSOES_CURRICULO],
     )
     app.include_router(
-        criar_router_experiencia_profissional(cadastrar_experiencia_profissional),
+        criar_router_experiencia_profissional(
+            cadastrar_experiencia_profissional, editar_experiencia_profissional
+        ),
         tags=[TAG_EXPERIENCIAS_PROFISSIONAIS],
     )
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
