@@ -9,14 +9,18 @@ from typing import Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.application.cadastro_certificacao import (
     CadastrarCertificacaoEntrada,
     CertificacaoJaCadastrada,
 )
-from backend.domain import Certificacao, RegraDeDominioViolada
+from backend.domain import (
+    Certificacao,
+    RegraDeDominioViolada,
+    normalizar_texto_certificacao,
+)
 from backend.domain.value_objects import UsuarioId
 
 
@@ -24,13 +28,31 @@ from backend.domain.value_objects import UsuarioId
 class CadastroCertificacaoRequisicao(BaseModel):
     """Representa os campos externos necessários para cadastrar uma certificação.
 
-    O DTO valida a forma do JSON e mantém o dono fora do payload, deixando a
-    regra de conteúdo para o domínio. Ele existe para separar o contrato HTTP
-    do comando interno e impedir que o cliente escolha outro proprietário.
+    O DTO exige os dois textos, rejeita tipos não textuais, caracteres de
+    controle e tamanhos fora de 1 a 200 após aparar espaços externos, usando a
+    mesma regra do domínio, e mantém o dono fora do payload. Ele existe para
+    barrar requisições malformadas na fronteira HTTP, antes do caso de uso, e
+    impedir que o cliente escolha outro proprietário.
     """
 
     nome: str
     organizacao_emissora: str
+
+    @field_validator("nome", "organizacao_emissora", mode="before")
+    @classmethod
+    def validar_texto_certificacao(cls, valor: object, info: ValidationInfo) -> str:
+        """Valida e apara um campo textual da requisição pela regra do domínio.
+
+        O validador recebe o valor bruto, delega a checagem de tipo, controle e
+        tamanho a ``normalizar_texto_certificacao`` e converte a falha em erro
+        de validação do Pydantic. Ele existe para responder 422 na fronteira
+        sem duplicar os limites definidos pela entidade.
+        """
+        campo = "nome" if info.field_name == "nome" else "organização emissora"
+        try:
+            return normalizar_texto_certificacao(valor, campo)  # type: ignore[arg-type]
+        except RegraDeDominioViolada as erro:
+            raise ValueError(str(erro)) from erro
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -92,9 +114,10 @@ def criar_router(
         """Cadastra a certificação para a identidade autenticada da requisição.
 
         O handler exige executor e UUID instalados pelo mecanismo existente,
-        cria a entrada interna e apresenta erros de domínio ou duplicidade com
-        códigos estáveis. Ele existe para preservar a propriedade do dado e a
-        resposta pública do endpoint.
+        cria a entrada interna e apresenta duplicidade como 409 e violações de
+        domínio como 422 com mensagem genérica, sem repetir o texto interno da
+        regra. Ele existe para preservar a propriedade do dado e a resposta
+        pública do endpoint.
         """
         if cadastrar_certificacao is None:
             raise HTTPException(
@@ -123,7 +146,7 @@ def criar_router(
         except RegraDeDominioViolada as erro:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=str(erro),
+                detail="A certificação informada viola as regras de cadastro.",
             ) from erro
         return CertificacaoResposta(
             id=certificacao.id.valor,
