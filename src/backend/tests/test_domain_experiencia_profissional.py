@@ -6,7 +6,7 @@ regras antes que a entidade seja usada pela camada de aplicação.
 """
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest import TestCase
 from uuid import UUID
 
@@ -119,6 +119,77 @@ class ExperienciaProfissionalTestCase(TestCase):
 
                 with self.assertRaises(RegraDeDominioViolada):
                     original.editar(**dados)
+
+    def test_experiencia_nova_nao_esta_excluida(self) -> None:
+        """Cria experiências ativas por padrão.
+
+        O teste constrói a entidade sem ``deleted_at`` e observa o estado
+        derivado. Ele existe para garantir que cadastros existentes continuem
+        ativos após a introdução da exclusão lógica.
+        """
+        experiencia = self._criar_experiencia()
+
+        self.assertIsNone(experiencia.deleted_at)
+        self.assertFalse(experiencia.excluida)
+
+    def test_excluir_registra_instante_e_preserva_os_dados(self) -> None:
+        """Marca a exclusão com o instante informado sem mutar a original.
+
+        O teste exclui uma experiência ativa e compara identidade, textos e o
+        novo ``deleted_at``. Ele existe para proteger a transição de exclusão
+        lógica no ponto mais próximo dos dados.
+        """
+        original = self._criar_experiencia()
+        instante = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+
+        excluida = original.excluir(instante)
+
+        self.assertTrue(excluida.excluida)
+        self.assertEqual(excluida.deleted_at, instante)
+        self.assertEqual((excluida.id, excluida.empresa), (original.id, original.empresa))
+        self.assertFalse(original.excluida)
+
+    def test_excluir_novamente_preserva_o_primeiro_instante(self) -> None:
+        """Devolve a mesma entidade quando a experiência já está excluída.
+
+        A segunda chamada usa outro instante e não deve sobrescrever o
+        primeiro. O teste existe para tornar a exclusão idempotente.
+        """
+        primeiro = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+        excluida = self._criar_experiencia().excluir(primeiro)
+
+        repetida = excluida.excluir(datetime(2026, 10, 18, 9, 0, tzinfo=timezone.utc))
+
+        self.assertIs(repetida, excluida)
+        self.assertEqual(repetida.deleted_at, primeiro)
+
+    def test_excluir_exige_instante_com_fuso_horario(self) -> None:
+        """Recusa instante de exclusão sem fuso horário.
+
+        O teste fornece um datetime ingênuo e espera a regra de domínio. Ele
+        existe para evitar instantes ambíguos no registro de exclusão.
+        """
+        with self.assertRaises(RegraDeDominioViolada):
+            self._criar_experiencia().excluir(datetime(2026, 10, 17, 12, 0))
+
+    def test_editar_preserva_estado_de_exclusao(self) -> None:
+        """Mantém ``deleted_at`` ao editar uma experiência.
+
+        O teste edita uma experiência já excluída e confere que o marcador é
+        conservado. Ele existe para que a edição nunca reative implicitamente
+        um item removido.
+        """
+        instante = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+        excluida = self._criar_experiencia().excluir(instante)
+
+        editada = excluida.editar(
+            empresa="Nova Empresa",
+            cargo="Analista",
+            descricao="Mantém APIs em produção.",
+            periodo=excluida.periodo,
+        )
+
+        self.assertEqual(editada.deleted_at, instante)
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     def _criar_experiencia(

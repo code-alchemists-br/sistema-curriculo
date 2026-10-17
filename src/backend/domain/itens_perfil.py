@@ -283,9 +283,10 @@ def ordenar_formacoes(
 class ExperienciaProfissional:
     """Representa uma experiência profissional reutilizável do usuário.
 
-    A entidade mantém identidade, proprietário, descrição profissional e um
-    intervalo cronologicamente válido. Ela existe para preservar a experiência
-    como item independente que currículos distintos podem referenciar.
+    A entidade mantém identidade, proprietário, descrição profissional, um
+    intervalo cronologicamente válido e o instante opcional de exclusão lógica.
+    Ela existe para preservar a experiência como item independente que
+    currículos distintos podem referenciar, sem purga física ao ser removida.
     """
 
     id: ExperienciaProfissionalId
@@ -294,6 +295,7 @@ class ExperienciaProfissional:
     cargo: str
     descricao: str
     periodo: Periodo
+    deleted_at: datetime | None = None
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     def __post_init__(self) -> None:
@@ -323,11 +325,12 @@ class ExperienciaProfissional:
     ) -> ExperienciaProfissional:
         """Devolve a experiência com o conjunto completo de dados editado.
 
-        O método constrói uma nova entidade com a mesma identidade e o mesmo
-        proprietário, reaplicando por ``__post_init__`` a exigência de textos
-        preenchidos; a cronologia já é garantida pelo ``Periodo``. Ele existe
-        para permitir alterações válidas sem mutar a entidade imutável, sem
-        trocar seu dono e sem duplicar as regras de construção.
+        O método constrói uma nova entidade com a mesma identidade, o mesmo
+        proprietário e o mesmo estado de exclusão, reaplicando por
+        ``__post_init__`` a exigência de textos preenchidos; a cronologia já é
+        garantida pelo ``Periodo``. Ele existe para permitir alterações válidas
+        sem mutar a entidade imutável, sem trocar seu dono e sem duplicar as
+        regras de construção.
         """
         return ExperienciaProfissional(
             id=self.id,
@@ -336,7 +339,33 @@ class ExperienciaProfissional:
             cargo=cargo,
             descricao=descricao,
             periodo=periodo,
+            deleted_at=self.deleted_at,
         )
+
+    @property
+    def excluida(self) -> bool:
+        """Informa se a experiência está logicamente excluída.
+
+        A propriedade deriva o estado da presença de ``deleted_at`` sem
+        consultar persistência ou relógio. Ela existe para orientar a exclusão
+        e tornar exclusões repetidas explícitas.
+        """
+        return self.deleted_at is not None
+
+    def excluir(self, excluida_em: datetime) -> ExperienciaProfissional:
+        """Produz a exclusão lógica da experiência, preservando o primeiro instante.
+
+        A transição exige um datetime com fuso e usa ``replace`` somente
+        enquanto a entidade estiver ativa; chamadas repetidas devolvem a mesma
+        entidade. Ela existe para retirar o item do perfil sem purga física.
+        """
+        if self.excluida:
+            return self
+        if excluida_em.tzinfo is None or excluida_em.utcoffset() is None:
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=excluida_em)
 
 
 # Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
