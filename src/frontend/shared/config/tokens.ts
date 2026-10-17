@@ -1,50 +1,46 @@
 /**
- * Proveniência: F8.2 - Design Tokens de Espaçamento, Tipografia e Cores.
- * Camada: shared/config.
- */
-
-/**
- * Tokens de cores da aplicação em conformidade com critérios de contraste WCAG 2.1 AA.
+ * Definições tipadas dos tokens de cor semânticos do sistema.
  *
- * - O que faz: Fornece constantes hexadecimais para cores de texto, fundo, foco, erro e sucesso.
- * - Como faz: Mapeia cada propriedade de cor em um objeto estruturado e imutável.
- * - Qual finalidade atende: Centraliza a paleta acessível e garante conformidade com WCAG AA.
+ * Cada valor segue estritamente os critérios de contraste da WCAG 2.1 AA:
+ * - Texto normal: razão mínima de 4.5:1 contra fundos adjacentes.
+ * - Indicadores visuais e foco: razão mínima de 3.0:1 contra fundos adjacentes.
  */
 export const TOKENS_COR = {
   texto: {
-    primario: "#111827",
-    secundario: "#4b5563",
+    principal: "#0f172a",
+    secundario: "#334155",
+    suave: "#475569",
+    inverso: "#ffffff",
   },
   fundo: {
-    corpo: "#f8fafc",
+    pagina: "#f8fafc",
     superficie: "#ffffff",
   },
-  borda: {
-    sutil: "#e2e8f0",
-    padrao: "#94a3b8",
-  },
   foco: {
-    outline: "#2563eb",
-    anel: "#93c5fd",
+    anel: "#1d4ed8",
+    borda: "#1d4ed8",
   },
   erro: {
-    texto: "#b91c1c",
+    texto: "#991b1b",
     fundo: "#fef2f2",
-    borda: "#f87171",
+    borda: "#dc2626",
   },
   sucesso: {
-    texto: "#15803d",
+    texto: "#166534",
     fundo: "#f0fdf4",
-    borda: "#86efac",
+    borda: "#16a34a",
+  },
+  acao: {
+    primaria: "#2563eb",
+    primariaHover: "#1d4ed8",
   },
 } as const;
 
 /**
- * Tokens de espaçamento da aplicação baseados em escala modular de 4px/8px.
+ * Define a escala de espaçamento modular usada pela interface.
  *
- * - O que faz: Mapeia valores em rem para a escala de espaçamento do design system.
- * - Como faz: Define um objeto congelado com múltiplos de 0.25rem (4px).
- * - Qual finalidade atende: Garante consistência visual em margens, preenchimentos e lacunas nas telas principais.
+ * O objeto mapeia múltiplos de quatro pixels em valores CSS rem. Ele existe para
+ * preservar ritmo visual consistente entre componentes sem fixar pixels locais.
  */
 export const TOKENS_ESPACO = {
   espaco0: "0",
@@ -61,11 +57,10 @@ export const TOKENS_ESPACO = {
 } as const;
 
 /**
- * Tokens de tipografia da aplicação com escala modular e conformidade com WCAG 2.1 Critério 1.4.12.
+ * Define famílias, tamanhos, pesos e alturas de linha padronizados.
  *
- * - O que faz: Define famílias de fonte do sistema, tamanhos de fonte, pesos e alturas de linha.
- * - Como faz: Estrutura valores CSS padronizados com altura de linha normal >= 1.5 para leitura confortável.
- * - Qual finalidade atende: Estabelece hierarquia tipográfica consistente e acessível em todas as telas.
+ * O objeto agrupa uma escala tipográfica acessível e baseada em fontes do
+ * sistema. Ele existe para dar hierarquia legível às telas de forma consistente.
  */
 export const TOKENS_TIPOGRAFIA = {
   familia: {
@@ -82,133 +77,111 @@ export const TOKENS_TIPOGRAFIA = {
     "2xl": "1.875rem",
     "3xl": "2.25rem",
   },
-  peso: {
-    regular: 400,
-    medium: 500,
-    semibold: 600,
-    bold: 700,
-  },
-  alturaLinha: {
-    tight: 1.25,
-    normal: 1.5,
-    relaxed: 1.75,
-  },
+  peso: { regular: 400, medium: 500, semibold: 600, bold: 700 },
+  alturaLinha: { tight: 1.25, normal: 1.5, relaxed: 1.75 },
 } as const;
 
-/**
- * Tipo que representa a estrutura de tokens de cor da aplicação.
- */
+/** Representa a estrutura pública dos tokens de cor. */
 export type TokensCor = typeof TOKENS_COR;
-
-/**
- * Tipo que representa a estrutura de tokens de espaçamento da aplicação.
- */
+/** Representa a estrutura pública dos tokens de espaçamento. */
 export type TokensEspaco = typeof TOKENS_ESPACO;
-
-/**
- * Tipo que representa a estrutura de tokens de tipografia da aplicação.
- */
+/** Representa a estrutura pública dos tokens tipográficos. */
 export type TokensTipografia = typeof TOKENS_TIPOGRAFIA;
 
 /**
- * Converte valor em formato rem para pixels assumindo 16px como tamanho base.
+ * Converte um valor CSS em rem para pixels usando a base de 16 pixels.
  *
- * - O que faz: Converte uma string no formato "Xrem" para o valor numérico equivalente em pixels.
- * - Como faz: Extrai a parte numérica via expressão regular e multiplica pela base de 16px.
- * - Qual finalidade atende: Facilita cálculos programáticos e validações automatizadas de escala modular em testes.
- *
- * @param valorRem Valor com sufixo rem (ex.: "1rem").
- * @returns Valor numérico equivalente em pixels.
+ * A função valida a representação textual e multiplica seu fator pela base.
+ * Ela existe para verificar programaticamente as escalas de design nos testes.
  */
 export function remParaPixels(valorRem: string): number {
-  if (valorRem === "0") {
-    return 0;
-  }
-  const match = /^([\d.]+)rem$/.exec(valorRem.trim());
-  if (!match) {
-    throw new Error(`Valor de rem inválido: ${valorRem}`);
-  }
-  return parseFloat(match[1]) * 16;
+  if (valorRem === "0") return 0;
+  const match = /^(\d+(?:\.\d+)?)rem$/.exec(valorRem.trim());
+  if (!match) throw new Error(`Valor de rem inválido: ${valorRem}`);
+  return Number.parseFloat(match[1]) * 16;
 }
 
 /**
- * Valida se uma escala numérica de tokens é estritamente crescente.
+ * Informa se os valores de uma escala são estritamente crescentes.
  *
- * - O que faz: Verifica se cada elemento de um array ordenado de números é estritamente maior que o anterior.
- * - Como faz: Itera pelos valores comparando cada elemento com seu antecessor imediato.
- * - Qual finalidade atende: Garante em tempo de execução ou teste que a escala modular não possui regressões ou saltos inválidos.
- *
- * @param valores Lista de números ordenados a validar.
- * @returns Verdadeiro se a escala for estritamente crescente.
+ * A função compara cada item ao anterior e falha em repetições ou regressões.
+ * Ela existe para proteger a progressão visual dos tokens de espaçamento e tipo.
  */
 export function validarEscalaCrescente(valores: number[]): boolean {
-  for (let i = 1; i < valores.length; i++) {
-    if (valores[i] <= valores[i - 1]) {
-      return false;
-    }
-  }
-  return true;
+  return valores.every(
+    (valor, indice) => indice === 0 || valor > valores[indice - 1],
+  );
 }
 
 /**
- * Converte canal de cor sRGB de 8 bits para luminância linear conforme a especificação WCAG 2.1.
+ * Converte uma representação hexadecimal de cor (#RGB ou #RRGGBB) em valores inteiros RGB.
  *
- * - O que faz: Lineariza o valor de um componente RGB (0 a 255) corrigindo a curva gama sRGB.
- * - Como faz: Normaliza para 0–1 e aplica divisão por 12.92 para valores baixos ou potência 2.4 para valores mais altos.
- * - Qual finalidade atende: Fornece o valor de intensidade luminosa linear necessário para cálculo de contraste WCAG.
- *
- * @param canal Valor inteiro de 0 a 255.
- * @returns Luminância linearizada entre 0.0 e 1.0.
+ * **O que faz:** Decodifica a string hexadecimal em três canais numéricos de 0 a 255.
+ * **Como faz:** Remove o caractere '#' inicial, normaliza formatos curtos de 3 caracteres duplicando-os,
+ * e converte cada par em inteiros na base 16.
+ * **Qual finalidade atende:** Viabiliza o cálculo matemático de luminância e contraste conforme a especificação WCAG.
  */
-function linearizarCanalSRGB(canal: number): number {
-  const norm = canal / 255;
-  if (norm <= 0.04045) {
-    return norm / 12.92;
+export function hexParaRgb(hex: string): { r: number; g: number; b: number } {
+  let sanitizado = hex.replace("#", "").trim();
+
+  if (sanitizado.length === 3) {
+    sanitizado = sanitizado
+      .split("")
+      .map((char) => char + char)
+      .join("");
   }
-  return Math.pow((norm + 0.055) / 1.055, 2.4);
+
+  const inteiro = parseInt(sanitizado, 16);
+  return {
+    r: (inteiro >> 16) & 255,
+    g: (inteiro >> 8) & 255,
+    b: inteiro & 255,
+  };
 }
 
 /**
- * Calcula a luminância relativa de uma cor hexadecimal conforme a fórmula WCAG 2.1.
+ * Calcula a luminância relativa de uma cor no espaço sRGB.
  *
- * - O que faz: Extrai os componentes R, G e B de uma cor hexadecimal e calcula sua luminância relativa.
- * - Como faz: Lineariza cada canal sRGB e aplica os coeficientes ponderados padrão (0.2126*R + 0.7152*G + 0.0722*B).
- * - Qual finalidade atende: Base matemática indispensável para calcular razões de contraste entre fundo e primeiro plano.
- *
- * @param hex Cor no formato hexadecimal (#RRGGBB).
- * @returns Luminância relativa entre 0.0 (preto) e 1.0 (branco).
+ * **O que faz:** Computa o brilho relativo de uma cor em escala de 0 (preto absoluto) a 1 (branco absoluto).
+ * **Como faz:** Aplica a curva de decodificação gama do padrão sRGB em cada canal linear e combina
+ * os fatores de luminosidade espectral humana (0.2126 R + 0.7152 G + 0.0722 B).
+ * **Qual finalidade atende:** Serve de base para determinar com precisão a razão de contraste da WCAG 2.1.
  */
-export function calcularLuminanciaRelativa(hex: string): number {
-  const sanitizado = hex.replace("#", "").trim();
-  if (sanitizado.length !== 6) {
-    throw new Error(`Cor hexadecimal inválida: ${hex}`);
-  }
-  const r = parseInt(sanitizado.slice(0, 2), 16);
-  const g = parseInt(sanitizado.slice(2, 4), 16);
-  const b = parseInt(sanitizado.slice(4, 6), 16);
+export function calcularLuminanciaRelativa(
+  r: number,
+  g: number,
+  b: number,
+): number {
+  const normalizados = [r, g, b].map((canal) => {
+    const srgb = canal / 255;
+    return srgb <= 0.04045
+      ? srgb / 12.92
+      : Math.pow((srgb + 0.055) / 1.055, 2.4);
+  });
 
-  const rLin = linearizarCanalSRGB(r);
-  const gLin = linearizarCanalSRGB(g);
-  const bLin = linearizarCanalSRGB(b);
-
-  return 0.2126 * rLin + 0.7152 * gLin + 0.0722 * bLin;
+  const [rl = 0, gl = 0, bl = 0] = normalizados;
+  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
 }
 
 /**
- * Calcula a razão de contraste entre duas cores hexadecimais conforme WCAG 2.1.
+ * Calcula a razão de contraste entre duas cores hexadecimais de acordo com a fórmula da WCAG 2.1.
  *
- * - O que faz: Determina a proporção de contraste de luminância entre duas cores.
- * - Como faz: Obtém a luminância relativa de ambas as cores e calcula a razão (L1 + 0.05) / (L2 + 0.05), onde L1 >= L2.
- * - Qual finalidade atende: Valida programaticamente se elementos de texto ou componentes interativos atendem ao contraste mínimo legal.
- *
- * @param hex1 Primeira cor em formato hexadecimal (#RRGGBB).
- * @param hex2 Segunda cor em formato hexadecimal (#RRGGBB).
- * @returns Proporção de contraste numérica (mínimo 1.0, máximo 21.0).
+ * **O que faz:** Retorna a proporção de contraste relativa entre o primeiro plano e o segundo plano.
+ * **Como faz:** Extrai a luminância de ambas as cores e calcula a razão `(L_claro + 0.05) / (L_escuro + 0.05)`,
+ * devolvendo um número arredondado para duas casas decimais.
+ * **Qual finalidade atende:** Permite que testes e componentes afiram a conformidade estrita com
+ * os níveis de acessibilidade AA (mínimo 4.5:1 para texto e 3.0:1 para foco/elementos gráficos).
  */
-export function calcularRazaoContraste(hex1: string, hex2: string): number {
-  const lum1 = calcularLuminanciaRelativa(hex1);
-  const lum2 = calcularLuminanciaRelativa(hex2);
+export function calcularRazaoContraste(cor1: string, cor2: string): number {
+  const rgb1 = hexParaRgb(cor1);
+  const rgb2 = hexParaRgb(cor2);
+
+  const lum1 = calcularLuminanciaRelativa(rgb1.r, rgb1.g, rgb1.b);
+  const lum2 = calcularLuminanciaRelativa(rgb2.r, rgb2.g, rgb2.b);
+
   const maisClaro = Math.max(lum1, lum2);
   const maisEscuro = Math.min(lum1, lum2);
-  return (maisClaro + 0.05) / (maisEscuro + 0.05);
+
+  const razao = (maisClaro + 0.05) / (maisEscuro + 0.05);
+  return Math.round(razao * 100) / 100;
 }

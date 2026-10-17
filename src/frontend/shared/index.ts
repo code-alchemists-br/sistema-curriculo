@@ -13,10 +13,11 @@ export {
   TOKENS_COR,
   TOKENS_ESPACO,
   TOKENS_TIPOGRAFIA,
-  remParaPixels,
-  validarEscalaCrescente,
   calcularLuminanciaRelativa,
   calcularRazaoContraste,
+  hexParaRgb,
+  remParaPixels,
+  validarEscalaCrescente,
 } from "./config/tokens";
 export type {
   TokensCor,
