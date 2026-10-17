@@ -33,6 +33,12 @@ from backend.application.cadastro_curso import (
     CadastrarCursoEntrada,
     CursoJaCadastrado,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+from backend.application.cadastro_documento import (
+    ArmazenarDocumento,
+    ArmazenarDocumentoEntrada,
+)
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
     CadastrarEstudanteEntrada,
@@ -69,6 +75,13 @@ from backend.application.cadastro_projeto_academico import (
 from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261016-102843-exclusao-documento-complementar-v001.md#v001
+from backend.application.exclusao_documento import (
+    DocumentoNaoEncontrado,
+    ExcluirDocumento,
+    ExcluirDocumentoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
@@ -117,6 +130,8 @@ from backend.application.perfil_estudante import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import (
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    ArmazenadorDocumentos,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     ConsultaItemPerfil,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -128,6 +143,8 @@ from backend.application.ports import (
     GeradorCurriculoId,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     GeradorCursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    GeradorDocumentoId,
     GeradorExperienciaProfissionalId,
     GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -144,6 +161,8 @@ from backend.application.ports import (
     RepositorioCurriculo,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     RepositorioCurso,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    RepositorioDocumento,
     RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
@@ -190,6 +209,9 @@ from backend.application.versao_curriculo import (
 __all__ = [
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "ArmazenarDocumento",
+    "ArmazenarDocumentoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     "CadastrarCertificacao",
     "CadastrarCertificacaoEntrada",
@@ -242,6 +264,10 @@ __all__ = [
     "ExcluirFormacaoAcademicaEntrada",
     "ExcluirPerfil",
     "ExcluirPerfilEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "ArmazenadorDocumentos",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "GeradorDocumentoId",
     "GeradorFormacaoAcademicaId",
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
     "GeradorCertificacaoId",
@@ -268,6 +294,8 @@ __all__ = [
     "RepositorioCompetencia",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "RepositorioCurso",
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    "RepositorioDocumento",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     "RepositorioIdioma",
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -300,6 +328,9 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
     "ExcluirVersaoCurriculo",
     "ExcluirVersaoCurriculoEntrada",
+    "DocumentoNaoEncontrado",
+    "ExcluirDocumento",
+    "ExcluirDocumentoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     "ConsultaItemPerfil",
     "GerarPreviaVersaoCurriculo",

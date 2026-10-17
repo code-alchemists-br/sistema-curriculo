@@ -1,0 +1,192 @@
+/* Proveniência: F5.6 - Modelo Clássico de Apresentação sem estilos dependentes de fornecedor */
+
+.modelo-classico {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 2.5rem;
+  color: #1f2937;
+  background-color: #ffffff;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  line-height: 1.55;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.modelo-classico__cabecalho {
+  display: grid;
+  gap: 0.5rem;
+  text-align: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #111827;
+}
+
+.modelo-classico__nome {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #111827;
+  text-transform: uppercase;
+}
+
+.modelo-classico__contato {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  color: #475569;
+}
+
+.modelo-classico__contato li:not(:last-child)::after {
+  margin-left: 0.75rem;
+  color: #94a3b8;
+  content: "•";
+}
+
+.modelo-classico__contato a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.modelo-classico__contato a:hover {
+  color: #1d4ed8;
+}
+
+.modelo-classico__secao {
+  display: grid;
+  gap: 0.75rem;
+  break-inside: avoid;
+}
+
+.modelo-classico__titulo-secao {
+  margin: 0;
+  padding-bottom: 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #111827;
+  border-bottom: 1.5px solid #cbd5e1;
+}
+
+.modelo-classico__lista {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.modelo-classico__item {
+  display: grid;
+  gap: 0.25rem;
+  break-inside: avoid;
+}
+
+.modelo-classico__linha-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.modelo-classico__titulo-item {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.modelo-classico__periodo {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.modelo-classico__linha-subtitulo {
+  font-size: 0.9375rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.modelo-classico__separador {
+  margin: 0 0.5rem;
+  color: #94a3b8;
+}
+
+.modelo-classico__descricao {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.modelo-classico__tecnologias {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.modelo-classico__grid-duas-colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  color: #1f2937;
+}
+
+.modelo-classico__lista-documentos {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  color: #334155;
+}
+
+@media (max-width: 40rem) {
+  .modelo-classico {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .modelo-classico__linha-cabecalho {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .modelo-classico__contato {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .modelo-classico__contato li:not(:last-child)::after {
+    display: none;
+  }
+}
+
+@media print {
+  .modelo-classico {
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .modelo-classico__secao,
+  .modelo-classico__item {
+    break-inside: avoid;
+  }
+}
