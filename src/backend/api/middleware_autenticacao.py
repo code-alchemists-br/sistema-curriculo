@@ -1,5 +1,6 @@
 """Autentica requisições usando a sessão persistida no cookie seguro."""
 
+import logging
 from uuid import UUID
 
 from fastapi import Request
@@ -10,6 +11,7 @@ from backend.api.sessoes import COOKIE_SESSAO
 from backend.application.autenticacao_sessao import AutenticadorSessao
 
 DETALHE_NAO_AUTENTICADO = "Sessão ausente ou inválida."
+logger = logging.getLogger(__name__)
 
 ROTAS_PUBLICAS = frozenset(
     {
@@ -31,8 +33,9 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
     rotas valida o cookie por meio da porta injetada e grava o `UsuarioId` em
     `request.state.usuario_id`. Nas rotas de perfil e currículo, exige que o
     UUID da rota corresponda ao estudante autenticado para perfil e dados de
-    contato, além de recursos de currículo. Ele existe para centralizar
-    autenticação e proteger recursos privados do próprio estudante.
+    contato, além de recursos de currículo. Registra rota, motivo e ID técnico
+    do ator quando nega acesso. Ele existe para proteger recursos privados e
+    manter um histórico auditável das decisões de autorização.
     """
 
     def __init__(self, app, autenticador: AutenticadorSessao) -> None:
@@ -50,8 +53,9 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
         """Valida cookie nas rotas privadas antes de encaminhar a requisição.
 
         O método ignora preflight e caminhos explicitamente públicos; nos demais
-        exige token ativo e expõe a identidade validada em `request.state`.
-        Ele existe para negar operações sem sessão válida.
+        exige token ativo, expõe a identidade validada e registra negações de
+        propriedade com a rota, o motivo e o ID técnico do ator. Ele existe para
+        negar operações sem sessão e auditar decisões de acesso.
         """
         if (
             request.method == "OPTIONS"
@@ -72,6 +76,21 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
             request.method, request.url.path
         )
         if usuario_requisitado is not None and usuario_requisitado != usuario_id.valor:
+            rota = _rota_para_log(request.method, request.url.path)
+            motivo = "proprietario_diferente"
+            ator_id = str(usuario_id.valor)
+            logger.warning(
+                "negacao_autorizacao rota=%s motivo=%s ator_id=%s",
+                rota,
+                motivo,
+                ator_id,
+                extra={
+                    "evento": "negacao_autorizacao",
+                    "rota": rota,
+                    "motivo": motivo,
+                    "ator_id": ator_id,
+                },
+            )
             return JSONResponse(
                 status_code=403,
                 content={"detail": "A sessão não pode acessar este recurso."},
@@ -88,6 +107,23 @@ def _resposta_nao_autenticada() -> JSONResponse:
     em todos os casos sem autenticação.
     """
     return JSONResponse(status_code=401, content={"detail": DETALHE_NAO_AUTENTICADO})
+
+
+def _rota_para_log(metodo: str, caminho: str) -> str:
+    """Monta uma rota de log sem IDs UUID presentes no caminho.
+
+    A função preserva segmentos fixos e troca UUIDs por `{uuid}`, sem incluir
+    query string ou valores de credencial. Ela existe para identificar a rota
+    de uma negação sem registrar dados específicos do recurso acessado.
+    """
+    segmentos = caminho.strip("/").split("/")
+    for indice, segmento in enumerate(segmentos):
+        try:
+            UUID(segmento)
+        except ValueError:
+            continue
+        segmentos[indice] = "{uuid}"
+    return f"{metodo} /{'/'.join(segmentos)}"
 
 
 def _usuario_id_recurso_estudante(metodo: str, caminho: str) -> UUID | None:
