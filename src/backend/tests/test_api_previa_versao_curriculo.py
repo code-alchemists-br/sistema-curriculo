@@ -44,6 +44,8 @@ from backend.domain import (
     Telefone,
     Usuario,
     UsuarioId,
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+    ordenar_experiencias,
     # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
     ordenar_formacoes,
 )
@@ -225,6 +227,26 @@ def _formacao(
         nivel=NivelFormacaoAcademica.GRADUACAO,
         periodo=Periodo(inicio=inicio, fim=fim),
         status=status,
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+def _experiencia(
+    usuario_id: UsuarioId, inicio: date, fim: date | None = None
+) -> ExperienciaProfissional:
+    """Cria uma experiência válida variando apenas o período.
+
+    A função fixa empresa, cargo e descrição com valores neutros. Ela existe
+    para montar cenários em que a ordem das experiências depende só das datas
+    expostas na resposta.
+    """
+    return ExperienciaProfissional(
+        id=ExperienciaProfissionalId(uuid4()),
+        usuario_id=usuario_id,
+        empresa="Empresa",
+        cargo="Estagiária",
+        descricao="Desenvolvimento de APIs.",
+        periodo=Periodo(inicio=inicio, fim=fim),
     )
 
 
@@ -431,6 +453,78 @@ class PreviaVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue({"id", "status", "inicio", "fim"} <= set(item["required"]))
         self.assertEqual(item["properties"]["inicio"]["format"], "date")
+
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+    async def test_preserva_ordem_das_experiencias_com_datas_e_andamento(self) -> None:
+        """Confirma que a resposta mantém a ordem de experiências do caso de uso.
+
+        O double devolve experiências já ordenadas pela regra de domínio — duas
+        com o mesmo início, a em andamento antes da encerrada, e uma antiga — e
+        o teste compara identificadores e datas na resposta, inclusive o término
+        nulo. Ele existe para garantir que a rota não reordena nem omite os
+        campos que justificam a ordem.
+        """
+        base = _criar_previa()
+        usuario_id = base.usuario.id
+        experiencias = ordenar_experiencias(
+            (
+                _experiencia(usuario_id, date(2019, 3, 1), date(2020, 6, 1)),
+                _experiencia(usuario_id, date(2023, 2, 1), date(2023, 12, 1)),
+                _experiencia(usuario_id, date(2023, 2, 1)),
+            )
+        )
+        previa = replace(base, experiencias=experiencias)
+        gerar = _rota(CAMINHO_PREVIA, "GET", PreviaExecutorDouble(resultado=previa)).endpoint
+
+        resposta = await gerar(
+            usuario_id=previa.usuario.id.valor, curriculo_id=previa.curriculo.id.valor
+        )
+
+        self.assertEqual(
+            [
+                (experiencia.id, experiencia.inicio, experiencia.fim)
+                for experiencia in resposta.experiencias
+            ],
+            [
+                (experiencia.id.valor, experiencia.periodo.inicio, experiencia.periodo.fim)
+                for experiencia in experiencias
+            ],
+        )
+        self.assertEqual(
+            [(experiencia.inicio, experiencia.fim) for experiencia in resposta.experiencias],
+            [
+                (date(2023, 2, 1), None),
+                (date(2023, 2, 1), date(2023, 12, 1)),
+                (date(2019, 3, 1), date(2020, 6, 1)),
+            ],
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-expor-ordenacao-experiencias-consulta-v001.md#v001
+    async def test_openapi_declara_experiencias_como_lista_com_datas(self) -> None:
+        """Confirma o contrato publicado da seção de experiências da prévia.
+
+        O teste gera o OpenAPI de uma aplicação com o router e inspeciona o
+        esquema de resposta: `experiencias` é uma lista de itens que exigem
+        identificador, início e término, com término anulável. Ele existe para
+        proteger o contrato consumido pelo cliente que apresenta a ordem das
+        experiências.
+        """
+        app = FastAPI()
+        app.include_router(criar_router(None))
+        esquemas = app.openapi()["components"]["schemas"]
+
+        experiencias = esquemas["PreviaVersaoCurriculoResposta"]["properties"]["experiencias"]
+        item = esquemas["ExperienciaPreviaResposta"]
+
+        self.assertEqual(experiencias["type"], "array")
+        self.assertEqual(
+            experiencias["items"]["$ref"], "#/components/schemas/ExperienciaPreviaResposta"
+        )
+        self.assertTrue({"id", "inicio", "fim"} <= set(item["required"]))
+        self.assertEqual(item["properties"]["inicio"]["format"], "date")
+        self.assertIn(
+            {"type": "null"}, item["properties"]["fim"]["anyOf"]
+        )
 
     async def test_indisponivel_quando_executor_ausente(self) -> None:
         """Confirma 503 quando nenhum caso de uso de prévia foi injetado.
