@@ -177,3 +177,29 @@ exit
 ```
 
 Ao sair, as ferramentas disponibilizadas exclusivamente pelo ambiente deixam de estar disponíveis no terminal atual.
+
+## Nível de logging do backend
+
+O backend lê a variável de ambiente `LOG_LEVEL` durante a inicialização para
+definir o nível mínimo enviado ao logging padrão do Python. Se a variável não
+estiver definida, o valor utilizado será `INFO`. Os valores são aceitos sem
+diferenciação entre maiúsculas e minúsculas e com espaços externos ignorados.
+
+Valores permitidos:
+
+| Valor | Uso |
+|---|---|
+| `DEBUG` | Diagnóstico detalhado para desenvolvimento. |
+| `INFO` | Eventos normais de execução; nível padrão. |
+| `WARNING` | Situações inesperadas que não interrompem o fluxo. |
+| `ERROR` | Falhas que impedem uma operação. |
+| `CRITICAL` | Falhas graves que podem comprometer a aplicação. |
+
+Exemplo para iniciar o backend com logs de diagnóstico:
+
+```bash
+PYTHONPATH=src LOG_LEVEL=DEBUG uvicorn backend.main:app
+```
+
+Um valor fora da lista interrompe a inicialização com uma mensagem que informa
+as opções aceitas.
