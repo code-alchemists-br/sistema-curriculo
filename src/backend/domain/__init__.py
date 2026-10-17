@@ -86,6 +86,12 @@ from backend.domain.revisao_curriculo import (
     revisar_curriculo,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261017-100000-secoes-curriculo-ordem-padrao-v001.md#v001
+from backend.domain.secao_curriculo import (
+    ORDEM_PADRAO_SECOES,
+    SecaoCurriculo,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import (
@@ -214,4 +220,7 @@ __all__ = [
     "SecaoRevisao",
     "SeveridadePendencia",
     "revisar_curriculo",
+    # Proveniência: decision-analysis prompts/backend/20261017-100000-secoes-curriculo-ordem-padrao-v001.md#v001
+    "ORDEM_PADRAO_SECOES",
+    "SecaoCurriculo",
 ]
