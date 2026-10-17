@@ -12,6 +12,8 @@ from dataclasses import dataclass
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
 from backend.application.ports import (
     ConsultaItemPerfil,
+    # Proveniência: decision-analysis prompts/backend/20261017-160000-itens-por-secao-previa-versao-curriculo-v001.md#v001
+    ItemPerfil,
     RepositorioCurriculo,
     RepositorioUsuario,
 )
@@ -29,6 +31,9 @@ from backend.domain.itens_perfil import (
     # Proveniência: decision-analysis prompts/backend/20261016-100000-expor-ordenacao-formacoes-consulta-v001.md#v001
     ordenar_formacoes,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261017-160000-itens-por-secao-previa-versao-curriculo-v001.md#v001
+from backend.domain.secao_curriculo import ORDEM_PADRAO_SECOES, SecaoCurriculo
 from backend.domain.usuario import Usuario
 from backend.domain.value_objects import CurriculoId, UsuarioId
 
@@ -66,6 +71,30 @@ class PreviaVersaoCurriculo:
     competencias: tuple[Competencia, ...]
     idiomas: tuple[Idioma, ...]
     documentos: tuple[Documento, ...]
+
+    # Proveniência: decision-analysis prompts/backend/20261017-160000-itens-por-secao-previa-versao-curriculo-v001.md#v001
+    def itens_por_secao(
+        self,
+    ) -> tuple[tuple[SecaoCurriculo, tuple[ItemPerfil, ...]], ...]:
+        """Projeta os itens selecionados por seção, na ordem padrão do currículo.
+
+        O método associa cada tupla de itens à sua ``SecaoCurriculo``, percorre
+        ``ORDEM_PADRAO_SECOES`` e devolve apenas as seções que têm ao menos um
+        item selecionado; os dados pessoais não são itens e ficam de fora. Ele
+        existe para que a apresentação e a exportação consumam o currículo já
+        agrupado e ordenado por seção, sem repetir essa decisão.
+        """
+        itens = {
+            SecaoCurriculo.FORMACAO_ACADEMICA: self.formacoes,
+            SecaoCurriculo.EXPERIENCIAS_PROFISSIONAIS: self.experiencias,
+            SecaoCurriculo.PROJETOS_ACADEMICOS: self.projetos,
+            SecaoCurriculo.COMPETENCIAS: self.competencias,
+            SecaoCurriculo.IDIOMAS: self.idiomas,
+            SecaoCurriculo.DOCUMENTOS_COMPLEMENTARES: self.documentos,
+        }
+        return tuple(
+            (secao, itens[secao]) for secao in ORDEM_PADRAO_SECOES if itens.get(secao)
+        )
 
 
 # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
