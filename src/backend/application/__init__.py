@@ -88,6 +88,10 @@ from backend.application.exclusao_documento import (
     ExcluirDocumento,
     ExcluirDocumentoEntrada,
 )
+from backend.application.exclusao_experiencia_profissional import (
+    ExcluirExperienciaProfissional,
+    ExcluirExperienciaProfissionalEntrada,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
 from backend.application.exclusao_versao_curriculo import (
@@ -243,6 +247,8 @@ __all__ = [
     "EditarExperienciaProfissional",
     "EditarExperienciaProfissionalEntrada",
     "ExperienciaProfissionalNaoEncontrada",
+    "ExcluirExperienciaProfissional",
+    "ExcluirExperienciaProfissionalEntrada",
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "CadastrarProjetoAcademico",
     "CadastrarProjetoAcademicoEntrada",

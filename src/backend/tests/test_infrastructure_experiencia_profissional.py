@@ -1,7 +1,7 @@
 """Verifica o mapeamento e repository de experiências com doubles locais."""
 
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
 from uuid import UUID
 
@@ -73,6 +73,21 @@ class MapeamentoExperienciaProfissionalTestCase(unittest.TestCase):
 
         self.assertEqual(entidade, criar_experiencia())
 
+    def test_mapeia_instante_de_exclusao_nos_dois_sentidos(self) -> None:
+        """Confirma que ``deleted_at`` atravessa a fronteira ORM sem perdas.
+
+        O teste converte uma experiência excluída para registro e de volta e
+        compara o marcador. Ele existe para que a exclusão lógica persistida
+        seja reconhecida pelo domínio na leitura.
+        """
+        instante = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+        excluida = criar_experiencia().excluir(instante)
+
+        registro = para_registro(excluida)
+
+        self.assertEqual(registro.deleted_at, instante)
+        self.assertEqual(para_experiencia(registro), excluida)
+
 
 class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
     """Verifica operações do repository com AsyncSession substituída.
@@ -131,6 +146,7 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
         consulta = session.scalar.await_args.args[0]
         self.assertIn("experiencias_profissionais.id", str(consulta))
         self.assertIn("experiencias_profissionais.usuario_id", str(consulta))
+        self.assertIn("experiencias_profissionais.deleted_at IS NULL", str(consulta))
         self.assertIn(ID_EXPERIENCIA, consulta.compile().params.values())
         self.assertIn(ID_USUARIO, consulta.compile().params.values())
 
@@ -178,6 +194,7 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
         sql = str(instrucao)
         self.assertIn("experiencias_profissionais.id", sql)
         self.assertIn("experiencias_profissionais.usuario_id", sql)
+        self.assertIn("experiencias_profissionais.deleted_at IS NULL", sql)
         valores = instrucao.compile().params
         self.assertEqual(
             set(valores),
@@ -204,3 +221,88 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
 
         self.assertFalse(resultado)
         session.scalar.assert_not_awaited()
+
+    async def test_obtem_incluindo_excluidas_sem_filtrar_marcador(self) -> None:
+        """Reconstrói a própria experiência excluída filtrando só ID e dono.
+
+        A sessão double devolve registro marcado e a consulta é inspecionada
+        para confirmar o filtro de proprietário e a ausência do filtro de
+        exclusão. O teste existe para sustentar a exclusão idempotente.
+        """
+        instante = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = para_registro(criar_experiencia().excluir(instante))
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario_incluindo_excluidas(
+            ExperienciaProfissionalId(ID_EXPERIENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertEqual(resultado.deleted_at, instante)
+        consulta = session.scalar.await_args.args[0]
+        self.assertIn("experiencias_profissionais.id", str(consulta))
+        self.assertIn("experiencias_profissionais.usuario_id", str(consulta))
+        self.assertNotIn("deleted_at IS NULL", str(consulta))
+
+    async def test_obtem_incluindo_excluidas_devolve_none_para_ausente_ou_alheia(
+        self,
+    ) -> None:
+        """Não revela registro ausente nem de outro proprietário.
+
+        A consulta conjunta sem resultado devolve ``None``. O teste existe para
+        que a busca usada pela exclusão também oculte dados de terceiros.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = None
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario_incluindo_excluidas(
+            ExperienciaProfissionalId(ID_EXPERIENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertIsNone(resultado)
+
+    async def test_marcar_excluida_grava_somente_instante_em_registro_ativo(self) -> None:
+        """Usa UPDATE condicional por ID, dono e ausência de marcador.
+
+        A instrução SQL é inspecionada para confirmar os filtros e o único
+        campo alterado, e o rowcount define o retorno; não há commit. O teste
+        existe para que a exclusão não sobrescreva o primeiro instante.
+        """
+        instante = datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc)
+        session = MagicMock(spec=AsyncSession)
+        session.execute.return_value.rowcount = 1
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.marcar_excluida(
+            ExperienciaProfissionalId(ID_EXPERIENCIA), UsuarioId(ID_USUARIO), instante
+        )
+
+        self.assertTrue(resultado)
+        instrucao = session.execute.await_args.args[0]
+        sql = str(instrucao)
+        self.assertIn("experiencias_profissionais.usuario_id", sql)
+        self.assertIn("experiencias_profissionais.deleted_at IS NULL", sql)
+        valores = instrucao.compile().params
+        self.assertEqual(set(valores), {"id_1", "usuario_id_1", "deleted_at"})
+        self.assertEqual(valores["deleted_at"], instante)
+        session.flush.assert_awaited_once_with()
+        session.commit.assert_not_called()
+
+    async def test_marcar_excluida_devolve_false_quando_nada_e_alterado(self) -> None:
+        """Representa experiência já excluída, ausente ou de outro dono.
+
+        O resultado SQL de zero linhas é devolvido como ``False``. O teste
+        existe para que a Application detecte disputa concorrente e releia.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.execute.return_value.rowcount = 0
+        repositorio = RepositorioExperienciaProfissionalSqlAlchemy(session)
+
+        resultado = await repositorio.marcar_excluida(
+            ExperienciaProfissionalId(ID_EXPERIENCIA),
+            UsuarioId(ID_USUARIO),
+            datetime(2026, 10, 17, 12, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertFalse(resultado)
