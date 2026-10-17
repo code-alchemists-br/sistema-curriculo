@@ -3,6 +3,7 @@
 import asyncio
 import json
 import unittest
+from unittest.mock import patch
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -10,7 +11,7 @@ from fastapi.responses import JSONResponse
 from backend.api.factory import create_app
 from backend.api.middleware_autenticacao import ROTAS_PUBLICAS
 from backend.api.saude import criar_router
-from backend.application.saude import VerificadorSaude
+from backend.application.saude import VerificadorPersistencia, VerificadorSaude
 from backend.infrastructure.security.autenticador_sessao_indisponivel import (
     AutenticadorSessaoIndisponivel,
 )
@@ -63,6 +64,33 @@ class VerificadorTravado(VerificadorSaude):
         return True
 
 
+class VerificadorPersistenciaStub(VerificadorPersistencia):
+    """Simula o probe de persistência usando resultado ou erro configurável.
+
+    O double opera somente em memória e herda o contrato do verificador de
+    saúde. Ele existe para testar readiness sem abrir conexão com banco real.
+    """
+
+    def __init__(self, resultado: bool = True, erro: Exception | None = None) -> None:
+        """Armazena o resultado determinístico do probe de armazenamento.
+
+        O cenário define sucesso, indisponibilidade ou exceção. O construtor
+        existe para isolar a rota de prontidão de qualquer banco externo.
+        """
+        self.resultado = resultado
+        self.erro = erro
+
+    async def verificar(self) -> bool:
+        """Devolve estado configurado ou simula falha da persistência.
+
+        O método retorna o booleano armazenado ou lança a exceção configurada.
+        Ele existe para validar que readiness só aprova persistência disponível.
+        """
+        if self.erro is not None:
+            raise self.erro
+        return self.resultado
+
+
 def _handler(verificadores: tuple[VerificadorSaude, ...] = ()):
     """Localiza o handler de saúde sem iniciar servidor ou cliente HTTP.
 
@@ -76,8 +104,23 @@ def _handler(verificadores: tuple[VerificadorSaude, ...] = ()):
     raise AssertionError("Rota GET /health não encontrada.")
 
 
+def _handler_prontidao(
+    verificador: VerificadorPersistencia | None = None,
+):
+    """Localiza o handler `/ready` com o probe de persistência configurado.
+
+    A função monta o router em memória e devolve o endpoint da prontidão. Ela
+    existe para verificar o contrato sem servidor HTTP nem banco de dados.
+    """
+    router: APIRouter = criar_router(verificador_persistencia=verificador)
+    for rota in router.routes:
+        if rota.path == "/ready" and "GET" in rota.methods:
+            return rota.endpoint
+    raise AssertionError("Rota GET /ready não encontrada.")
+
+
 class HealthCheckApiTestCase(unittest.IsolatedAsyncioTestCase):
-    """Protege a resposta agregada e privada do endpoint de saúde.
+    """Protege as respostas agregadas e públicas de saúde e prontidão.
 
     Os testes chamam o handler com verificadores em memória e inspecionam a
     composição OpenAPI. A classe existe para garantir monitoramento sem expor
@@ -147,7 +190,8 @@ class HealthCheckApiTestCase(unittest.IsolatedAsyncioTestCase):
         O verificador aguarda além do limite configurado pela rota. O teste
         existe para que um serviço travado não mantenha o monitor pendente.
         """
-        resposta: JSONResponse = await _handler((VerificadorTravado(),))()
+        with patch("backend.api.saude.TEMPO_LIMITE_VERIFICACAO_SEGUNDOS", 0.01):
+            resposta: JSONResponse = await _handler((VerificadorTravado(),))()
 
         self.assertEqual(resposta.status_code, 503)
         self.assertEqual(json.loads(resposta.body), {"status": "indisponivel"})
@@ -163,4 +207,82 @@ class HealthCheckApiTestCase(unittest.IsolatedAsyncioTestCase):
         operacao = app.openapi()["paths"]["/health"]["get"]
 
         self.assertIn(("GET", "/health"), ROTAS_PUBLICAS)
+        self.assertNotIn("security", operacao)
+
+    async def test_prontidao_falha_se_verificador_de_persistencia_nao_existe(
+        self,
+    ) -> None:
+        """Falha fechada quando composição não fornece probe de persistência.
+
+        O handler recebe a dependência ausente e retorna 503 sem conteúdo
+        técnico. O teste existe para impedir tráfego sem prontidão conhecida.
+        """
+        resposta: JSONResponse = await _handler_prontidao()()
+
+        self.assertEqual(resposta.status_code, 503)
+        self.assertEqual(json.loads(resposta.body), {"status": "indisponivel"})
+
+    async def test_prontidao_aprova_persistencia_disponivel(self) -> None:
+        """Retorna 200 quando o probe confirma que a persistência responde.
+
+        O double informa disponibilidade sem acessar serviço externo. O teste
+        existe para liberar tráfego apenas com dependência persistente pronta.
+        """
+        resposta: JSONResponse = await _handler_prontidao(
+            VerificadorPersistenciaStub()
+        )()
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(json.loads(resposta.body), {"status": "ok"})
+
+    async def test_prontidao_falha_se_persistencia_nao_responde(self) -> None:
+        """Retorna 503 quando o probe indica persistência indisponível.
+
+        O double retorna `False` para simular a falha de armazenamento. O teste
+        existe para que o balanceador retire a aplicação do tráfego.
+        """
+        resposta: JSONResponse = await _handler_prontidao(
+            VerificadorPersistenciaStub(resultado=False)
+        )()
+
+        self.assertEqual(resposta.status_code, 503)
+        self.assertEqual(json.loads(resposta.body), {"status": "indisponivel"})
+
+    async def test_prontidao_sanitiza_excecao_de_persistencia(self) -> None:
+        """Oculta exceção interna do probe no retorno de readiness.
+
+        A dependência lança erro com detalhe confidencial, mas o handler devolve
+        somente indisponibilidade. O teste existe para evitar vazamento de dados.
+        """
+        resposta: JSONResponse = await _handler_prontidao(
+            VerificadorPersistenciaStub(erro=RuntimeError("url-com-credencial"))
+        )()
+
+        corpo = resposta.body.decode("utf-8")
+        self.assertEqual(resposta.status_code, 503)
+        self.assertEqual(json.loads(corpo), {"status": "indisponivel"})
+        self.assertNotIn("url-com-credencial", corpo)
+
+    async def test_prontidao_tem_timeout_proprio_de_verificacao(self) -> None:
+        """Retorna 503 quando a persistência não conclui dentro do timeout.
+
+        O tempo limite é reduzido apenas no teste e o probe aguarda um evento
+        sem sinalização. Ele existe para evitar readiness bloqueada por falhas.
+        """
+        with patch("backend.api.saude.TEMPO_LIMITE_VERIFICACAO_SEGUNDOS", 0.01):
+            resposta: JSONResponse = await _handler_prontidao(VerificadorTravado())()
+
+        self.assertEqual(resposta.status_code, 503)
+        self.assertEqual(json.loads(resposta.body), {"status": "indisponivel"})
+
+    async def test_prontidao_e_publica_e_documentada_sem_autenticacao(self) -> None:
+        """Permite que o monitor consulte readiness sem cookie de usuário.
+
+        O schema é gerado com middleware ativo e a rota continua sem segurança
+        por cookie. O teste existe para monitorar disponibilidade antes do login.
+        """
+        app = create_app(autenticador_sessao=AutenticadorSessaoIndisponivel())
+        operacao = app.openapi()["paths"]["/ready"]["get"]
+
+        self.assertIn(("GET", "/ready"), ROTAS_PUBLICAS)
         self.assertNotIn("security", operacao)

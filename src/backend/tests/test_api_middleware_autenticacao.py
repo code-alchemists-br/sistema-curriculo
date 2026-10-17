@@ -508,7 +508,7 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         """Encaminha rotas públicas sem exigir token ou chamar autenticador.
 
         Os métodos e caminhos públicos cobrem fluxos prévios à autenticação,
-        saída da sessão, documentação, health check e preflight CORS. O teste
+        saída da sessão, documentação, health/readiness e preflight CORS. O teste
         existe para manter esses fluxos acessíveis quando a proteção está ativa.
         """
         cenarios = (
@@ -517,6 +517,7 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
             ("DELETE", "/sessao/atual"),
             ("GET", "/docs"),
             ("GET", "/health"),
+            ("GET", "/ready"),
             ("OPTIONS", "/privado"),
         )
         for metodo, caminho in cenarios:

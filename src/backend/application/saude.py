@@ -19,3 +19,12 @@ class VerificadorSaude(Protocol):
         saúde agregado sem expor informações internas.
         """
 
+
+class VerificadorPersistencia(VerificadorSaude, Protocol):
+    """Identifica o probe de persistência usado para decidir prontidão.
+
+    A interface herda a resposta booleana assíncrona de `VerificadorSaude` e
+    especializa seu papel para armazenamento persistente. Ela existe para que
+    readiness dependa explicitamente da capacidade de persistir dados.
+    """
+
