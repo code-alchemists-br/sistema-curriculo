@@ -283,33 +283,45 @@ class MiddlewareAutenticacaoSessaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(chamadas, [])
 
     async def test_perfil_so_e_alterado_pelo_estudante_da_sessao(self) -> None:
-        """Retorna 403 quando UUID da rota pertence a outro estudante.
+        """Registra rota, motivo e ator técnico ao negar perfil de outro estudante.
 
         Uma sessão válida tenta usar o caminho real do perfil de outra pessoa;
-        o handler seguinte não deve ser chamado. O teste existe para proteger
-        autorização do recurso além da autenticação da sessão.
+        o middleware deve registrar os metadados e negar o handler. O teste
+        existe para auditar autorização sem gravar o token da sessão.
         """
         usuario_autenticado = UsuarioId(UUID("00000000-0000-0000-0000-000000000001"))
         autenticador = AutenticadorSessaoStub(usuario_autenticado)
         chamadas = []
+        logger = logging.getLogger("backend.api.middleware_autenticacao")
 
         async def proxima(request: Request) -> Response:
             """Registra acesso ao handler para comprovar bloqueio anterior."""
             chamadas.append(request)
             return Response(status_code=204)
 
-        resposta = await self._middleware(autenticador).dispatch(
-            _request(
-                "PUT",
-                "/estudantes/00000000-0000-0000-0000-000000000002",
-                "token-valido",
-            ),
-            proxima,
+        request = _request(
+            "PUT",
+            "/estudantes/00000000-0000-0000-0000-000000000002",
+            "token-super-secreto",
         )
+        with self.assertLogs(logger, level="WARNING") as logs:
+            resposta = await self._middleware(autenticador).dispatch(
+                request, proxima
+            )
 
         self.assertEqual(resposta.status_code, 403)
-        self.assertEqual(autenticador.tokens, ["token-valido"])
+        self.assertEqual(autenticador.tokens, ["token-super-secreto"])
         self.assertEqual(chamadas, [])
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(logs.records[0].evento, "negacao_autorizacao")
+        self.assertEqual(logs.records[0].rota, "PUT /estudantes/{uuid}")
+        self.assertEqual(logs.records[0].motivo, "proprietario_diferente")
+        self.assertEqual(logs.records[0].ator_id, str(usuario_autenticado.valor))
+        self.assertEqual(
+            logs.records[0].correlation_id,
+            resposta.headers["X-Correlation-ID"],
+        )
+        self.assertNotIn("token-super-secreto", logs.output[0])
 
     async def test_perfil_proprio_e_encaminhado_apos_autenticacao(self) -> None:
         """Permite edição do perfil quando rota e sessão identificam o mesmo usuário.
