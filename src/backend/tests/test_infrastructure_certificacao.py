@@ -1,15 +1,24 @@
 """Testa unitariamente o mapeamento e o repositório SQLAlchemy de certificações."""
 
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.schema import CreateTable
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.application.cadastro_certificacao import CertificacaoJaCadastrada
-from backend.domain import Certificacao, CertificacaoId, UsuarioId
+from backend.domain import (
+    Certificacao,
+    CertificacaoId,
+    RegraDeDominioViolada,
+    UsuarioId,
+)
 from backend.infrastructure.identificadores.geradores import (
     GeradorCertificacaoIdUuid4,
 )
@@ -20,6 +29,7 @@ from backend.infrastructure.persistence.sqlalchemy.certificacao import (
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_certificacao import (
     RepositorioCertificacaoSqlAlchemy,
+    _viola_chave_duplicidade,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -200,3 +210,203 @@ class GeradorCertificacaoIdUuid4TestCase(unittest.TestCase):
 
         self.assertIsInstance(cert_id, CertificacaoId)
         self.assertIsInstance(cert_id.valor, UUID)
+
+
+NOME_CONSTRAINT_DUPLICIDADE = "uq_certificacoes_usuario_nome_emissor_normalizados"
+MIGRATION_CERTIFICACOES = (
+    Path(__file__).resolve().parents[1]
+    / "infrastructure"
+    / "persistence"
+    / "alembic"
+    / "versions"
+    / "20261015_0010_criar_certificacoes.py"
+)
+
+
+class ConsultaDuplicidadeCertificacaoTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica os filtros e o resultado da consulta de duplicidade do adapter.
+
+    A sessão substituída captura o SELECT gerado sem banco. A classe existe
+    para garantir que a duplicidade seja procurada pelo dono e pela chave
+    composta normalizada recebida.
+    """
+
+    async def test_select_filtra_dono_nome_e_emissor_normalizados(self) -> None:
+        """Confere que a consulta usa os três campos da chave e seus valores.
+
+        O teste inspeciona o SQL compilado e seus parâmetros. Ele existe para
+        que a remoção do filtro de dono, que faria a duplicidade valer entre
+        estudantes, seja detectada.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = ID_CERTIFICACAO
+        repositorio = RepositorioCertificacaoSqlAlchemy(session)
+
+        await repositorio.existe_por_chave_de_duplicidade(
+            UsuarioId(ID_USUARIO), "aws solutions architect", "amazon web services"
+        )
+
+        consulta = session.scalar.await_args.args[0]
+        sql = str(consulta)
+        self.assertIn("certificacoes.usuario_id", sql)
+        self.assertIn("certificacoes.nome_normalizado", sql)
+        self.assertIn("certificacoes.organizacao_emissora_normalizada", sql)
+        parametros = set(consulta.compile().params.values())
+        self.assertTrue(
+            {ID_USUARIO, "aws solutions architect", "amazon web services"} <= parametros
+        )
+
+    async def test_devolve_false_quando_nao_ha_registro(self) -> None:
+        """Informa ausência quando a consulta não encontra certificação.
+
+        A sessão devolve ``None`` como resultado escalar. O teste existe para
+        cobrir o caminho que libera o cadastro de uma certificação nova.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = None
+        repositorio = RepositorioCertificacaoSqlAlchemy(session)
+
+        existe = await repositorio.existe_por_chave_de_duplicidade(
+            UsuarioId(ID_USUARIO), "aws solutions architect", "amazon web services"
+        )
+
+        self.assertFalse(existe)
+
+
+class EsquemaCertificacaoTestCase(unittest.TestCase):
+    """Verifica a tabela de certificações declarada pelo ORM e pela migration.
+
+    Os testes compilam a DDL sem conexão e comparam o nome da restrição única
+    entre ORM, migration e adapter. A classe existe para que o conflito de
+    duplicidade continue traduzido em resposta conhecida.
+    """
+
+    def test_colunas_obrigatorias_e_chave_estrangeira(self) -> None:
+        """Confere colunas não nulas e a ligação do dono com usuários.
+
+        O teste inspeciona a tabela mapeada. Ele existe para que nenhuma
+        certificação seja persistida sem dono ou sem textos e chaves.
+        """
+        tabela = CertificacaoRegistro.__table__
+
+        for coluna in (
+            "id",
+            "usuario_id",
+            "nome",
+            "nome_normalizado",
+            "organizacao_emissora",
+            "organizacao_emissora_normalizada",
+        ):
+            with self.subTest(coluna=coluna):
+                self.assertFalse(tabela.c[coluna].nullable)
+        chaves = {fk.target_fullname for fk in tabela.c.usuario_id.foreign_keys}
+        self.assertEqual(chaves, {"usuarios.id"})
+
+    def test_restricao_unica_cobre_dono_e_chave_composta(self) -> None:
+        """Confere colunas e nome da restrição única do ORM.
+
+        O teste localiza a restrição pelo nome usado pelo adapter e compara
+        suas colunas. Ele existe para reforçar no banco a mesma regra de
+        duplicidade aplicada pelo caso de uso.
+        """
+        restricoes = {
+            restricao.name: [coluna.name for coluna in restricao.columns]
+            for restricao in CertificacaoRegistro.__table__.constraints
+            if isinstance(restricao, UniqueConstraint)
+        }
+
+        self.assertEqual(
+            restricoes[NOME_CONSTRAINT_DUPLICIDADE],
+            ["usuario_id", "nome_normalizado", "organizacao_emissora_normalizada"],
+        )
+
+    def test_nome_da_restricao_coincide_na_migration_e_no_adapter(self) -> None:
+        """Garante o mesmo nome de restrição na migration e na tradução de erro.
+
+        O teste lê a migration de criação da tabela e simula uma violação com o
+        nome da restrição para o tradutor do adapter. Ele existe para que uma
+        renomeação parcial não transforme o conflito 409 em erro inesperado.
+        """
+        migration = MIGRATION_CERTIFICACOES.read_text(encoding="utf-8")
+        erro = IntegrityError("INSERT", {}, Exception(NOME_CONSTRAINT_DUPLICIDADE))
+
+        self.assertIn(f'name="{NOME_CONSTRAINT_DUPLICIDADE}"', migration)
+        self.assertTrue(_viola_chave_duplicidade(erro))
+
+    def test_ddl_compila_em_postgresql_e_sqlite(self) -> None:
+        """Confirma que a tabela gera DDL válida nos dois dialetos usados.
+
+        O teste compila o CREATE TABLE sem executar e procura a restrição única
+        e a chave estrangeira. Ele existe para validar a portabilidade entre o
+        banco de produção e o SQLite das fixtures.
+        """
+        tabela = CertificacaoRegistro.__table__
+
+        for dialeto in (postgresql.dialect(), sqlite.dialect()):
+            with self.subTest(dialeto=dialeto.name):
+                ddl = str(CreateTable(tabela).compile(dialect=dialeto))
+                self.assertIn(NOME_CONSTRAINT_DUPLICIDADE, ddl)
+                self.assertIn("fk_certificacoes_usuario_id_usuarios", ddl)
+
+
+class CasosDeMapeamentoCertificacaoTestCase(unittest.TestCase):
+    """Verifica casos de borda na conversão entre entidade e registro.
+
+    Os cenários usam textos com espaços internos, acentos e registros
+    inconsistentes. A classe existe para proteger a separação entre texto
+    exibido e chave de comparação e a revalidação do domínio na leitura.
+    """
+
+    def test_texto_exibido_e_chave_sao_persistidos_separadamente(self) -> None:
+        """Mantém o texto como digitado e grava a chave normalizada à parte.
+
+        O teste converte uma certificação com espaços internos e acentos. Ele
+        existe para que a apresentação preserve a escrita do estudante enquanto
+        a duplicidade usa a forma canônica.
+        """
+        certificacao = Certificacao(
+            id=CertificacaoId(ID_CERTIFICACAO),
+            usuario_id=UsuarioId(ID_USUARIO),
+            nome="Certificação   em Gestão",
+            organizacao_emissora="Fundação   Exemplo",
+        )
+
+        registro = para_registro(certificacao)
+
+        self.assertEqual(registro.nome, "Certificação   em Gestão")
+        self.assertEqual(registro.nome_normalizado, "certificação em gestão")
+        self.assertEqual(registro.organizacao_emissora, "Fundação   Exemplo")
+        self.assertEqual(registro.organizacao_emissora_normalizada, "fundação exemplo")
+
+    def test_leitura_recalcula_chaves_e_ignora_colunas_normalizadas(self) -> None:
+        """Reconstrói a chave pela entidade, sem confiar no valor gravado.
+
+        O registro traz colunas normalizadas divergentes do texto; a entidade
+        lida deve expor chaves derivadas do próprio texto. O teste existe para
+        que a política de normalização pertença apenas ao domínio.
+        """
+        registro = para_registro(criar_certificacao())
+        registro.nome_normalizado = "valor-divergente"
+        registro.organizacao_emissora_normalizada = "outro-valor"
+
+        certificacao = para_certificacao(registro)
+
+        self.assertEqual(certificacao.nome_normalizado, "aws solutions architect")
+        self.assertEqual(
+            certificacao.organizacao_emissora_normalizada, "amazon web services"
+        )
+
+    def test_registro_invalido_e_rejeitado_na_leitura(self) -> None:
+        """Rejeita na leitura registros que violam as regras do domínio.
+
+        O teste altera o nome do registro para vazio e para mais de 200
+        caracteres antes de convertê-lo. Ele existe para impedir que dados
+        corrompidos no banco virem entidades válidas.
+        """
+        for nome in ("   ", "A" * 201):
+            with self.subTest(tamanho=len(nome)):
+                registro = para_registro(criar_certificacao())
+                registro.nome = nome
+
+                with self.assertRaises(RegraDeDominioViolada):
+                    para_certificacao(registro)
