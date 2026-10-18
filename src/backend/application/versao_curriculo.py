@@ -12,6 +12,7 @@ from dataclasses import dataclass
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.ports import GeradorCurriculoId, RepositorioCurriculo
 from backend.domain.curriculo import Curriculo
+from backend.domain.secao_curriculo import SecaoCurriculo
 from backend.domain.value_objects import CurriculoId, UsuarioId
 
 
@@ -70,6 +71,55 @@ class EditarVersaoCurriculo:
             raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
 
         curriculo.editar_versao(entrada.titulo_versao, entrada.layout, entrada.is_public)
+        await self._repositorio_curriculo.atualizar(curriculo)
+        return curriculo
+
+
+@dataclass(frozen=True, slots=True)
+class AtualizarOrdemSecoesCurriculoEntrada:
+    """Reúne o solicitante, a versão e a nova ordem completa das seções.
+
+    A entrada transporta identidades e o vocabulário do domínio sem depender do
+    formato HTTP. Ela existe para tornar explícita a intenção de reordenar as
+    seções sem exigir os demais dados editáveis da versão.
+    """
+
+    usuario_id: UsuarioId
+    curriculo_id: CurriculoId
+    ordem_secoes: tuple[SecaoCurriculo, ...]
+
+
+class AtualizarOrdemSecoesCurriculo:
+    """Atualiza somente a ordem das seções de uma versão do próprio estudante.
+
+    O caso localiza a versão, oculta ausência e propriedade alheia sob a mesma
+    falha, delega a validação da permutação ao agregado e persiste o novo estado.
+    Ele existe para permitir a reordenação sem acoplar a regra ao transporte ou
+    obrigar o cliente a reenviar título, modelo e visibilidade.
+    """
+
+    def __init__(self, repositorio_curriculo: RepositorioCurriculo) -> None:
+        """Guarda a porta que consulta e persiste a versão reordenada.
+
+        O construtor recebe apenas a abstração interna, que pode ser substituída
+        por um double durante os testes. Ele existe para manter o caso de uso
+        independente do ORM e da tecnologia de armazenamento.
+        """
+        self._repositorio_curriculo = repositorio_curriculo
+
+    async def executar(self, entrada: AtualizarOrdemSecoesCurriculoEntrada) -> Curriculo:
+        """Aplica a ordem válida à versão própria e devolve seu estado atualizado.
+
+        O método busca a versão por identidade, confere seu proprietário, chama
+        a raiz do agregado para validar e trocar a ordem e só então a persiste.
+        Ele existe para impedir atualização cruzada ou parcial de uma ordem de
+        seções que deve ser completa e sem repetições.
+        """
+        curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
+        if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
+            raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
+
+        curriculo.definir_ordem_secoes(entrada.ordem_secoes)
         await self._repositorio_curriculo.atualizar(curriculo)
         return curriculo
 
