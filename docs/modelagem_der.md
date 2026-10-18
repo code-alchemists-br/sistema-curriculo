@@ -14,6 +14,9 @@ erDiagram
   USUARIO ||--o{ TOKEN_RESET_SENHA : solicita
   USUARIO ||--o{ SESSAO : mantem
 
+  CURRICULO ||--o{ ASSOCIACAO_CURRICULO_VAGA : associa
+  ASSOCIACAO_CURRICULO_VAGA ||--|{ CLASSIFICACAO_ASSOCIACAO : possui
+
   CURRICULO ||--o{ CURRICULO_FORMACAO : inclui
   FORMACAO_ACADEMICA ||--o{ CURRICULO_FORMACAO : usada_em
 
@@ -112,6 +115,17 @@ erDiagram
     timestamp created_at
     timestamp updated_at
     timestamp deleted_at
+  }
+
+  ASSOCIACAO_CURRICULO_VAGA {
+    uuid curriculo_id PK, FK
+    string vaga_id PK
+  }
+
+  CLASSIFICACAO_ASSOCIACAO {
+    uuid curriculo_id PK, FK
+    string vaga_id PK, FK
+    string classificacao PK
   }
 
   CURRICULO_FORMACAO {

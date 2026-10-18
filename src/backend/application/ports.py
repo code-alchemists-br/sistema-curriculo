@@ -9,6 +9,8 @@ depender do núcleo da aplicação.
 from datetime import datetime
 from typing import Protocol
 
+# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+from backend.domain.associacao_curriculo_vaga import AssociacaoCurriculoVaga
 from backend.domain.curriculo import Curriculo
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -32,6 +34,8 @@ from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ReferenciaCurriculo,
     UsuarioId,
+    # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+    VagaId,
 )
 
 
@@ -296,6 +300,33 @@ class RepositorioCurriculo(Protocol):
         ``obter_por_id``, ou uma tupla vazia, sem aplicar ordem nem regras de
         currículo. O método existe para que o caso de uso de listagem obtenha
         todas as versões do estudante sem conhecer banco, ORM ou tabelas.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+class RepositorioAssociacaoCurriculoVaga(Protocol):
+    """Define consulta de duplicidade e salvamento de uma associação currículo-vaga.
+
+    A porta usa o par tipado como identidade e recebe o agregado já validado,
+    sem expor ORM, banco ou transação. Ela existe para manter a criação na
+    Application independente da persistência concreta e permitir que o banco
+    imponha a mesma unicidade sob concorrência.
+    """
+
+    async def existe_por_par(self, curriculo_id: CurriculoId, vaga_id: VagaId) -> bool:
+        """Informa se o par currículo-vaga já possui associação persistida.
+
+        A implementação consulta somente a identidade lógica solicitada e
+        devolve um booleano, sem alterar classificações. O método existe para a
+        Application rejeitar duplicidade no fluxo comum antes de salvar.
+        """
+
+    async def salvar(self, associacao: AssociacaoCurriculoVaga) -> None:
+        """Solicita a persistência do agregado completo e validado.
+
+        A implementação persiste a associação e suas classificações como uma
+        operação atômica, deixando commit e rollback ao boundary externo. O
+        método existe para registrar a criação sem acoplar a Application ao ORM.
         """
 
 

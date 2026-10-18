@@ -12,6 +12,13 @@ from backend.application.acesso_estudante import (
     AcessarEstudanteEntrada,
     CredenciaisInvalidas,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+from backend.application.associacao_curriculo_vaga import (
+    AssociacaoCurriculoVagaJaExiste,
+    CriarAssociacaoCurriculoVaga,
+    CriarAssociacaoCurriculoVagaEntrada,
+)
 from backend.application.cadastro_estudante import (
     CadastrarEstudante,
     CadastrarEstudanteEntrada,
@@ -97,6 +104,10 @@ from backend.application.versao_curriculo import (
 )
 
 __all__ = [
+    # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+    "AssociacaoCurriculoVagaJaExiste",
+    "CriarAssociacaoCurriculoVaga",
+    "CriarAssociacaoCurriculoVagaEntrada",
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
