@@ -281,7 +281,7 @@ __all__ = [
     "AssistenteDescricaoProjetoEntrada",
     "AssistenteDescricaoProjetoIndisponivel",
     "AssistenteDescricaoProjetoSaida",
-    
+
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
