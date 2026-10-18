@@ -10,9 +10,10 @@ from typing import Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from backend.application import (
+    AtualizarOrdemSecoesCurriculoEntrada,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     CriarVersaoCurriculoEntrada,
     CurriculoNaoEncontrado,
@@ -24,6 +25,7 @@ from backend.domain import (
     # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
     ModeloCurriculo,
     RegraDeDominioViolada,
+    SecaoCurriculo,
     UsuarioId,
 )
 
@@ -45,6 +47,40 @@ class EdicaoVersaoCurriculoExecutor(Protocol):
         Implementações aplicam regras de currículo sem definir respostas HTTP. O
         método existe para que o router se concentre em traduzir fronteiras.
         """
+
+
+class AtualizacaoOrdemSecoesCurriculoExecutor(Protocol):
+    """Define a capacidade de reordenar seções que o router invoca.
+
+    O contrato recebe a entrada interna e devolve o agregado atualizado sem
+    escolher HTTP, banco ou ORM. Ele existe para que a rota tenha uma fronteira
+    testável e a intenção de reordenação permaneça independente do transporte.
+    """
+
+    async def executar(
+        self, entrada: AtualizarOrdemSecoesCurriculoEntrada
+    ) -> Curriculo:
+        """Atualiza internamente a ordem das seções e devolve a versão.
+
+        Implementações validam e persistem a ordem no núcleo da aplicação, sem
+        construir respostas HTTP. O método existe para concentrar no handler só
+        a conversão do contrato público para a entrada do caso de uso.
+        """
+
+
+class AtualizarOrdemSecoesCurriculoRequisicao(BaseModel):
+    """Representa o payload mínimo para substituir a ordem das seções.
+
+    O DTO aceita exclusivamente a lista ordenada de identificadores de seção e
+    usa a enumeração do domínio para rejeitar valores desconhecidos na fronteira.
+    Ele existe para reordenar a versão sem exigir nem aceitar seus demais dados.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    ordem_secoes: list[SecaoCurriculo] = Field(
+        min_length=len(SecaoCurriculo), max_length=len(SecaoCurriculo)
+    )
 
 
 class EditarVersaoCurriculoRequisicao(BaseModel):
@@ -115,6 +151,7 @@ def criar_router(
     editar_versao_curriculo: EdicaoVersaoCurriculoExecutor | None,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
+    atualizar_ordem_secoes_curriculo: AtualizacaoOrdemSecoesCurriculoExecutor | None = None,
 ) -> APIRouter:
     """Cria as rotas HTTP de edição e criação de versão com os casos de uso injetados.
 
@@ -134,6 +171,35 @@ def criar_router(
     prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md.
     """
     router = APIRouter()
+
+    @router.put(
+        "/estudantes/{usuario_id}/curriculos/{curriculo_id}/ordem-secoes",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def atualizar_ordem_secoes(
+        usuario_id: UUID,
+        curriculo_id: UUID,
+        requisicao: AtualizarOrdemSecoesCurriculoRequisicao,
+    ) -> None:
+        """Substitui a ordem das seções sem exigir os demais dados da versão.
+
+        O handler converte rota e lista JSON em tipos internos, executa a
+        intenção de reordenação e traduz falhas de recurso ou domínio em HTTP.
+        Ele existe para publicar o payload mínimo sem expor o agregado.
+        """
+        if atualizar_ordem_secoes_curriculo is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Atualização da ordem indisponível.")
+        entrada = AtualizarOrdemSecoesCurriculoEntrada(
+            usuario_id=UsuarioId(usuario_id),
+            curriculo_id=CurriculoId(curriculo_id),
+            ordem_secoes=tuple(requisicao.ordem_secoes),
+        )
+        try:
+            await atualizar_ordem_secoes_curriculo.executar(entrada)
+        except CurriculoNaoEncontrado as erro:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+        except RegraDeDominioViolada as erro:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
 
     @router.put(
         "/estudantes/{usuario_id}/curriculos/{curriculo_id}",

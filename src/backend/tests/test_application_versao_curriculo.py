@@ -4,11 +4,19 @@ import unittest
 from uuid import uuid4
 
 from backend.application import (
+    AtualizarOrdemSecoesCurriculo,
+    AtualizarOrdemSecoesCurriculoEntrada,
     CurriculoNaoEncontrado,
     EditarVersaoCurriculo,
     EditarVersaoCurriculoEntrada,
 )
-from backend.domain import Curriculo, CurriculoId, RegraDeDominioViolada, UsuarioId
+from backend.domain import (
+    ORDEM_PADRAO_SECOES,
+    Curriculo,
+    CurriculoId,
+    RegraDeDominioViolada,
+    UsuarioId,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 
@@ -100,6 +108,7 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(repositorio.curriculos_atualizados, [])
 
+
     async def test_rejeita_versao_de_outro_usuario_sem_alterar_nem_atualizar(self) -> None:
         """Confirma que a versão de outro usuário é negada como se não existisse.
 
@@ -145,6 +154,41 @@ class EditarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(curriculo.titulo_versao, "Estágio em TI")
         self.assertEqual(repositorio.curriculos_atualizados, [])
+
+
+class AtualizarOrdemSecoesCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a reordenação isolada das seções de uma versão própria.
+
+    A classe usa um repositório em memória para observar a transição do
+    agregado sem ORM, rede ou framework. Ela existe para proteger a intenção de
+    atualização que aceita somente a ordem das seções.
+    """
+
+    async def test_atualiza_somente_a_ordem_e_persiste_a_versao(self) -> None:
+        """Confirma que a nova permutação é aplicada sem alterar outros dados.
+
+        O teste inverte a ordem padrão, executa o caso de uso para o proprietário
+        e compara a ordem, os demais campos e a chamada de persistência. Ele
+        existe para garantir que a atualização seja limitada à intenção exposta.
+        """
+        curriculo = _criar_curriculo()
+        repositorio = RepositorioCurriculoSpy([curriculo])
+        ordem = tuple(reversed(ORDEM_PADRAO_SECOES))
+
+        resultado = await AtualizarOrdemSecoesCurriculo(repositorio).executar(
+            AtualizarOrdemSecoesCurriculoEntrada(
+                usuario_id=curriculo.usuario_id,
+                curriculo_id=curriculo.id,
+                ordem_secoes=ordem,
+            )
+        )
+
+        self.assertIs(resultado, curriculo)
+        self.assertEqual(resultado.ordem_secoes, ordem)
+        self.assertEqual(resultado.titulo_versao, "Estágio em TI")
+        self.assertEqual(resultado.layout, "classico")
+        self.assertFalse(resultado.is_public)
+        self.assertEqual(repositorio.curriculos_atualizados, [curriculo])
 
 
 def _criar_curriculo() -> Curriculo:

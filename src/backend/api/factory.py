@@ -160,6 +160,7 @@ from backend.api.sessoes import criar_router as criar_router_sessoes
 
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
+    AtualizacaoOrdemSecoesCurriculoExecutor,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     CriacaoVersaoCurriculoExecutor,
     EdicaoVersaoCurriculoExecutor,
@@ -183,6 +184,7 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     cadastrar_competencia: CadastroCompetenciaExecutor | None = None,
     editar_versao_curriculo: EdicaoVersaoCurriculoExecutor | None = None,
+    atualizar_ordem_secoes_curriculo: AtualizacaoOrdemSecoesCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -303,7 +305,11 @@ def create_app(
         tags=[TAG_DOCUMENTOS_COMPLEMENTARES],
     )
     app.include_router(
-        criar_router_versao_curriculo(editar_versao_curriculo, criar_versao_curriculo),
+        criar_router_versao_curriculo(
+            editar_versao_curriculo,
+            criar_versao_curriculo,
+            atualizar_ordem_secoes_curriculo,
+        ),
         tags=[TAG_VERSOES_CURRICULO],
     )
     app.include_router(
