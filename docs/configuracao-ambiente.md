@@ -7,6 +7,8 @@
 * [Instalando o GitHub CLI](#instalando-o-github-cli)
 * [Clonando o repositório do projeto](#clonando-o-repositório-do-projeto)
 * [Utilizando um ambiente Nix do projeto](#utilizando-um-ambiente-nix-do-projeto)
+* [Variáveis de ambiente](#variáveis-de-ambiente)
+* [Execução local segura](#execução-local-segura)
 
 **Todos os integrantes do projeto devem utilizar o Nix como ambiente de desenvolvimento**, garantindo a padronização das ferramentas, dependências e versões utilizadas pela equipe.
 
@@ -187,6 +189,73 @@ exit
 ```
 
 Ao sair, as ferramentas disponibilizadas exclusivamente pelo ambiente deixam de estar disponíveis no terminal atual.
+
+## Variáveis de ambiente
+
+O projeto lê as variáveis abaixo. Defina-as somente quando o fluxo usado
+precisar delas; os exemplos locais não devem ser reutilizados em produção.
+
+| Variável | Componente | Obrigatória | Comportamento |
+|---|---|---|---|
+| `LOG_LEVEL` | Backend | Não | Nível de log. Padrão `INFO`; aceita `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`. |
+| `LOG_ACTOR_HMAC_KEY` | Backend | Não | Chave de pelo menos 32 bytes para gerar referências estáveis de atores nos logs. Sem ela, o processo usa uma chave aleatória temporária. |
+| `DATABASE_URL` | Backend e Alembic | Não para iniciar a API; sim para executar migrations | URL de um PostgreSQL local. Sem ela, `/ready` retorna HTTP 503. |
+| `VITE_API_URL` | Frontend | Sim para chamadas à API | URL base pública da API, por exemplo `http://127.0.0.1:8000`. O Vite disponibiliza variáveis `VITE_*` no código do navegador; nunca coloque senhas, tokens ou outras credenciais nelas. |
+
+Credenciais de banco devem usar uma conta local de desenvolvimento com acesso
+somente ao banco de desenvolvimento. Se a senha contiver caracteres especiais
+em uma URL, faça o percent-encoding desses caracteres. Não use credenciais de
+produção nem inclua URLs com senha em arquivos versionados, mensagens de log ou
+capturas de tela.
+
+## Execução local segura
+
+Execute backend e frontend em terminais separados. Os exemplos vinculam os
+servidores somente à própria máquina (`127.0.0.1`), usam a configuração de
+desenvolvimento e não ativam o modo de depuração do servidor. Mantenha o nível de
+log padrão `INFO`, a menos que precise diagnosticar um problema.
+
+No primeiro terminal, a partir da raiz do repositório:
+
+```bash
+nix develop .#backend
+export PYTHONPATH=src
+export LOG_LEVEL=INFO
+export LOG_ACTOR_HMAC_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+# Evita reutilizar por acidente uma URL de banco herdada do ambiente.
+unset DATABASE_URL
+# Opcional, somente se houver um PostgreSQL local de desenvolvimento:
+# export DATABASE_URL='postgresql+psycopg://curriculo_dev:senha-local@127.0.0.1:5432/curriculo_dev'
+# Opcional, depois de configurar a URL local e antes de iniciar a API:
+# alembic upgrade head
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+A URL de banco no exemplo é fictícia. Substitua-a somente se houver um
+PostgreSQL local configurado; a API pode iniciar sem banco, mas `/ready` ficará
+indisponível. Para aplicar migrations, configure deliberadamente a URL do banco
+local, retire o `#` da linha `alembic upgrade head` e execute-a antes de iniciar
+a API.
+
+No segundo terminal, também a partir da raiz do repositório:
+
+```bash
+nix develop .#frontend
+cd src/frontend
+export VITE_API_URL=http://127.0.0.1:8000
+npm ci
+npm run dev -- --host 127.0.0.1
+```
+
+Abra no navegador o endereço local informado pelo Vite. Não use `--host 0.0.0.0`
+em uma execução local comum, pois isso pode expor o servidor a outros
+dispositivos da rede. O `npm ci` instala as dependências listadas no lockfile
+em `src/frontend/node_modules`.
+
+Ao encerrar o backend, use `Ctrl + C`. As variáveis exportadas ficam somente nos
+terminais em que foram definidas; ao fechar esses terminais, defina-as novamente
+na próxima execução. Não execute migrations contra bancos compartilhados ou de
+produção sem o procedimento e a autorização da equipe responsável.
 
 ## Nível de logging do backend
 
