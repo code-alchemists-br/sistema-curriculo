@@ -208,6 +208,8 @@ from backend.application.selecao_itens_versao_curriculo import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.versao_curriculo import (
+    AtualizarOrdemSecoesCurriculo,
+    AtualizarOrdemSecoesCurriculoEntrada,
     CriarVersaoCurriculo,
     CriarVersaoCurriculoEntrada,
     CurriculoNaoEncontrado,
@@ -322,6 +324,8 @@ __all__ = [
     "VerificadorSenha",
     # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
     "CurriculoNaoEncontrado",
+    "AtualizarOrdemSecoesCurriculo",
+    "AtualizarOrdemSecoesCurriculoEntrada",
     "EditarVersaoCurriculo",
     "EditarVersaoCurriculoEntrada",
     "RepositorioCurriculo",
