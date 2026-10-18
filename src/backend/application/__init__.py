@@ -13,13 +13,6 @@ from backend.application.acesso_estudante import (
     CredenciaisInvalidas,
 )
 
-# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
-from backend.application.associacao_curriculo_vaga import (
-    AssociacaoCurriculoVagaJaExiste,
-    CriarAssociacaoCurriculoVaga,
-    CriarAssociacaoCurriculoVagaEntrada,
-)
-
 # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
 from backend.application.assistente_descricao_projeto import (
     AssistenteDescricaoProjeto,
@@ -27,6 +20,13 @@ from backend.application.assistente_descricao_projeto import (
     AssistenteDescricaoProjetoEntrada,
     AssistenteDescricaoProjetoIndisponivel,
     AssistenteDescricaoProjetoSaida,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+from backend.application.associacao_curriculo_vaga import (
+    AssociacaoCurriculoVagaJaExiste,
+    CriarAssociacaoCurriculoVaga,
+    CriarAssociacaoCurriculoVagaEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
