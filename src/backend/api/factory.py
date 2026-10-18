@@ -59,6 +59,8 @@ from backend.api.documentacao_openapi import (
     TAG_PROJETOS_ACADEMICOS,
     TAG_SAUDE,
     TAG_SESSOES,
+    # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+    TAG_VAGAS,
     TAG_VERSOES_CURRICULO,
     configurar_documentacao,
 )
@@ -158,6 +160,14 @@ from backend.api.projeto_academico import (
 from backend.api.saude import criar_router as criar_router_saude
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
+# Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+from backend.api.vagas import (
+    ConsultaVagasExecutor,
+)
+from backend.api.vagas import (
+    criar_router as criar_router_vagas,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 from backend.api.versao_curriculo import (
     AtualizacaoOrdemSecoesCurriculoExecutor,
@@ -184,7 +194,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     cadastrar_competencia: CadastroCompetenciaExecutor | None = None,
     editar_versao_curriculo: EdicaoVersaoCurriculoExecutor | None = None,
-    atualizar_ordem_secoes_curriculo: AtualizacaoOrdemSecoesCurriculoExecutor | None = None,
+    atualizar_ordem_secoes_curriculo: AtualizacaoOrdemSecoesCurriculoExecutor
+    | None = None,
     # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
     criar_versao_curriculo: CriacaoVersaoCurriculoExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
@@ -225,6 +236,8 @@ def create_app(
     | None = None,
     excluir_experiencia_profissional: ExclusaoExperienciaProfissionalExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+    consultar_vagas: ConsultaVagasExecutor | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -235,8 +248,8 @@ def create_app(
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, experiências profissionais (cadastro, edição e exclusão), prévia
-    e health/readiness com seus verificadores;
+    exclusão de versão, experiências profissionais (cadastro, edição e exclusão), prévia,
+    vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
     nas rotas privadas. Cada router recebe uma tag que o agrupa no Swagger, e a
@@ -347,6 +360,8 @@ def create_app(
         criar_router_exclusao_versao_curriculo(excluir_versao_curriculo),
         tags=[TAG_VERSOES_CURRICULO],
     )
+    # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+    app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])
     app.include_router(criar_router_sessoes(revogador_sessao), tags=[TAG_SESSOES])
     app.include_router(
         criar_router_saude(verificadores_saude, verificador_persistencia),
