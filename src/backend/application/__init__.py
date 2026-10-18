@@ -22,6 +22,13 @@ from backend.application.assistente_descricao_projeto import (
     AssistenteDescricaoProjetoSaida,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+from backend.application.associacao_curriculo_vaga import (
+    AssociacaoCurriculoVagaJaExiste,
+    CriarAssociacaoCurriculoVaga,
+    CriarAssociacaoCurriculoVagaEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.application.cadastro_certificacao import (
     CadastrarCertificacao,
@@ -227,6 +234,10 @@ from backend.application.versao_curriculo import (
 )
 
 __all__ = [
+    # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
+    "AssociacaoCurriculoVagaJaExiste",
+    "CriarAssociacaoCurriculoVaga",
+    "CriarAssociacaoCurriculoVagaEntrada",
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
@@ -270,7 +281,7 @@ __all__ = [
     "AssistenteDescricaoProjetoEntrada",
     "AssistenteDescricaoProjetoIndisponivel",
     "AssistenteDescricaoProjetoSaida",
-    
+
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
