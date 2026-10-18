@@ -641,6 +641,11 @@ flowchart TD
 
 O usuário não deverá visualizar ou modificar dados pertencentes a outra conta.
 
+As operações de atualização de dados pessoais e de contato devem exigir uma
+identidade autenticada e verificar que ela corresponde ao proprietário do
+perfil solicitado. O identificador informado no caminho da requisição, por si
+só, não concede autorização para alterar o recurso.
+
 ## 4.7 Privacidade por padrão
 
 Os currículos deverão ser considerados privados por padrão.
@@ -668,6 +673,22 @@ token=...
 ```
 
 Também deverão ser evitadas informações pessoais que não sejam necessárias ao objetivo do log.
+
+O backend deverá mascarar e-mails, CPFs, telefones e valores registrados em
+campos pessoais ou de credenciais, incluindo nome, endereço, IDs de conta,
+senha, token, cookies e cabeçalhos de autorização. Negações de autorização
+podem registrar uma referência HMAC do ator, calculada com uma chave secreta
+compartilhada, para permitir auditoria sem gravar o identificador original.
+Essa referência permanece dado pseudonimizado e deve ter acesso controlado. O
+mascaramento não substitui a minimização: corpos de requisição e dados pessoais
+não necessários não devem ser registrados.
+
+Logs operacionais e de segurança deverão ser mantidos por até **30 dias** no
+destino de coleta e excluídos ao fim do prazo, incluindo cópias temporárias
+mantidas pelo serviço de coleta. O backend envia registros para a saída padrão;
+logo, a implantação é responsável por aplicar e verificar a política no
+coletor. Uma retenção maior exige finalidade documentada e aprovação da
+governança de dados.
 
 Um registro de auditoria poderá possuir estrutura semelhante a:
 

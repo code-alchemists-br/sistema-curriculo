@@ -207,6 +207,7 @@ export function FormularioEdicaoPerfil({
         />
         <CampoTexto
           ajuda="Informe o endereço público do seu perfil profissional, se possuir um."
+          erro={erros.linkedIn}
           id="perfil-linkedin"
           label="LinkedIn (opcional)"
           onChange={(valor) => atualizarCampo("linkedIn", valor)}
@@ -215,6 +216,7 @@ export function FormularioEdicaoPerfil({
         />
         <CampoTexto
           ajuda="Informe o endereço público do seu currículo na Plataforma Lattes, se possuir um."
+          erro={erros.curriculoLattes}
           id="perfil-curriculo-lattes"
           label="Currículo Lattes (opcional)"
           onChange={(valor) => atualizarCampo("curriculoLattes", valor)}

@@ -1,14 +1,15 @@
-"""Expoe DTOs e handlers HTTP para cadastro e verificacao de acesso de estudante.
+"""Expõe DTOs e handlers HTTP para cadastro e acesso de estudante.
 
-O modulo converte JSON em tipos da Application, deriva senha na borda e traduz
-falhas conhecidas em respostas HTTP sem expor entidades ou hashes. Ele existe
-para manter transporte e segurança fora das regras de domínio e casos de uso.
+O módulo converte JSON em tipos da Application, deriva senhas na borda, traduz
+falhas em respostas HTTP e registra recusas de acesso sem dados sensíveis. Ele
+existe para manter transporte e segurança fora das regras de domínio e casos de uso.
 """
 
+import logging
 from typing import Protocol
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 from backend.application import (
@@ -17,7 +18,17 @@ from backend.application import (
     CredenciaisInvalidas,
     EmailJaCadastrado,
 )
-from backend.domain import Email, HashSenha, Nome, RegraDeDominioViolada, Usuario
+from backend.application.sessoes import CriadorSessao
+from backend.domain import (
+    Email,
+    HashSenha,
+    Nome,
+    RegraDeDominioViolada,
+    Usuario,
+    UsuarioId,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class DerivadorSenha(Protocol):
@@ -56,15 +67,17 @@ class CadastroEstudanteExecutor(Protocol):
 class AcessoEstudanteExecutor(Protocol):
     """Define a capacidade de confirmar acesso que o router precisa invocar.
 
-    O contrato mantém consulta e comparação de senha fora do controller. Ele
-    existe para que a borda HTTP não acesse repositório nem algoritmo de hash.
+    O contrato mantém consulta e comparação de senha fora do controller e
+    devolve a identidade autenticada após sucesso. Ele existe para que a borda
+    emita sessão sem acessar repositório nem repetir validação de senha.
     """
 
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> None:
-        """Confirma a entrada de acesso ou sinaliza credenciais não confirmadas.
+    async def executar(self, entrada: AcessarEstudanteEntrada) -> UsuarioId:
+        """Confirma a entrada de acesso e devolve a identidade validada.
 
-        Implementações não expõem qual credencial falhou. O método existe para
-        que a interface devolva uma resposta uniforme e segura ao cliente.
+        Implementações não expõem qual credencial falhou e devolvem identidade
+        somente após validação. O método existe para que a API crie uma sessão
+        associada à conta autenticada.
         """
 
 
@@ -107,12 +120,13 @@ def criar_router(
     cadastrar_estudante: CadastroEstudanteExecutor | None,
     acessar_estudante: AcessoEstudanteExecutor | None,
     derivador_senha: DerivadorSenha | None = None,
+    criador_sessao: CriadorSessao | None = None,
 ) -> APIRouter:
     """Cria rotas HTTP usando casos de uso injetados pela composição externa.
 
-    A função deriva senhas apenas no cadastro e converte exceções conhecidas em
-    status seguros. Ela existe para registrar a API e permitir testes unitários
-    com doubles sem criar sessão de banco ou servidor real.
+    A função deriva senhas apenas no cadastro, converte exceções conhecidas em
+    status seguros e registra recusas de login sem credenciais. Ela existe para
+    registrar a API e permitir testes unitários sem banco ou servidor real.
     """
     router = APIRouter()
 
@@ -137,18 +151,40 @@ def criar_router(
         return EstudanteResposta(id=usuario.id.valor, nome=usuario.nome.valor, email=usuario.email.valor)
 
     @router.post("/acessos", status_code=status.HTTP_204_NO_CONTENT)
-    async def acessar(requisicao: AcessoEstudanteRequisicao) -> None:
-        """Confirma credenciais HTTP sem criar sessão ou token ainda não especificado.
+    async def acessar(requisicao: AcessoEstudanteRequisicao, resposta: Response) -> None:
+        """Confirma credenciais HTTP e envia cookie da sessão autenticada.
 
-        O handler converte somente e-mail e senha em entrada, aguarda o caso de
-        uso e responde uniformemente a falhas. Ele existe para expor a verificação
-        de acesso sem inventar uma política de autenticação pendente.
+        O handler converte e-mail e senha, solicita a identidade validada e cria
+        uma sessão pela porta injetada; falhas recebem um evento genérico sem
+        credenciais. Ele existe para transportar a credencial com segurança e
+        registrar tentativas recusadas sem expor dados sensíveis.
         """
         if acessar_estudante is None:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Acesso indisponível.")
+        if criador_sessao is None:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Sessões indisponíveis.")
         try:
-            await acessar_estudante.executar(AcessarEstudanteEntrada(email=Email(requisicao.email), senha=requisicao.senha))
+            usuario_id = await acessar_estudante.executar(
+                AcessarEstudanteEntrada(email=Email(requisicao.email), senha=requisicao.senha)
+            )
         except (RegraDeDominioViolada, CredenciaisInvalidas) as erro:
+            logger.warning(
+                "falha_autenticacao operacao=acesso_estudante",
+                extra={
+                    "evento": "falha_autenticacao",
+                    "operacao": "acesso_estudante",
+                },
+            )
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha não conferem.") from erro
+        token = await criador_sessao.criar(usuario_id)
+        resposta.set_cookie(
+            key="__Host-sessao",
+            value=token,
+            max_age=28_800,
+            path="/",
+            secure=True,
+            httponly=True,
+            samesite="lax",
+        )
 
     return router

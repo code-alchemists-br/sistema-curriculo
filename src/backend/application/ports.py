@@ -6,8 +6,9 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
 from backend.domain.associacao_curriculo_vaga import AssociacaoCurriculoVaga
@@ -17,8 +18,19 @@ from backend.domain.curriculo import Curriculo
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CategoriaCompetencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    Certificacao,
+    Competencia,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    Curso,
+    Documento,
     ExperienciaProfissional,
     FormacaoAcademica,
+    Idioma,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissional,
     ProjetoAcademico,
 )
 from backend.domain.usuario import Usuario
@@ -26,10 +38,22 @@ from backend.domain.usuario import Usuario
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 from backend.domain.value_objects import (
+    # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+    CertificacaoId,
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    CompetenciaId,
     CurriculoId,
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    CursoId,
+    # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+    DocumentoId,
     Email,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    IdiomaId,
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    LinkProfissionalId,
     ProjetoAcademicoId,
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
     ReferenciaCurriculo,
@@ -94,12 +118,14 @@ class RepositorioUsuario(Protocol):
 
 
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
 class RepositorioFormacaoAcademica(Protocol):
-    """Define a persistência assíncrona de formações acadêmicas válidas.
+    """Define consulta e persistência assíncrona de formações acadêmicas.
 
-    A porta recebe uma entidade de domínio pronta e delega o I/O ao adapter que
-    a implementar, sem escolher ORM, tabela ou transação. Ela existe para que o
-    caso de uso registre formações sem acoplar a Application à infraestrutura.
+    A porta recebe identidades tipadas para consultar por formação e
+    proprietário, e entidades válidas para salvar ou atualizar, sem escolher
+    ORM, tabela ou transação. Ela existe para que os casos de uso cadastrem e
+    editem formações sem acoplar a Application à infraestrutura.
     """
 
     async def salvar(self, formacao: FormacaoAcademica) -> None:
@@ -108,6 +134,56 @@ class RepositorioFormacaoAcademica(Protocol):
         Implementações aguardam o armazenamento e preservam a entidade recebida
         sem criar regras de negócio adicionais. O método existe para separar a
         intenção de cadastrar formação do mecanismo concreto de persistência.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def obter_por_id_e_usuario(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Obtém a formação somente quando pertence ao usuário informado.
+
+        A implementação consulta conjuntamente identidade e proprietário,
+        ignora formações excluídas e retorna ausência para ID inexistente,
+        alheio ou excluído. Ela existe para que edição trate esses estados
+        como não encontrados sem revelar dados de terceiros.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, formacao_id: FormacaoAcademicaId, usuario_id: UsuarioId
+    ) -> FormacaoAcademica | None:
+        """Obtém formação própria ativa ou excluída, sem revelar itens alheios.
+
+        A implementação restringe a mesma consulta por ID e proprietário e
+        inclui estados logicamente excluídos, retornando ``None`` para ausência
+        ou outro dono. Ela existe exclusivamente para tornar a exclusão
+        idempotente sem distinguir existência de registros de terceiros.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def marcar_excluida(
+        self,
+        formacao_id: FormacaoAcademicaId,
+        usuario_id: UsuarioId,
+        deleted_at: datetime,
+    ) -> bool:
+        """Marca como excluída somente uma formação própria ainda ativa.
+
+        A implementação condiciona a escrita à identidade, proprietário e
+        ausência de marcador, devolvendo ``True`` se uma linha foi alterada ou
+        ``False`` se nenhuma foi. Ela existe para tornar a exclusão concorrente
+        idempotente sem sobrescrever o primeiro instante.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    async def atualizar(self, formacao: FormacaoAcademica) -> bool:
+        """Atualiza uma formação própria somente enquanto ela estiver ativa.
+
+        A implementação condiciona a escrita à identidade, proprietário e
+        ausência de exclusão, devolvendo ``True`` se atualizou ou ``False`` se
+        não afetou linha. Ela existe para que edições concorrentes não
+        ressuscitem registros e possam ser traduzidas como não encontradas.
         """
 
 
@@ -180,13 +256,17 @@ class GeradorFormacaoAcademicaId(Protocol):
         tipo de domínio já validado. O método existe para manter a criação da
         entidade explícita e substituível no caso de uso.
         """
+
+
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 class RepositorioExperienciaProfissional(Protocol):
-    """Define a persistência necessária ao cadastro de uma experiência.
+    """Define consulta e persistência assíncrona de experiências profissionais.
 
-    A porta recebe a entidade já validada e delega seu armazenamento a uma
-    implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
-    para manter o caso de uso independente da tecnologia de persistência.
+    A porta recebe entidades já validadas para salvar ou atualizar e
+    identidades tipadas para consultar por experiência e proprietário ou marcar
+    a exclusão lógica, delegando o armazenamento a uma implementação externa
+    sem conhecer banco ou ORM. Ela existe para que os casos de uso cadastrem,
+    editem e excluam experiências independentes da tecnologia de persistência.
     """
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
@@ -197,6 +277,52 @@ class RepositorioExperienciaProfissional(Protocol):
         entidade pelo caso de uso, preservando o contrato assíncrono. O método
         existe para registrar a nova experiência sem acoplar a aplicação a um
         mecanismo de armazenamento específico.
+        """
+
+    async def obter_por_id_e_usuario(
+        self, experiencia_id: ExperienciaProfissionalId, usuario_id: UsuarioId
+    ) -> ExperienciaProfissional | None:
+        """Obtém a experiência ativa somente quando pertence ao usuário informado.
+
+        A implementação consulta identidade e proprietário na mesma operação,
+        ignora experiências excluídas logicamente e devolve ``None`` para ID
+        inexistente, alheio ou excluído. O método existe para que a edição
+        trate esses casos como não encontrados, sem revelar dados de terceiros.
+        """
+
+    async def atualizar(self, experiencia: ExperienciaProfissional) -> bool:
+        """Substitui os dados de uma experiência própria e ainda ativa.
+
+        A implementação condiciona a escrita ao ID, ao proprietário e à
+        ausência de exclusão lógica, devolvendo ``True`` quando uma linha foi
+        alterada ou ``False`` quando nenhuma correspondeu. O método existe para
+        que a Application trate ausência, exclusão ou concorrência como
+        experiência não encontrada.
+        """
+
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, experiencia_id: ExperienciaProfissionalId, usuario_id: UsuarioId
+    ) -> ExperienciaProfissional | None:
+        """Obtém experiência própria ativa ou excluída, sem revelar itens alheios.
+
+        A implementação restringe a consulta por ID e proprietário e inclui
+        estados logicamente excluídos, devolvendo ``None`` para ausência ou
+        outro dono. O método existe exclusivamente para tornar a exclusão
+        idempotente sem distinguir existência de registros de terceiros.
+        """
+
+    async def marcar_excluida(
+        self,
+        experiencia_id: ExperienciaProfissionalId,
+        usuario_id: UsuarioId,
+        deleted_at: datetime,
+    ) -> bool:
+        """Marca como excluída somente uma experiência própria ainda ativa.
+
+        A implementação condiciona a escrita à identidade, ao proprietário e à
+        ausência de marcador, devolvendo ``True`` se uma linha foi alterada ou
+        ``False`` se nenhuma foi. O método existe para tornar a exclusão
+        concorrente idempotente sem sobrescrever o primeiro instante.
         """
 
 
@@ -216,6 +342,254 @@ class GeradorExperienciaProfissionalId(Protocol):
         A implementação define a estratégia concreta de geração e retorna o
         tipo de domínio esperado pelo caso de uso. O método existe para que a
         criação da entidade sempre receba uma identidade explícita e válida.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class RepositorioCompetencia(Protocol):
+    """Define a consulta e a persistência de competências válidas.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    competências equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        categoria: CategoriaCompetencia,
+        descricao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe competência com a chave lógica fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, categoria
+        e descrição canônica, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, competencia: Competencia) -> None:
+        """Solicita a persistência assíncrona de uma competência válida.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class GeradorCompetenciaId(Protocol):
+    """Fornece identidades tipadas para novas competências.
+
+    A porta encapsula a origem da identidade e devolve ``CompetenciaId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CompetenciaId:
+        """Gera a identidade da próxima competência cadastrada.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+class RepositorioIdioma(Protocol):
+    """Define a consulta e a persistência de idiomas válidos.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    idiomas equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        idioma_normalizado: str,
+    ) -> bool:
+        """Informa se já existe idioma com a chave lógica fornecida.
+
+        Implementações consultam o armazenamento usando proprietário e a
+        denominação canônica, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, idioma: Idioma) -> None:
+        """Solicita a persistência assíncrona de um idioma válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+class GeradorIdiomaId(Protocol):
+    """Fornece identidades tipadas para novos idiomas.
+
+    A porta encapsula a origem da identidade e devolve ``IdiomaId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> IdiomaId:
+        """Gera a identidade do próximo idioma cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class RepositorioCurso(Protocol):
+    """Define a consulta e a persistência de cursos válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    cursos equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        nome_normalizado: str,
+        instituicao_normalizada: str,
+    ) -> bool:
+        """Informa se já existe curso com a chave lógica de nome e instituição fornecida.
+
+        Implementações consultam o armazenamento usando proprietário, nome e
+        instituição canônicos, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, curso: Curso) -> None:
+        """Solicita a persistência assíncrona de um curso válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class RepositorioCertificacao(Protocol):
+    """Define a consulta e a persistência de certificações válidas.
+
+    A porta recebe conceitos de domínio e expõe a chave de duplicidade sem
+    escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    certificações equivalentes e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        nome_normalizado: str,
+        emissor_normalizado: str,
+    ) -> bool:
+        """Informa se já existe certificação com a chave lógica informada.
+
+        Implementações consultam o armazenamento usando proprietário, nome e
+        emissor canônicos, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, certificacao: Certificacao) -> None:
+        """Solicita a persistência assíncrona de uma certificação válida.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+class GeradorCursoId(Protocol):
+    """Fornece identidades tipadas para novos cursos.
+
+    A porta encapsula a origem da identidade e devolve ``CursoId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CursoId:
+        """Gera a identidade do próximo curso cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class RepositorioLinkProfissional(Protocol):
+    """Define a consulta e a persistência de links profissionais válidos.
+
+    A porta recebe conceitos de domínio e expõe a verificação de duplicidade
+    sem escolher banco, índice ou ORM. Ela existe para que o caso de uso impeça
+    links duplicados para o mesmo estudante e permaneça testável com doubles.
+    """
+
+    async def existe_por_chave_de_duplicidade(
+        self,
+        usuario_id: UsuarioId,
+        url_normalizada: str,
+    ) -> bool:
+        """Informa se já existe link profissional com a URL normalizada para o usuário.
+
+        Implementações consultam o armazenamento usando a identidade do proprietário
+        e a chave canônica da URL, sem definir a política de normalização. O método
+        existe para que a Application interrompa o cadastro duplicado antes de
+        solicitar persistência.
+        """
+
+    async def salvar(self, link: LinkProfissional) -> None:
+        """Solicita a persistência assíncrona de um link profissional válido.
+
+        Implementações armazenam a entidade recebida sem acrescentar regra de
+        negócio. O método existe para separar a intenção de cadastro do adapter
+        que futuramente reforçará a mesma chave por índice único.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+class GeradorLinkProfissionalId(Protocol):
+    """Fornece identidades tipadas para novos links profissionais.
+
+    A porta encapsula a origem da identidade e devolve ``LinkProfissionalId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> LinkProfissionalId:
+        """Gera a identidade do próximo link profissional cadastrado.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+class GeradorCertificacaoId(Protocol):
+    """Fornece identidades tipadas para novas certificações.
+
+    A porta encapsula a origem da identidade e devolve ``CertificacaoId`` pronto
+    para o domínio. Ela existe para manter o caso de uso determinístico em
+    testes e independente de uma estratégia concreta de UUID.
+    """
+
+    def gerar(self) -> CertificacaoId:
+        """Gera a identidade da próxima certificação cadastrada.
+
+        Implementações escolhem a fonte do UUID e devolvem o value object
+        correspondente. O método existe para que a entidade seja construída
+        com identidade explícita sem acoplar a Application à infraestrutura.
         """
 
 
@@ -255,6 +629,7 @@ class GeradorProjetoAcademicoId(Protocol):
         domínio esperado. O método existe para que a criação sempre receba uma
         identidade explícita e válida.
         """
+
 
 class RepositorioCurriculo(Protocol):
     """Define a capacidade assíncrona de consultar e persistir versões de currículo.
@@ -300,6 +675,16 @@ class RepositorioCurriculo(Protocol):
         ``obter_por_id``, ou uma tupla vazia, sem aplicar ordem nem regras de
         currículo. O método existe para que o caso de uso de listagem obtenha
         todas as versões do estudante sem conhecer banco, ORM ou tabelas.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
+    async def excluir(self, curriculo: Curriculo) -> None:
+        """Solicita assincronamente a remoção definitiva da versão e de sua seleção.
+
+        Implementações removem do armazenamento a versão e tudo o que depende
+        dela, como as referências aos itens, sem introduzir regras de currículo
+        na infraestrutura. O método existe para persistir a exclusão decidida
+        pelo núcleo sem acoplar a Application a banco, ORM ou tabelas.
         """
 
 
@@ -360,7 +745,9 @@ class ConsultaProprietarioItem(Protocol):
     """
 
     # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
-    async def obter_proprietario(self, referencia: ReferenciaCurriculo) -> UsuarioId | None:
+    async def obter_proprietario(
+        self, referencia: ReferenciaCurriculo
+    ) -> UsuarioId | None:
         """Obtém assincronamente o dono do item referenciado, quando ele existir.
 
         Implementações consultam o armazenamento do tipo de item indicado e
@@ -368,3 +755,155 @@ class ConsultaProprietarioItem(Protocol):
         de persistência. O método existe para que a seleção recuse itens
         inexistentes ou de outro usuário antes de alterar a versão.
         """
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+ItemPerfil = (
+    FormacaoAcademica
+    | ExperienciaProfissional
+    | ProjetoAcademico
+    | Competencia
+    | Idioma
+    | Documento
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+class ConsultaItemPerfil(Protocol):
+    """Define a capacidade assíncrona de ler um item de perfil por sua referência.
+
+    A porta recebe a referência tipada de uma versão de currículo e devolve a
+    entidade do item correspondente, sem expor armazenamento. Ela existe para
+    que a prévia leia os seis tipos de item por um único contrato, deixando a
+    implementação por tipo a cargo de adapters.
+    """
+
+    # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
+    async def obter_item(self, referencia: ReferenciaCurriculo) -> ItemPerfil | None:
+        """Obtém assincronamente o item referenciado, quando ele existir.
+
+        Implementações consultam o armazenamento do tipo indicado pela
+        referência e devolvem a entidade ou ausência. Para uma formação
+        excluída, a implementação futura de prévia/exportação deve incluí-la
+        somente quando uma seleção persistida a referenciar e o proprietário
+        conferir. O método existe para ler itens selecionados sem expor dados
+        de outro estudante.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+@dataclass(frozen=True, slots=True)
+class VagaExternaDto:
+    """Representa de forma imutável uma vaga retornada pela busca.
+
+    A estrutura reúne os oito campos aprovados no modelo de referência e não
+    inclui detalhes de transporte ou do provedor. Ela existe para tipar os
+    resultados de busca consumidos pela Application.
+    """
+
+    id: str
+    titulo: str
+    empresa: str
+    descricao: str
+    requisitos: tuple[str, ...]
+    localizacao: str
+    modalidade: str
+    url_candidatura: str
+
+
+# Proveniência: decision-analysis prompts/backend/20261009-110249-contrato-adaptador-busca-vagas-v002.md#v002
+class BuscadorVagas(Protocol):
+    """Define a capacidade assíncrona interna de consultar vagas.
+
+    A porta especifica os parâmetros e o DTO retornado sem nomear provedor ou
+    transporte. Ela existe para que os casos de uso dependam de uma abstração
+    que possa ser atendida por adapters externos ou doubles.
+    """
+
+    async def buscar_vagas(
+        self,
+        termo: str = "",
+        filtros: dict[str, Any] | None = None,
+    ) -> list[VagaExternaDto]:
+        """Solicita a busca de vagas e retorna seus resultados tipados.
+
+        A operação recebe o termo e o mapa opcional de filtros da assinatura e
+        aguarda a implementação que realiza a consulta. Ela existe para
+        manter a Application independente da origem da busca.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class ArmazenadorDocumentos(Protocol):
+    """Define a capacidade assíncrona de persistir o conteúdo binário de documentos.
+
+    A porta recebe o payload em bytes, o nome e o tipo do arquivo e delega o
+    armazenamento físico (filesystem, bucket ou mock), retornando a URL ou identificador
+    de localização seguro. Ela existe para desacoplar a Application de provedores de storage.
+    """
+
+    async def armazenar(
+        self,
+        conteudo: bytes,
+        nome_arquivo: str,
+        tipo_arquivo: str,
+    ) -> str:
+        """Persiste os bytes do documento e retorna a URL ou caminho de armazenamento.
+
+        A operação deve ser executada de forma assíncrona para não bloquear o loop de
+        eventos da aplicação. Ela existe para isolar detalhes de gravação física ou em nuvem.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class RepositorioDocumento(Protocol):
+    """Define a persistência relacional dos metadados de documentos complementares.
+
+    A porta recebe a entidade já validada e delega a gravação e consulta ao
+    repositório relacional da infraestrutura. Ela existe para manter os casos de uso
+    independentes de banco de dados e ORM.
+    """
+
+    async def salvar(self, documento: Documento) -> None:
+        """Persiste os metadados do documento complementar validado.
+
+        A implementação armazena o registro no banco de dados. O método existe para
+        garantir a persistência relacional das informações do documento.
+        """
+        ...
+
+    async def obter_por_id(self, documento_id: DocumentoId) -> Documento | None:
+        """Recupera um documento complementar ativo pelo seu identificador único.
+
+        A implementação consulta a tabela de documentos ignorando registros excluídos
+        logicamente. O método existe para viabilizar consultas e verificações de existência.
+        """
+        ...
+
+    async def excluir(self, documento: Documento) -> None:
+        """Marca como excluído o documento ativo informado.
+
+        A implementação aplica a estratégia de exclusão lógica sem expor ORM ou
+        banco de dados. O método existe para materializar a exclusão autorizada
+        pelo caso de uso.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+class GeradorDocumentoId(Protocol):
+    """Fornece identificadores tipados para novos documentos complementares.
+
+    A porta separa a geração de identidade da orquestração e devolve um DocumentoId
+    válido. Ela existe para garantir determinismo nos testes e manter o núcleo livre
+    da estratégia concreta de criação de UUID.
+    """
+
+    def gerar(self) -> DocumentoId:
+        """Gera o identificador do próximo documento complementar.
+
+        A implementação escolhe a estratégia concreta e retorna o tipo de domínio.
+        O método existe para que a criação sempre receba uma identidade explícita e válida.
+        """
+        ...

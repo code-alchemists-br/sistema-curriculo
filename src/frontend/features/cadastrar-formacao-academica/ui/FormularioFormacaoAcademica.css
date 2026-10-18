@@ -1,0 +1,30 @@
+.formulario-formacao-academica {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.formulario-formacao-academica .field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.formulario-formacao-academica .field label {
+  font-weight: 600;
+}
+
+.formulario-formacao-academica .field input,
+.formulario-formacao-academica .field select {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.formulario-formacao-academica .field p,
+.formulario-formacao-academica .form-message {
+  margin: 0;
+}
+
+.formulario-formacao-academica button {
+  justify-self: start;
+}

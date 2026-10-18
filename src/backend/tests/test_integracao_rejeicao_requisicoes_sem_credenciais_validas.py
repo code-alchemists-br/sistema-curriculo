@@ -1,13 +1,14 @@
-"""Registra a lacuna de autenticação da listagem real de currículos.
+"""Confirma a proteção da listagem real de currículos sem sessão válida.
 
-Os casos são um relatório de lacuna de RF13, não cobertura de mecanismo
-integrado. A composição ASGI atual não declara autenticação e retorna HTTP 503
-quando o executor de listagem não está configurado.
+A aplicação ASGI usa um autenticador fechado até que a persistência de sessões
+seja composta. Os testes garantem que a listagem privada nunca exponha dados
+quando essa dependência estiver indisponível.
 """
 
 import json
 import unittest
 
+from backend.api.sessoes import COOKIE_SESSAO
 from backend.main import app
 
 # Proveniência: decision-analysis prompts/backend/20261011-102943-rejeicao-requisicoes-sem-credenciais-validas-v004.md#v004
@@ -16,11 +17,11 @@ _CAMPOS_PRIVADOS_CURRICULO = {"versoes", "titulo_versao", "layout", "is_public",
 
 
 class RejeicaoSemCredenciaisValidasTestCase(unittest.IsolatedAsyncioTestCase):
-    """Exercita a listagem real e registra os estados de RF13 ainda ausentes.
+    """Exercita a listagem ASGI e verifica a resposta sem sessão válida.
 
-    Os métodos chamam a interface ASGI sem overrides, marcando ausência/cookie
-    inválido como falhas esperadas estritas e estados não validáveis como skips.
-    A classe existe para tornar a lacuna observável sem simular autenticação.
+    Os métodos chamam a interface ASGI sem overrides e verificam resposta 401
+    para credenciais que o autenticador fechado não pode validar. A classe
+    existe para proteger a composição real contra exposição acidental de dados.
     """
 
     async def _solicitar_app_asgi(self, cookie: str | None) -> tuple[int, object]:
@@ -107,40 +108,45 @@ class RejeicaoSemCredenciaisValidasTestCase(unittest.IsolatedAsyncioTestCase):
             f"recebeu status={status}, campos={sorted(campos_encontrados)}",
         )
 
-    @unittest.expectedFailure
     async def test_sem_cookie(self) -> None:
-        """RF13 não implementada: ausência de cookie deve retornar 401 sem dados.
+        """Rejeita a listagem real sem cookie e sem devolver dados privados.
 
-        O teste faz GET à app ASGI real sem cabeçalho Cookie. expectedFailure
-        produz falha esperada e uma aprovação inesperada falha a suíte, mantendo
-        o comportamento estrito equivalente ao xfail solicitado.
+        O teste faz GET à aplicação ASGI real sem cabeçalho Cookie. Ele existe
+        para confirmar que o fallback de composição mantém rotas privadas fechadas.
         """
         await self._assert_requisicao_rejeitada(cookie=None)
 
-    @unittest.expectedFailure
     async def test_cookie_invalido(self) -> None:
-        """RF13 não implementada: cookie inválido deve retornar 401 sem dados.
+        """Rejeita cookie inválido sem devolver dados privados de currículo.
 
-        O teste envia um valor sintético à app real sem afirmar que seu nome seja
-        o cookie definitivo. expectedFailure falha a suíte se o oráculo passar
-        inesperadamente, mantendo estrita a expectativa de lacuna.
+        O teste envia o cookie real da sessão com token sintético à aplicação.
+        Ele existe para garantir que a presença de um token não verificável não
+        contorne o autenticador fechado.
         """
-        await self._assert_requisicao_rejeitada(cookie="sessao=credencial-invalida")
+        await self._assert_requisicao_rejeitada(
+            cookie=f"{COOKIE_SESSAO}=credencial-invalida"
+        )
 
-    @unittest.skip("validador de sessão não existe")
+    @unittest.skip("a aplicação ainda não compõe persistência de sessões")
     async def test_sessao_expirada(self) -> None:
-        """Reserva o estado expirado enquanto não existe validador de sessão.
+        """Reserva o caso de sessão expirada para a composição persistida.
 
-        O método conserva o mesmo oráculo para quando a API puder reconhecer a
-        expiração. O skip registra a limitação sem simular comportamento ausente.
+        O autenticador fechado rejeita todos os tokens e não distingue validade.
+        O skip preserva a verificação específica para quando a aplicação compuser
+        a consulta real de sessões.
         """
-        await self._assert_requisicao_rejeitada(cookie="sessao=credencial-expirada")
+        await self._assert_requisicao_rejeitada(
+            cookie=f"{COOKIE_SESSAO}=credencial-expirada"
+        )
 
-    @unittest.skip("validador de sessão não existe")
+    @unittest.skip("a aplicação ainda não compõe persistência de sessões")
     async def test_sessao_revogada(self) -> None:
-        """Reserva o estado revogado enquanto não existe validador de sessão.
+        """Reserva o caso de sessão revogada para a composição persistida.
 
-        O método conserva o mesmo oráculo para quando a API puder reconhecer a
-        revogação. O skip registra a limitação sem simular comportamento ausente.
+        O autenticador fechado rejeita todos os tokens e não distingue revogação.
+        O skip preserva a verificação específica para quando a aplicação compuser
+        a consulta real de sessões.
         """
-        await self._assert_requisicao_rejeitada(cookie="sessao=credencial-revogada")
+        await self._assert_requisicao_rejeitada(
+            cookie=f"{COOKIE_SESSAO}=credencial-revogada"
+        )

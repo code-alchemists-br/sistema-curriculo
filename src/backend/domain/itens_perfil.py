@@ -7,40 +7,275 @@ transições da conta e permitir seu crescimento coeso fora de um módulo genér
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, replace
+from datetime import datetime
+from enum import Enum
+from types import MappingProxyType
+from unicodedata import category
+from urllib.parse import urlsplit, urlunsplit
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.value_objects import (
+    CertificacaoId,
     CompetenciaId,
+    CursoId,
     DocumentoId,
     ExperienciaProfissionalId,
     FormacaoAcademicaId,
     IdiomaId,
+    LinkProfissionalId,
     Periodo,
     ProjetoAcademicoId,
     UsuarioId,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+TAMANHO_MINIMO_ROTULO_LINK = 1
+TAMANHO_MAXIMO_ROTULO_LINK = 100
+TAMANHO_MAXIMO_URL_LINK = 2048
+ESQUEMAS_URL_PERMITIDOS = frozenset({"http", "https"})
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+TAMANHO_MINIMO_TEXTO_CURSO = 1
+TAMANHO_MAXIMO_TEXTO_CURSO = 200
+CARGA_HORARIA_MINIMA_CURSO = 1
+CARGA_HORARIA_MAXIMA_CURSO = 10000
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+TAMANHO_MINIMO_TEXTO_FORMACAO = 1
+TAMANHO_MAXIMO_TEXTO_FORMACAO = 200
+
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+TAMANHO_MINIMO_TEXTO_PROJETO = 1
+TAMANHO_MAXIMO_TITULO_PROJETO = 200
+TAMANHO_MAXIMO_DESCRICAO_PROJETO = 2000
+TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO = 300
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+TAMANHO_MINIMO_TEXTO_CERTIFICACAO = 1
+TAMANHO_MAXIMO_TEXTO_CERTIFICACAO = 200
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+class NivelFormacaoAcademica(str, Enum):
+    """Representa os níveis acadêmicos aceitos para uma formação.
+
+    Cada membro guarda o identificador canônico em snake_case usado pelo
+    domínio e por futuras fronteiras de serialização. Ele existe para impedir
+    que formações mantenham rótulos livres e inconsistentes entre camadas.
+    """
+
+    ENSINO_FUNDAMENTAL = "ensino_fundamental"
+    ENSINO_MEDIO = "ensino_medio"
+    TECNICO = "tecnico"
+    TECNOLOGO = "tecnologo"
+    GRADUACAO = "graduacao"
+    ESPECIALIZACAO = "especializacao"
+    MESTRADO = "mestrado"
+    DOUTORADO = "doutorado"
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+class StatusFormacaoAcademica(str, Enum):
+    """Representa os estados de conclusão válidos para uma formação.
+
+    O enum limita o status aos estados de andamento, conclusão ou interrupção
+    aprovados pelo produto. Ele existe para que a entidade aplique regras de
+    período a partir de valores de domínio explícitos.
+    """
+
+    EM_ANDAMENTO = "em_andamento"
+    CONCLUIDO = "concluido"
+    INTERROMPIDO = "interrompido"
+
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+def _normalizar_texto_formacao(valor: str, campo: str) -> str:
+    """Normaliza e valida um texto descritivo de formação.
+
+    A função calcula uma única versão sem espaços externos, rejeita controles
+    no valor original e mede o texto normalizado contra os limites públicos.
+    Ela existe para aplicar à instituição e ao curso a mesma regra de conteúdo.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo {campo} da formação deve ser texto.")
+
+    normalizado = valor.strip()
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da formação não pode conter caracteres de controle."
+        )
+    if not normalizado:
+        raise RegraDeDominioViolada(f"O campo {campo} da formação não pode ser vazio.")
+    if (
+        not TAMANHO_MINIMO_TEXTO_FORMACAO
+        <= len(normalizado)
+        <= TAMANHO_MAXIMO_TEXTO_FORMACAO
+    ):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da formação deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_FORMACAO} e {TAMANHO_MAXIMO_TEXTO_FORMACAO} caracteres."
+        )
+    return normalizado
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
 @dataclass(frozen=True, slots=True)
 class FormacaoAcademica:
     """Representa uma formação acadêmica reutilizável pertencente a um usuário.
 
-    A entidade combina sua identidade, proprietário e informações descritivas
-    com um ``Periodo`` validado. Ela existe para que uma formação possa aparecer
-    em mais de uma versão de currículo sem se tornar parte interna de um agregado
-    de currículo.
+    A entidade combina identidade e proprietário com instituição/curso
+    normalizados, enums acadêmicos e um ``Periodo`` validado segundo o status.
+    Ela existe para que a formação seja reutilizável em versões de currículo e
+    permaneça válida sem depender de API ou persistência.
     """
 
     id: FormacaoAcademicaId
     usuario_id: UsuarioId
     instituicao: str
     curso: str
-    nivel: str
+    nivel: NivelFormacaoAcademica
     periodo: Periodo
-    status: str
+    status: StatusFormacaoAcademica
+    deleted_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        """Protege vocabulário, conteúdo textual e período da formação.
+
+        A entidade exige enums do domínio, normaliza instituição e curso uma
+        vez e valida que somente formações concluídas dependam de data final.
+        Ela existe para impedir estados inválidos por qualquer caminho de
+        criação, sem delegar invariantes de negócio à API ou persistência.
+        """
+        if not isinstance(self.nivel, NivelFormacaoAcademica):
+            raise RegraDeDominioViolada(
+                "O nível da formação deve pertencer ao vocabulário acadêmico válido."
+            )
+        if not isinstance(self.status, StatusFormacaoAcademica):
+            raise RegraDeDominioViolada(
+                "O status da formação deve pertencer ao vocabulário válido."
+            )
+        instituicao = _normalizar_texto_formacao(self.instituicao, "instituição")
+        curso = _normalizar_texto_formacao(self.curso, "curso")
+        if (
+            self.status is StatusFormacaoAcademica.CONCLUIDO
+            and self.periodo.fim is None
+        ):
+            raise RegraDeDominioViolada(
+                "Formação concluída exige data final do período."
+            )
+        object.__setattr__(self, "instituicao", instituicao)
+        object.__setattr__(self, "curso", curso)
+
+    # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def editar(
+        self,
+        instituicao: str,
+        curso: str,
+        nivel: NivelFormacaoAcademica,
+        periodo: Periodo,
+        status: StatusFormacaoAcademica,
+    ) -> FormacaoAcademica:
+        """Devolve a formação com o conjunto completo de dados editado.
+
+        O método constrói uma nova entidade com a mesma identidade e
+        proprietário, reaplicando por ``__post_init__`` as invariantes de texto,
+        enum e coerência temporal. Ele existe para permitir alterações válidas
+        sem mutar a entidade imutável nem duplicar suas regras de construção.
+        """
+        return FormacaoAcademica(
+            id=self.id,
+            usuario_id=self.usuario_id,
+            instituicao=instituicao,
+            curso=curso,
+            nivel=nivel,
+            periodo=periodo,
+            status=status,
+            deleted_at=self.deleted_at,
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    @property
+    def excluida(self) -> bool:
+        """Informa se a formação está logicamente excluída.
+
+        A propriedade deriva o estado da presença de ``deleted_at`` sem
+        consultar persistência ou relógio. Ela existe para orientar as
+        transições de perfil e tornar exclusões repetidas explícitas.
+        """
+        return self.deleted_at is not None
+
+    # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
+    def excluir(self, excluida_em: datetime) -> FormacaoAcademica:
+        """Produz a exclusão lógica da formação, preservando o primeiro instante.
+
+        A transição exige um datetime com fuso e usa ``replace`` somente
+        enquanto a entidade estiver ativa; chamadas repetidas devolvem a mesma
+        entidade. Ela existe para retirar o item do perfil sem purga física.
+        """
+        if self.excluida:
+            return self
+        if excluida_em.tzinfo is None or excluida_em.utcoffset() is None:
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=excluida_em)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+PRIORIDADE_STATUS_FORMACAO: Mapping[StatusFormacaoAcademica, int] = MappingProxyType(
+    {
+        StatusFormacaoAcademica.EM_ANDAMENTO: 0,
+        StatusFormacaoAcademica.CONCLUIDO: 1,
+        StatusFormacaoAcademica.INTERROMPIDO: 2,
+    }
+)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+def _chave_ordenacao_formacao(formacao: FormacaoAcademica) -> tuple[int, int, int, str]:
+    """Calcula a chave que posiciona uma formação na ordem do currículo.
+
+    A chave combina a prioridade da situação, a data de referência e a data de
+    início em ordem decrescente (ordinais negados) e o identificador textual.
+    Formações em andamento usam o início como referência; concluídas e
+    interrompidas usam o fim, recorrendo ao início quando o fim não existe. A
+    função existe para concentrar a regra de ordenação em um único ponto do
+    domínio, sem depender de relógio, banco ou ordem de entrada.
+    """
+    periodo = formacao.periodo
+    if formacao.status is StatusFormacaoAcademica.EM_ANDAMENTO or periodo.fim is None:
+        referencia = periodo.inicio
+    else:
+        referencia = periodo.fim
+    return (
+        PRIORIDADE_STATUS_FORMACAO[formacao.status],
+        -referencia.toordinal(),
+        -periodo.inicio.toordinal(),
+        str(formacao.id.valor),
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-150000-ordenacao-formacoes-academicas-v001.md#v001
+def ordenar_formacoes(
+    formacoes: Iterable[FormacaoAcademica],
+) -> tuple[FormacaoAcademica, ...]:
+    """Ordena formações por situação e data de forma estável e determinística.
+
+    A função coloca primeiro as formações em andamento, da data de início mais
+    recente para a mais antiga; depois as concluídas, da data de término mais
+    recente para a mais antiga; e por fim as interrompidas, pelo término ou,
+    na falta dele, pelo início. Empates de situação e datas são desfeitos pela
+    data de início e, por último, pelo identificador, de modo que a mesma
+    coleção produza sempre a mesma sequência. Ela existe para que consultas e
+    currículos apresentem formações em uma ordem única definida pelo domínio.
+    """
+    return tuple(sorted(formacoes, key=_chave_ordenacao_formacao))
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -48,9 +283,10 @@ class FormacaoAcademica:
 class ExperienciaProfissional:
     """Representa uma experiência profissional reutilizável do usuário.
 
-    A entidade mantém identidade, proprietário, descrição profissional e um
-    intervalo cronologicamente válido. Ela existe para preservar a experiência
-    como item independente que currículos distintos podem referenciar.
+    A entidade mantém identidade, proprietário, descrição profissional, um
+    intervalo cronologicamente válido e o instante opcional de exclusão lógica.
+    Ela existe para preservar a experiência como item independente que
+    currículos distintos podem referenciar, sem purga física ao ser removida.
     """
 
     id: ExperienciaProfissionalId
@@ -59,6 +295,7 @@ class ExperienciaProfissional:
     cargo: str
     descricao: str
     periodo: Periodo
+    deleted_at: datetime | None = None
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     def __post_init__(self) -> None:
@@ -79,15 +316,106 @@ class ExperienciaProfissional:
                     f"A experiência profissional exige {campo} preenchido."
                 )
 
+    def editar(
+        self,
+        empresa: str,
+        cargo: str,
+        descricao: str,
+        periodo: Periodo,
+    ) -> ExperienciaProfissional:
+        """Devolve a experiência com o conjunto completo de dados editado.
+
+        O método constrói uma nova entidade com a mesma identidade, o mesmo
+        proprietário e o mesmo estado de exclusão, reaplicando por
+        ``__post_init__`` a exigência de textos preenchidos; a cronologia já é
+        garantida pelo ``Periodo``. Ele existe para permitir alterações válidas
+        sem mutar a entidade imutável, sem trocar seu dono e sem duplicar as
+        regras de construção.
+        """
+        return ExperienciaProfissional(
+            id=self.id,
+            usuario_id=self.usuario_id,
+            empresa=empresa,
+            cargo=cargo,
+            descricao=descricao,
+            periodo=periodo,
+            deleted_at=self.deleted_at,
+        )
+
+    @property
+    def excluida(self) -> bool:
+        """Informa se a experiência está logicamente excluída.
+
+        A propriedade deriva o estado da presença de ``deleted_at`` sem
+        consultar persistência ou relógio. Ela existe para orientar a exclusão
+        e tornar exclusões repetidas explícitas.
+        """
+        return self.deleted_at is not None
+
+    def excluir(self, excluida_em: datetime) -> ExperienciaProfissional:
+        """Produz a exclusão lógica da experiência, preservando o primeiro instante.
+
+        A transição exige um datetime com fuso e usa ``replace`` somente
+        enquanto a entidade estiver ativa; chamadas repetidas devolvem a mesma
+        entidade. Ela existe para retirar o item do perfil sem purga física.
+        """
+        if self.excluida:
+            return self
+        if excluida_em.tzinfo is None or excluida_em.utcoffset() is None:
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=excluida_em)
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
+def _chave_ordenacao_experiencia(
+    experiencia: ExperienciaProfissional,
+) -> tuple[int, int, int, str]:
+    """Calcula a chave que posiciona uma experiência na ordem do currículo.
+
+    A chave usa a data de início em ordem decrescente (ordinal negado); no
+    empate, coloca antes a experiência sem término, depois o término mais
+    recente, e por fim o identificador textual. A função existe para concentrar
+    a regra de ordenação de experiências em um único ponto do domínio, sem
+    depender de relógio, banco ou ordem de entrada.
+    """
+    periodo = experiencia.periodo
+    em_andamento = periodo.fim is None
+    return (
+        -periodo.inicio.toordinal(),
+        0 if em_andamento else 1,
+        0 if em_andamento else -periodo.fim.toordinal(),
+        str(experiencia.id.valor),
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-140000-ordenacao-experiencias-profissionais-v001.md#v001
+def ordenar_experiencias(
+    experiencias: Iterable[ExperienciaProfissional],
+) -> tuple[ExperienciaProfissional, ...]:
+    """Ordena experiências pela data de início de forma estável e determinística.
+
+    A função coloca primeiro a experiência com início mais recente. Quando os
+    inícios coincidem, a experiência em andamento (sem término) vem antes das
+    encerradas, que seguem do término mais recente para o mais antigo; o
+    identificador desfaz qualquer empate restante, de modo que a mesma coleção
+    produza sempre a mesma sequência. Ela existe para que consultas e
+    currículos apresentem experiências em uma ordem única definida pelo domínio.
+    """
+    return tuple(sorted(experiencias, key=_chave_ordenacao_experiencia))
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class ProjetoAcademico:
     """Representa um projeto acadêmico reutilizável pertencente a um usuário.
 
-    A entidade agrupa identidade, proprietário e os textos descritos no DER sem
-    impor vocabulário para tecnologias. Ela existe para permitir que projetos
-    sejam selecionados em diferentes versões de currículo.
+    A entidade agrupa identidade, proprietário e três textos livres, normaliza
+    esses textos e limita seus tamanhos sem impor vocabulário às tecnologias.
+    Ela existe para permitir que projetos válidos sejam reutilizados em
+    diferentes versões de currículo.
     """
 
     id: ProjetoAcademicoId
@@ -97,23 +425,87 @@ class ProjetoAcademico:
     tecnologias: str
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     def __post_init__(self) -> None:
-        """Garante que o projeto acadêmico contenha os textos essenciais.
+        """Normaliza e valida os três textos obrigatórios do projeto.
 
-        A validação percorre título, descrição e tecnologias, removendo espaços
-        para identificar valores ausentes antes que a entidade seja utilizada.
-        Ela existe para impedir que o perfil mantenha projetos sem informação
-        mínima para apresentação em currículos.
+        Cada valor deve ser texto sem controles Unicode Cc; o conteúdo recebe
+        ``strip`` uma vez e é medido contra os limites próprios do campo. A
+        regra existe para manter projetos apresentáveis e coerentes em qualquer
+        fluxo de criação, sem depender da API.
         """
-        for campo, valor in (
-            ("título", self.titulo),
-            ("descrição", self.descricao),
-            ("tecnologias", self.tecnologias),
+        for atributo, campo, valor, tamanho_maximo in (
+            ("titulo", "título", self.titulo, TAMANHO_MAXIMO_TITULO_PROJETO),
+            (
+                "descricao",
+                "descrição",
+                self.descricao,
+                TAMANHO_MAXIMO_DESCRICAO_PROJETO,
+            ),
+            (
+                "tecnologias",
+                "tecnologias",
+                self.tecnologias,
+                TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO,
+            ),
         ):
-            if not isinstance(valor, str) or not valor.strip():
-                raise RegraDeDominioViolada(
-                    f"O projeto acadêmico exige {campo} preenchido."
-                )
+            normalizado = _normalizar_texto_projeto(valor, campo, tamanho_maximo)
+            object.__setattr__(self, atributo, normalizado)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+def _normalizar_texto_projeto(valor: object, campo: str, tamanho_maximo: int) -> str:
+    """Normaliza e valida um texto de projeto segundo seu limite específico.
+
+    A função exige string, rejeita caracteres Unicode Cc, remove espaços
+    externos uma vez e valida o tamanho resultante. Ela existe para aplicar
+    uma regra uniforme aos textos obrigatórios da entidade.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico deve ser texto."
+        )
+
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico não pode conter caracteres de controle."
+        )
+
+    normalizado = valor.strip()
+    if not TAMANHO_MINIMO_TEXTO_PROJETO <= len(normalizado) <= tamanho_maximo:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} do projeto acadêmico deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_PROJETO} e {tamanho_maximo} caracteres após "
+            "remover espaços externos."
+        )
+    return normalizado
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+class CategoriaCompetencia(str, Enum):
+    """Representa as categorias válidas de uma competência do perfil.
+
+    O enum limita o valor às categorias técnica e comportamental, sem depender
+    de transporte ou persistência. Ele existe para que o domínio preserve a
+    distinção solicitada ao cadastrar e deduplicar competências.
+    """
+
+    TECNICA = "tecnica"
+    COMPORTAMENTAL = "comportamental"
+
+
+# Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+def normalizar_descricao_competencia(descricao: str) -> str:
+    """Produz a chave textual usada para comparar competências equivalentes.
+
+    A função exige texto, colapsa espaços Unicode entre termos e aplica
+    ``casefold`` sem remover acentos, pontuação ou símbolos. Ela existe para
+    tornar a regra de duplicidade determinística e reutilizável pelo domínio e
+    pela orquestração, sem depender de collation do banco.
+    """
+    if not isinstance(descricao, str):
+        raise RegraDeDominioViolada("A competência exige descrição textual.")
+    return " ".join(descricao.split()).casefold()
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -121,15 +513,62 @@ class ProjetoAcademico:
 class Competencia:
     """Representa uma competência reutilizável pertencente a um usuário.
 
-    A entidade identifica a competência e registra sua descrição e nível como
-    textos, pois o vocabulário de níveis ainda não foi especificado. Ela existe
-    para que o perfil seja independente de uma versão particular de currículo.
+    A entidade identifica a competência, registra categoria, descrição e nível
+    como valores controlados ou textos validados, pois o vocabulário de níveis
+    ainda não foi especificado. Ela existe para que o perfil seja independente
+    de uma versão particular de currículo e diferencie habilidades técnicas e
+    comportamentais.
     """
 
     id: CompetenciaId
     usuario_id: UsuarioId
+    categoria: CategoriaCompetencia
     descricao: str
     nivel: str
+
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    def __post_init__(self) -> None:
+        """Valida e apará os textos obrigatórios de uma competência.
+
+        O método confirma a categoria controlada, normaliza a descrição para
+        detectar ausência e remove somente seus espaços de contorno; o nível
+        também deve ser texto não vazio. Ele existe para manter toda entidade
+        de competência válida antes que a Application consulte ou persista.
+        """
+        if not isinstance(self.categoria, CategoriaCompetencia):
+            raise RegraDeDominioViolada("A competência exige categoria válida.")
+        descricao_normalizada = normalizar_descricao_competencia(self.descricao)
+        if not descricao_normalizada:
+            raise RegraDeDominioViolada("A competência exige descrição preenchida.")
+        if not isinstance(self.nivel, str) or not self.nivel.strip():
+            raise RegraDeDominioViolada("A competência exige nível preenchido.")
+        object.__setattr__(self, "descricao", self.descricao.strip())
+        object.__setattr__(self, "nivel", self.nivel.strip())
+
+    # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
+    @property
+    def descricao_normalizada(self) -> str:
+        """Devolve a chave canônica da descrição da competência.
+
+        A propriedade reaplica a política de colapso de espaços e ``casefold``
+        sobre a descrição já validada. Ela existe para dar ao caso de uso uma
+        chave estável de duplicidade sem expor detalhe de infraestrutura.
+        """
+        return normalizar_descricao_competencia(self.descricao)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+def normalizar_idioma(idioma: str) -> str:
+    """Colapsa espaços e aplica minúsculas à denominação do idioma.
+
+    A função rejeita valores não textuais, agrupa sequências de espaços e aplica
+    ``casefold`` sem remover acentos, pontuação ou símbolos. Ela existe para
+    tornar a regra de duplicidade determinística e reutilizável pelo domínio e
+    pela orquestração, sem depender de collation do banco.
+    """
+    if not isinstance(idioma, str):
+        raise RegraDeDominioViolada("O idioma exige denominação textual.")
+    return " ".join(idioma.split()).casefold()
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -147,8 +586,97 @@ class Idioma:
     idioma: str
     nivel: str
 
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os textos obrigatórios de um idioma.
+
+        O método normaliza o idioma para detectar ausência e remove somente
+        seus espaços de contorno; o nível também deve ser texto não vazio. Ele
+        existe para manter toda entidade de idioma válida antes que a Application
+        consulte ou persista.
+        """
+        denominacao_normalizada = normalizar_idioma(self.idioma)
+        if not denominacao_normalizada:
+            raise RegraDeDominioViolada("O idioma exige denominação preenchida.")
+        if not isinstance(self.nivel, str) or not self.nivel.strip():
+            raise RegraDeDominioViolada("O idioma exige nível preenchido.")
+        object.__setattr__(self, "idioma", self.idioma.strip())
+        object.__setattr__(self, "nivel", self.nivel.strip())
+
+    # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+    @property
+    def idioma_normalizado(self) -> str:
+        """Devolve a chave canônica do nome do idioma.
+
+        A propriedade reaplica a política de colapso de espaços e ``casefold``
+        sobre o idioma já validado. Ela existe para dar ao caso de uso uma
+        chave estável de duplicidade sem expor detalhe de infraestrutura.
+        """
+        return normalizar_idioma(self.idioma)
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+TIPOS_ARQUIVO_PERMITIDOS: frozenset[str] = frozenset(
+    {"application/pdf", "image/png", "image/jpeg"}
+)
+TAMANHO_MAXIMO_DOCUMENTO_BYTES: int = 10 * 1024 * 1024  # 10 MB
+TAMANHO_MINIMO_NOME_ARQUIVO: int = 1
+TAMANHO_MAXIMO_NOME_ARQUIVO: int = 255
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_nome_arquivo(nome: str) -> str:
+    """Valida e sanitiza o nome de arquivo de um documento complementar.
+
+    A função rejeita valores não textuais, caracteres de controle, strings vazias
+    ou tentativas de navegação de diretório (Path Traversal como '..'), retornando
+    o nome aparado. Ela existe para proteger o sistema contra caminhos inseguros e
+    garantir integridade no cadastro de arquivos.
+    """
+    if not isinstance(nome, str):
+        raise RegraDeDominioViolada("O nome do arquivo deve ser um texto.")
+    nome_limpo = nome.strip()
+    if not nome_limpo:
+        raise RegraDeDominioViolada("O nome do arquivo não pode ser vazio.")
+    if any(category(c) == "Cc" for c in nome_limpo):
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter caracteres de controle."
+        )
+    if ".." in nome_limpo or "/" in nome_limpo or "\\" in nome_limpo:
+        raise RegraDeDominioViolada(
+            "O nome do arquivo não pode conter barras ou referências relativas de diretório."
+        )
+    if (
+        not TAMANHO_MINIMO_NOME_ARQUIVO
+        <= len(nome_limpo)
+        <= TAMANHO_MAXIMO_NOME_ARQUIVO
+    ):
+        raise RegraDeDominioViolada(
+            f"O nome do arquivo deve ter entre {TAMANHO_MINIMO_NOME_ARQUIVO} e {TAMANHO_MAXIMO_NOME_ARQUIVO} caracteres."
+        )
+    return nome_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+def validar_tipo_arquivo(tipo: str) -> str:
+    """Valida se o tipo MIME do arquivo pertence aos formatos autorizados.
+
+    A função converte o tipo para minúsculas aparadas e verifica se pertence ao
+    conjunto permitido (PDF, PNG, JPEG). Ela existe para evitar o upload de arquivos
+    executáveis ou não suportados pelo perfil do estudante.
+    """
+    if not isinstance(tipo, str):
+        raise RegraDeDominioViolada("O tipo do arquivo deve ser um texto.")
+    tipo_limpo = tipo.strip().lower()
+    if tipo_limpo not in TIPOS_ARQUIVO_PERMITIDOS:
+        raise RegraDeDominioViolada(
+            f"Tipo de arquivo não permitido: '{tipo}'. Tipos aceitos: PDF, PNG, JPEG."
+        )
+    return tipo_limpo
+
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class Documento:
     """Representa metadados de um documento reutilizável do usuário.
@@ -163,3 +691,455 @@ class Documento:
     nome_arquivo: str
     tipo_arquivo: str
     url_armazenamento: str
+
+    def __post_init__(self) -> None:
+        """Valida a integridade dos metadados do documento.
+
+        O método verifica se o nome do arquivo, tipo MIME e a URL de armazenamento
+        cumprem as regras de integridade e segurança do domínio. Ele existe para
+        proteger o agregado contra estados inválidos.
+        """
+        object.__setattr__(
+            self, "nome_arquivo", validar_nome_arquivo(self.nome_arquivo)
+        )
+        object.__setattr__(
+            self, "tipo_arquivo", validar_tipo_arquivo(self.tipo_arquivo)
+        )
+        if (
+            not isinstance(self.url_armazenamento, str)
+            or not self.url_armazenamento.strip()
+        ):
+            raise RegraDeDominioViolada(
+                "A URL de armazenamento do documento não pode ser vazia."
+            )
+        object.__setattr__(self, "url_armazenamento", self.url_armazenamento.strip())
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+def normalizar_texto_curso(valor: str, campo: str) -> str:
+    """Valida, verifica caracteres de controle e apara textos de curso.
+
+    A função rejeita valores não textuais, caracteres de controle, strings vazias
+    ou compostas apenas por espaços em branco, e valida que o comprimento esteja
+    entre 1 e 200 caracteres, retornando a string com espaços laterais aparados.
+    Ela existe para garantir integridade e qualidade textual no domínio de cursos.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo '{campo}' do curso deve ser um texto.")
+    texto_limpo = valor.strip()
+    if not texto_limpo:
+        raise RegraDeDominioViolada(f"O campo '{campo}' do curso não pode ser vazio.")
+    if any(
+        category(c).startswith("C") for c in texto_limpo if c not in ("\n", "\r", "\t")
+    ):
+        raise RegraDeDominioViolada(
+            f"O campo '{campo}' do curso contém caracteres de controle inválidos."
+        )
+    if not (
+        TAMANHO_MINIMO_TEXTO_CURSO <= len(texto_limpo) <= TAMANHO_MAXIMO_TEXTO_CURSO
+    ):
+        raise RegraDeDominioViolada(
+            f"O campo '{campo}' do curso deve ter entre {TAMANHO_MINIMO_TEXTO_CURSO} "
+            f"e {TAMANHO_MAXIMO_TEXTO_CURSO} caracteres."
+        )
+    return texto_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+def normalizar_chave_curso(texto: str) -> str:
+    """Colapsa espaços internos e aplica minúsculas a termos de curso.
+
+    A função divide os termos por sequências de espaços e reagrupa com espaço
+    simples aplicando ``casefold``, preservando acentos e pontuação gráfica. Ela
+    existe para gerar chaves de duplicidade determinísticas independentes do banco.
+    """
+    if not isinstance(texto, str):
+        raise RegraDeDominioViolada("A chave de curso exige valor textual.")
+    return " ".join(texto.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Curso:
+    """Representa um curso complementar realizado pelo usuário.
+
+    A entidade armazena a identidade do curso, o identificador do usuário,
+    o nome do curso, a instituição ministrante e uma carga horária opcional em horas.
+    Ela existe para enriquecer o perfil do estudante com cursos e capacitações.
+    """
+
+    id: CursoId
+    usuario_id: UsuarioId
+    nome: str
+    instituicao: str
+    carga_horaria: int | None = None
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os dados de um curso, impondo invariantes de integridade.
+
+        O método valida os tipos de nome e instituição, apara espaços periféricos,
+        e aplica proteção estrita de tipo à carga horária (rejeitando bool e valores
+        não inteiros, além de limitar entre 1 e 10000 horas). Ele existe para garantir
+        que toda instância de Curso seja válida desde sua construção.
+        """
+        nome_validado = normalizar_texto_curso(self.nome, "nome")
+        instituicao_validada = normalizar_texto_curso(self.instituicao, "instituicao")
+        object.__setattr__(self, "nome", nome_validado)
+        object.__setattr__(self, "instituicao", instituicao_validada)
+
+        if self.carga_horaria is not None:
+            if isinstance(self.carga_horaria, bool) or not isinstance(
+                self.carga_horaria, int
+            ):
+                raise RegraDeDominioViolada(
+                    "A carga horária do curso deve ser um número inteiro."
+                )
+            if not (
+                CARGA_HORARIA_MINIMA_CURSO
+                <= self.carga_horaria
+                <= CARGA_HORARIA_MAXIMA_CURSO
+            ):
+                raise RegraDeDominioViolada(
+                    f"A carga horária do curso deve estar entre {CARGA_HORARIA_MINIMA_CURSO} "
+                    f"e {CARGA_HORARIA_MAXIMA_CURSO} horas."
+                )
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    @property
+    def nome_normalizado(self) -> str:
+        """Devolve a chave canônica do nome do curso.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre o nome.
+        Ela existe para prover ao caso de uso chave estável para deduplicação.
+        """
+        return normalizar_chave_curso(self.nome)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+    @property
+    def instituicao_normalizada(self) -> str:
+        """Devolve a chave canônica da instituição do curso.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre a instituição.
+        Ela existe para prover ao caso de uso chave estável para deduplicação.
+        """
+        return normalizar_chave_curso(self.instituicao)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+def normalizar_texto_certificacao(valor: str, campo: str) -> str:
+    """Normaliza e valida um campo textual de certificação.
+
+    A função rejeita tipos não textuais ou caracteres de controle, remove
+    espaços laterais e verifica se o comprimento resultante cumpre os limites
+    estabelecidos. Ela existe para unificar as regras de integridade e higiene
+    textual para nome e organização emissora de certificações.
+    """
+    if not isinstance(valor, str):
+        raise RegraDeDominioViolada(f"O campo {campo} da certificação deve ser texto.")
+
+    normalizado = valor.strip()
+    if any(category(caractere) == "Cc" for caractere in valor):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação não pode conter caracteres de controle."
+        )
+    if not normalizado:
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação não pode ser vazio."
+        )
+    if (
+        not TAMANHO_MINIMO_TEXTO_CERTIFICACAO
+        <= len(normalizado)
+        <= TAMANHO_MAXIMO_TEXTO_CERTIFICACAO
+    ):
+        raise RegraDeDominioViolada(
+            f"O campo {campo} da certificação deve ter entre "
+            f"{TAMANHO_MINIMO_TEXTO_CERTIFICACAO} e {TAMANHO_MAXIMO_TEXTO_CERTIFICACAO} caracteres."
+        )
+    return normalizado
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+def normalizar_chave_certificacao(texto: str) -> str:
+    """Colapsa sequências de espaços e aplica minúsculas a um texto de certificação.
+
+    A função agrupa espaços em branco repetidos e converte as letras via
+    ``casefold()`` preservando acentuação. Ela existe para gerar chaves
+    canônicas determinísticas para detecção de duplicidades.
+    """
+    return " ".join(texto.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class Certificacao:
+    """Representa uma certificação profissional ou acadêmica do usuário.
+
+    A entidade combina identidade e proprietário obrigatoriamente tipados, nome
+    da certificação e organização emissora já normalizados e aparados. Ela
+    existe para modelar de forma íntegra as certificações no perfil do
+    estudante sem depender de ORM ou de camadas externas.
+    """
+
+    id: CertificacaoId
+    usuario_id: UsuarioId
+    nome: str
+    organizacao_emissora: str
+
+    def __post_init__(self) -> None:
+        """Valida identidade, proprietário e campos textuais de uma certificação.
+
+        O método exige ``CertificacaoId`` e ``UsuarioId`` tipados e, em seguida,
+        valida e remove espaços excedentes de nome e organização emissora,
+        aplicando invariantes de preenchimento e controle. Ele existe para
+        assegurar que nenhuma certificação seja instanciada sem identidade
+        própria, sem dono válido ou com dados inválidos ou corrompidos.
+        """
+        if not isinstance(self.id, CertificacaoId):
+            raise RegraDeDominioViolada(
+                "A identidade da certificação deve ser um CertificacaoId."
+            )
+        if not isinstance(self.usuario_id, UsuarioId):
+            raise RegraDeDominioViolada(
+                "O proprietário da certificação deve ser um UsuarioId."
+            )
+        nome_validado = normalizar_texto_certificacao(self.nome, "nome")
+        emissor_validado = normalizar_texto_certificacao(
+            self.organizacao_emissora, "organização emissora"
+        )
+        object.__setattr__(self, "nome", nome_validado)
+        object.__setattr__(self, "organizacao_emissora", emissor_validado)
+
+    @property
+    def nome_normalizado(self) -> str:
+        """Devolve a versão canônica do nome da certificação para deduplicação.
+
+        A propriedade reaplica o colapso de espaços e ``casefold`` sobre o nome
+        validado. Ela existe para fornecer uma chave determinística de busca e
+        prevenção de duplicatas lógicas.
+        """
+        return normalizar_chave_certificacao(self.nome)
+
+    @property
+    def organizacao_emissora_normalizada(self) -> str:
+        """Devolve a versão canônica da organização emissora para deduplicação.
+
+        A propriedade reaplica o colapso de espaços e ``casefold`` sobre a
+        organização emissora validada. Ela existe para permitir comparação exata
+        entre emissores sem depender de collations de banco.
+        """
+        return normalizar_chave_certificacao(self.organizacao_emissora)
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_rotulo_link(rotulo: str) -> str:
+    """Valida, confere caracteres de controle e apara o rótulo de link profissional.
+
+    A função rejeita valores não textuais, strings vazias ou compostas apenas por
+    espaços, caracteres de controle (inclusive quebras de linha e tabulações), e
+    assegura que o texto contenha entre 1 e 100 caracteres após a remoção de espaços
+    periféricos. Ela existe para proteger a integridade e legibilidade da descrição
+    dos links exibidos no perfil.
+    """
+    if not isinstance(rotulo, str):
+        raise RegraDeDominioViolada("O rótulo do link profissional deve ser um texto.")
+    texto_limpo = rotulo.strip()
+    if not texto_limpo:
+        raise RegraDeDominioViolada("O rótulo do link profissional não pode ser vazio.")
+    if (
+        any(category(c).startswith("C") for c in texto_limpo)
+        or "\n" in texto_limpo
+        or "\r" in texto_limpo
+        or "\t" in texto_limpo
+    ):
+        raise RegraDeDominioViolada(
+            "O rótulo do link profissional contém caracteres de controle inválidos."
+        )
+    if not (
+        TAMANHO_MINIMO_ROTULO_LINK <= len(texto_limpo) <= TAMANHO_MAXIMO_ROTULO_LINK
+    ):
+        raise RegraDeDominioViolada(
+            f"O rótulo do link profissional deve ter entre {TAMANHO_MINIMO_ROTULO_LINK} "
+            f"e {TAMANHO_MAXIMO_ROTULO_LINK} caracteres."
+        )
+    return texto_limpo
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def validar_e_normalizar_url_link(url: str) -> str:
+    """Valida formato, esquema, host e porta, e sanitiza a URL de link profissional.
+
+    A função valida que a entrada é textual, não vazia, sem caracteres de controle
+    ou espaços internos, com comprimento de até 2048 caracteres e esquema
+    pertencente a {'http', 'https'}; em seguida exige um host real (com ao menos
+    um caractere alfanumérico e apenas letras, dígitos, ponto e hífen, ou um
+    endereço IPv6), recusa usuário e senha embutidos e aceita somente porta entre
+    1 e 65535, retornando a URL com esquema normalizado. Ela existe para prevenir
+    esquemas maliciosos (javascript, data, file), URLs sem destino e links que
+    exponham credenciais ou disfarcem o domínio real.
+    """
+    if not isinstance(url, str):
+        raise RegraDeDominioViolada("A URL do link profissional deve ser um texto.")
+    if (
+        any(category(c).startswith("C") for c in url)
+        or "\n" in url
+        or "\r" in url
+        or "\t" in url
+    ):
+        raise RegraDeDominioViolada(
+            "A URL do link profissional contém caracteres de controle inválidos."
+        )
+    url_limpa = url.strip()
+    if not url_limpa:
+        raise RegraDeDominioViolada("A URL do link profissional não pode ser vazia.")
+    if any(caractere.isspace() for caractere in url_limpa):
+        raise RegraDeDominioViolada(
+            "A URL do link profissional não pode conter espaços; codifique-os como %20."
+        )
+    if len(url_limpa) > TAMANHO_MAXIMO_URL_LINK:
+        raise RegraDeDominioViolada(
+            f"A URL do link profissional não pode exceder {TAMANHO_MAXIMO_URL_LINK} caracteres."
+        )
+    try:
+        parsed = urlsplit(url_limpa)
+    except Exception as erro:
+        raise RegraDeDominioViolada(
+            "A URL do link profissional é malformada."
+        ) from erro
+
+    esquema = parsed.scheme.lower()
+    if esquema not in ESQUEMAS_URL_PERMITIDOS:
+        raise RegraDeDominioViolada(
+            "O esquema da URL do link profissional deve ser 'http' ou 'https'."
+        )
+    netloc = parsed.netloc
+    if "@" in netloc:
+        raise RegraDeDominioViolada(
+            "A URL do link profissional não pode conter usuário ou senha."
+        )
+    if not _host_url_link_valido(parsed.hostname):
+        raise RegraDeDominioViolada(
+            "A URL do link profissional deve conter um domínio ou host válido."
+        )
+    try:
+        porta = parsed.port
+    except ValueError as erro:
+        raise RegraDeDominioViolada(
+            "A porta da URL do link profissional é inválida."
+        ) from erro
+    if porta is not None and not 1 <= porta <= 65535:
+        raise RegraDeDominioViolada(
+            "A porta da URL do link profissional é inválida."
+        )
+    return urlunsplit((esquema, netloc, parsed.path, parsed.query, parsed.fragment))
+
+
+def _host_url_link_valido(host: str | None) -> bool:
+    """Informa se o host extraído da URL identifica um destino real.
+
+    A função aceita endereços IPv6 (que contêm ``:``) e, nos demais casos, exige
+    ao menos um caractere alfanumérico e somente letras, dígitos, ponto e hífen,
+    o que rejeita hosts ausentes ou formados só por pontuação. Ela existe para
+    impedir links sem destino, como ``http://:80`` ou ``https://.``.
+    """
+    if not host:
+        return False
+    if ":" in host:
+        return True
+    return any(caractere.isalnum() for caractere in host) and all(
+        caractere.isalnum() or caractere in ".-" for caractere in host
+    )
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_chave_url(url: str) -> str:
+    """Produz a chave canônica normalizada de uma URL para verificação de duplicidade.
+
+    A função decompõe a URL, converte esquema e netloc/host para minúsculas, remove
+    barra final redundante no caminho quando aplicável e reconstrói o endereço. Ela
+    existe para que o caso de uso e a persistência comparem equivalência lógica entre
+    URLs idênticas que difiram apenas por caixa alta ou barra terminal na raiz.
+    """
+    if not isinstance(url, str):
+        raise RegraDeDominioViolada("A chave de URL exige valor textual.")
+    parsed = urlsplit(url.strip())
+    esquema = parsed.scheme.lower()
+    netloc = parsed.netloc.lower().strip()
+    path = parsed.path
+    if path == "/":
+        path = ""
+    elif path.endswith("/"):
+        path = path.rstrip("/")
+    return urlunsplit((esquema, netloc, path, parsed.query, parsed.fragment))
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+def normalizar_chave_rotulo_link(rotulo: str) -> str:
+    """Colapsa espaços internos e aplica minúsculas a termos de rótulo de link.
+
+    A função divide as palavras por sequências de espaços e reagrupa com espaço
+    único aplicando ``casefold``, preservando caracteres gráficos e pontuação. Ela
+    existe para gerar representação canônica estável do rótulo para comparações.
+    """
+    if not isinstance(rotulo, str):
+        raise RegraDeDominioViolada("A chave de rótulo de link exige valor textual.")
+    return " ".join(rotulo.split()).casefold()
+
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class LinkProfissional:
+    """Representa um link profissional externo pertencente a um estudante.
+
+    A entidade armazena a identidade do link, o identificador do usuário proprietário,
+    o rótulo descritivo e o endereço URL validado. Ela existe para compor a seção de
+    informações complementares do currículo com links profissionais autônomos.
+    """
+
+    id: LinkProfissionalId
+    usuario_id: UsuarioId
+    rotulo: str
+    url: str
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    def __post_init__(self) -> None:
+        """Valida e apara os dados de um link profissional, impondo invariantes.
+
+        O método exige ``LinkProfissionalId`` e ``UsuarioId`` tipados, apara o
+        rótulo rejeitando ausência e caracteres de controle, e sanitiza a URL
+        exigindo esquemas HTTP/HTTPS, host real e ausência de credenciais. Ele
+        existe para garantir que instâncias de LinkProfissional tenham identidade
+        própria, dono válido e destino seguro desde sua criação.
+        """
+        if not isinstance(self.id, LinkProfissionalId):
+            raise RegraDeDominioViolada(
+                "A identidade do link profissional deve ser um LinkProfissionalId."
+            )
+        if not isinstance(self.usuario_id, UsuarioId):
+            raise RegraDeDominioViolada(
+                "O proprietário do link profissional deve ser um UsuarioId."
+            )
+        rotulo_validado = normalizar_rotulo_link(self.rotulo)
+        url_validada = validar_e_normalizar_url_link(self.url)
+        object.__setattr__(self, "rotulo", rotulo_validado)
+        object.__setattr__(self, "url", url_validada)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    @property
+    def rotulo_normalizado(self) -> str:
+        """Devolve a chave canônica do rótulo do link profissional.
+
+        A propriedade reaplica o colapso de espaços e o ``casefold`` sobre o rótulo.
+        Ela existe para prover ao caso de uso chave estável para deduplicação ou ordenação.
+        """
+        return normalizar_chave_rotulo_link(self.rotulo)
+
+    # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+    @property
+    def url_normalizada(self) -> str:
+        """Devolve a chave canônica da URL do link profissional.
+
+        A propriedade normaliza esquema, host e caminho raiz da URL.
+        Ela existe para prover ao caso de uso e repositório a chave canônica de deduplicação.
+        """
+        return normalizar_chave_url(self.url)

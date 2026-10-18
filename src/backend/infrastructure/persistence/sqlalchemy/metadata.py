@@ -15,8 +15,51 @@ from backend.infrastructure.persistence.sqlalchemy.associacao_curriculo_vaga imp
 )
 
 # Proveniência: decision-analysis prompts/backend/20261007-190814-selecao-itens-versao-curriculo-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.certificacao import (
+    CertificacaoRegistro,  # noqa: F401
+)
+from backend.infrastructure.persistence.sqlalchemy.competencia import (
+    CompetenciaRegistro,  # noqa: F401
+)
 from backend.infrastructure.persistence.sqlalchemy.curriculo import (
     CurriculoRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.curso import (
+    CursoRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.documento import (
+    DocumentoRegistro,  # noqa: F401
+)
+from backend.infrastructure.persistence.sqlalchemy.experiencia_profissional import (
+    ExperienciaProfissionalRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+from backend.infrastructure.persistence.sqlalchemy.formacao_academica import (
+    FormacaoAcademicaRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.idioma import (
+    IdiomaRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.link_profissional import (
+    LinkProfissionalRegistro,  # noqa: F401
+)
+
+# Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.projeto_academico import (
+    ProjetoAcademicoRegistro,  # noqa: F401
+)
+from backend.infrastructure.persistence.sqlalchemy.sessao import (
+    SessaoRegistro,  # noqa: F401
 )
 from backend.infrastructure.persistence.sqlalchemy.usuario import Base
 

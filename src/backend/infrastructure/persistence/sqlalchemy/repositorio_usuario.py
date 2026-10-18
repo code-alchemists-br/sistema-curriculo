@@ -7,7 +7,7 @@ from backend.application.ports import RepositorioUsuario
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 from backend.domain.usuario import Usuario
-from backend.domain.value_objects import Email
+from backend.domain.value_objects import Email, UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.usuario import (
     UsuarioRegistro,
     para_registro,
@@ -18,7 +18,7 @@ from backend.infrastructure.persistence.sqlalchemy.usuario import (
 
 
 class RepositorioUsuarioSqlAlchemy(RepositorioUsuario):
-    """Consulta e insere contas usando o modelo externo e uma AsyncSession.
+    """Consulta, insere e atualiza contas usando o modelo externo e AsyncSession.
 
     O adapter traduz VOs em colunas e aguarda I/O, preservando a porta interna.
     A composição externa possui sessão, commit e rollback; erros são propagados
@@ -66,3 +66,42 @@ class RepositorioUsuarioSqlAlchemy(RepositorioUsuario):
         consulta = select(UsuarioRegistro).where(UsuarioRegistro.email == email.valor)
         registro = await self._session.scalar(consulta)
         return para_usuario(registro) if registro is not None else None
+
+    async def obter_por_id(self, usuario_id: UsuarioId) -> Usuario | None:
+        """Obtém um agregado pelo UUID e converte a linha para o domínio.
+
+        A consulta parametrizada usa a identidade tipada e só devolve valores
+        de domínio, incluindo contato quando persistido. Ela existe para
+        atender casos de uso de edição sem expor ORM à Application.
+        """
+        consulta = select(UsuarioRegistro).where(
+            UsuarioRegistro.id == usuario_id.valor
+        )
+        registro = await self._session.scalar(consulta)
+        return para_usuario(registro) if registro is not None else None
+
+    async def atualizar(self, usuario: Usuario) -> None:
+        """Atualiza todos os campos mapeados sem inserir ou controlar transação.
+
+        O método localiza a linha existente, copia os valores do mapper e
+        aguarda flush; commit e rollback continuam com a composição externa.
+        Ele existe para persistir edições integrais pela porta do usuário.
+        """
+        consulta = select(UsuarioRegistro).where(
+            UsuarioRegistro.id == usuario.id.valor
+        )
+        registro = await self._session.scalar(consulta)
+        if registro is None:
+            raise LookupError("Perfil não encontrado.")
+
+        atualizado = para_registro(usuario)
+        registro.nome = atualizado.nome
+        registro.email = atualizado.email
+        registro.hash_senha = atualizado.hash_senha
+        registro.deleted_at = atualizado.deleted_at
+        registro.endereco = atualizado.endereco
+        registro.cidade = atualizado.cidade
+        registro.telefones = atualizado.telefones
+        registro.linkedin = atualizado.linkedin
+        registro.curriculo_lattes = atualizado.curriculo_lattes
+        await self._session.flush()

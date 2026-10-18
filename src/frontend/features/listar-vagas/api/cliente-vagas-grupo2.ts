@@ -22,15 +22,23 @@ const respostaGrupo2Schema = z.object({
   ),
 });
 
-/** Enumera as falhas que a tela consegue comunicar ao estudante. */
-export type CodigoFalhaVagasGrupo2 = "indisponivel" | "resposta-invalida";
+/** Representa o único critério de pesquisa confirmado pela interface atual. */
+export interface CriteriosPesquisaVagas {
+  termo: string;
+}
 
 /**
- * Representa uma falha conhecida da fronteira de vagas externas.
+ * Enumera os códigos das falhas que a tela de vagas comunica ao estudante de modo controlado.
+ */
+export type CodigoFalhaVagasGrupo2 =
+  "indisponivel" | "resposta-invalida" | "tempo-limite";
+
+/**
+ * Representa uma falha conhecida e controlada da fronteira de vagas externas.
  *
- * A classe carrega um código estável, sem propagar detalhes internos da
- * integração. Ela existe para que a interface ofereça uma recuperação clara
- * quando o Grupo 2 estiver indisponível ou responder fora do contrato.
+ * **O que faz:** Encapsula o código de erro mapeado da comunicação externa.
+ * **Como faz:** Estende a classe Error padrão atribuindo o código tipado à propriedade imutável `codigo`.
+ * **Qual finalidade atende:** Permite que a camada de UI identifique o tipo de falha sem receber exceções brutas ou detalhes de rede.
  */
 export class FalhaVagasGrupo2 extends Error {
   constructor(public readonly codigo: CodigoFalhaVagasGrupo2) {
@@ -41,26 +49,32 @@ export class FalhaVagasGrupo2 extends Error {
 
 /** Define o contrato consumido pela tela para obter sugestões de vagas. */
 export interface ClienteVagasGrupo2 {
-  listarSugestoes(): Promise<SugestaoVaga[]>;
+  listarSugestoes(criterios: CriteriosPesquisaVagas): Promise<SugestaoVaga[]>;
 }
 
 /**
  * Cria um cliente de interface a partir de uma função que consulta o Grupo 2.
  *
- * A fábrica recebe uma função assíncrona para que o futuro adaptador HTTP fique
- * fora da UI, valida o JSON devolvido e o converte para o modelo interno. Ela
- * existe para manter a página independente de endpoint, autenticação e rede.
+ * **O que faz:** Encapsula a chamada remota e adapta respostas ou falhas para o contrato da interface.
+ * **Como faz:** Recebe os critérios, delega a consulta para o adaptador injetado, valida a resposta externa via `adaptarRespostaGrupo2` e intercepta erros de transporte ou timeout para instâncias de `FalhaVagasGrupo2`.
+ * **Qual finalidade atende:** Preserva o filtro informado e isola a tela de detalhes de rede, HTTP e serialização externa sem vazar termos técnicos.
  */
 export function criarClienteVagasGrupo2(
-  requisitarResposta: () => Promise<unknown>,
+  requisitarResposta: (criterios: CriteriosPesquisaVagas) => Promise<unknown>,
 ): ClienteVagasGrupo2 {
   return {
-    async listarSugestoes() {
+    async listarSugestoes(criterios) {
       try {
-        const resposta = await requisitarResposta();
+        const resposta = await requisitarResposta(criterios);
         return adaptarRespostaGrupo2(resposta);
       } catch (erro: unknown) {
         if (erro instanceof FalhaVagasGrupo2) throw erro;
+        if (
+          erro instanceof Error &&
+          /timeout|tempo[- ]limite|timed?[\s_-]?out/i.test(erro.message)
+        ) {
+          throw new FalhaVagasGrupo2("tempo-limite");
+        }
         throw new FalhaVagasGrupo2("indisponivel");
       }
     },
@@ -71,8 +85,7 @@ export function criarClienteVagasGrupo2(
  * Cria o cliente padrão enquanto o endpoint real do Grupo 2 não está definido.
  *
  * A implementação falha de modo controlado em vez de inventar uma URL ou uma
- * resposta local. Ela existe para tornar explícita a dependência pendente e
- * permitir que os testes injetem doubles determinísticos.
+ * resposta local. Ela existe para tornar explícita a dependência pendente.
  */
 export function criarClienteVagasGrupo2Indisponivel(): ClienteVagasGrupo2 {
   return {
@@ -82,13 +95,7 @@ export function criarClienteVagasGrupo2Indisponivel(): ClienteVagasGrupo2 {
   };
 }
 
-/**
- * Valida e converte a resposta externa na entidade usada pela interface.
- *
- * A função confere o envelope `associacoes`, preserva o currículo associado e
- * transforma `url_candidatura` em `urlCandidatura`. Ela existe para impedir que
- * o DTO externo se espalhe para os componentes visuais.
- */
+/** Valida e converte a resposta externa na entidade usada pela interface. */
 export function adaptarRespostaGrupo2(resposta: unknown): SugestaoVaga[] {
   const resultado = respostaGrupo2Schema.safeParse(resposta);
 

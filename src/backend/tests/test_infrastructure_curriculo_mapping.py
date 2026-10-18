@@ -33,7 +33,7 @@ class CurriculoMappingTestCase(unittest.TestCase):
         self.assertIs(tabela, CurriculoRegistro.__table__)
         self.assertEqual(
             list(tabela.columns.keys()),
-            ["id", "usuario_id", "titulo_versao", "layout", "is_public"],
+            ["id", "usuario_id", "titulo_versao", "layout", "is_public", "ordem_secoes"],
         )
         self.assertEqual(list(tabela.primary_key.columns.keys()), ["id"])
         self.assertIsInstance(tabela.c.id.type, Uuid)
@@ -74,7 +74,9 @@ class CurriculoMappingTestCase(unittest.TestCase):
             nome, *elementos = operacoes.create_table.call_args.args
             self.assertEqual(nome, "curriculos")
             colunas = [item for item in elementos if isinstance(item, Column)]
-            self.assertEqual([c.name for c in colunas], list(metadata.tables[nome].columns.keys()))
+            # A coluna ordem_secoes foi adicionada depois, pela migration 20261017_0015.
+            esperadas_na_criacao = [nome_coluna for nome_coluna in metadata.tables[nome].columns.keys() if nome_coluna != "ordem_secoes"]
+            self.assertEqual([c.name for c in colunas], esperadas_na_criacao)
             for coluna in colunas:
                 esperada = metadata.tables[nome].c[coluna.name]
                 self.assertEqual(type(coluna.type), type(esperada.type))

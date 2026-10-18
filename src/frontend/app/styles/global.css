@@ -1,9 +1,10 @@
 /* Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001 */
+@import "../../shared/styles/tokens.css";
 
 :root {
-  color: #1f2937;
-  background: #f8fafc;
-  font-family: Arial, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-canvas);
+  font-family: var(--font-family-base);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -96,12 +97,14 @@ form button {
 
 .field__error,
 .form-message--error {
-  color: #b91c1c;
+  color: var(--color-error-text, #991b1b);
 }
 
 button:focus-visible,
-input:focus-visible {
-  outline: 3px solid #93c5fd;
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-focus-ring, #1d4ed8);
   outline-offset: 2px;
 }
 

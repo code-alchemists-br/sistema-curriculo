@@ -8,13 +8,13 @@ manter o acesso testável e evitar que controllers coordenem regras de uso.
 from dataclasses import dataclass
 
 from backend.application.ports import RepositorioUsuario, VerificadorSenha
-from backend.domain.value_objects import Email
+from backend.domain.value_objects import Email, UsuarioId
 
 
 class CredenciaisInvalidas(ValueError):
     """Sinaliza que as credenciais não permitem confirmar o acesso do estudante.
 
-    A falha agrupa conta inexistente e senha incompatível sob a mesma resposta,
+    A falha agrupa conta inexistente, conta excluída e senha incompatível sob a mesma resposta,
     evitando revelar qual dado falhou. Ela existe para que a borda HTTP traduza
     uma regra de acesso sem expor informação sobre contas cadastradas.
     """
@@ -37,8 +37,8 @@ class AcessarEstudante:
     """Confirma credenciais por meio de repositório e verificador de senha.
 
     O caso de uso busca o usuário pelo e-mail e delega a comparação segura do
-    segredo à porta, retornando sucesso somente quando ambos forem válidos. Ele
-    existe para concentrar a intenção de acesso fora de controllers e adapters.
+    segredo à porta; após sucesso, devolve somente o ID tipado. Ele existe para
+    concentrar o acesso e permitir emissão de sessão na borda sem expor o agregado.
     """
 
     def __init__(self, repositorio_usuario: RepositorioUsuario, verificador_senha: VerificadorSenha) -> None:
@@ -51,13 +51,20 @@ class AcessarEstudante:
         self._repositorio_usuario = repositorio_usuario
         self._verificador_senha = verificador_senha
 
-    async def executar(self, entrada: AcessarEstudanteEntrada) -> None:
-        """Confirma uma tentativa de acesso ou falha sem revelar qual credencial errou.
+    async def executar(self, entrada: AcessarEstudanteEntrada) -> UsuarioId:
+        """Confirma credenciais e devolve a identidade da conta autenticada.
 
-        O método aguarda a busca da conta e compara a senha somente quando há um
-        agregado correspondente. Ele existe para aplicar o fluxo de acesso sem
-        criar sessão, token ou política de autorização ainda não especificados.
+        O método busca a conta e compara a senha somente quando o agregado
+        existe e não foi excluído logicamente; conta ausente, excluída ou senha
+        incompatível produzem a mesma falha. Ele existe para fornecer à
+        fronteira HTTP a identidade validada para criar uma sessão sem revelar
+        se uma conta removida existiu.
         """
         usuario = await self._repositorio_usuario.obter_por_email(entrada.email)
-        if usuario is None or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor):
+        if (
+            usuario is None
+            or usuario.excluido
+            or not self._verificador_senha.confere(entrada.senha, usuario.hash_senha.valor)
+        ):
             raise CredenciaisInvalidas("E-mail ou senha não conferem.")
+        return usuario.id

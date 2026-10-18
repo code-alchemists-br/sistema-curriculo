@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from backend.domain import (
+    Cidade,
     DadosContato,
     Email,
     Endereco,
@@ -75,6 +76,27 @@ class DadosContatoDomainTestCase(unittest.TestCase):
         """
         with self.assertRaises(RegraDeDominioViolada):
             DadosContato(endereco=Endereco("Rua Um, 100"), telefones=())
+
+    def test_normaliza_cidade_opcional(self) -> None:
+        """Remove espaços periféricos e normaliza cidade em branco para ausência.
+
+        O teste constrói contatos com cidade preenchida e vazia e compara os
+        valores resultantes. Ele existe para manter uma representação estável
+        dos dados geográficos opcionais.
+        """
+        contato = DadosContato(
+            endereco=Endereco("Rua Um, 100"),
+            telefones=(Telefone("11999990000"),),
+            cidade="  São Paulo  ",
+        )
+        contato_sem_cidade = DadosContato(
+            endereco=Endereco("Rua Um, 100"),
+            telefones=(Telefone("11999990000"),),
+            cidade="  ",
+        )
+
+        self.assertEqual(contato.cidade, Cidade("São Paulo"))
+        self.assertIsNone(contato_sem_cidade.cidade)
 
 
 def _criar_usuario() -> Usuario:

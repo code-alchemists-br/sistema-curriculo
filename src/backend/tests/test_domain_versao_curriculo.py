@@ -36,10 +36,10 @@ class VersaoCurriculoDomainTestCase(unittest.TestCase):
         identidade = curriculo.id
         proprietario = curriculo.usuario_id
 
-        curriculo.editar_versao("Gestão de Projetos", "moderno", True)
+        curriculo.editar_versao("Gestão de Projetos", "compacto", True)
 
         self.assertEqual(curriculo.titulo_versao, "Gestão de Projetos")
-        self.assertEqual(curriculo.layout, "moderno")
+        self.assertEqual(curriculo.layout, "compacto")
         self.assertTrue(curriculo.is_public)
         self.assertEqual(curriculo.id, identidade)
         self.assertEqual(curriculo.usuario_id, proprietario)
@@ -54,7 +54,7 @@ class VersaoCurriculoDomainTestCase(unittest.TestCase):
         curriculo = _criar_curriculo()
 
         with self.assertRaises(RegraDeDominioViolada):
-            curriculo.editar_versao("   ", "moderno", True)
+            curriculo.editar_versao("   ", "compacto", True)
 
         _confirmar_estado_original(self, curriculo)
 
@@ -68,7 +68,7 @@ class VersaoCurriculoDomainTestCase(unittest.TestCase):
         curriculo = _criar_curriculo()
 
         with self.assertRaises(RegraDeDominioViolada):
-            curriculo.editar_versao("Gestão de Projetos", "moderno", "sim")  # type: ignore[arg-type]
+            curriculo.editar_versao("Gestão de Projetos", "compacto", "sim")  # type: ignore[arg-type]
 
         _confirmar_estado_original(self, curriculo)
 

@@ -1,43 +1,87 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import type { SugestaoVaga } from "../../../entities/vaga";
 import {
-  FalhaVagasGrupo2,
-  type ClienteVagasGrupo2,
+  criarClienteDecisoesRecomendacaoIndisponivel,
+  type ClienteDecisoesRecomendacao,
+  type DecisaoRecomendacao,
+} from "../api/cliente-decisoes-recomendacao";
+import type {
+  ClienteVagasGrupo2,
+  CriteriosPesquisaVagas,
 } from "../api/cliente-vagas-grupo2";
+import { obterMensagemErroVagas } from "../model/mensagem-erro-vagas";
 import "./TelaVagasGrupo2.css";
 
+/** Define as dependências remotas recebidas pela tela de vagas. */
 export interface TelaVagasGrupo2Props {
   cliente: ClienteVagasGrupo2;
+  clienteDecisoes?: ClienteDecisoesRecomendacao;
 }
 
 type EstadoVagasGrupo2 =
   | { tipo: "carregando" }
   | { tipo: "resultado"; sugestoes: SugestaoVaga[] }
-  | { tipo: "vazio" }
-  | { tipo: "erro"; mensagem: string };
+  | { tipo: "vazio"; criterios: CriteriosPesquisaVagas }
+  | { tipo: "erro"; mensagem: string; criterios: CriteriosPesquisaVagas };
 
-export function TelaVagasGrupo2({ cliente }: TelaVagasGrupo2Props) {
+type EstadoDecisao =
+  | { tipo: "ocioso" }
+  | { tipo: "salvando"; decisao: DecisaoRecomendacao }
+  | { tipo: "salva"; decisao: DecisaoRecomendacao }
+  | { tipo: "erro"; decisao: DecisaoRecomendacao };
+
+const clienteDecisoesPadrao = criarClienteDecisoesRecomendacaoIndisponivel();
+
+/**
+ * Lista sugestões de vagas e registra decisões explícitas do estudante.
+ *
+ * A tela conserva o termo digitado no estado local, repassa-o ao cliente a
+ * cada busca e renderiza um estado vazio sem apagar o formulário. As decisões
+ * são anunciadas apenas após a Promise do cliente resolver, para não comunicar
+ * um salvamento que não ocorreu.
+ */
+export function TelaVagasGrupo2({
+  cliente,
+  clienteDecisoes = clienteDecisoesPadrao,
+}: TelaVagasGrupo2Props) {
+  const [termo, setTermo] = useState("");
   const [estado, setEstado] = useState<EstadoVagasGrupo2>({
     tipo: "carregando",
   });
+  const [decisoes, setDecisoes] = useState<Record<string, EstadoDecisao>>({});
 
-  const carregarVagas = useCallback(async (): Promise<EstadoVagasGrupo2> => {
-    try {
-      const sugestoes = await cliente.listarSugestoes();
+  const pesquisar = useCallback(
+    async (criterios: CriteriosPesquisaVagas): Promise<EstadoVagasGrupo2> => {
+      try {
+        const sugestoes = await cliente.listarSugestoes(criterios);
 
-      return sugestoes.length === 0
-        ? { tipo: "vazio" }
-        : { tipo: "resultado", sugestoes };
-    } catch (erro: unknown) {
-      return { tipo: "erro", mensagem: mensagemDeErro(erro) };
-    }
-  }, [cliente]);
+        return sugestoes.length === 0
+          ? { tipo: "vazio", criterios }
+          : { tipo: "resultado", sugestoes };
+      } catch (erro: unknown) {
+        return {
+          tipo: "erro",
+          mensagem: obterMensagemErroVagas(erro),
+          criterios,
+        };
+      }
+    },
+    [cliente],
+  );
+
+  const executarPesquisa = useCallback(
+    (criterios: CriteriosPesquisaVagas): void => {
+      setEstado({ tipo: "carregando" });
+      void pesquisar(criterios).then(setEstado);
+    },
+    [pesquisar],
+  );
 
   useEffect(() => {
     let componenteAtivo = true;
 
-    void carregarVagas().then((novoEstado) => {
+    void pesquisar({ termo: "" }).then((novoEstado) => {
       if (componenteAtivo) {
         setEstado(novoEstado);
       }
@@ -46,15 +90,50 @@ export function TelaVagasGrupo2({ cliente }: TelaVagasGrupo2Props) {
     return () => {
       componenteAtivo = false;
     };
-  }, [carregarVagas]);
+  }, [pesquisar]);
 
-  const tentarNovamente = (): void => {
-    setEstado({ tipo: "carregando" });
+  function enviarPesquisa(evento: FormEvent<HTMLFormElement>): void {
+    evento.preventDefault();
+    executarPesquisa({ termo: termo.trim() });
+  }
 
-    void carregarVagas().then((novoEstado) => {
-      setEstado(novoEstado);
-    });
-  };
+  function tentarNovamente(): void {
+    const criterios =
+      estado.tipo === "vazio" || estado.tipo === "erro"
+        ? estado.criterios
+        : { termo: termo.trim() };
+    executarPesquisa(criterios);
+  }
+
+  async function salvarDecisao(
+    sugestao: SugestaoVaga,
+    decisao: DecisaoRecomendacao,
+  ): Promise<void> {
+    const chave = chaveDaSugestao(sugestao);
+
+    setDecisoes((atuais) => ({
+      ...atuais,
+      [chave]: { tipo: "salvando", decisao },
+    }));
+
+    try {
+      await clienteDecisoes.salvarDecisao({
+        curriculoId: sugestao.curriculoId,
+        vagaId: sugestao.vaga.id,
+        decisao,
+      });
+
+      setDecisoes((atuais) => ({
+        ...atuais,
+        [chave]: { tipo: "salva", decisao },
+      }));
+    } catch {
+      setDecisoes((atuais) => ({
+        ...atuais,
+        [chave]: { tipo: "erro", decisao },
+      }));
+    }
+  }
 
   return (
     <section aria-labelledby="titulo-vagas-grupo2" className="vagas-grupo2">
@@ -64,29 +143,51 @@ export function TelaVagasGrupo2({ cliente }: TelaVagasGrupo2Props) {
         <p>Estas vagas foram sugeridas pela integração com o Grupo 2.</p>
       </div>
 
-      {renderizarEstado(estado, tentarNovamente)}
+      <form className="vagas-grupo2__pesquisa" onSubmit={enviarPesquisa}>
+        <label htmlFor="termo-pesquisa-vagas">Palavra-chave</label>
+
+        <input
+          id="termo-pesquisa-vagas"
+          onChange={(evento) => setTermo(evento.target.value)}
+          type="search"
+          value={termo}
+        />
+
+        <button type="submit">Pesquisar vagas</button>
+      </form>
+
+      {renderizarEstado(estado, tentarNovamente, decisoes, salvarDecisao)}
     </section>
   );
 }
 
+/** Renderiza o estado de consulta sem remover o formulário de pesquisa. */
 function renderizarEstado(
   estado: EstadoVagasGrupo2,
   aoTentarNovamente: () => void,
+  decisoes: Record<string, EstadoDecisao>,
+  aoSalvarDecisao: (
+    sugestao: SugestaoVaga,
+    decisao: DecisaoRecomendacao,
+  ) => Promise<void>,
 ) {
   if (estado.tipo === "carregando") {
     return <p role="status">Carregando vagas sugeridas...</p>;
   }
 
   if (estado.tipo === "vazio") {
+    const complemento = estado.criterios.termo
+      ? ` para “${estado.criterios.termo}”`
+      : "";
+
     return (
       <section
         aria-labelledby="titulo-vagas-vazias"
         className="vagas-grupo2__estado"
       >
         <h2 id="titulo-vagas-vazias">Nenhuma vaga encontrada</h2>
-        <p>
-          Não encontramos vagas sugeridas para este currículo neste momento.
-        </p>
+        <p>Não encontramos vagas sugeridas{complemento}.</p>
+        <p>Você pode ajustar a palavra-chave e pesquisar novamente.</p>
       </section>
     );
   }
@@ -95,13 +196,17 @@ function renderizarEstado(
     return (
       <section
         aria-labelledby="titulo-erro-vagas"
-        className="vagas-grupo2__estado"
+        className="vagas-grupo2__estado vagas-grupo2__estado--erro"
         role="alert"
       >
         <h2 id="titulo-erro-vagas">Não foi possível carregar as vagas</h2>
         <p>{estado.mensagem}</p>
 
-        <button onClick={aoTentarNovamente} type="button">
+        <button
+          className="vagas-grupo2__botao-recuperar"
+          onClick={aoTentarNovamente}
+          type="button"
+        >
           Tentar novamente
         </button>
       </section>
@@ -111,23 +216,46 @@ function renderizarEstado(
   return (
     <ul aria-label="Vagas sugeridas" className="vagas-grupo2__lista">
       {estado.sugestoes.map((sugestao) => (
-        <li key={`${sugestao.curriculoId}-${sugestao.vaga.id}`}>
-          <CartaoVaga sugestao={sugestao} />
+        <li key={chaveDaSugestao(sugestao)}>
+          <CartaoVaga
+            estadoDecisao={
+              decisoes[chaveDaSugestao(sugestao)] ?? {
+                tipo: "ocioso",
+              }
+            }
+            onSalvarDecisao={aoSalvarDecisao}
+            sugestao={sugestao}
+          />
         </li>
       ))}
     </ul>
   );
 }
 
-function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
+/** Apresenta uma vaga e os controles acessíveis de decisão da sugestão. */
+function CartaoVaga({
+  sugestao,
+  estadoDecisao,
+  onSalvarDecisao,
+}: {
+  sugestao: SugestaoVaga;
+  estadoDecisao: EstadoDecisao;
+  onSalvarDecisao: (
+    sugestao: SugestaoVaga,
+    decisao: DecisaoRecomendacao,
+  ) => Promise<void>;
+}) {
   const { vaga } = sugestao;
+  const salvando = estadoDecisao.tipo === "salvando";
 
   return (
     <article className="vagas-grupo2__card">
       <h2>{vaga.titulo}</h2>
+
       <p>
         <strong>{vaga.empresa}</strong>
       </p>
+
       <p>{vaga.descricao}</p>
 
       {(vaga.localizacao !== null || vaga.modalidade !== null) && (
@@ -152,6 +280,44 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
         </ul>
       )}
 
+      <div
+        aria-label={`Decisão sobre ${vaga.titulo}`}
+        className="vagas-grupo2__decisoes"
+      >
+        <button
+          disabled={salvando}
+          onClick={() => void onSalvarDecisao(sugestao, "aceitar")}
+          type="button"
+        >
+          Aceitar recomendação
+        </button>
+
+        <button
+          disabled={salvando}
+          onClick={() => void onSalvarDecisao(sugestao, "rejeitar")}
+          type="button"
+        >
+          Rejeitar recomendação
+        </button>
+      </div>
+
+      {estadoDecisao.tipo === "salvando" && (
+        <p role="status">Salvando decisão...</p>
+      )}
+
+      {estadoDecisao.tipo === "salva" && (
+        <p role="status">
+          Recomendação {textoDaDecisao(estadoDecisao.decisao)} e salva.
+        </p>
+      )}
+
+      {estadoDecisao.tipo === "erro" && (
+        <p role="alert">
+          Não foi possível salvar a recomendação{" "}
+          {textoDaDecisao(estadoDecisao.decisao)}. Tente novamente.
+        </p>
+      )}
+
       {vaga.urlCandidatura !== null && (
         <a
           className="vagas-grupo2__acao"
@@ -166,10 +332,12 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
   );
 }
 
-function mensagemDeErro(erro: unknown): string {
-  if (erro instanceof FalhaVagasGrupo2 && erro.codigo === "resposta-invalida") {
-    return "Recebemos uma resposta inesperada. Tente novamente mais tarde.";
-  }
+/** Gera uma chave estável para guardar o estado visual de cada sugestão. */
+function chaveDaSugestao(sugestao: SugestaoVaga): string {
+  return `${sugestao.curriculoId}-${sugestao.vaga.id}`;
+}
 
-  return "A integração de vagas está indisponível no momento. Tente novamente mais tarde.";
+/** Traduz o valor técnico da decisão para a frase apresentada à pessoa usuária. */
+function textoDaDecisao(decisao: DecisaoRecomendacao): string {
+  return decisao === "aceitar" ? "aceita" : "rejeitada";
 }

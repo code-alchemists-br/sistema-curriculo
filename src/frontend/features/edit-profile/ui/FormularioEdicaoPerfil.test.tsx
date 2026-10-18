@@ -64,6 +64,10 @@ describe("FormularioEdicaoPerfil", () => {
 
     await usuario.clear(screen.getByLabelText("Nome completo"));
     await usuario.type(screen.getByLabelText("Nome completo"), "Ricardo Silva");
+    await usuario.type(
+      screen.getByLabelText(/linkedin/i),
+      "https://portfolio.exemplo.dev/ricardo",
+    );
     await usuario.click(
       screen.getByRole("button", { name: "Salvar alterações" }),
     );
@@ -72,6 +76,76 @@ describe("FormularioEdicaoPerfil", () => {
       "Perfil atualizado com sucesso.",
     );
     expect(cliente.atualizar).toHaveBeenCalledTimes(1);
+    expect(cliente.atualizar).toHaveBeenCalledWith({
+      ...studentExistente,
+      nomeCompleto: "Ricardo Silva",
+      linkedIn: "https://portfolio.exemplo.dev/ricardo",
+    });
+  });
+
+  it("bloqueia o envio e associa o erro quando o link profissional é inválido", async () => {
+    const usuario = userEvent.setup();
+    const cliente = criarClienteDeSucesso();
+
+    render(
+      <FormularioEdicaoPerfil
+        cliente={cliente}
+        valoresIniciais={studentExistente}
+      />,
+    );
+
+    const campoLinkedIn = screen.getByLabelText(/linkedin/i);
+    await usuario.type(campoLinkedIn, "portfolio.exemplo.dev/ricardo");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar alterações" }),
+    );
+
+    expect(
+      await screen.findByText("Informe uma URL absoluta válida."),
+    ).toHaveAttribute("id", "perfil-linkedin-erro");
+    expect(campoLinkedIn).toHaveAttribute(
+      "aria-describedby",
+      "perfil-linkedin-erro",
+    );
+    expect(campoLinkedIn).toHaveAttribute("aria-invalid", "true");
+    expect(campoLinkedIn).toHaveValue("portfolio.exemplo.dev/ricardo");
+    expect(cliente.atualizar).not.toHaveBeenCalled();
+  });
+
+  it("impede submissões duplicadas enquanto o salvamento está pendente", async () => {
+    const usuario = userEvent.setup();
+    let concluirSalvamento: (() => void) | undefined;
+    const cliente: ClientePerfilEstudante = {
+      atualizar: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            concluirSalvamento = resolve;
+          }),
+      ),
+      excluir: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(
+      <FormularioEdicaoPerfil
+        cliente={cliente}
+        valoresIniciais={studentExistente}
+      />,
+    );
+
+    const botaoSalvar = screen.getByRole("button", {
+      name: "Salvar alterações",
+    });
+    await usuario.click(botaoSalvar);
+    await usuario.click(botaoSalvar);
+
+    expect(cliente.atualizar).toHaveBeenCalledTimes(1);
+    expect(botaoSalvar).toBeDisabled();
+
+    concluirSalvamento?.();
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Perfil atualizado com sucesso.",
+    );
   });
 
   it("preserva os dados e exibe erro quando o double de atualização falha", async () => {
