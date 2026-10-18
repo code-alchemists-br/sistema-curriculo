@@ -9,7 +9,7 @@ from typing import Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictInt
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 from backend.application.cadastro_curso import (
@@ -24,14 +24,14 @@ from backend.domain.value_objects import UsuarioId
 class CadastroCursoRequisicao(BaseModel):
     """Representa os campos externos necessários para cadastrar um curso.
 
-    O DTO valida a forma do JSON e mantém o dono fora do payload, deixando a
+    O DTO valida a forma do JSON, exige carga inteira sem coerção e mantém o dono fora do payload, deixando a
     regra de conteúdo para o domínio. Ele existe para separar o contrato HTTP
     do comando interno e impedir que o cliente escolha outro proprietário.
     """
 
     nome: str
     instituicao: str
-    carga_horaria: int | None = None
+    carga_horaria: StrictInt | None = None
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001

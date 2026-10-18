@@ -30,6 +30,8 @@ TAG_DOCUMENTOS_COMPLEMENTARES = "Documentos complementares"
 TAG_VERSOES_CURRICULO = "Versões de currículo"
 TAG_ITENS_VERSAO_CURRICULO = "Itens da versão de currículo"
 TAG_PREVIA_VERSAO_CURRICULO = "Prévia da versão de currículo"
+# Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+TAG_VAGAS = "Vagas"
 TAG_SAUDE = "Saúde"
 
 ESQUEMA_SESSAO = "sessaoCookie"
@@ -88,6 +90,11 @@ METADADOS_TAGS: list[dict[str, str]] = [
     {
         "name": TAG_PREVIA_VERSAO_CURRICULO,
         "description": "Prévia de uma versão de currículo.",
+    },
+    # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
+    {
+        "name": TAG_VAGAS,
+        "description": "Consulta e listagem de vagas de emprego externas.",
     },
 ]
 

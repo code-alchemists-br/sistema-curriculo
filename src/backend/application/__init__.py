@@ -20,6 +20,15 @@ from backend.application.associacao_curriculo_vaga import (
     CriarAssociacaoCurriculoVagaEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
+from backend.application.assistente_descricao_projeto import (
+    AssistenteDescricaoProjeto,
+    AssistenteDescricaoProjetoAusente,
+    AssistenteDescricaoProjetoEntrada,
+    AssistenteDescricaoProjetoIndisponivel,
+    AssistenteDescricaoProjetoSaida,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.application.cadastro_certificacao import (
     CadastrarCertificacao,
@@ -215,6 +224,8 @@ from backend.application.selecao_itens_versao_curriculo import (
 # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 from backend.application.versao_curriculo import (
+    AtualizarOrdemSecoesCurriculo,
+    AtualizarOrdemSecoesCurriculoEntrada,
     CriarVersaoCurriculo,
     CriarVersaoCurriculoEntrada,
     CurriculoNaoEncontrado,
@@ -263,6 +274,14 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "CadastrarProjetoAcademico",
     "CadastrarProjetoAcademicoEntrada",
+
+    # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
+    "AssistenteDescricaoProjeto",
+    "AssistenteDescricaoProjetoAusente",
+    "AssistenteDescricaoProjetoEntrada",
+    "AssistenteDescricaoProjetoIndisponivel",
+    "AssistenteDescricaoProjetoSaida",
+    
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
@@ -333,6 +352,8 @@ __all__ = [
     "VerificadorSenha",
     # Proveniência: decision-analysis prompts/backend/20261005-191458-edicao-versao-curriculo-v001.md#v001
     "CurriculoNaoEncontrado",
+    "AtualizarOrdemSecoesCurriculo",
+    "AtualizarOrdemSecoesCurriculoEntrada",
     "EditarVersaoCurriculo",
     "EditarVersaoCurriculoEntrada",
     "RepositorioCurriculo",
