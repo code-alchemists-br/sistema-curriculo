@@ -10,6 +10,20 @@ credencial que representa uma sessão autenticada. Ele complementa o
 O contrato cobre sessões da aplicação web. Integrações entre serviços e tokens
 de API pertencem a contratos separados.
 
+## Credenciais da conta
+
+O cadastro `POST /estudantes` e o login `POST /acessos` recebem `email` e
+`senha` em JSON. A senha aceita de 8 a 1024 caracteres na interface HTTP. O
+e-mail é normalizado para minúsculas e validado pelo domínio antes da busca da
+conta.
+
+No cadastro, a senha é derivada com scrypt (`N=16384`, `r=8`, `p=1`), salt
+aleatório de 16 bytes e saída de 64 bytes. O formato persistido identifica o
+algoritmo e seus parâmetros; a persistência guarda esse valor derivado, nunca a
+senha em texto claro. No login, o mesmo adapter recalcula o hash e compara o
+resultado em tempo constante. Uma conta inexistente, excluída ou com senha
+incorreta produz a mesma falha de credenciais.
+
 ## Decisões do contrato
 
 - A sessão é **opaca e mantida no servidor**; não é JWT nem contém dados de
@@ -34,25 +48,26 @@ guarda somente seu resumo SHA-256, com índice único, nunca o token em claro. A
 entropia de 256 bits torna inviável adivinhar o token; o resumo permite localizar
 a sessão sem manter uma credencial reutilizável no banco.
 
-O registro de sessão contém, no mínimo:
+O registro de sessão persistido contém:
 
 | Campo | Significado |
 |---|---|
-| `sessao_id` | Identificador interno UUID, sem valor de autenticação para o cliente. |
+| `id` | Identificador interno UUID, sem valor de autenticação para o cliente. |
 | `usuario_id` | Conta proprietária da sessão. |
 | `token_hash` | SHA-256 do token recebido no cookie; único e nunca devolvido pela API. |
 | `criada_em` | Instante UTC de emissão. |
 | `expira_em` | Instante UTC igual a `criada_em + 8 horas`. |
 | `revogada_em` | Instante UTC da revogação, nulo enquanto ativa. |
 
-O mapeamento e as migrations ficam na infraestrutura. A identidade confiável
-entregue à API é um contexto mínimo `UsuarioAutenticado(usuario_id: UUID)`;
-token, hash, timestamps e estado de persistência não são expostos ao caso de uso.
+O mapeamento e as migrations ficam na infraestrutura. O middleware de sessão
+valida a credencial antes de encaminhar uma rota protegida e disponibiliza o
+UUID autenticado em `request.state.usuario_id`. Token, hash, timestamps e estado
+de persistência não são entregues aos handlers como dados da requisição.
 
 ## Cookie HTTP
 
-Em produção, o nome do cookie é `__Host-sessao`. O cabeçalho de sucesso no
-login deve equivaler a:
+O código atual usa o cookie `__Host-sessao` e define os atributos abaixo no
+login, inclusive no ambiente local:
 
 ```http
 Set-Cookie: __Host-sessao=<token-opaco>; Path=/; Max-Age=28800; Secure; HttpOnly; SameSite=Lax
@@ -62,9 +77,10 @@ O cookie não define `Domain`, conforme os requisitos do prefixo `__Host-`. Ele
 é enviado apenas em HTTPS. A aplicação cliente não lê, copia nem armazena o
 token em local storage, session storage, JavaScript ou estado persistente.
 
-O ambiente local pode usar configuração própria de cookie para HTTP em
-`localhost`, isolada da configuração de produção. Essa exceção não pode reduzir
-os atributos de produção nem ser habilitada em implantação pública.
+Na implementação atual, a API também define `Secure` no cookie local; não há
+configuração separada para HTTP em `localhost`. Não remova esse atributo para
+contornar problemas de ambiente sem uma decisão de segurança e uma alteração
+explícita da configuração.
 
 ## Operações HTTP
 
@@ -85,99 +101,81 @@ nem persistida em texto claro.
 
 Para e-mail inexistente, senha incorreta ou conta excluída, responde `401
 Unauthorized` com mensagem uniforme e sem `Set-Cookie`. A API não revela qual
-condição falhou. Falhas de validação do formato permanecem `422`; limitação de
-tentativas pode responder `429 Too Many Requests` sem revelar a existência da
-conta.
-
-### Consultar sessão — `GET /sessao/atual`
-
-Com sessão válida, responde `200 OK` com a identidade pública mínima:
-
-```json
-{
-  "usuario_id": "uuid-da-conta"
-}
-```
-
-Sem cookie, com token desconhecido, expirado, revogado ou ligado a conta
-excluída, responde `401 Unauthorized`. A resposta não distingue esses casos.
-Essa rota não prolonga a sessão.
+condição falhou. Campos ausentes ou fora dos limites do DTO são rejeitados pelo
+FastAPI com `422`; um e-mail que passa pelos limites do DTO, mas falha na
+validação estrutural de domínio, é convertido pelo handler em `401`. Os cards
+implementados não configuram limitação de tentativas nem resposta `429`. Se o
+caso de uso de acesso ou o criador de sessões não estiver configurado, responde
+`503 Service Unavailable` sem criar cookie.
 
 ### Encerrar sessão — `DELETE /sessao/atual`
 
 A API revoga a sessão correspondente ao cookie, se houver, e remove o cookie
-com `Max-Age=0`, `Path=/`, `Secure`, `HttpOnly` e `SameSite=Lax`. Responde
-`204 No Content` mesmo quando o cookie está ausente, inválido ou expirado,
-tornando o encerramento idempotente. A revogação impede o uso do mesmo token em
-requisições posteriores.
+com `Max-Age=0`, `Path=/`, `Secure`, `HttpOnly` e `SameSite=Lax`. Com o serviço
+de revogação configurado, responde `204 No Content` quando o cookie está
+ausente, desconhecido, expirado ou já revogado, tornando o encerramento
+idempotente. Se o cookie estiver presente e o serviço de revogação indisponível,
+responde `503` e não sinaliza sucesso. A revogação impede o uso do mesmo token
+em requisições posteriores.
 
 ## Validação em rotas protegidas
 
-A dependência comum de autenticação lê somente `__Host-sessao`, calcula seu
-SHA-256 e busca o registro correspondente. A sessão é válida somente se:
+O middleware comum de autenticação lê somente `__Host-sessao`, calcula seu
+SHA-256 e busca o registro correspondente a cada requisição protegida. A sessão
+é válida somente se:
 
 1. o registro existe;
 2. `revogada_em` é nulo;
 3. `expira_em` é posterior ao instante UTC atual;
 4. a conta existe e não está logicamente excluída (`deleted_at` nulo).
 
-Se alguma condição falhar, a dependência responde `401` antes de chamar o caso
-de uso. Caso todas sejam satisfeitas, fornece `UsuarioAutenticado` à rota. A
-autorização e a propriedade de cada recurso usam o `usuario_id` desse contexto,
-nunca identidade enviada pelo cliente. A sessão não concede papel ou permissão
-por si só.
+Se alguma condição falhar, o middleware responde `401` antes de chamar o
+handler. Caso todas sejam satisfeitas, grava o UUID em
+`request.state.usuario_id`. A autorização e a propriedade de recursos usam essa
+identidade autenticada, nunca uma identidade enviada pelo cliente. A sessão não
+concede papel ou permissão por si só.
 
-### Interface da dependência
+### Comportamento HTTP do middleware
 
-Toda rota que exige sessão DEVE declarar autenticação por uma dependência comum
-da API, conceitualmente chamada `usuario_autenticado`. Em FastAPI, o uso
-esperado é equivalente a:
+O middleware exige sessão em todas as rotas que não estejam explicitamente
+liberadas. No estado atual, são públicas o cadastro `POST /estudantes`, o login
+`POST /acessos`, o logout `DELETE /sessao/atual`, a documentação OpenAPI, os
+health checks e requisições CORS `OPTIONS`. O token é lido somente do cookie;
+valores em caminho, query, corpo ou `Authorization` não autenticam a chamada.
 
-```python
-async def consultar_dados(
-    usuario: UsuarioAutenticado = Depends(usuario_autenticado),
-) -> Resposta:
-    ...
-```
-
-A dependência lê exclusivamente o cookie `__Host-sessao`. Ela NÃO DEVE aceitar
-identidade, papel ou permissão enviados em caminho, query, corpo ou cabeçalhos
-pelo cliente. O handler obtém do contexto `usuario.usuario_id` para operações
-privadas; o contexto não é DTO de entrada nem entidade de domínio. A dependência
-deve ser substituível nos testes, e handlers não devem validar cookies
-individualmente.
+Não existe atualmente uma rota `GET /sessao/atual` para retornar a identidade da
+sessão. A identidade validada fica disponível internamente ao handler por
+`request.state.usuario_id`.
 
 Falha de autenticação responde `401 Unauthorized` antes de executar o caso de
-uso. Sessão válida sem autorização ao recurso responde `403 Forbidden`, ou
-`404 Not Found` quando a política daquele recurso ocultar sua existência. A
-propriedade compara o identificador do recurso com o usuário autenticado, nunca
-com o proprietário declarado pelo cliente.
+uso. Nas verificações de propriedade implementadas, uma sessão válida que tenta
+acessar o recurso de outro estudante responde `403 Forbidden`. O middleware
+atual não mascara esses recursos com `404`. A propriedade compara o
+identificador do recurso com o usuário autenticado, nunca com o proprietário
+declarado pelo cliente.
 
 ### Classificação de rotas
 
-São públicas somente as rotas necessárias para criar uma conta, iniciar uma
-sessão, obter o token CSRF pré-autenticação e executar verificações operacionais
-sem dados pessoais. Cadastro de estudante pode ser público. `POST /acessos` é o
-login definido neste contrato; ele só cria sessão depois de validar credenciais
-e estado da conta. Rotas públicas continuam sujeitas a limites contra abuso e
-às proteções CSRF aplicáveis.
+O cadastro `POST /estudantes`, o login `POST /acessos`, o logout
+`DELETE /sessao/atual`, as rotas de documentação e as verificações operacionais
+estão liberados pelo middleware atual. Requisições `OPTIONS` também passam sem
+autenticação. O login só cria sessão depois de validar credenciais e confirmar
+que a conta não está excluída. A implementação destes cards não configura
+limitação de tentativas nem proteção CSRF.
 
 Qualquer operação que leia ou altere informações pessoais ou profissionais do
 estudante DEVE exigir sessão. Na API atual, isso inclui:
 
 | Operação | Regra de interface |
 |---|---|
-| `PUT /estudantes/{usuario_id}` | Permitir alteração somente se o parâmetro corresponder a `usuario.usuario_id`; em revisão futura, preferir derivar o alvo da sessão e remover `{usuario_id}`. |
-| `DELETE /estudantes/{usuario_id}` | Limitar exclusão ao próprio perfil, usando a mesma regra de identidade. |
-| Rotas de dados de contato | Vincular leitura ou alteração ao perfil do usuário autenticado. |
-| Rotas de projetos acadêmicos | Vincular criação e alterações ao usuário autenticado. |
+| `PUT /estudantes/{usuario_id}` | Permitir alteração somente quando o UUID da rota corresponder a `request.state.usuario_id`. |
+| `DELETE /estudantes/atual` | Exigir sessão; o handler usa a identidade autenticada da requisição. |
+| `PUT /estudantes/{usuario_id}/dados-contato` | Permitir alteração somente quando o UUID da rota corresponder à identidade autenticada. |
+| Rotas sob `/estudantes/{usuario_id}/curriculos` | Exigir sessão e permitir acesso somente quando o UUID da rota corresponder à identidade autenticada. |
 
-Rotas futuras de formação, experiências, competências, consulta de perfil,
-currículos, visualização privada e exportação também serão protegidas quando
-expuserem ou modificarem dados de um estudante. Conteúdo explicitamente público
-só pode ser exceção com requisito funcional e política de exposição
-documentados. O inventário classifica recursos por sensibilidade; os caminhos
-HTTP definitivos devem ser registrados ao especificar cada endpoint.
+Outras rotas não públicas também exigem cookie válido por padrão do middleware.
+Uma exceção precisa ser explicitamente adicionada à lista de rotas públicas e
+ter sua exposição justificada.
 
 ### Testes de rotas protegidas
 
@@ -194,15 +192,13 @@ doubles determinísticos, sem banco ou relógio real. Testes unitários de API
 executam no ambiente `backend`; testes de integração que exercitem persistência
 ou infraestrutura seguem o ambiente `tests` definido no `AGENTS.md` raiz.
 
-## CSRF e limites de transporte
+## Limites e controles ainda não implementados
 
-Como o navegador envia cookies automaticamente, operações que alteram estado
-DEVEM validar o cabeçalho `Origin` contra uma lista explícita de origens
-permitidas e aplicar proteção CSRF. `SameSite=Lax` é defesa adicional, não
-substitui esses controles. O formato, a emissão e a verificação do token CSRF
-devem ser definidos antes de habilitar operações mutáveis autenticadas por
-cookie em produção. O login também deve validar origem e limitar tentativas;
-credenciais e cookies só podem trafegar por HTTPS em produção.
+O cookie `SameSite=Lax` é uma defesa adicional, mas o fluxo descrito não
+implementa validação de `Origin`, token CSRF nem limitação de tentativas de
+login. Esses controles precisam de definição e implementação próprias antes de
+serem tratados como garantias do sistema. Em produção, credenciais e cookies
+devem trafegar por HTTPS.
 
 Tokens, senhas e cabeçalhos `Cookie`/`Set-Cookie` não podem aparecer em logs,
 mensagens de erro, métricas ou rastreamentos.
