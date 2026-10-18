@@ -4,7 +4,6 @@ import unittest
 
 from backend.api.factory import create_app
 
-
 CAMINHO = "/estudantes/{usuario_id}/curriculos/{curriculo_id}/ordem-secoes"
 NOME_REQUISICAO = "AtualizarOrdemSecoesCurriculoRequisicao"
 
