@@ -13,6 +13,15 @@ from backend.application.acesso_estudante import (
     CredenciaisInvalidas,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
+from backend.application.assistente_descricao_projeto import (
+    AssistenteDescricaoProjeto,
+    AssistenteDescricaoProjetoAusente,
+    AssistenteDescricaoProjetoEntrada,
+    AssistenteDescricaoProjetoIndisponivel,
+    AssistenteDescricaoProjetoSaida,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
 from backend.application.cadastro_certificacao import (
     CadastrarCertificacao,
@@ -254,6 +263,14 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "CadastrarProjetoAcademico",
     "CadastrarProjetoAcademicoEntrada",
+
+    # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
+    "AssistenteDescricaoProjeto",
+    "AssistenteDescricaoProjetoAusente",
+    "AssistenteDescricaoProjetoEntrada",
+    "AssistenteDescricaoProjetoIndisponivel",
+    "AssistenteDescricaoProjetoSaida",
+    
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
