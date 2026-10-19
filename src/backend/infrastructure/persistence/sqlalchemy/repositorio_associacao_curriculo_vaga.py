@@ -6,6 +6,7 @@ o caso de uso à persistência relacional e traduzir somente colisões da chave
 primária da associação para a falha conhecida pela Application.
 """
 
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +19,8 @@ from backend.domain.associacao_curriculo_vaga import AssociacaoCurriculoVaga
 from backend.domain.value_objects import CurriculoId, VagaId
 from backend.infrastructure.persistence.sqlalchemy.associacao_curriculo_vaga import (
     AssociacaoCurriculoVagaRegistro,
+    ClassificacaoAssociacaoRegistro,
+    para_associacao,
     para_registro,
     para_registros_classificacoes,
 )
@@ -59,6 +62,58 @@ class RepositorioAssociacaoCurriculoVagaSqlAlchemy(RepositorioAssociacaoCurricul
             (curriculo_id.valor, vaga_id.valor),
         )
         return registro is not None
+
+    async def obter_para_atualizacao(
+        self, curriculo_id: CurriculoId, vaga_id: VagaId
+    ) -> AssociacaoCurriculoVaga | None:
+        """Carrega o agregado e bloqueia sua raiz até o fim da transação.
+
+        A consulta usa a chave composta com `FOR UPDATE` e depois carrega as
+        classificações relacionadas. No PostgreSQL, o lock serializa mutações
+        concorrentes do mesmo par; a sessão externa deve manter a transação até
+        confirmar a escrita. Ela existe para evitar lost updates.
+        """
+        consulta_raiz = (
+            select(AssociacaoCurriculoVagaRegistro)
+            .where(
+                AssociacaoCurriculoVagaRegistro.curriculo_id == curriculo_id.valor,
+                AssociacaoCurriculoVagaRegistro.vaga_id == vaga_id.valor,
+            )
+            .with_for_update()
+        )
+        resultado_raiz = await self._session.execute(consulta_raiz)
+        registro = resultado_raiz.scalar_one_or_none()
+        if registro is None:
+            return None
+
+        consulta_classificacoes = select(ClassificacaoAssociacaoRegistro).where(
+            ClassificacaoAssociacaoRegistro.curriculo_id == curriculo_id.valor,
+            ClassificacaoAssociacaoRegistro.vaga_id == vaga_id.valor,
+        )
+        resultado_classificacoes = await self._session.execute(consulta_classificacoes)
+        return para_associacao(registro, resultado_classificacoes.scalars().all())
+
+    async def atualizar_classificacoes(
+        self, associacao: AssociacaoCurriculoVaga
+    ) -> None:
+        """Substitui somente as linhas de classificação sem alterar a raiz.
+
+        A operação exclui as classificações do par e insere as do agregado já
+        validado. O flush intermediário libera as identidades ORM excluídas antes
+        de inserir linhas com as mesmas chaves; ambos os flushes permanecem na
+        transação externa, sem confirmar a transação. Ela existe para persistir
+        alterações atômicas mantendo todas as regras na entidade de domínio.
+        """
+        await self._session.execute(
+            delete(ClassificacaoAssociacaoRegistro).where(
+                ClassificacaoAssociacaoRegistro.curriculo_id
+                == associacao.curriculo_id.valor,
+                ClassificacaoAssociacaoRegistro.vaga_id == associacao.vaga_id.valor,
+            )
+        )
+        await self._session.flush()
+        self._session.add_all(para_registros_classificacoes(associacao))
+        await self._session.flush()
 
     async def salvar(self, associacao: AssociacaoCurriculoVaga) -> None:
         """Adiciona raiz e classificações e envia a unidade em um único flush.

@@ -3,7 +3,7 @@
 from unittest import TestCase
 from uuid import UUID
 
-from sqlalchemy import create_engine, event, func, select
+from sqlalchemy import create_engine, delete, event, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -205,3 +205,68 @@ class PersistenciaAssociacaoCurriculoVagaIntegracaoTestCase(TestCase):
             (self.curriculo_id, "vaga-com-falha"),
         )
         self.assertIsNone(registro)
+
+    def test_atualizacao_de_classificacoes_persiste_e_rollback_restaura_estado(
+        self,
+    ) -> None:
+        """Persiste a remoção sem recriar a raiz e prova rollback integral.
+
+        O cenário altera somente linhas de classificação numa sessão SQLite,
+        confirma o resultado e depois repete a mutação seguida de rollback. Ele
+        existe para demonstrar atomicidade no escopo transacional do chamador.
+        """
+        associacao = AssociacaoCurriculoVaga(
+            CurriculoId(self.curriculo_id),
+            VagaId("vaga-atualizada"),
+            (ClassificacaoAssociacao.CANDIDATURA,),
+        )
+        self._salvar(associacao)
+        self.session.commit()
+
+        associacao.remover_classificacao(ClassificacaoAssociacao.CANDIDATURA)
+        self.session.execute(
+            delete(ClassificacaoAssociacaoRegistro).where(
+                ClassificacaoAssociacaoRegistro.curriculo_id == self.curriculo_id,
+                ClassificacaoAssociacaoRegistro.vaga_id == "vaga-atualizada",
+            )
+        )
+        self.session.add_all(para_registros_classificacoes(associacao))
+        self.session.commit()
+
+        registro = self.session.get(
+            AssociacaoCurriculoVagaRegistro,
+            (self.curriculo_id, "vaga-atualizada"),
+        )
+        classificacoes = self.session.scalars(
+            select(ClassificacaoAssociacaoRegistro).where(
+                ClassificacaoAssociacaoRegistro.curriculo_id == self.curriculo_id,
+                ClassificacaoAssociacaoRegistro.vaga_id == "vaga-atualizada",
+            )
+        ).all()
+        self.assertIsNotNone(registro)
+        self.assertEqual(
+            {item.classificacao for item in classificacoes},
+            {"interesse"},
+        )
+
+        associacao.adicionar_classificacao(ClassificacaoAssociacao.COMPATIBILIDADE)
+        self.session.execute(
+            delete(ClassificacaoAssociacaoRegistro).where(
+                ClassificacaoAssociacaoRegistro.curriculo_id == self.curriculo_id,
+                ClassificacaoAssociacaoRegistro.vaga_id == "vaga-atualizada",
+            )
+        )
+        self.session.add_all(para_registros_classificacoes(associacao))
+        self.session.flush()
+        self.session.rollback()
+
+        classificacoes_apos_rollback = self.session.scalars(
+            select(ClassificacaoAssociacaoRegistro).where(
+                ClassificacaoAssociacaoRegistro.curriculo_id == self.curriculo_id,
+                ClassificacaoAssociacaoRegistro.vaga_id == "vaga-atualizada",
+            )
+        ).all()
+        self.assertEqual(
+            {item.classificacao for item in classificacoes_apos_rollback},
+            {"interesse"},
+        )

@@ -87,19 +87,49 @@ class AssociacaoCurriculoVaga:
         """
         return frozenset(self._classificacoes)
 
-    def adicionar_classificacao(self, classificacao: ClassificacaoAssociacao) -> None:
-        """Adiciona uma classificação preservando as regras do agregado.
+    def adicionar_classificacao(self, classificacao: ClassificacaoAssociacao) -> bool:
+        """Adiciona uma classificação sem violar as regras do agregado.
 
-        A operação rejeita valores fora do enum, usa um conjunto para evitar
-        duplicatas e inclui interesse junto com candidatura. Ela existe para
-        manter a associação válida em cada inclusão suportada, sem decidir
-        regras de remoção que pertencem a uma entrega posterior.
+        A operação rejeita valores fora do enum, mantém as classificações em um
+        conjunto e inclui interesse quando necessário para candidatura. Retorna
+        se houve mudança para permitir que a Application evite escrita em
+        operações idempotentes.
         """
         if not isinstance(classificacao, ClassificacaoAssociacao):
             raise RegraDeDominioViolada(
                 "Associação currículo-vaga recebeu classificação não reconhecida."
             )
 
+        alterada = classificacao not in self._classificacoes
         self._classificacoes.add(classificacao)
         if classificacao is ClassificacaoAssociacao.CANDIDATURA:
             self._classificacoes.add(ClassificacaoAssociacao.INTERESSE)
+        return alterada
+
+    def remover_classificacao(self, classificacao: ClassificacaoAssociacao) -> bool:
+        """Remove uma classificação sem permitir um estado inválido.
+
+        A operação trata classificação ausente como no-op, preserva interesse
+        ao remover candidatura e rejeita remover interesse com candidatura ou a
+        última classificação. Ela retorna se houve mudança para evitar escrita
+        desnecessária na persistência.
+        """
+        if not isinstance(classificacao, ClassificacaoAssociacao):
+            raise RegraDeDominioViolada(
+                "Associação currículo-vaga recebeu classificação não reconhecida."
+            )
+        if classificacao not in self._classificacoes:
+            return False
+        if classificacao is ClassificacaoAssociacao.INTERESSE and (
+            ClassificacaoAssociacao.CANDIDATURA in self._classificacoes
+        ):
+            raise RegraDeDominioViolada(
+                "Não é possível remover interesse enquanto houver candidatura."
+            )
+        if len(self._classificacoes) == 1:
+            raise RegraDeDominioViolada(
+                "Associação currículo-vaga deve possuir ao menos uma classificação."
+            )
+
+        self._classificacoes.remove(classificacao)
+        return True

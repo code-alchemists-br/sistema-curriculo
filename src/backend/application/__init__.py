@@ -24,9 +24,13 @@ from backend.application.assistente_descricao_projeto import (
 
 # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
 from backend.application.associacao_curriculo_vaga import (
+    AdicionarClassificacaoAssociacaoCurriculoVaga,
+    AlterarClassificacaoAssociacaoCurriculoVagaEntrada,
     AssociacaoCurriculoVagaJaExiste,
+    AssociacaoCurriculoVagaNaoEncontrada,
     CriarAssociacaoCurriculoVaga,
     CriarAssociacaoCurriculoVagaEntrada,
+    RemoverClassificacaoAssociacaoCurriculoVaga,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -236,8 +240,12 @@ from backend.application.versao_curriculo import (
 __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
     "AssociacaoCurriculoVagaJaExiste",
+    "AssociacaoCurriculoVagaNaoEncontrada",
+    "AlterarClassificacaoAssociacaoCurriculoVagaEntrada",
+    "AdicionarClassificacaoAssociacaoCurriculoVaga",
     "CriarAssociacaoCurriculoVaga",
     "CriarAssociacaoCurriculoVagaEntrada",
+    "RemoverClassificacaoAssociacaoCurriculoVaga",
     "CadastrarEstudante",
     "CadastrarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
@@ -274,14 +282,12 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     "CadastrarProjetoAcademico",
     "CadastrarProjetoAcademicoEntrada",
-
     # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
     "AssistenteDescricaoProjeto",
     "AssistenteDescricaoProjetoAusente",
     "AssistenteDescricaoProjetoEntrada",
     "AssistenteDescricaoProjetoIndisponivel",
     "AssistenteDescricaoProjetoSaida",
-
     "AcessarEstudante",
     "AcessarEstudanteEntrada",
     # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001

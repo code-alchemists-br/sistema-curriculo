@@ -5,6 +5,7 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +53,7 @@ class RepositorioAssociacaoCurriculoVagaSqlAlchemyTestCase(IsolatedAsyncioTestCa
         )
         self.session = MagicMock(spec=AsyncSession)
         self.session.get = AsyncMock()
+        self.session.execute = AsyncMock()
         self.session.flush = AsyncMock()
         self.repositorio = RepositorioAssociacaoCurriculoVagaSqlAlchemy(self.session)
 
@@ -97,6 +99,78 @@ class RepositorioAssociacaoCurriculoVagaSqlAlchemyTestCase(IsolatedAsyncioTestCa
         }
         self.assertEqual(classificacoes, {"candidatura", "interesse"})
         self.session.flush.assert_awaited_once_with()
+        self.session.commit.assert_not_awaited()
+        self.session.rollback.assert_not_awaited()
+
+    async def test_obter_para_atualizacao_carrega_agregado_e_bloqueia_raiz(
+        self,
+    ) -> None:
+        """Reconstrói o agregado e emite lock PostgreSQL pela chave composta.
+
+        O teste simula raiz e classificações retornadas por duas consultas e
+        compila a primeira para PostgreSQL. Ele existe para proteger leitura
+        serializada de atualizações concorrentes.
+        """
+        registro = AssociacaoCurriculoVagaRegistro(
+            curriculo_id=self.curriculo_id.valor,
+            vaga_id=self.vaga_id.valor,
+        )
+        registro_classificacao = ClassificacaoAssociacaoRegistro(
+            curriculo_id=self.curriculo_id.valor,
+            vaga_id=self.vaga_id.valor,
+            classificacao="interesse",
+        )
+        resultado_raiz = MagicMock()
+        resultado_raiz.scalar_one_or_none.return_value = registro
+        resultado_classificacoes = MagicMock()
+        resultado_classificacoes.scalars.return_value.all.return_value = [
+            registro_classificacao
+        ]
+        self.session.execute.side_effect = [
+            resultado_raiz,
+            resultado_classificacoes,
+        ]
+
+        associacao = await self.repositorio.obter_para_atualizacao(
+            self.curriculo_id, self.vaga_id
+        )
+
+        self.assertEqual(associacao.curriculo_id, self.curriculo_id)
+        self.assertEqual(associacao.vaga_id, self.vaga_id)
+        self.assertEqual(
+            associacao.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+        consulta = self.session.execute.await_args_list[0].args[0]
+        sql = str(consulta.compile(dialect=postgresql.dialect()))
+        self.assertIn("FOR UPDATE", sql)
+        self.assertIn("curriculo_id", sql)
+        self.assertIn("vaga_id", sql)
+        self.assertEqual(self.session.execute.await_count, 2)
+
+    async def test_atualizar_classificacoes_altera_somente_linhas_dependentes(
+        self,
+    ) -> None:
+        """Substitui classificações do par sem inserir a raiz ou confirmar.
+
+        O teste verifica a condição do DELETE, as linhas adicionadas e um flush
+        único. Ele existe para fixar a fronteira transacional do adapter.
+        """
+        self.associacao.remover_classificacao(ClassificacaoAssociacao.CANDIDATURA)
+
+        await self.repositorio.atualizar_classificacoes(self.associacao)
+
+        consulta = self.session.execute.await_args.args[0]
+        sql = str(consulta.compile(dialect=postgresql.dialect()))
+        self.assertIn("DELETE FROM classificacoes_associacao_curriculo_vaga", sql)
+        self.assertIn("curriculo_id", sql)
+        self.assertIn("vaga_id", sql)
+        linhas = self.session.add_all.call_args.args[0]
+        self.assertEqual(len(linhas), 1)
+        self.assertIsInstance(linhas[0], ClassificacaoAssociacaoRegistro)
+        self.assertEqual(linhas[0].classificacao, "interesse")
+        self.session.add.assert_not_called()
+        self.assertEqual(self.session.flush.await_count, 2)
         self.session.commit.assert_not_awaited()
         self.session.rollback.assert_not_awaited()
 

@@ -151,6 +151,12 @@ As combinações de classificações previstas em [requisitos_funcionais.md](req
 | CT-RF12-07 | RF12, RN01 | Negativo | Associação só é criada por ação manual | Estudante com currículos | Realizar busca, visualizar resultados e selecionar ou exportar currículos, sem solicitar associação | Nenhuma associação currículo–vaga é criada |
 | CT-RF12-08 | RF12 | Negativo | Candidatura não envia currículo a serviço externo | Associação com candidatura criada | Registrar a classificação candidatura | Sistema apenas registra a classificação; nenhum envio ou candidatura em serviço externo é realizado |
 | CT-RF12-09 | RF12, RN03 | Exceção | Falha ao armazenar a associação | Banco de dados indisponível | Criar associação com classificações válidas | Sistema informa a falha e não armazena associação parcial nem candidatura sem interesse |
+| CT-RF12-10 | RF12, RN05 | Positivo | Adicionar classificação existente é idempotente | Associação já contém interesse | Adicionar interesse novamente | A operação não duplica a classificação nem altera o estado persistido |
+| CT-RF12-11 | RF12, RN05 | Positivo | Remover classificação ausente é idempotente | Associação não contém candidatura | Remover candidatura | A operação conclui sem erro e mantém o estado persistido |
+| CT-RF12-12 | RF12, RN03, RN06 | Positivo | Remover candidatura preserva interesse | Associação contém interesse e candidatura | Remover candidatura | Associação permanece com interesse e sem candidatura |
+| CT-RF12-13 | RF12, RN03, RN06 | Negativo | Interesse não pode ser removido com candidatura ativa | Associação contém interesse e candidatura | Remover interesse | A operação é rejeitada e nenhuma classificação é alterada |
+| CT-RF12-14 | RF12, RN06 | Negativo | Última classificação não pode ser removida | Associação contém somente interesse ou compatibilidade | Remover a única classificação | A operação é rejeitada e a associação permanece inalterada |
+| CT-RF12-15 | RF12, RNF04, RN07 | Negativo | Atualização exige proprietário autenticado | Currículo pertence a outro usuário ou não existe | Solicitar alteração usando identidade diferente da sessão ou sem currículo próprio | Operação é negada antes da consulta da associação e não altera dados |
 
 #### Combinações de classificações
 
@@ -191,7 +197,7 @@ O controle de autorização sobre dados pessoais, currículos e associações é
 | RF09 | CT-RF09-01 a CT-RF09-05 |
 | RF10 | CT-RF10-01 a CT-RF10-04 |
 | RF11 | CT-RF11-01 a CT-RF11-04 |
-| RF12 (e RN01 a RN04) | CT-RF12-01 a CT-RF12-09 e CT-RF12-C01 a CT-RF12-C07 |
+| RF12 (e RN01 a RN07) | CT-RF12-01 a CT-RF12-15 e CT-RF12-C01 a CT-RF12-C07 |
 | RF13 | CT-RF13-01 a CT-RF13-03 |
 | RF14 | CT-RF14-01 a CT-RF14-05 |
 | RF15 | CT-RF15-01 a CT-RF15-04 |

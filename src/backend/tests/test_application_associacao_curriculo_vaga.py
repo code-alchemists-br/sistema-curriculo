@@ -4,10 +4,14 @@ import unittest
 from uuid import uuid4
 
 from backend.application import (
+    AdicionarClassificacaoAssociacaoCurriculoVaga,
+    AlterarClassificacaoAssociacaoCurriculoVagaEntrada,
     AssociacaoCurriculoVagaJaExiste,
+    AssociacaoCurriculoVagaNaoEncontrada,
     CriarAssociacaoCurriculoVaga,
     CriarAssociacaoCurriculoVagaEntrada,
     CurriculoNaoEncontrado,
+    RemoverClassificacaoAssociacaoCurriculoVaga,
 )
 from backend.domain import (
     AssociacaoCurriculoVaga,
@@ -59,7 +63,10 @@ class RepositorioAssociacaoSpy:
     """
 
     def __init__(
-        self, pares_existentes: set[tuple[CurriculoId, VagaId]] | None = None
+        self,
+        pares_existentes: set[tuple[CurriculoId, VagaId]] | None = None,
+        associacoes: dict[tuple[CurriculoId, VagaId], AssociacaoCurriculoVaga]
+        | None = None,
     ) -> None:
         """Prepara os pares existentes e um histórico vazio de salvamentos.
 
@@ -67,8 +74,11 @@ class RepositorioAssociacaoSpy:
         para testar rejeição de duplicidade e criação de pares novos.
         """
         self._pares_existentes = set(pares_existentes or set())
+        self._associacoes = dict(associacoes or {})
         self.consultas: list[tuple[CurriculoId, VagaId]] = []
         self.associacoes_salvas: list[AssociacaoCurriculoVaga] = []
+        self.associacoes_carregadas: list[tuple[CurriculoId, VagaId]] = []
+        self.associacoes_atualizadas: list[AssociacaoCurriculoVaga] = []
 
     async def existe_por_par(self, curriculo_id: CurriculoId, vaga_id: VagaId) -> bool:
         """Informa se o par foi configurado como existente e registra a consulta.
@@ -88,6 +98,28 @@ class RepositorioAssociacaoSpy:
         Ele existe para substituir a porta externa durante os testes unitários.
         """
         self.associacoes_salvas.append(associacao)
+
+    async def obter_para_atualizacao(
+        self, curriculo_id: CurriculoId, vaga_id: VagaId
+    ) -> AssociacaoCurriculoVaga | None:
+        """Retorna agregado configurado e registra a chave consultada.
+
+        O double consulta o mapa em memória sem reproduzir lógica de domínio.
+        Ele existe para verificar o fluxo de atualização pela identidade composta.
+        """
+        par = (curriculo_id, vaga_id)
+        self.associacoes_carregadas.append(par)
+        return self._associacoes.get(par)
+
+    async def atualizar_classificacoes(
+        self, associacao: AssociacaoCurriculoVaga
+    ) -> None:
+        """Registra o agregado atualizado sem executar I/O.
+
+        A operação conserva a instância entregue pela Application. Ela existe
+        para verificar que estados idempotentes não solicitam persistência.
+        """
+        self.associacoes_atualizadas.append(associacao)
 
 
 def _criar_curriculo(usuario_id: UsuarioId | None = None) -> Curriculo:
@@ -180,6 +212,208 @@ class CriarAssociacaoCurriculoVagaTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(repositorio_associacao.consultas, [])
         self.assertEqual(repositorio_associacao.associacoes_salvas, [])
+
+
+class AtualizarClassificacaoAssociacaoCurriculoVagaTestCase(
+    unittest.IsolatedAsyncioTestCase
+):
+    """Verifica as intenções de atualização com ports substituídos.
+
+    Os cenários usam currículo e associação em memória, observam ordem de
+    ownership, delegação ao Domain e chamadas de escrita. A classe existe para
+    proteger a orquestração sem HTTP ou banco.
+    """
+
+    def setUp(self) -> None:
+        """Prepara proprietário, par e classificação inicial determinísticos.
+
+        O método cria os agregados reais de Domain e os doubles dos ports. Ele
+        existe para que cada teste foque em uma decisão de Application.
+        """
+        self.curriculo = _criar_curriculo()
+        self.vaga_id = VagaId("vaga-atualizacao")
+        self.par = (self.curriculo.id, self.vaga_id)
+        self.associacao = AssociacaoCurriculoVaga(
+            self.curriculo.id,
+            self.vaga_id,
+            (ClassificacaoAssociacao.INTERESSE,),
+        )
+        self.repositorio_curriculo = RepositorioCurriculoStub(
+            {self.curriculo.id: self.curriculo}
+        )
+        self.repositorio_associacao = RepositorioAssociacaoSpy(
+            associacoes={self.par: self.associacao}
+        )
+        self.entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            usuario_id=self.curriculo.usuario_id,
+            curriculo_id=self.curriculo.id,
+            vaga_id=self.vaga_id,
+            classificacao=ClassificacaoAssociacao.COMPATIBILIDADE,
+        )
+
+    async def test_adiciona_classificacao_e_atualiza_associacao_existente(self) -> None:
+        """Persiste a classificação adicionada sem substituir o agregado.
+
+        O teste executa a intenção como proprietário e compara o estado e a
+        chave consultada. Ele existe para comprovar atualização pelo par exato.
+        """
+        resultado = await AdicionarClassificacaoAssociacaoCurriculoVaga(
+            self.repositorio_curriculo, self.repositorio_associacao
+        ).executar(self.entrada)
+
+        self.assertIs(resultado, self.associacao)
+        self.assertEqual(
+            resultado.classificacoes,
+            frozenset(
+                {
+                    ClassificacaoAssociacao.INTERESSE,
+                    ClassificacaoAssociacao.COMPATIBILIDADE,
+                }
+            ),
+        )
+        self.assertEqual(self.repositorio_associacao.associacoes_carregadas, [self.par])
+        self.assertEqual(
+            self.repositorio_associacao.associacoes_atualizadas, [resultado]
+        )
+        self.assertEqual(self.repositorio_associacao.associacoes_salvas, [])
+
+    async def test_adicao_idempotente_nao_solicita_atualizacao(self) -> None:
+        """Evita escrita quando a classificação já está presente.
+
+        O teste envia novamente interesse ao agregado existente e confirma que
+        o repository não recebe atualização. Ele existe para tornar retries
+        idempotentes até na camada de persistência.
+        """
+        entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            self.curriculo.usuario_id,
+            self.curriculo.id,
+            self.vaga_id,
+            ClassificacaoAssociacao.INTERESSE,
+        )
+
+        await AdicionarClassificacaoAssociacaoCurriculoVaga(
+            self.repositorio_curriculo, self.repositorio_associacao
+        ).executar(entrada)
+
+        self.assertEqual(self.repositorio_associacao.associacoes_atualizadas, [])
+
+    async def test_remove_classificacao_e_persiste_estado_resultante(self) -> None:
+        """Remove uma classificação preservando as demais classificações.
+
+        O teste parte de interesse e compatibilidade e remove compatibilidade.
+        Ele existe para comprovar que a Application persiste a transição do
+        agregado, não cria uma nova associação.
+        """
+        self.associacao.adicionar_classificacao(ClassificacaoAssociacao.COMPATIBILIDADE)
+        entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            self.curriculo.usuario_id,
+            self.curriculo.id,
+            self.vaga_id,
+            ClassificacaoAssociacao.COMPATIBILIDADE,
+        )
+
+        resultado = await RemoverClassificacaoAssociacaoCurriculoVaga(
+            self.repositorio_curriculo, self.repositorio_associacao
+        ).executar(entrada)
+
+        self.assertEqual(
+            resultado.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+        self.assertEqual(
+            self.repositorio_associacao.associacoes_atualizadas, [resultado]
+        )
+        self.assertEqual(self.repositorio_associacao.associacoes_salvas, [])
+
+    async def test_remocao_idempotente_nao_solicita_atualizacao(self) -> None:
+        """Não grava quando a classificação a remover já está ausente.
+
+        O teste remove candidatura de associação com somente interesse e
+        confirma ausência de chamada de escrita. Ele existe para suportar
+        repetição segura da operação.
+        """
+        entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            self.curriculo.usuario_id,
+            self.curriculo.id,
+            self.vaga_id,
+            ClassificacaoAssociacao.CANDIDATURA,
+        )
+
+        await RemoverClassificacaoAssociacaoCurriculoVaga(
+            self.repositorio_curriculo, self.repositorio_associacao
+        ).executar(entrada)
+
+        self.assertEqual(self.repositorio_associacao.associacoes_atualizadas, [])
+
+    async def test_curriculo_alheio_nao_consulta_associacao(self) -> None:
+        """Confirma ownership antes de consultar a associação.
+
+        O teste usa identidade diferente do proprietário e observa a exceção e
+        ausência de consultas ou escritas de associação. Ele existe para evitar
+        enumeração ou alteração cruzada entre estudantes.
+        """
+        entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            UsuarioId(uuid4()),
+            self.curriculo.id,
+            self.vaga_id,
+            ClassificacaoAssociacao.COMPATIBILIDADE,
+        )
+
+        with self.assertRaises(CurriculoNaoEncontrado):
+            await AdicionarClassificacaoAssociacaoCurriculoVaga(
+                self.repositorio_curriculo, self.repositorio_associacao
+            ).executar(entrada)
+
+        self.assertEqual(self.repositorio_associacao.associacoes_carregadas, [])
+        self.assertEqual(self.repositorio_associacao.associacoes_atualizadas, [])
+
+    async def test_associacao_ausente_apos_ownership_gera_erro_sem_criar(self) -> None:
+        """Retorna erro específico sem criar associação quando o par não existe.
+
+        O teste fornece currículo próprio, mas nenhum agregado no repository.
+        Ele existe para impedir que atualização seja convertida em criação.
+        """
+        self.repositorio_associacao._associacoes.clear()
+
+        with self.assertRaises(AssociacaoCurriculoVagaNaoEncontrada):
+            await AdicionarClassificacaoAssociacaoCurriculoVaga(
+                self.repositorio_curriculo, self.repositorio_associacao
+            ).executar(self.entrada)
+
+        self.assertEqual(self.repositorio_associacao.associacoes_atualizadas, [])
+        self.assertEqual(self.repositorio_associacao.associacoes_salvas, [])
+
+    async def test_regra_de_dominio_nao_persiste_remocao_invalida(self) -> None:
+        """Propaga violação ao remover última classificação sem escrever.
+
+        O teste solicita a remoção do único interesse, espera falha do Domain e
+        confirma que o port de atualização não foi chamado. Ele existe para
+        garantir que erros de negócio não virem estados persistidos.
+        """
+        entrada = AlterarClassificacaoAssociacaoCurriculoVagaEntrada(
+            self.curriculo.usuario_id,
+            self.curriculo.id,
+            self.vaga_id,
+            ClassificacaoAssociacao.INTERESSE,
+        )
+
+        with self.assertRaises(RegraDeDominioViolada):
+            await RemoverClassificacaoAssociacaoCurriculoVaga(
+                self.repositorio_curriculo, self.repositorio_associacao
+            ).executar(entrada)
+
+        self.assertEqual(self.repositorio_associacao.associacoes_atualizadas, [])
+
+
+class CriarAssociacaoCurriculoVagaCasosAdicionaisTestCase(
+    unittest.IsolatedAsyncioTestCase
+):
+    """Completa a cobertura do fluxo de criação existente.
+
+    Os cenários mantêm a preparação local original e protegem ownership,
+    duplicidade e propagação de falhas. A classe existe para separar esses
+    testes dos novos casos de atualização.
+    """
 
     async def test_rejeita_curriculo_de_outro_usuario_sem_consultar_ou_salvar_associacao(
         self,
