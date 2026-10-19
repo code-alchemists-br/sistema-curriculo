@@ -9,10 +9,14 @@ o loop de eventos. Ele existe para atender a porta de storage em ambientes de de
 from __future__ import annotations
 
 import asyncio
+import re
 from pathlib import Path
 from uuid import uuid4
 
 from backend.application.ports import ArmazenadorDocumentos
+
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+CHAVE_ARQUIVO_VALIDA = re.compile(r"[0-9a-f]{32}")
 
 
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
@@ -65,3 +69,35 @@ class ArmazenadorDocumentosLocal(ArmazenadorDocumentos):
         return await asyncio.to_thread(
             self._gravar_arquivo_sincrono, conteudo, nome_arquivo
         )
+
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    def _ler_arquivo_sincrono(self, url_armazenamento: str) -> bytes | None:
+        """Executa a leitura do arquivo em disco de forma síncrona.
+
+        O método exige que a localização comece pelo prefixo configurado e que o
+        restante seja uma chave hexadecimal de 32 caracteres, como a gerada na
+        gravação, antes de montar o caminho. Qualquer outra localização, inclusive
+        com barras ou ``..``, devolve ``None``, assim como arquivo inexistente. Ele
+        existe para ser executado via worker em thread sem permitir leitura fora do
+        diretório base.
+        """
+        prefixo = f"{self._url_prefixo}/"
+        if not url_armazenamento.startswith(prefixo):
+            return None
+        chave = url_armazenamento[len(prefixo) :]
+        if CHAVE_ARQUIVO_VALIDA.fullmatch(chave) is None:
+            return None
+        try:
+            return (self._diretorio_base / chave).read_bytes()
+        except FileNotFoundError:
+            return None
+
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    async def ler(self, url_armazenamento: str) -> bytes | None:
+        """Lê os bytes do documento no sistema de arquivos local sem bloquear o loop.
+
+        O método delega a leitura para uma thread assíncrona e devolve o conteúdo
+        ou ``None``. Ele existe para satisfazer a leitura da porta
+        ArmazenadorDocumentos usada pelo download de documentos.
+        """
+        return await asyncio.to_thread(self._ler_arquivo_sincrono, url_armazenamento)

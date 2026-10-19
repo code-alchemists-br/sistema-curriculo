@@ -96,6 +96,13 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+from backend.application.download_documento import (
+    BaixarDocumento,
+    BaixarDocumentoEntrada,
+    ConteudoDocumento,
+)
 from backend.application.edicao_experiencia_profissional import (
     EditarExperienciaProfissional,
     EditarExperienciaProfissionalEntrada,
@@ -383,6 +390,10 @@ __all__ = [
     "DocumentoNaoEncontrado",
     "ExcluirDocumento",
     "ExcluirDocumentoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    "BaixarDocumento",
+    "BaixarDocumentoEntrada",
+    "ConteudoDocumento",
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     "ConsultaItemPerfil",
     "GerarPreviaVersaoCurriculo",
