@@ -65,7 +65,7 @@ METADADOS_TAGS: list[dict[str, str]] = [
     },
     {
         "name": TAG_PROJETOS_ACADEMICOS,
-        "description": "Cadastro de projetos acadêmicos.",
+        "description": "Cadastro de projetos acadêmicos e sugestão de descrição sem IA.",
     },
     {"name": TAG_COMPETENCIAS, "description": "Cadastro de competências."},
     {"name": TAG_IDIOMAS, "description": "Cadastro de idiomas."},
