@@ -48,22 +48,61 @@ outros itens não relacionados, devem ser omitidos do contexto enviado.
 
 ## Limites recomendados
 
-Os limites abaixo equilibram espaço suficiente para conteúdo profissional e
-controle previsível de custo.
+Os limites abaixo são os valores-padrão da política de contexto. Eles
+equilibram espaço suficiente para conteúdo profissional e controle previsível
+de custo, mas não devem ficar fixos no código nem depender de valores enviados
+pela interface.
 
-| Campo | Limite recomendado |
-| --- | ---: |
-| Empresa | 120 caracteres |
-| Cargo | 120 caracteres |
-| Descrição de experiência | 1.000 caracteres |
-| Descrição de competência | 100 caracteres |
-| Nível de competência | 50 caracteres |
-| Descrição da vaga | 6.000 caracteres |
+| Campo | Chave de configuração | Valor-padrão |
+| --- | --- | ---: |
+| Empresa | `limites_campos.empresa` | 120 caracteres |
+| Cargo | `limites_campos.cargo` | 120 caracteres |
+| Descrição de experiência | `limites_campos.descricao_experiencia` | 1.000 caracteres |
+| Descrição de competência | `limites_campos.descricao_competencia` | 100 caracteres |
+| Nível de competência | `limites_campos.nivel_competencia` | 50 caracteres |
+| Descrição da vaga | `limites_campos.descricao_vaga` | 6.000 caracteres |
 
 Além dos limites individuais, cada requisição de IA deve respeitar um orçamento
-agregado de, no máximo, 10.000 caracteres, aproximadamente 2.500 tokens. O
-limite definitivo pode ser ajustado após medir a qualidade das sugestões e o
-custo do modelo adotado.
+agregado configurável, com valor-padrão de 10.000 caracteres, aproximadamente
+2.500 tokens. O orçamento é identificado por `orcamento_total_caracteres`.
+
+### Política configurável
+
+A configuração deve ser mantida no servidor, versionada e aplicada antes de
+montar o contexto. Ela pode definir valores globais e substituições específicas
+por ação solicitada ou por modelo de IA. A ordem de resolução é:
+
+1. limite específico da combinação ação e modelo;
+2. limite específico da ação;
+3. limite específico do modelo;
+4. valor-padrão global.
+
+No backend, a política fica exclusivamente no arquivo
+`src/backend/config/limites_contexto_ia.json`. Não há endpoint para alterá-la.
+O processo consulta a assinatura do arquivo antes de obter a política: uma
+versão válida substitui a política em uso na próxima requisição, sem reiniciar
+a aplicação. Se o arquivo estiver temporariamente inválido durante a edição, o
+backend mantém a última versão válida e registra o erro até que uma nova versão
+válida seja publicada.
+
+Por exemplo, uma política pode manter o orçamento global em 10.000 caracteres
+e reduzir `orcamento_total_caracteres` para 6.000 ao adequar o currículo a uma
+vaga em um modelo de menor capacidade. As substituições devem indicar somente
+os valores que diferem do padrão.
+
+Os limites efetivos usados em cada requisição devem ser registrados junto da
+versão da política e do identificador do modelo. Isso permite comparar custo e
+qualidade das sugestões, ajustar os valores com evidência e reproduzir o
+comportamento posteriormente.
+
+O estudante não pode aumentar esses valores pelo cliente. A configuração deve
+aceitar apenas números inteiros positivos e continuar sujeita a tetos de
+segurança definidos no mesmo arquivo e validados pelo serviço. O total
+efetivamente enviado nunca pode ultrapassar o menor valor entre o orçamento
+resolvido e o teto de segurança.
+Uma alteração de política deve ser revisada e publicada pelo responsável
+técnico, sem exigir nova implantação quando o mecanismo de configuração já
+estiver disponível.
 
 ## Priorização de itens
 

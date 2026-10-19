@@ -1,0 +1,30 @@
+{
+  "versao": "1",
+  "padrao": {
+    "limites_campos": {
+      "empresa": 120,
+      "cargo": 120,
+      "descricao_experiencia": 1000,
+      "descricao_competencia": 100,
+      "nivel_competencia": 50,
+      "descricao_vaga": 6000
+    },
+    "orcamento_total_caracteres": 10000
+  },
+  "teto_seguranca": {
+    "limites_campos": {
+      "empresa": 240,
+      "cargo": 240,
+      "descricao_experiencia": 2000,
+      "descricao_competencia": 250,
+      "nivel_competencia": 100,
+      "descricao_vaga": 8000
+    },
+    "orcamento_total_caracteres": 16000
+  },
+  "substituicoes": {
+    "por_acao": {},
+    "por_modelo": {},
+    "por_acao_modelo": {}
+  }
+}
