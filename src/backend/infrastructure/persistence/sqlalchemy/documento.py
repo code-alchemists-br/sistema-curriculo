@@ -65,6 +65,7 @@ def para_registro(documento: Documento) -> DocumentoRegistro:
         nome_arquivo=documento.nome_arquivo,
         tipo_arquivo=documento.tipo_arquivo,
         url_armazenamento=documento.url_armazenamento,
+        deleted_at=documento.deleted_at,
     )
 
 
@@ -82,4 +83,5 @@ def para_documento(registro: DocumentoRegistro) -> Documento:
         nome_arquivo=registro.nome_arquivo,
         tipo_arquivo=registro.tipo_arquivo,
         url_armazenamento=registro.url_armazenamento,
+        deleted_at=registro.deleted_at,
     )

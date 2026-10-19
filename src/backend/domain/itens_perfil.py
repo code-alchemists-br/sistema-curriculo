@@ -681,7 +681,7 @@ def validar_tipo_arquivo(tipo: str) -> str:
 class Documento:
     """Representa metadados de um documento reutilizável do usuário.
 
-    A entidade guarda identidade, proprietário e metadados descritos no DER sem
+    A entidade guarda identidade, proprietário, estado deleted_at e metadados descritos no DER sem
     abrir arquivo ou acessar armazenamento. Ela existe para que currículos
     referenciem documentos sem depender de adaptadores de upload ou arquivos.
     """
@@ -691,6 +691,7 @@ class Documento:
     nome_arquivo: str
     tipo_arquivo: str
     url_armazenamento: str
+    deleted_at: datetime | None = None
 
     def __post_init__(self) -> None:
         """Valida a integridade dos metadados do documento.
@@ -699,6 +700,16 @@ class Documento:
         cumprem as regras de integridade e segurança do domínio. Ele existe para
         proteger o agregado contra estados inválidos.
         """
+        if self.deleted_at is not None and not isinstance(self.deleted_at, datetime):
+            raise RegraDeDominioViolada(
+                "A exclusão do documento exige um instante válido."
+            )
+        if not isinstance(self.id, DocumentoId) or not isinstance(
+            self.usuario_id, UsuarioId
+        ):
+            raise RegraDeDominioViolada(
+                "Documento exige identidade e proprietário tipados."
+            )
         object.__setattr__(
             self, "nome_arquivo", validar_nome_arquivo(self.nome_arquivo)
         )
