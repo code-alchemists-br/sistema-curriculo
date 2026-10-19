@@ -178,6 +178,12 @@ from backend.api.versao_curriculo import (
 from backend.api.versao_curriculo import (
     criar_router as criar_router_versao_curriculo,
 )
+from backend.application.assistente_descricao_projeto import (
+    AssistenteDescricaoProjeto,
+)
+from backend.application.assistente_descricao_projeto_deterministico import (
+    AssistenteDescricaoProjetoDeterministico,
+)
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.saude import VerificadorPersistencia, VerificadorSaude
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
@@ -238,6 +244,7 @@ def create_app(
     | None = None,
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     consultar_vagas: ConsultaVagasExecutor | None = None,
+    assistente_descricao_projeto: AssistenteDescricaoProjeto | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -251,6 +258,10 @@ def create_app(
     exclusão de versão, experiências profissionais (cadastro, edição e exclusão), prévia,
     vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
+    A exceção é o assistente de descrição de projeto: sem assistente informado,
+    usa a estratégia determinística padrão, que não depende de serviço externo,
+    para que a orientação do RF04 esteja sempre disponível; passar
+    ``AssistenteDescricaoProjetoAusente`` desliga a sugestão com resposta 503.
     Quando um autenticador é fornecido, instala o middleware que valida sessões
     nas rotas privadas. Cada router recebe uma tag que o agrupa no Swagger, e a
     documentação OpenAPI marca com o cookie de sessão as rotas fora de
@@ -292,7 +303,12 @@ def create_app(
         criar_router_dados_contato(atualizar_dados_contato), tags=[TAG_DADOS_CONTATO]
     )
     app.include_router(
-        criar_router_projeto_academico(cadastrar_projeto_academico),
+        criar_router_projeto_academico(
+            cadastrar_projeto_academico,
+            assistente_descricao_projeto
+            if assistente_descricao_projeto is not None
+            else AssistenteDescricaoProjetoDeterministico(),
+        ),
         tags=[TAG_PROJETOS_ACADEMICOS],
     )
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
