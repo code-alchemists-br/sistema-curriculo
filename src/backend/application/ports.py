@@ -874,6 +874,17 @@ class ArmazenadorDocumentos(Protocol):
         """
         ...
 
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    async def ler(self, url_armazenamento: str) -> bytes | None:
+        """Lê os bytes do documento a partir da localização devolvida por ``armazenar``.
+
+        A implementação resolve a localização no mecanismo de storage e devolve o
+        conteúdo, ou ``None`` quando não houver arquivo correspondente ou a
+        localização não for reconhecida. O método existe para que o download leia
+        o arquivo sem que a Application conheça caminhos ou o provedor de storage.
+        """
+        ...
+
 
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 class RepositorioDocumento(Protocol):

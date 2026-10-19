@@ -8,12 +8,20 @@ Ele existe para disponibilizar o upload de documentos preservando o isolamento d
 from __future__ import annotations
 
 from typing import Protocol
+from urllib.parse import quote
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request, status
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from backend.application.cadastro_documento import ArmazenarDocumentoEntrada
+
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+from backend.application.download_documento import (
+    BaixarDocumentoEntrada,
+    ConteudoDocumento,
+)
 from backend.application.exclusao_documento import (
     DocumentoNaoEncontrado,
     ExcluirDocumentoEntrada,
@@ -84,15 +92,51 @@ class ExclusaoDocumentoExecutor(Protocol):
         ...
 
 
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+class DownloadDocumentoExecutor(Protocol):
+    """Define a execução do download de documentos solicitada pela API.
+
+    O contrato recebe a identidade do usuário e do documento em um DTO tipado e
+    devolve o arquivo sem a localização de armazenamento. Ele existe para que o
+    transporte delegue a regra de propriedade ao caso de uso.
+    """
+
+    async def executar(self, entrada: BaixarDocumentoEntrada) -> ConteudoDocumento:
+        """Executa a leitura do documento quando ele pertence ao usuário.
+
+        A implementação valida a propriedade e lê o arquivo pela porta de storage.
+        O método existe para manter essa regra fora do handler HTTP.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+def _cabecalho_de_download(nome_arquivo: str) -> str:
+    """Monta o valor do cabeçalho ``Content-Disposition`` para baixar o arquivo.
+
+    A função gera um ``filename`` apenas ASCII, sem aspas, como alternativa, e o
+    ``filename*`` com o nome original codificado em UTF-8, conforme a RFC 6266.
+    Ela existe para que nomes com acento ou aspas cheguem ao navegador sem quebrar
+    o cabeçalho HTTP.
+    """
+    alternativa = (
+        nome_arquivo.encode("ascii", "ignore").decode("ascii").replace('"', "")
+    ).strip() or "documento"
+    return f"attachment; filename=\"{alternativa}\"; filename*=UTF-8''{quote(nome_arquivo)}"
+
+
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 def criar_router(
     armazenar_documento: CadastroDocumentoExecutor | None = None,
     excluir_documento: ExclusaoDocumentoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    baixar_documento: DownloadDocumentoExecutor | None = None,
 ) -> APIRouter:
-    """Cria a rota POST protegida por sessão para upload de documentos complementares.
+    """Cria as rotas protegidas por sessão de upload, download e exclusão de documentos.
 
     A fábrica registra o endpoint /documentos obtendo o usuário autenticado de request.state,
-    traduz violações de domínio em 422 Unprocessable Content e devolve o documento com 201 Created.
+    traduz violações de domínio em 422 Unprocessable Content e devolve o documento com 201 Created;
+    o download devolve o arquivo sem a localização de armazenamento e responde 404 uniforme.
     Ela existe para isolar a infraestrutura HTTP da lógica de aplicação.
     """
     router = APIRouter()
@@ -143,6 +187,53 @@ def criar_router(
             nome_arquivo=documento.nome_arquivo,
             tipo_arquivo=documento.tipo_arquivo,
             url_armazenamento=documento.url_armazenamento,
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    @router.get(
+        "/documentos/{documento_id}",
+        response_class=Response,
+    )
+    async def baixar(documento_id: UUID, request: Request) -> Response:
+        """Devolve o arquivo de um documento que pertença ao usuário autenticado.
+
+        O handler obtém a sessão, encaminha identidades tipadas ao caso de uso e
+        responde com os bytes, o tipo e o nome do arquivo, sem a localização de
+        armazenamento. Ausência, exclusão ou falta de propriedade viram 404
+        uniforme. Ele existe para expor o download sem permitir enumeração de
+        documentos alheios nem revelar o caminho do storage.
+        """
+        if baixar_documento is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Download indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        try:
+            arquivo = await baixar_documento.executar(
+                BaixarDocumentoEntrada(
+                    usuario_id=UsuarioId(usuario_id),
+                    documento_id=DocumentoId(documento_id),
+                )
+            )
+        except DocumentoNaoEncontrado as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Documento não encontrado.",
+            ) from erro
+        return Response(
+            content=arquivo.conteudo,
+            media_type=arquivo.tipo_arquivo,
+            headers={
+                "Content-Disposition": _cabecalho_de_download(arquivo.nome_arquivo),
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "private, no-store",
+            },
         )
 
     @router.delete(

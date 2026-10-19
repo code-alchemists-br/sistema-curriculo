@@ -68,6 +68,8 @@ from backend.api.documentacao_openapi import (
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.api.documento import (
     CadastroDocumentoExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    DownloadDocumentoExecutor,
     ExclusaoDocumentoExecutor,
 )
 from backend.api.documento import (
@@ -232,6 +234,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     armazenar_documento: CadastroDocumentoExecutor | None = None,
     excluir_documento: ExclusaoDocumentoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
+    baixar_documento: DownloadDocumentoExecutor | None = None,
     editar_experiencia_profissional: EdicaoExperienciaProfissionalExecutor
     | None = None,
     excluir_experiencia_profissional: ExclusaoExperienciaProfissionalExecutor
@@ -314,7 +318,9 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     app.include_router(
-        criar_router_documento(armazenar_documento, excluir_documento),
+        criar_router_documento(
+            armazenar_documento, excluir_documento, baixar_documento
+        ),
         tags=[TAG_DOCUMENTOS_COMPLEMENTARES],
     )
     app.include_router(
