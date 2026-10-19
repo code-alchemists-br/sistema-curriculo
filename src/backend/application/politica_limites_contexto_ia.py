@@ -6,7 +6,7 @@ aplicação preserve custo e minimização de dados independentemente de como a
 política é armazenada.
 """
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping, Protocol
 
