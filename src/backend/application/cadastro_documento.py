@@ -20,6 +20,8 @@ from backend.domain.exceptions import RegraDeDominioViolada
 from backend.domain.itens_perfil import (
     TAMANHO_MAXIMO_DOCUMENTO_BYTES,
     Documento,
+    validar_nome_arquivo,
+    validar_tipo_arquivo,
 )
 from backend.domain.value_objects import UsuarioId
 
@@ -69,11 +71,14 @@ class ArmazenarDocumento:
     async def executar(self, entrada: ArmazenarDocumentoEntrada) -> Documento:
         """Processa o upload do documento e persiste seus metadados.
 
-        O método decodifica o conteúdo em Base64, rejeita payloads vazios ou maiores
+        O método valida nome e MIME antes do storage, decodifica Base64 e rejeita payloads vazios ou maiores
         que o limite permitido (10 MB), envia os bytes para o armazenador configurado,
         gera um novo DocumentoId e salva a entidade no repositório. Ele existe para fornecer
-        uma operação atômica de armazenamento e registro no perfil do estudante.
+        armazenamento validado e registro no perfil. Não há transação distribuída:
+        falhas de persistência após a gravação ainda podem deixar arquivos órfãos.
         """
+        nome_arquivo = validar_nome_arquivo(entrada.nome_arquivo)
+        tipo_arquivo = validar_tipo_arquivo(entrada.tipo_arquivo)
         if not entrada.conteudo_base64 or not entrada.conteudo_base64.strip():
             raise RegraDeDominioViolada("O conteúdo do documento não pode ser vazio.")
 
@@ -94,8 +99,8 @@ class ArmazenarDocumento:
 
         url_armazenamento = await self._armazenador.armazenar(
             conteudo=conteudo_bytes,
-            nome_arquivo=entrada.nome_arquivo,
-            tipo_arquivo=entrada.tipo_arquivo,
+            nome_arquivo=nome_arquivo,
+            tipo_arquivo=tipo_arquivo,
         )
 
         documento_id = self._gerador_id.gerar()
