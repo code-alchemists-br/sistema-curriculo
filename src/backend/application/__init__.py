@@ -21,6 +21,9 @@ from backend.application.assistente_descricao_projeto import (
     AssistenteDescricaoProjetoIndisponivel,
     AssistenteDescricaoProjetoSaida,
 )
+from backend.application.assistente_descricao_projeto_deterministico import (
+    AssistenteDescricaoProjetoDeterministico,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
 from backend.application.associacao_curriculo_vaga import (
@@ -285,6 +288,7 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
     "AssistenteDescricaoProjeto",
     "AssistenteDescricaoProjetoAusente",
+    "AssistenteDescricaoProjetoDeterministico",
     "AssistenteDescricaoProjetoEntrada",
     "AssistenteDescricaoProjetoIndisponivel",
     "AssistenteDescricaoProjetoSaida",
