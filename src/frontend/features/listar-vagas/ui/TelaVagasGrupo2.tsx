@@ -181,9 +181,11 @@ function renderizarEstado(
       : "";
 
     return (
+      // Proveniência: decision-analysis prompts/frontend/20261019-073800-vagas-leitor-tela-teclado-v001.md#v001
       <section
         aria-labelledby="titulo-vagas-vazias"
         className="vagas-grupo2__estado"
+        role="status"
       >
         <h2 id="titulo-vagas-vazias">Nenhuma vaga encontrada</h2>
         <p>Não encontramos vagas sugeridas{complemento}.</p>
