@@ -45,8 +45,11 @@
   content: "•";
 }
 
+/* Proveniência: decision-analysis prompts/frontend/20261019-075200-previa-curriculo-largura-movel-v001.md#v001 */
 .modelo-compacto__contato a {
   color: inherit;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .modelo-compacto__secao {
