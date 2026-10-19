@@ -40,14 +40,15 @@ class ArmazenadorDocumentosLocal(ArmazenadorDocumentos):
     def _gravar_arquivo_sincrono(self, conteudo: bytes, nome_arquivo: str) -> str:
         """Executa a gravação do arquivo em disco de forma síncrona.
 
-        O método cria o diretório de destino se não existir, gera um prefixo UUID único
-        para o arquivo para evitar sobrescrita e grava os bytes. Ele existe para ser
+        O método cria o diretório de destino, gera uma chave UUID independente do
+        nome recebido e grava exclusivamente, sem sobrescrever. Ele existe para ser
         executado via worker em thread.
         """
         self._diretorio_base.mkdir(parents=True, exist_ok=True)
-        nome_unico = f"{uuid4().hex}_{nome_arquivo}"
+        nome_unico = uuid4().hex
         caminho_destino = self._diretorio_base / nome_unico
-        caminho_destino.write_bytes(conteudo)
+        with caminho_destino.open("xb") as arquivo:
+            arquivo.write(conteudo)
         return f"{self._url_prefixo}/{nome_unico}"
 
     async def armazenar(

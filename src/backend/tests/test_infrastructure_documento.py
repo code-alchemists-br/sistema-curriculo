@@ -57,9 +57,9 @@ class DocumentoInfraestruturaTestCase(unittest.IsolatedAsyncioTestCase):
             )
 
             self.assertTrue(url.startswith("https://storage.local/arquivos/"))
-            self.assertTrue(url.endswith("_certificado.pdf"))
+            self.assertRegex(url.rsplit("/", 1)[-1], r"^[a-f0-9]{32}$")
 
             # Confirma presença no diretório
-            arquivos = list(Path(temp_dir).glob("*_certificado.pdf"))
+            arquivos = list(Path(temp_dir).iterdir())
             self.assertEqual(len(arquivos), 1)
             self.assertEqual(arquivos[0].read_bytes(), conteudo)
