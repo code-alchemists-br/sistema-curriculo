@@ -75,6 +75,23 @@ class AssociacaoCurriculoVagaTestCase(unittest.TestCase):
             ),
         )
 
+    def test_adicionar_classificacao_existente_e_idempotente(self) -> None:
+        """Confirma que adicionar novamente não muda o estado do agregado.
+
+        O teste adiciona interesse a uma associação que já o possui e verifica
+        o sinal de mudança e o conjunto final. Ele existe para distinguir no-op
+        de alteração persistível.
+        """
+        associacao = _criar_associacao(ClassificacaoAssociacao.INTERESSE)
+
+        alterada = associacao.adicionar_classificacao(ClassificacaoAssociacao.INTERESSE)
+
+        self.assertFalse(alterada)
+        self.assertEqual(
+            associacao.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+
     def test_adicionar_candidatura_preserva_compatibilidade(self) -> None:
         """Confirma que a inclusão de candidatura não remove compatibilidade.
 
@@ -145,6 +162,72 @@ class AssociacaoCurriculoVagaTestCase(unittest.TestCase):
                 vaga_id=VagaId("vaga-1"),
                 classificacoes=(),
             )
+
+    def test_remover_classificacao_ausente_e_idempotente(self) -> None:
+        """Confirma que remover item ausente deixa a associação inalterada.
+
+        O teste remove candidatura de uma associação somente com interesse e
+        verifica que nenhuma mudança foi produzida. Ele existe para permitir
+        retries sem efeitos ou falhas artificiais.
+        """
+        associacao = _criar_associacao(ClassificacaoAssociacao.INTERESSE)
+
+        alterada = associacao.remover_classificacao(ClassificacaoAssociacao.CANDIDATURA)
+
+        self.assertFalse(alterada)
+        self.assertEqual(
+            associacao.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+
+    def test_remover_candidatura_preserva_interesse(self) -> None:
+        """Confirma que retirar candidatura mantém interesse no agregado.
+
+        O teste parte da combinação normalizada, remove somente candidatura e
+        compara o conjunto restante. Ele existe para proteger a dependência de
+        candidatura em cada transição.
+        """
+        associacao = _criar_associacao(ClassificacaoAssociacao.CANDIDATURA)
+
+        alterada = associacao.remover_classificacao(ClassificacaoAssociacao.CANDIDATURA)
+
+        self.assertTrue(alterada)
+        self.assertEqual(
+            associacao.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+
+    def test_remover_interesse_com_candidatura_rejeita_sem_alterar_estado(
+        self,
+    ) -> None:
+        """Rejeita retirar interesse enquanto candidatura permanece.
+
+        O teste captura o estado, tenta remover interesse e verifica a exceção e
+        a ausência de mutação. Ele existe para manter a invariante após falha.
+        """
+        associacao = _criar_associacao(ClassificacaoAssociacao.CANDIDATURA)
+        estado_original = associacao.classificacoes
+
+        with self.assertRaises(RegraDeDominioViolada):
+            associacao.remover_classificacao(ClassificacaoAssociacao.INTERESSE)
+
+        self.assertEqual(associacao.classificacoes, estado_original)
+
+    def test_remover_ultima_classificacao_rejeita_sem_alterar_estado(self) -> None:
+        """Impede que uma associação válida passe a não ter classificações.
+
+        O teste tenta retirar o único interesse e confirma falha sem mutação.
+        Ele existe para manter o agregado não vazio durante toda sua vida útil.
+        """
+        associacao = _criar_associacao(ClassificacaoAssociacao.INTERESSE)
+
+        with self.assertRaises(RegraDeDominioViolada):
+            associacao.remover_classificacao(ClassificacaoAssociacao.INTERESSE)
+
+        self.assertEqual(
+            associacao.classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
 
     def test_classificacoes_reconhecidas_sao_as_previstas_nos_requisitos(self) -> None:
         """Confirma que o domínio expõe somente os três rótulos aprovados.

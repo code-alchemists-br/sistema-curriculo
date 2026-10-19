@@ -690,12 +690,11 @@ class RepositorioCurriculo(Protocol):
 
 # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
 class RepositorioAssociacaoCurriculoVaga(Protocol):
-    """Define consulta de duplicidade e salvamento de uma associação currículo-vaga.
+    """Define operações de persistência da associação currículo-vaga.
 
-    A porta usa o par tipado como identidade e recebe o agregado já validado,
-    sem expor ORM, banco ou transação. Ela existe para manter a criação na
-    Application independente da persistência concreta e permitir que o banco
-    imponha a mesma unicidade sob concorrência.
+    A porta usa o par tipado como identidade e recebe/devolve o agregado de
+    domínio, sem expor ORM ou banco. Ela existe para permitir criação e
+    atualização sem acoplar Application à persistência concreta.
     """
 
     async def existe_por_par(self, curriculo_id: CurriculoId, vaga_id: VagaId) -> bool:
@@ -704,6 +703,26 @@ class RepositorioAssociacaoCurriculoVaga(Protocol):
         A implementação consulta somente a identidade lógica solicitada e
         devolve um booleano, sem alterar classificações. O método existe para a
         Application rejeitar duplicidade no fluxo comum antes de salvar.
+        """
+
+    async def obter_para_atualizacao(
+        self, curriculo_id: CurriculoId, vaga_id: VagaId
+    ) -> AssociacaoCurriculoVaga | None:
+        """Obtém o agregado existente e serializa alterações do mesmo par.
+
+        Implementações carregam a raiz e classificações pela chave completa e
+        mantêm um lock até o fim da transação externa. Ela existe para que
+        mutações concorrentes da associação não sobrescrevam umas às outras.
+        """
+
+    async def atualizar_classificacoes(
+        self, associacao: AssociacaoCurriculoVaga
+    ) -> None:
+        """Persiste as classificações de uma associação previamente carregada.
+
+        Implementações alteram somente linhas dependentes e fazem flush sem
+        commit/rollback; a transação externa cobre leitura bloqueante e escrita.
+        Ela existe para manter atualização atômica sem recriar a raiz.
         """
 
     async def salvar(self, associacao: AssociacaoCurriculoVaga) -> None:

@@ -47,6 +47,9 @@ O assistente de descrição de projetos e a revisão guiada não exigem intelig�
 | RN02 | Uma mesma associação currículo–vaga pode ter mais de uma classificação simultaneamente, inclusive as três: interesse, compatibilidade e candidatura. |
 | RN03 | Candidatura implica interesse. Toda associação classificada como candidatura deve também possuir a classificação interesse, e essa condição deve ser preservada em qualquer alteração. |
 | RN04 | Compatibilidade é uma classificação atribuída manualmente pelo estudante; não exige cálculo automático de aderência entre currículo e vaga. |
+| RN05 | Adicionar uma classificação já presente ou remover uma classificação ausente de uma associação existente é uma operação idempotente e não deve duplicar classificações nem alterar o estado. |
+| RN06 | Remover candidatura preserva interesse. Não é permitido remover interesse enquanto candidatura estiver presente, nem remover a última classificação de uma associação. |
+| RN07 | Somente o proprietário do currículo pode alterar classificações da associação identificada pelo par `(curriculo_id, vaga_id)`. A identidade do ator deve vir da sessão autenticada, nunca de um `usuario_id` informado pelo cliente. |
 
 A inclusão de interesse como consequência de uma candidatura manual atende à RN03 e não constitui criação automática de uma associação.
 
@@ -83,6 +86,6 @@ Os pontos abaixo não representam funcionalidades adicionais aprovadas; são dec
 - Campos obrigatórios, validações e limites dos dados cadastrados.
 - Modelos de currículo e orientações oferecidas pelo assistente e pela revisão guiada.
 - Como alterações nas informações centralizadas afetam currículos já existentes.
-- Comportamento da interface ao tentar retirar interesse de uma associação com candidatura, sempre preservando a RN03.
+- Contrato HTTP e comportamento da interface para consultar e alterar associações; as regras de alteração estão definidas em RN03 e RN05–RN07.
 - Fluxo de consulta, alteração e exclusão das associações, além da criação manual já definida.
 - Tratamento das associações quando um currículo for excluído ou uma vaga deixar de estar disponível.
