@@ -6,7 +6,11 @@ o caso de uso à persistência relacional e traduzir somente colisões da chave
 primária da associação para a falha conhecida pela Application.
 """
 
-from sqlalchemy import delete, select
+# Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+from collections import defaultdict
+from uuid import UUID
+
+from sqlalchemy import delete, select, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +20,7 @@ from backend.application.associacao_curriculo_vaga import (
 )
 from backend.application.ports import RepositorioAssociacaoCurriculoVaga
 from backend.domain.associacao_curriculo_vaga import AssociacaoCurriculoVaga
-from backend.domain.value_objects import CurriculoId, VagaId
+from backend.domain.value_objects import CurriculoId, UsuarioId, VagaId
 from backend.infrastructure.persistence.sqlalchemy.associacao_curriculo_vaga import (
     AssociacaoCurriculoVagaRegistro,
     ClassificacaoAssociacaoRegistro,
@@ -24,6 +28,9 @@ from backend.infrastructure.persistence.sqlalchemy.associacao_curriculo_vaga imp
     para_registro,
     para_registros_classificacoes,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.curriculo import CurriculoRegistro
 
 _NOME_CONSTRAINT_ASSOCIACAO = "pk_associacoes_curriculo_vaga"
 _ERRO_SQLITE_PK_ASSOCIACAO = (
@@ -134,6 +141,59 @@ class RepositorioAssociacaoCurriculoVagaSqlAlchemy(RepositorioAssociacaoCurricul
                     "Já existe uma associação para este currículo e esta vaga."
                 ) from erro
             raise
+
+    # Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+    async def listar_por_usuario(
+        self, usuario_id: UsuarioId, *, offset: int, limit: int
+    ) -> tuple[AssociacaoCurriculoVaga, ...]:
+        """Lista agregados próprios numa página com ordenação determinística.
+
+        A consulta une associações aos currículos, filtra pelo proprietário,
+        ordena pelo par de identidade e só então aplica offset e limit. Uma
+        segunda consulta carrega as classificações apenas para os pares da
+        página. Ela existe para implementar o port sem vazar associações alheias.
+        """
+        consulta_associacoes = (
+            select(AssociacaoCurriculoVagaRegistro)
+            .join(
+                CurriculoRegistro,
+                AssociacaoCurriculoVagaRegistro.curriculo_id == CurriculoRegistro.id,
+            )
+            .where(CurriculoRegistro.usuario_id == usuario_id.valor)
+            .order_by(
+                AssociacaoCurriculoVagaRegistro.curriculo_id,
+                AssociacaoCurriculoVagaRegistro.vaga_id,
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+        registros = list((await self._session.scalars(consulta_associacoes)).all())
+        if not registros:
+            return ()
+
+        pares = [(registro.curriculo_id, registro.vaga_id) for registro in registros]
+        consulta_classificacoes = select(ClassificacaoAssociacaoRegistro).where(
+            tuple_(
+                ClassificacaoAssociacaoRegistro.curriculo_id,
+                ClassificacaoAssociacaoRegistro.vaga_id,
+            ).in_(pares)
+        )
+        linhas_classificacoes = (
+            await self._session.scalars(consulta_classificacoes)
+        ).all()
+        classificacoes_por_par: defaultdict[
+            tuple[UUID, str], list[ClassificacaoAssociacaoRegistro]
+        ] = defaultdict(list)
+        for linha in linhas_classificacoes:
+            classificacoes_por_par[(linha.curriculo_id, linha.vaga_id)].append(linha)
+
+        return tuple(
+            para_associacao(
+                registro,
+                classificacoes_por_par[(registro.curriculo_id, registro.vaga_id)],
+            )
+            for registro in registros
+        )
 
 
 # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004

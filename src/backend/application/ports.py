@@ -733,6 +733,18 @@ class RepositorioAssociacaoCurriculoVaga(Protocol):
         método existe para registrar a criação sem acoplar a Application ao ORM.
         """
 
+    # Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+    async def listar_por_usuario(
+        self, usuario_id: UsuarioId, *, offset: int, limit: int
+    ) -> tuple[AssociacaoCurriculoVaga, ...]:
+        """Lista associações dos currículos do usuário em uma página ordenada.
+
+        Implementações restringem a consulta ao proprietário do currículo antes
+        de aplicar ``offset`` e ``limit`` e ordenam pelo par de identificadores.
+        O método existe para que a Application leia uma página sem conhecer o
+        modelo relacional nem permitir resultados de outros usuários.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
 class GeradorCurriculoId(Protocol):

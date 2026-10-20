@@ -91,6 +91,12 @@ from backend.application.cadastro_projeto_academico import (
     CadastrarProjetoAcademicoEntrada,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+from backend.application.consulta_associacao_curriculo_vaga import (
+    ListarAssociacoesCurriculoVaga,
+    ListarAssociacoesCurriculoVagaEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20260924-cadastro-dados-pessoais-contato-v001.md#v001
 from backend.application.dados_contato import (
     AtualizarDadosContato,
@@ -374,6 +380,9 @@ __all__ = [
     "ItemNaoEncontrado",
     "SelecionarItemVersaoCurriculo",
     "SelecionarItemVersaoCurriculoEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+    "ListarAssociacoesCurriculoVaga",
+    "ListarAssociacoesCurriculoVagaEntrada",
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     "ListarVersoesCurriculo",
     "ListarVersoesCurriculoEntrada",

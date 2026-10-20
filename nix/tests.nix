@@ -10,7 +10,10 @@ pkgs.mkShell {
     # Dependências e ferramentas de testes
     pkgs.git
     # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
-    (pkgs.python3.withPackages backendPythonPackages)
+    # Proveniência: decision-analysis prompts/backend/20261019-191822-consulta-paginada-associacoes-estudante-v002.md#v002
+    (pkgs.python3.withPackages (
+      ps: backendPythonPackages ps ++ [ ps.aiosqlite ]
+    ))
   ];
 
   shellHook = ''
