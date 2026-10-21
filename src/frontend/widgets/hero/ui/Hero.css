@@ -1,0 +1,332 @@
+.hero-section {
+  width: 100%;
+  background: #050505;
+  position: relative;
+  min-height: calc(100vh - 130px);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.hero-section__container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.hero-section__content {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.hero-section__title {
+  font-family: "Clash Display", sans-serif;
+  font-size: clamp(3.25rem, 6vw, 96px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: #e6e6e6;
+  margin: 0 0 1.5rem 0;
+}
+
+.hero-section__subtitle {
+  font-family: "Poppins", sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #c7c7c7;
+  max-width: 44rem;
+  margin: 0 0 4.75rem 0;
+}
+
+.hero-section__actions {
+  display: flex;
+  align-items: center;
+}
+
+/* --- Efeito Botão Huly (Light Leaks & Glow) --- */
+
+.button-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 10;
+}
+
+.border-button-light-blur {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: calc(100% + 5px);
+  width: calc(100% + 5px);
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  will-change: transform;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.border-button-light-blur.flipped {
+  transform: translate(-50%, -50%) scaleX(-1);
+  opacity: 0;
+}
+
+.border-button-light-blur::before,
+.border-button-light-blur::after {
+  content: "";
+  position: absolute;
+  box-sizing: content-box;
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.border-button-light-blur::before {
+  left: -1px;
+  top: -1px;
+  z-index: 10;
+  border-width: 1px;
+  filter: blur(2px);
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(
+        97.68deg,
+        rgba(255, 177, 153, 0) 38.1%,
+        rgba(255, 177, 153, 0.2) 82.47%,
+        #ff7950 93.3%
+      )
+      border-box;
+}
+
+.border-button-light-blur::after {
+  left: -2px;
+  top: -2px;
+  z-index: 20;
+  border-width: 2px;
+  filter: blur(10px);
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(91.88deg, rgba(255, 137, 100, 0.2) 46.45%, #cd3100 98.59%)
+      border-box;
+}
+
+.border-button-light {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+}
+
+.border-button-light::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  z-index: 30;
+  box-sizing: content-box;
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  filter: blur(5px);
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(
+        91.96deg,
+        rgba(255, 177, 153, 0) 6.11%,
+        rgba(255, 177, 153, 0.2) 53.57%,
+        #ff7950 93.6%
+      )
+      border-box;
+}
+
+.interactive-button {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.5rem;
+  padding-left: 4.5rem;
+  padding-right: 4.5rem;
+  font-size: 0.9375rem;
+  letter-spacing: 0.06em;
+  color: #000;
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: #d1d1d1;
+  gap: 0.65rem;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+}
+
+.light-effect {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  width: 200px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transform: translateX(120px) translateZ(0px);
+  transition: transform 0.5s ease;
+}
+
+.core-glow {
+  position: absolute;
+  top: 50%;
+  height: 120px;
+  width: 120px;
+  transform: translateY(-50%);
+  background-image: radial-gradient(
+    50% 50% at 50% 50%,
+    #fff5f5 3.5%,
+    #ffaa81 26.5%,
+    #ffda9f 37.5%,
+    rgba(255, 170, 129, 0.5) 49%,
+    rgba(210, 106, 58, 0) 92.5%
+  );
+}
+
+.wider-blur {
+  position: absolute;
+  top: 50%;
+  height: 100px;
+  width: 200px;
+  transform: translateY(-50%);
+  background-image: radial-gradient(
+    43.3% 44.23% at 50% 49.51%,
+    #fffff7 29%,
+    #fffacd 48.5%,
+    #f4d2bf 60.71%,
+    rgba(214, 211, 210, 0) 100%
+  );
+  filter: blur(5px);
+}
+
+.button-text {
+  color: #5a250a;
+  position: relative;
+  z-index: 5;
+}
+
+.button-icon {
+  height: 11px;
+  width: 19px;
+  color: #5a250a;
+  position: relative;
+  z-index: 5;
+}
+
+/* --- Visual da Imagem à Direita --- */
+
+.hero-section__visual {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 66%;
+  max-width: 1650px;
+  min-width: 920px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-section__image {
+  width: 110%;
+  height: auto;
+  object-fit: contain;
+  object-position: right bottom;
+  display: block;
+  user-select: none;
+}
+
+/* --- Divisor Ondulado (Bottom Wave) --- */
+
+.hero-section__wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  pointer-events: none;
+  z-index: 5;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.hero-section__wave svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 960px) {
+  .hero-section {
+    min-height: auto;
+    padding: 3rem 1.5rem 4rem;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .hero-section__container {
+    padding: 0;
+  }
+
+  .hero-section__content {
+    max-width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+
+  .hero-section__title {
+    font-size: 2.75rem;
+  }
+
+  .hero-section__subtitle {
+    font-size: 1.125rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-section__visual {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    min-width: auto;
+    max-width: 580px;
+    margin-top: 2.5rem;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hero-section__image {
+    width: 100%;
+    object-position: center;
+  }
+
+  .hero-section__wave {
+    height: 40px;
+  }
+}
