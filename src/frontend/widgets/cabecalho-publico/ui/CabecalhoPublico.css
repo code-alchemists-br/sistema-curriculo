@@ -1,0 +1,137 @@
+.cabecalho-publico {
+  width: 100%;
+  border-bottom: none;
+  position: relative;
+  z-index: 50;
+}
+
+.cabecalho-publico__container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2.75rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cabecalho-publico__brand {
+  display: flex;
+  align-items: center;
+}
+
+.cabecalho-publico__logo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-family:
+    "Candara",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.15s ease-in-out;
+}
+
+.cabecalho-publico__logo-btn:hover {
+  color: #ffffff;
+}
+
+.cabecalho-publico__logo-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.cabecalho-publico__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cabecalho-publico__btn-login {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 9999px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+}
+
+.cabecalho-publico__btn-login:hover {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.cabecalho-publico__btn-login:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
+.cabecalho-publico__btn-criar-conta {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+}
+
+.cabecalho-publico__btn-criar-conta:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.cabecalho-publico__btn-criar-conta:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .cabecalho-publico__container {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .cabecalho-publico__logo-btn {
+    font-size: 26px;
+  }
+
+  .cabecalho-publico__actions {
+    gap: 0.5rem;
+  }
+
+  .cabecalho-publico__btn-criar-conta,
+  .cabecalho-publico__btn-login {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+}

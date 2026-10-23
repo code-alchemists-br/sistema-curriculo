@@ -1,12 +1,21 @@
-// Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "./App";
 
+afterEach(cleanup);
+
 describe("App", () => {
-  it("apresenta a porta de entrada para a conta do estudante", () => {
+  it("apresenta a porta de entrada com a seção hero e permite acessar a conta", async () => {
+    const user = userEvent.setup();
     render(<App />);
+
+    expect(
+      screen.getByRole("heading", { name: "O currículo que abre portas" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Fazer login" }));
 
     expect(
       screen.getByRole("heading", { name: "Acesse sua conta" }),

@@ -1,14 +1,29 @@
-// Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001
+import { useState } from "react";
 
 import { PaginaAcessoEstudante } from "../pages/acesso-estudante";
+import { PaginaInicio } from "../pages/inicio";
+
+type RotaAtiva = "inicio" | "acesso";
 
 /**
- * Inicializa a superfície de acesso do estudante.
+ * Ponto de entrada da aplicação.
  *
- * O componente delega a composição da tela à camada pages, sem conhecer seus
- * formulários ou o transporte HTTP. Ele existe para manter a inicialização da
- * aplicação separada do caso de uso de cadastro e confirmação de credenciais.
+ * Apresenta a página inicial pública da LIMINAL com a seção Hero e o cabeçalho.
+ * As ações de cadastro, login e criação de currículo conduzem o usuário à tela
+ * de acesso e gerenciamento de conta do estudante.
  */
 export function App() {
-  return <PaginaAcessoEstudante />;
+  const [rotaAtiva, setRotaAtiva] = useState<RotaAtiva>("inicio");
+
+  if (rotaAtiva === "acesso") {
+    return <PaginaAcessoEstudante />;
+  }
+
+  return (
+    <PaginaInicio
+      onNavegarCadastro={() => setRotaAtiva("acesso")}
+      onNavegarLogin={() => setRotaAtiva("acesso")}
+      onNavegarInicio={() => setRotaAtiva("inicio")}
+    />
+  );
 }
