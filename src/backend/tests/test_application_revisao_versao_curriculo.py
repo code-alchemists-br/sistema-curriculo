@@ -56,6 +56,18 @@ class GeradorDePreviaStub:
         return self._previa
 
 
+# Proveniência: decision-analysis prompts/backend/20261023-100000-completude-identificacao-contato-v001.md#v001
+def _usuario_com_cidade(fixture: CurriculoExportacaoFixture):
+    """Devolve o estudante da fixture com a cidade preenchida no contato.
+
+    A função copia o contato da fixture acrescentando uma cidade, sem alterar a
+    fixture compartilhada. Ela existe para que o currículo "completo" não receba
+    o aviso de cidade ausente nos testes desta revisão.
+    """
+    contato = replace(fixture.usuario.dados_contato, cidade="São Paulo")
+    return replace(fixture.usuario, dados_contato=contato)
+
+
 def _previa_completa(fixture: CurriculoExportacaoFixture) -> PreviaVersaoCurriculo:
     """Monta a prévia de um currículo completo a partir da fixture.
 
@@ -64,7 +76,7 @@ def _previa_completa(fixture: CurriculoExportacaoFixture) -> PreviaVersaoCurricu
     esvazie só o que quer observar.
     """
     return PreviaVersaoCurriculo(
-        usuario=fixture.usuario,
+        usuario=_usuario_com_cidade(fixture),
         curriculo=fixture.curriculo,
         formacoes=(fixture.formacao_academica,),
         experiencias=(fixture.experiencia_profissional,),

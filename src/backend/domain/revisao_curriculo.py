@@ -114,6 +114,49 @@ def _chave_de_ordem(pendencia: PendenciaRevisao) -> tuple[int, int, str]:
     )
 
 
+# Proveniência: decision-analysis prompts/backend/20261023-100000-completude-identificacao-contato-v001.md#v001
+def _revisar_identificacao_e_contato(usuario: Usuario) -> tuple[PendenciaRevisao, ...]:
+    """Confere a completude da identificação e do contato do estudante.
+
+    A função gera erro quando não há dados de contato (endereço e ao menos um
+    telefone) e, quando há, apenas avisos para a cidade ausente e para a falta
+    de LinkedIn e de currículo Lattes. Nome e e-mail não são conferidos aqui
+    porque os value objects já impedem que existam vazios. Ela existe para
+    isolar a regra de identificação e contato das regras das demais seções.
+    """
+    contato = usuario.dados_contato
+    if contato is None:
+        return (
+            PendenciaRevisao(
+                codigo="CONTATO_AUSENTE",
+                secao=SecaoRevisao.DADOS_PESSOAIS,
+                mensagem="Informe o endereço e ao menos um telefone de contato.",
+                severidade=SeveridadePendencia.ERRO,
+            ),
+        )
+
+    pendencias: list[PendenciaRevisao] = []
+    if contato.cidade is None:
+        pendencias.append(
+            PendenciaRevisao(
+                codigo="CIDADE_AUSENTE",
+                secao=SecaoRevisao.DADOS_PESSOAIS,
+                mensagem="Considere informar a cidade onde você mora.",
+                severidade=SeveridadePendencia.AVISO,
+            )
+        )
+    if contato.linkedin is None and contato.curriculo_lattes is None:
+        pendencias.append(
+            PendenciaRevisao(
+                codigo="LINK_PROFISSIONAL_AUSENTE",
+                secao=SecaoRevisao.DADOS_PESSOAIS,
+                mensagem="Considere informar o LinkedIn ou o currículo Lattes.",
+                severidade=SeveridadePendencia.AVISO,
+            )
+        )
+    return tuple(pendencias)
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 def revisar_curriculo(
     usuario: Usuario,
@@ -125,24 +168,15 @@ def revisar_curriculo(
 ) -> ResultadoRevisao:
     """Confere se o conteúdo da versão cobre as seções obrigatórias do currículo.
 
-    A função verifica se o estudante tem dados de contato e se cada seção
-    recebida tem ao menos um item: formação, experiência e competência geram erro
-    quando vazias, e projetos e idiomas geram apenas aviso. O resultado vem
-    ordenado. Ela existe para concentrar no domínio a regra do que falta, sem
-    depender de banco, rota ou formato de saída; os campos de cada item já são
-    garantidos pelas próprias entidades.
+    A função aplica a regra de identificação e contato (erro sem contato; aviso
+    para cidade e links ausentes) e verifica se cada seção recebida tem ao menos
+    um item: formação, experiência e competência geram erro quando vazias, e
+    projetos e idiomas geram apenas aviso. O resultado vem ordenado. Ela existe
+    para concentrar no domínio a regra do que falta, sem depender de banco, rota
+    ou formato de saída; os campos de cada item já são garantidos pelas próprias
+    entidades.
     """
-    pendencias: list[PendenciaRevisao] = []
-
-    if usuario.dados_contato is None:
-        pendencias.append(
-            PendenciaRevisao(
-                codigo="CONTATO_AUSENTE",
-                secao=SecaoRevisao.DADOS_PESSOAIS,
-                mensagem="Informe o endereço e ao menos um telefone de contato.",
-                severidade=SeveridadePendencia.ERRO,
-            )
-        )
+    pendencias: list[PendenciaRevisao] = list(_revisar_identificacao_e_contato(usuario))
 
     exigencias = (
         (
