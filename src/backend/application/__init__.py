@@ -105,6 +105,13 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
+from backend.application.documento_renderizado import (
+    BlocoDocumento,
+    CabecalhoDocumento,
+    DocumentoCurriculoRenderizado,
+    SecaoDocumento,
+    montar_documento_renderizado,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
 from backend.application.download_documento import (
@@ -412,6 +419,11 @@ __all__ = [
     "GerarPreviaVersaoCurriculo",
     "GerarPreviaVersaoCurriculoEntrada",
     "PreviaVersaoCurriculo",
+    "BlocoDocumento",
+    "CabecalhoDocumento",
+    "DocumentoCurriculoRenderizado",
+    "SecaoDocumento",
+    "montar_documento_renderizado",
     # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
     "RevisarVersaoCurriculo",
     "RevisarVersaoCurriculoEntrada",
