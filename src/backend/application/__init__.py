@@ -103,6 +103,7 @@ from backend.application.documento_renderizado import (
     BlocoDocumento,
     CabecalhoDocumento,
     DocumentoCurriculoRenderizado,
+    RenderizadorDocumentoCurriculo,
     SecaoDocumento,
     montar_documento_renderizado,
 )
@@ -413,6 +414,7 @@ __all__ = [
     "BlocoDocumento",
     "CabecalhoDocumento",
     "DocumentoCurriculoRenderizado",
+    "RenderizadorDocumentoCurriculo",
     "SecaoDocumento",
     "montar_documento_renderizado",
     # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
