@@ -6,7 +6,6 @@ ps: with ps; [
   fastapi
   uvicorn
   sqlalchemy
-  aiosqlite
   alembic
   psycopg
   pydantic-settings
