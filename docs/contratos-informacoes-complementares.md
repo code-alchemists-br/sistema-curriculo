@@ -2,7 +2,7 @@
 
 **Escopo:** rotas de criação existentes na branch `dev`, commit `ab2b8bc` (19/10/2026). Os caminhos abaixo são rotas FastAPI sem prefixo adicional no código-fonte; um gateway de implantação pode acrescentar um prefixo.
 
-Todas as rotas de criação abaixo obtêm o proprietário a partir da sessão autenticada. O cliente não deve enviar `usuario_id` no corpo para escolher o dono. O sucesso é `201 Created`; ausência de sessão resulta em `401`, executor não configurado em `503` e corpo/regra inválidos em `422`. Competência, idioma, curso e certificação também convertem duplicidade em `409 Conflict`.
+Todas as rotas de criação abaixo obtêm o proprietário a partir da sessão autenticada. O cliente não deve enviar `usuario_id` no corpo para escolher o dono. O sucesso é `201 Created`; ausência de sessão resulta em `401`, executor não configurado em `503` e corpo/regra inválidos em `422`. Competência, idioma, curso, certificação e link profissional também convertem duplicidade em `409 Conflict`.
 
 | Recurso | Rota e método | Campos de entrada | Campos principais da resposta |
 | --- | --- | --- | --- |
