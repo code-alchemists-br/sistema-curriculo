@@ -159,6 +159,14 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+from backend.api.revisao_versao_curriculo import (
+    RevisaoVersaoCurriculoExecutor,
+)
+from backend.api.revisao_versao_curriculo import (
+    criar_router as criar_router_revisao_versao_curriculo,
+)
 from backend.api.saude import criar_router as criar_router_saude
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
@@ -249,6 +257,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     consultar_vagas: ConsultaVagasExecutor | None = None,
     assistente_descricao_projeto: AssistenteDescricaoProjeto | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    revisar_versao_curriculo: RevisaoVersaoCurriculoExecutor | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -259,8 +269,9 @@ def create_app(
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, experiências profissionais (cadastro, edição e exclusão), prévia,
-    vagas de emprego e health/readiness com seus verificadores;
+    exclusão de versão, revisão de campos obrigatórios, experiências profissionais
+    (cadastro, edição e exclusão), prévia, vagas de emprego e health/readiness com
+    seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A exceção é o assistente de descrição de projeto: sem assistente informado,
     usa a estratégia determinística padrão, que não depende de serviço externo,
@@ -380,6 +391,11 @@ def create_app(
     )
     app.include_router(
         criar_router_exclusao_versao_curriculo(excluir_versao_curriculo),
+        tags=[TAG_VERSOES_CURRICULO],
+    )
+    # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+    app.include_router(
+        criar_router_revisao_versao_curriculo(revisar_versao_curriculo),
         tags=[TAG_VERSOES_CURRICULO],
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
