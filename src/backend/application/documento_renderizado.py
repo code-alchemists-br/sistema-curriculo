@@ -1,8 +1,9 @@
 """Define o documento renderizado do currículo, independente do formato de exportação.
 
 O módulo descreve, apenas com textos já formatados, tudo o que um arquivo de
-currículo precisa mostrar (cabeçalho do estudante e seções com seus blocos) e
-monta esse documento a partir da prévia da versão. Ele existe para que os
+currículo precisa mostrar (cabeçalho do estudante e seções com seus blocos),
+monta esse documento a partir da prévia da versão e declara a porta que os
+geradores de arquivo implementam. Ele existe para que os
 geradores de PDF e DOCX desenhem exatamente o mesmo conteúdo da visualização
 (RF09, CT-RF09-03), sem conhecer entidades de domínio nem repetir regras de
 seleção, ordenação ou formatação.
@@ -12,6 +13,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
+from typing import Protocol
 
 from backend.application.previa_versao_curriculo import PreviaVersaoCurriculo
 from backend.domain.itens_perfil import (
@@ -127,6 +129,26 @@ class DocumentoCurriculoRenderizado:
     nome_arquivo_base: str
     cabecalho: CabecalhoDocumento
     secoes: tuple[SecaoDocumento, ...]
+
+
+class RenderizadorDocumentoCurriculo(Protocol):
+    """Define a geração de um arquivo de currículo a partir do documento renderizado.
+
+    A porta recebe o ``DocumentoCurriculoRenderizado`` e devolve os bytes do
+    arquivo em um formato específico, sem decidir conteúdo nem conhecer
+    entidades de domínio. Ela existe para que PDF e DOCX sejam implementações
+    substituíveis do mesmo contrato e para que a exportação dependa da porta, e
+    não de bibliotecas de arquivo.
+    """
+
+    def renderizar(self, documento: DocumentoCurriculoRenderizado) -> bytes:
+        """Gera o arquivo do currículo e devolve seu conteúdo binário.
+
+        Implementações apenas desenham, no formato que representam, o cabeçalho
+        e as seções recebidos, na mesma ordem. O método existe para separar a
+        montagem do conteúdo da tecnologia de geração do arquivo.
+        """
+        ...
 
 
 def montar_documento_renderizado(

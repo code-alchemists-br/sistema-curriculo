@@ -8,13 +8,13 @@ Ele existe para disponibilizar o upload de documentos preservando o isolamento d
 from __future__ import annotations
 
 from typing import Protocol
-from urllib.parse import quote
 from uuid import UUID
 
 # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
+from backend.api.download import cabecalhos_de_download
 from backend.application.cadastro_documento import ArmazenarDocumentoEntrada
 
 # Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
@@ -108,21 +108,6 @@ class DownloadDocumentoExecutor(Protocol):
         O método existe para manter essa regra fora do handler HTTP.
         """
         ...
-
-
-# Proveniência: decision-analysis prompts/backend/20261019-110000-download-documento-complementar-v001.md#v001
-def _cabecalho_de_download(nome_arquivo: str) -> str:
-    """Monta o valor do cabeçalho ``Content-Disposition`` para baixar o arquivo.
-
-    A função gera um ``filename`` apenas ASCII, sem aspas, como alternativa, e o
-    ``filename*`` com o nome original codificado em UTF-8, conforme a RFC 6266.
-    Ela existe para que nomes com acento ou aspas cheguem ao navegador sem quebrar
-    o cabeçalho HTTP.
-    """
-    alternativa = (
-        nome_arquivo.encode("ascii", "ignore").decode("ascii").replace('"', "")
-    ).strip() or "documento"
-    return f"attachment; filename=\"{alternativa}\"; filename*=UTF-8''{quote(nome_arquivo)}"
 
 
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
@@ -229,11 +214,7 @@ def criar_router(
         return Response(
             content=arquivo.conteudo,
             media_type=arquivo.tipo_arquivo,
-            headers={
-                "Content-Disposition": _cabecalho_de_download(arquivo.nome_arquivo),
-                "X-Content-Type-Options": "nosniff",
-                "Cache-Control": "private, no-store",
-            },
+            headers=cabecalhos_de_download(arquivo.nome_arquivo, "documento"),
         )
 
     @router.delete(
