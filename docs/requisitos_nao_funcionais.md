@@ -13,7 +13,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 | ID | Categoria | Requisito | Origem ou situação |
 |---|---|---|---|
 | RNF01 | Usabilidade | A interface deve ser simples e compreensível para estudantes sem experiência na elaboração de currículos. | Derivado do objetivo do projeto; critério de aceitação a validar. |
-| RNF02 | Acessibilidade | A interface deve oferecer recursos de acessibilidade, incluindo navegação por teclado, identificação dos campos e apresentação compreensível de erros. | Proposta derivada; escopo e metas a definir. |
+| RNF02 | Acessibilidade | A interface deve oferecer recursos de acessibilidade, incluindo navegação por teclado, identificação dos campos e apresentação compreensível de erros. | WCAG 2.2 nível AA definida como referência e nível-alvo em [acessibilidade.md](acessibilidade.md). |
 | RNF03 | Compatibilidade e adaptação da interface | A interface web deve manter suas funcionalidades em computadores e dispositivos móveis. | Proposta derivada; dispositivos e navegadores suportados a definir. |
 | RNF04 | Segurança e autorização | O sistema deve proteger dados pessoais, currículos e associações com vagas, permitindo consulta e alteração somente por usuários autorizados. | Derivado da proteção dos dados e da autenticação confirmada; regras de autorização a detalhar. |
 | RNF05 | Integridade dos dados | A persistência deve preservar a integridade das associações entre currículos e vagas, impedir referências inválidas e garantir que toda associação com candidatura também possua interesse. | Derivado da persistência prevista e da regra de negócio confirmada. |
@@ -28,7 +28,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 | Requisito | Verificação |
 |---|---|
 | RNF01 | Observar estudantes representativos realizando cadastro de informações e exportação de um currículo sem auxílio externo; taxa de sucesso e tempo esperado a definir. |
-| RNF02 | Verificar navegação por teclado, identificação dos campos e compreensão das mensagens de erro; padrão de referência e nível de conformidade a definir. |
+| RNF02 | Verificar as telas conforme a lista mínima definida em [acessibilidade.md](acessibilidade.md), utilizando WCAG 2.2 nível AA como referência e combinando verificações automatizadas e manuais quando aplicável. |
 | RNF03 | Executar os fluxos principais na matriz de navegadores, dispositivos e tamanhos de tela que vier a ser aprovada. |
 | RNF04 | Verificar que usuários não autenticados ou sem autorização não conseguem consultar ou alterar dados protegidos de outro estudante. |
 | RNF05 | Verificar a rejeição de referências inválidas e de estados em que candidatura exista sem interesse; validar o tratamento de exclusões conforme a regra que vier a ser definida. |
@@ -42,7 +42,6 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 
 - **Desempenho:** limites de tempo de resposta, volume de dados e quantidade de usuários simultâneos.
 - **Disponibilidade:** meta de disponibilidade, período de medição e condições de manutenção; nenhum valor foi definido.
-- **Acessibilidade:** padrão de referência, nível de conformidade e metas de verificação.
 - **Autenticação e autorização:** método de autenticação, existência de perfis distintos e regras específicas de acesso.
 - **Integração de vagas:** provedor da API, parâmetros de busca e campos retornados, que influenciarão os limites e o tratamento de falhas.
 
