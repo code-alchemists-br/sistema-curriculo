@@ -136,6 +136,14 @@ from backend.application.exclusao_versao_curriculo import (
     ExcluirVersaoCurriculo,
     ExcluirVersaoCurriculoEntrada,
 )
+from backend.application.exportacao_curriculo import (
+    FORMATO_DOCX,
+    ArquivoCurriculoExportado,
+    ExportarCurriculo,
+    ExportarCurriculoEntrada,
+    FalhaGeracaoArquivoCurriculo,
+    FormatoExportacao,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
 from backend.application.listagem_versoes_curriculo import (
@@ -415,6 +423,12 @@ __all__ = [
     "CabecalhoDocumento",
     "DocumentoCurriculoRenderizado",
     "RenderizadorDocumentoCurriculo",
+    "FORMATO_DOCX",
+    "ArquivoCurriculoExportado",
+    "ExportarCurriculo",
+    "ExportarCurriculoEntrada",
+    "FalhaGeracaoArquivoCurriculo",
+    "FormatoExportacao",
     "SecaoDocumento",
     "montar_documento_renderizado",
     # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
