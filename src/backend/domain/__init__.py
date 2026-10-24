@@ -15,6 +15,12 @@ from backend.domain.associacao_curriculo_vaga import (
 # Proveniência: decision-analysis prompts/backend/20260914-camada-dominio-v001.md#v001
 from backend.domain.curriculo import Curriculo
 
+# Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+from backend.domain.decisao_recomendacao import (
+    DecisaoEstudante,
+    DecisaoRecomendacao,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
 from backend.domain.exceptions import (
     ReferenciaDeOutroProprietario,
@@ -235,4 +241,7 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261017-100000-secoes-curriculo-ordem-padrao-v001.md#v001
     "ORDEM_PADRAO_SECOES",
     "SecaoCurriculo",
+    # Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+    "DecisaoEstudante",
+    "DecisaoRecomendacao",
 ]

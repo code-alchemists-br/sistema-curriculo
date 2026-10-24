@@ -213,6 +213,8 @@ from backend.application.ports import (
     RepositorioCurriculo,
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     RepositorioCurso,
+    # Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+    RepositorioDecisaoRecomendacao,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     RepositorioDocumento,
     RepositorioExperienciaProfissional,
@@ -368,6 +370,8 @@ __all__ = [
     "RepositorioCompetencia",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "RepositorioCurso",
+    # Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+    "RepositorioDecisaoRecomendacao",
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     "RepositorioDocumento",
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001

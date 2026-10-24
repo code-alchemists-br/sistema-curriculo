@@ -14,6 +14,9 @@ from typing import Any, Protocol
 from backend.domain.associacao_curriculo_vaga import AssociacaoCurriculoVaga
 from backend.domain.curriculo import Curriculo
 
+# Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+from backend.domain.decisao_recomendacao import DecisaoRecomendacao
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
@@ -894,6 +897,37 @@ class ArmazenadorDocumentos(Protocol):
         conteúdo, ou ``None`` quando não houver arquivo correspondente ou a
         localização não for reconhecida. O método existe para que o download leia
         o arquivo sem que a Application conheça caminhos ou o provedor de storage.
+        """
+        ...
+
+
+# Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+class RepositorioDecisaoRecomendacao(Protocol):
+    """Define a persistência das decisões do estudante sobre recomendações.
+
+    A porta recebe e devolve decisões de domínio e guarda uma única decisão por
+    versão de currículo e código de recomendação, sem escolher ORM ou tabela. Ela
+    existe para que os casos de uso registrem e consultem o que o estudante
+    decidiu sem acoplar a Application à infraestrutura.
+    """
+
+    async def salvar(self, decisao: DecisaoRecomendacao) -> None:
+        """Grava a decisão, substituindo a anterior da mesma versão e código.
+
+        A implementação insere a decisão ou atualiza a existente para o mesmo par
+        de versão e código. O método existe para que decidir de novo corrija a
+        escolha anterior em vez de acumular decisões.
+        """
+        ...
+
+    async def listar_por_curriculo(
+        self, curriculo_id: CurriculoId
+    ) -> tuple[DecisaoRecomendacao, ...]:
+        """Lista as decisões já tomadas para a versão de currículo informada.
+
+        A implementação devolve as decisões em ordem estável pelo código, ou uma
+        tupla vazia. O método existe para que a revisão saiba quais recomendações
+        o estudante já aceitou ou rejeitou.
         """
         ...
 
