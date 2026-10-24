@@ -18,6 +18,18 @@ from backend.tests.fixtures.curriculo_exportacao import (
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 
 
+# Proveniência: decision-analysis prompts/backend/20261023-100000-completude-identificacao-contato-v001.md#v001
+def _usuario_com_cidade(fixture: CurriculoExportacaoFixture):
+    """Devolve o estudante da fixture com a cidade preenchida no contato.
+
+    A função copia o contato da fixture acrescentando uma cidade, sem alterar a
+    fixture compartilhada. Ela existe para que o currículo "completo" não receba
+    o aviso de cidade ausente nos testes desta regra.
+    """
+    contato = replace(fixture.usuario.dados_contato, cidade="São Paulo")
+    return replace(fixture.usuario, dados_contato=contato)
+
+
 def _revisar(
     fixture: CurriculoExportacaoFixture,
     *,
@@ -35,7 +47,7 @@ def _revisar(
     existe para que cada teste provoque uma pendência específica sem repetir a
     montagem dos dados.
     """
-    usuario = replace(fixture.usuario, dados_contato=None) if sem_contato else fixture.usuario
+    usuario = replace(fixture.usuario, dados_contato=None) if sem_contato else _usuario_com_cidade(fixture)
     return revisar_curriculo(
         usuario=usuario,
         formacoes=() if sem_formacao else (fixture.formacao_academica,),
