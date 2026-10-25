@@ -2,6 +2,7 @@
 
 import unittest
 from dataclasses import replace
+from datetime import date
 
 from backend.domain import (
     PendenciaRevisao,
@@ -16,6 +17,11 @@ from backend.tests.fixtures.curriculo_exportacao import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+
+# Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+# Dia em que as datas da fixture (formação de 2023 a 2025, experiência desde 2024)
+# são coerentes: depois dos inícios e antes do término previsto da formação.
+HOJE_CONSISTENTE = date(2025, 6, 1)
 
 
 # Proveniência: decision-analysis prompts/backend/20261023-100000-completude-identificacao-contato-v001.md#v001
@@ -55,6 +61,7 @@ def _revisar(
         projetos=() if sem_projeto else (fixture.projeto_academico,),
         competencias=() if sem_competencia else fixture.competencias,
         idiomas=() if sem_idioma else fixture.idiomas,
+        hoje=HOJE_CONSISTENTE,
     )
 
 

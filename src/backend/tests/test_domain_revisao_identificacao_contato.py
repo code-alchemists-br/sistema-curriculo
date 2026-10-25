@@ -2,6 +2,7 @@
 
 import unittest
 from dataclasses import replace
+from datetime import date
 
 # Proveniência: decision-analysis prompts/backend/20261023-100000-completude-identificacao-contato-v001.md#v001
 from backend.domain import (
@@ -43,6 +44,8 @@ def _revisar(fixture: CurriculoExportacaoFixture, usuario: Usuario):
         projetos=(fixture.projeto_academico,),
         competencias=fixture.competencias,
         idiomas=fixture.idiomas,
+        # Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+        hoje=date(2025, 6, 1),
     )
 
 

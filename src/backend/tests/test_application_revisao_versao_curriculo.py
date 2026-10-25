@@ -2,6 +2,7 @@
 
 import unittest
 from dataclasses import replace
+from datetime import UTC, datetime
 
 from backend.application import (
     CurriculoNaoEncontrado,
@@ -16,6 +17,35 @@ from backend.tests.fixtures.curriculo_exportacao import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
+
+# Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+# Instante em que as datas da fixture são coerentes (antes do término previsto da formação).
+INSTANTE_CONSISTENTE = datetime(2025, 6, 1, 12, 0, tzinfo=UTC)
+
+
+class RelogioFixo:
+    """Substitui a porta de relógio por um instante fixo.
+
+    O double devolve sempre o mesmo ``datetime`` com fuso. Ele existe para tornar
+    a data de hoje determinística na revisão de datas, sem usar o relógio do
+    sistema.
+    """
+
+    def __init__(self, instante: datetime) -> None:
+        """Guarda o instante que será devolvido em cada leitura.
+
+        O construtor não acessa o relógio do sistema. Ele existe para que cada
+        teste controle o dia usado pela revisão.
+        """
+        self._instante = instante
+
+    def agora(self) -> datetime:
+        """Devolve o instante configurado.
+
+        O método não consulta fonte de tempo externa. Ele existe para satisfazer a
+        porta ``Relogio`` com um valor previsível.
+        """
+        return self._instante
 
 
 class GeradorDePreviaStub:
@@ -104,7 +134,7 @@ class RevisarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         fixture = obter_curriculo_exportacao_fixture()
         stub = GeradorDePreviaStub(previa=_previa_completa(fixture))
 
-        resultado = await RevisarVersaoCurriculo(stub).executar(
+        resultado = await RevisarVersaoCurriculo(stub, RelogioFixo(INSTANTE_CONSISTENTE)).executar(
             RevisarVersaoCurriculoEntrada(fixture.usuario.id, fixture.curriculo.id)
         )
 
@@ -122,7 +152,7 @@ class RevisarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         previa = replace(_previa_completa(fixture), experiencias=(), competencias=())
         stub = GeradorDePreviaStub(previa=previa)
 
-        resultado = await RevisarVersaoCurriculo(stub).executar(
+        resultado = await RevisarVersaoCurriculo(stub, RelogioFixo(INSTANTE_CONSISTENTE)).executar(
             RevisarVersaoCurriculoEntrada(fixture.usuario.id, fixture.curriculo.id)
         )
 
@@ -131,6 +161,34 @@ class RevisarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
             ["EXPERIENCIA_AUSENTE", "COMPETENCIA_AUSENTE"],
         )
         self.assertFalse(resultado.aprovado)
+
+    # Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+    async def test_usa_a_data_do_relogio_na_revisao_das_datas(self) -> None:
+        """Confirma que a data de hoje vem do relógio injetado.
+
+        O teste usa a mesma prévia completa com dois relógios: um antes e outro
+        depois do término previsto da formação em andamento. Ele existe para
+        provar que o resultado muda com o relógio e que o caso de uso não usa o
+        relógio do sistema.
+        """
+        fixture = obter_curriculo_exportacao_fixture()
+        previa = _previa_completa(fixture)
+        entrada = RevisarVersaoCurriculoEntrada(fixture.usuario.id, fixture.curriculo.id)
+
+        antes = await RevisarVersaoCurriculo(
+            GeradorDePreviaStub(previa=previa), RelogioFixo(INSTANTE_CONSISTENTE)
+        ).executar(entrada)
+        depois = await RevisarVersaoCurriculo(
+            GeradorDePreviaStub(previa=previa),
+            RelogioFixo(datetime(2026, 10, 23, 12, 0, tzinfo=UTC)),
+        ).executar(entrada)
+
+        self.assertEqual(antes.pendencias, ())
+        self.assertEqual(
+            [p.codigo for p in depois.pendencias],
+            ["FORMACAO_EM_ANDAMENTO_COM_FIM_PASSADO"],
+        )
+        self.assertTrue(depois.aprovado)
 
     async def test_pede_a_previa_com_o_usuario_e_a_versao_da_entrada(self) -> None:
         """Confirma a entrada enviada à geração da prévia.
@@ -142,7 +200,7 @@ class RevisarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         fixture = obter_curriculo_exportacao_fixture()
         stub = GeradorDePreviaStub(previa=_previa_completa(fixture))
 
-        await RevisarVersaoCurriculo(stub).executar(
+        await RevisarVersaoCurriculo(stub, RelogioFixo(INSTANTE_CONSISTENTE)).executar(
             RevisarVersaoCurriculoEntrada(fixture.usuario.id, fixture.curriculo.id)
         )
 
@@ -164,6 +222,6 @@ class RevisarVersaoCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(CurriculoNaoEncontrado):
-            await RevisarVersaoCurriculo(stub).executar(
+            await RevisarVersaoCurriculo(stub, RelogioFixo(INSTANTE_CONSISTENTE)).executar(
                 RevisarVersaoCurriculoEntrada(fixture.usuario.id, fixture.curriculo.id)
             )

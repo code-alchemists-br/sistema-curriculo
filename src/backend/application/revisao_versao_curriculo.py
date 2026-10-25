@@ -9,6 +9,9 @@ revisar o currículo antes da exportação fora de controllers e adapters.
 from dataclasses import dataclass
 from typing import Protocol
 
+# Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+from backend.application.ports import Relogio
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.application.previa_versao_curriculo import (
     GerarPreviaVersaoCurriculoEntrada,
@@ -57,29 +60,34 @@ class RevisarVersaoCurriculoEntrada:
 class RevisarVersaoCurriculo:
     """Revisa os campos obrigatórios de uma versão de currículo própria.
 
-    O caso obtém a prévia da versão e entrega seu conteúdo à regra de revisão do
-    domínio, sem alterar nenhum estado. Ele existe para que o estudante saiba o
-    que falta no currículo sem que dados alheios possam entrar na revisão.
+    O caso obtém a prévia da versão e a data de hoje pelo relógio e entrega o
+    conteúdo à regra de revisão do domínio, sem alterar nenhum estado. Ele existe
+    para que o estudante saiba o que falta e o que está incoerente no currículo
+    sem que dados alheios possam entrar na revisão.
     """
 
     # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
-    def __init__(self, gerar_previa: GeradorDePrevia) -> None:
-        """Recebe a capacidade usada para obter a prévia da versão.
+    def __init__(self, gerar_previa: GeradorDePrevia, relogio: Relogio) -> None:
+        """Recebe a capacidade de obter a prévia da versão e o relógio.
 
-        O construtor armazena somente a abstração interna, que será usada durante
-        a execução e pode ser substituída por double. Ele existe para manter a
-        orquestração independente da infraestrutura.
+        O construtor armazena somente abstrações internas, que serão usadas
+        durante a execução e podem ser substituídas por doubles. Ele existe para
+        manter a orquestração independente da infraestrutura e do relógio do
+        sistema.
         """
         self._gerar_previa = gerar_previa
+        # Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+        self._relogio = relogio
 
     # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
     async def executar(self, entrada: RevisarVersaoCurriculoEntrada) -> ResultadoRevisao:
         """Devolve o resultado da revisão da versão do solicitante.
 
         O método pede a prévia, que recusa versão ausente ou alheia com a falha
-        de não encontrado, e aplica a regra de revisão sobre o estudante e os
-        itens de cada seção. Ele existe para impedir que se revise dado de outro
-        estudante e para manter a regra de completude no domínio.
+        de não encontrado, lê a data de hoje no relógio e aplica a regra de
+        revisão sobre o estudante e os itens de cada seção. Ele existe para
+        impedir que se revise dado de outro estudante e para manter a regra de
+        completude e de consistência de datas no domínio.
         """
         previa = await self._gerar_previa.executar(
             GerarPreviaVersaoCurriculoEntrada(
@@ -94,4 +102,5 @@ class RevisarVersaoCurriculo:
             projetos=previa.projetos,
             competencias=previa.competencias,
             idiomas=previa.idiomas,
+            hoje=self._relogio.agora().date(),
         )
