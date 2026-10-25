@@ -50,6 +50,7 @@ from backend.api.documentacao_openapi import (
     TAG_DADOS_CONTATO,
     TAG_DOCUMENTOS_COMPLEMENTARES,
     TAG_EXPERIENCIAS_PROFISSIONAIS,
+    TAG_EXPORTACAO_CURRICULO,
     TAG_FORMACOES_ACADEMICAS,
     TAG_IDIOMAS,
     TAG_ITENS_VERSAO_CURRICULO,
@@ -90,6 +91,10 @@ from backend.api.experiencia_profissional import (
 )
 from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
+)
+from backend.api.exportacao_curriculo import ExportacaoCurriculoExecutor
+from backend.api.exportacao_curriculo import (
+    criar_router as criar_router_exportacao_curriculo,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
@@ -227,6 +232,7 @@ def create_app(
     cadastrar_formacao_academica: CadastroFormacaoAcademicaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
+    exportar_curriculo_docx: ExportacaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
     autenticador_sessao: AutenticadorSessao | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
@@ -270,8 +276,8 @@ def create_app(
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
     exclusão de versão, revisão de campos obrigatórios, experiências profissionais
-    (cadastro, edição e exclusão), prévia, vagas de emprego e health/readiness com
-    seus verificadores;
+    (cadastro, edição e exclusão), prévia, exportação do currículo em DOCX, vagas de
+    emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A exceção é o assistente de descrição de projeto: sem assistente informado,
     usa a estratégia determinística padrão, que não depende de serviço externo,
@@ -388,6 +394,10 @@ def create_app(
     app.include_router(
         criar_router_previa_versao_curriculo(gerar_previa_versao_curriculo),
         tags=[TAG_PREVIA_VERSAO_CURRICULO],
+    )
+    app.include_router(
+        criar_router_exportacao_curriculo(exportar_curriculo_docx),
+        tags=[TAG_EXPORTACAO_CURRICULO],
     )
     app.include_router(
         criar_router_exclusao_versao_curriculo(excluir_versao_curriculo),
