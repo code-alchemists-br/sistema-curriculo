@@ -2,6 +2,7 @@
 
 import unittest
 from dataclasses import replace
+from datetime import date
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -183,6 +184,7 @@ class RevisaoVersaoCurriculoRotaTestCase(unittest.IsolatedAsyncioTestCase):
             projetos=(),
             competencias=(),
             idiomas=(),
+            hoje=date(2025, 6, 1),
         )
         revisar = _rota(RevisaoExecutorDouble(resultado=resultado)).endpoint
 

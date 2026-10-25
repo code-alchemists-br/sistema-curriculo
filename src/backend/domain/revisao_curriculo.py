@@ -9,6 +9,7 @@ um currículo estar completo.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date, timedelta
 from enum import Enum
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
@@ -18,6 +19,8 @@ from backend.domain.itens_perfil import (
     FormacaoAcademica,
     Idioma,
     ProjetoAcademico,
+    # Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+    StatusFormacaoAcademica,
 )
 from backend.domain.usuario import Usuario
 
@@ -157,6 +160,81 @@ def _revisar_identificacao_e_contato(usuario: Usuario) -> tuple[PendenciaRevisao
     return tuple(pendencias)
 
 
+# Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+_TOLERANCIA_DE_FUSO_HORARIO = timedelta(days=1)
+
+
+# Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+def _revisar_consistencia_de_datas(
+    formacoes: Sequence[FormacaoAcademica],
+    experiencias: Sequence[ExperienciaProfissional],
+    hoje: date,
+) -> tuple[PendenciaRevisao, ...]:
+    """Aponta datas de formação e experiência incoerentes com a data de hoje.
+
+    A função compara os períodos com ``hoje``, com tolerância de um dia para o
+    fuso horário, e gera no máximo uma pendência por tipo de problema: erro para
+    formação concluída com término no futuro e para experiência que começa no
+    futuro, e aviso para formação em andamento cujo término já passou. A ordem
+    entre início e fim já é garantida pelo ``Periodo``. Ela existe para isolar a
+    regra de datas, que depende do dia atual recebido de fora, e manter o domínio
+    independente do relógio do sistema.
+    """
+    limite_futuro = hoje + _TOLERANCIA_DE_FUSO_HORARIO
+    limite_passado = hoje - _TOLERANCIA_DE_FUSO_HORARIO
+    pendencias: list[PendenciaRevisao] = []
+
+    if any(
+        formacao.status is StatusFormacaoAcademica.CONCLUIDO
+        and formacao.periodo.fim is not None
+        and formacao.periodo.fim > limite_futuro
+        for formacao in formacoes
+    ):
+        pendencias.append(
+            PendenciaRevisao(
+                codigo="FORMACAO_CONCLUIDA_COM_FIM_FUTURO",
+                secao=SecaoRevisao.FORMACAO_ACADEMICA,
+                mensagem=(
+                    "Formação concluída não pode ter término no futuro; "
+                    "corrija a data ou a situação."
+                ),
+                severidade=SeveridadePendencia.ERRO,
+            )
+        )
+    if any(
+        formacao.status is StatusFormacaoAcademica.EM_ANDAMENTO
+        and formacao.periodo.fim is not None
+        and formacao.periodo.fim < limite_passado
+        for formacao in formacoes
+    ):
+        pendencias.append(
+            PendenciaRevisao(
+                codigo="FORMACAO_EM_ANDAMENTO_COM_FIM_PASSADO",
+                secao=SecaoRevisao.FORMACAO_ACADEMICA,
+                mensagem=(
+                    "Formação em andamento com término já passado; "
+                    "atualize a situação ou a data."
+                ),
+                severidade=SeveridadePendencia.AVISO,
+            )
+        )
+    if any(
+        experiencia.periodo.inicio > limite_futuro for experiencia in experiencias
+    ):
+        pendencias.append(
+            PendenciaRevisao(
+                codigo="EXPERIENCIA_INICIO_FUTURO",
+                secao=SecaoRevisao.EXPERIENCIAS_PROFISSIONAIS,
+                mensagem=(
+                    "Experiência profissional não pode começar no futuro; "
+                    "corrija a data de início."
+                ),
+                severidade=SeveridadePendencia.ERRO,
+            )
+        )
+    return tuple(pendencias)
+
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 def revisar_curriculo(
     usuario: Usuario,
@@ -165,18 +243,22 @@ def revisar_curriculo(
     projetos: Sequence[ProjetoAcademico],
     competencias: Sequence[Competencia],
     idiomas: Sequence[Idioma],
+    # Proveniência: decision-analysis prompts/backend/20261023-190000-consistencia-datas-revisao-v001.md#v001
+    hoje: date,
 ) -> ResultadoRevisao:
     """Confere se o conteúdo da versão cobre as seções obrigatórias do currículo.
 
     A função aplica a regra de identificação e contato (erro sem contato; aviso
-    para cidade e links ausentes) e verifica se cada seção recebida tem ao menos
-    um item: formação, experiência e competência geram erro quando vazias, e
-    projetos e idiomas geram apenas aviso. O resultado vem ordenado. Ela existe
-    para concentrar no domínio a regra do que falta, sem depender de banco, rota
-    ou formato de saída; os campos de cada item já são garantidos pelas próprias
-    entidades.
+    para cidade e links ausentes), a de consistência das datas de formação e
+    experiência em relação a ``hoje`` e verifica se cada seção recebida tem ao
+    menos um item: formação, experiência e competência geram erro quando vazias,
+    e projetos e idiomas geram apenas aviso. O resultado vem ordenado. Ela existe
+    para concentrar no domínio a regra do que falta, sem depender de banco, rota,
+    formato de saída ou relógio do sistema; os campos de cada item já são
+    garantidos pelas próprias entidades.
     """
     pendencias: list[PendenciaRevisao] = list(_revisar_identificacao_e_contato(usuario))
+    pendencias.extend(_revisar_consistencia_de_datas(formacoes, experiencias, hoje))
 
     exigencias = (
         (
