@@ -17,7 +17,7 @@ from backend.domain.associacao_curriculo_vaga import (
     AssociacaoCurriculoVaga,
     ClassificacaoAssociacao,
 )
-from backend.domain.value_objects import CurriculoId, VagaId
+from backend.domain.value_objects import CurriculoId, UsuarioId, VagaId
 from backend.infrastructure.persistence.sqlalchemy.associacao_curriculo_vaga import (
     AssociacaoCurriculoVagaRegistro,
     ClassificacaoAssociacaoRegistro,
@@ -239,6 +239,126 @@ class RepositorioAssociacaoCurriculoVagaSqlAlchemyTestCase(IsolatedAsyncioTestCa
             await self.repositorio.salvar(self.associacao)
 
         self.assertIs(contexto.exception, erro_integridade)
+
+
+# Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
+class ConsultaRepositorioAssociacaoCurriculoVagaTestCase(IsolatedAsyncioTestCase):
+    """Verifica a consulta paginada com AsyncSession substituída.
+
+    Os testes inspecionam a query compilada e controlam suas linhas por doubles,
+    sem iniciar um banco. Eles existem para validar filtro, ordenação, paginação
+    e reconstrução de agregados na fronteira SQLAlchemy.
+    """
+
+    def setUp(self) -> None:
+        """Prepara um adapter e sessão assíncrona simulada.
+
+        A sessão recebe resultados determinísticos em cada teste. A preparação
+        existe para isolar a implementação SQLAlchemy de qualquer I/O real.
+        """
+        self.session = MagicMock(spec=AsyncSession)
+        self.session.scalars = AsyncMock()
+        self.repositorio = RepositorioAssociacaoCurriculoVagaSqlAlchemy(self.session)
+
+    async def test_lista_pagina_do_usuario_com_filtro_ordenacao_e_mapeamento(
+        self,
+    ) -> None:
+        """Compila filtro anterior à paginação e reconstrói os agregados da página.
+
+        O teste verifica o join, o proprietário, a chave de ordenação, offset e
+        limit, e controla as linhas devolvidas para duas consultas. Ele existe
+        para provar que a página é filtrada e devolvida como domínio.
+        """
+        usuario_id = UsuarioId(UUID("00000000-0000-0000-0000-000000000301"))
+        curriculo_a = UUID("00000000-0000-0000-0000-000000000101")
+        curriculo_b = UUID("00000000-0000-0000-0000-000000000102")
+        registros = [
+            AssociacaoCurriculoVagaRegistro(
+                curriculo_id=curriculo_a,
+                vaga_id="vaga-a",
+            ),
+            AssociacaoCurriculoVagaRegistro(
+                curriculo_id=curriculo_b,
+                vaga_id="vaga-b",
+            ),
+        ]
+        linhas = [
+            ClassificacaoAssociacaoRegistro(
+                curriculo_id=curriculo_a,
+                vaga_id="vaga-a",
+                classificacao="interesse",
+            ),
+            ClassificacaoAssociacaoRegistro(
+                curriculo_id=curriculo_b,
+                vaga_id="vaga-b",
+                classificacao="compatibilidade",
+            ),
+        ]
+        resultado_registros = MagicMock()
+        resultado_registros.all.return_value = registros
+        resultado_classificacoes = MagicMock()
+        resultado_classificacoes.all.return_value = linhas
+        self.session.scalars.side_effect = [
+            resultado_registros,
+            resultado_classificacoes,
+        ]
+
+        resultado = await self.repositorio.listar_por_usuario(
+            usuario_id,
+            offset=10,
+            limit=5,
+        )
+
+        self.assertEqual(
+            tuple((item.curriculo_id.valor, item.vaga_id.valor) for item in resultado),
+            ((curriculo_a, "vaga-a"), (curriculo_b, "vaga-b")),
+        )
+        self.assertEqual(
+            resultado[0].classificacoes,
+            frozenset({ClassificacaoAssociacao.INTERESSE}),
+        )
+        self.assertEqual(
+            resultado[1].classificacoes,
+            frozenset({ClassificacaoAssociacao.COMPATIBILIDADE}),
+        )
+        self.assertEqual(self.session.scalars.await_count, 2)
+
+        consulta = self.session.scalars.await_args_list[0].args[0]
+        compilada = consulta.compile(dialect=postgresql.dialect())
+        sql = str(compilada)
+        self.assertIn("JOIN curriculos", sql)
+        self.assertIn("WHERE curriculos.usuario_id", sql)
+        self.assertIn(
+            "ORDER BY associacoes_curriculo_vaga.curriculo_id, "
+            "associacoes_curriculo_vaga.vaga_id",
+            sql,
+        )
+        self.assertLess(sql.index("WHERE"), sql.index("ORDER BY"))
+        self.assertLess(sql.index("ORDER BY"), sql.index("LIMIT"))
+        self.assertIn("OFFSET", sql)
+        self.assertIn(usuario_id.valor, compilada.params.values())
+        self.assertIn(10, compilada.params.values())
+        self.assertIn(5, compilada.params.values())
+
+    async def test_pagina_vazia_nao_consulta_classificacoes(self) -> None:
+        """Devolve tupla vazia e evita uma consulta secundária desnecessária.
+
+        A sessão simulada devolve zero associações na primeira consulta. O teste
+        existe para manter resultado vazio eficiente e não produzir consultas
+        de classificações sem pares.
+        """
+        resultado_registros = MagicMock()
+        resultado_registros.all.return_value = []
+        self.session.scalars.return_value = resultado_registros
+
+        resultado = await self.repositorio.listar_por_usuario(
+            UsuarioId(UUID("00000000-0000-0000-0000-000000000302")),
+            offset=0,
+            limit=10,
+        )
+
+        self.assertEqual(resultado, ())
+        self.session.scalars.assert_awaited_once()
 
 
 class MapeamentoAssociacaoCurriculoVagaTestCase(TestCase):
