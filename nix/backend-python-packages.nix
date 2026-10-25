@@ -9,4 +9,6 @@ ps: with ps; [
   alembic
   psycopg
   pydantic-settings
+  # Geração do currículo exportado em DOCX (RF09).
+  python-docx
 ]
