@@ -9,6 +9,9 @@ ps: with ps; [
   alembic
   psycopg
   pydantic-settings
-  # Geração do currículo exportado em DOCX (RF09).
+  # Geração do currículo exportado em DOCX e PDF (RF09).
   python-docx
+  reportlab
+  # Leitura de PDF usada pelos testes de conteúdo do arquivo exportado.
+  pypdf
 ]
