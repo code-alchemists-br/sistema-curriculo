@@ -107,9 +107,8 @@ erDiagram
     string tipo_arquivo
     string url_armazenamento
     timestamp created_at
-    timestamp updated_at
     timestamp deleted_at
-  }
+}
 
   CURRICULO {
     uuid id PK
@@ -203,3 +202,33 @@ erDiagram
     timestamp revogada_em
   }
 ```
+## Estado das extensões do modelo
+
+O DER representa os modelos persistidos atualmente aprovados para documentos
+complementares e associações entre currículo e vaga.
+
+### Documentos complementares
+
+A entidade `DOCUMENTO` representa os metadados persistidos do documento,
+incluindo proprietário, nome, tipo, localização de armazenamento, data de
+criação e estado de exclusão lógica.
+
+### Associação currículo–vaga
+
+A associação é identificada pelo par `curriculo_id` e `vaga_id`.
+
+As classificações são armazenadas separadamente e utilizam como chave o mesmo
+par acrescido do valor de `classificacao`, permitindo que uma associação possua
+mais de uma classificação sem duplicidade.
+
+### Histórico de associações
+
+O histórico de criação, alteração de classificações e remoção da associação
+ainda não é representado neste DER.
+
+As issues #253, #260 e #267 definem respectivamente a modelagem do evento, sua
+persistência e sua exposição.
+
+A entidade de histórico deverá ser acrescentada ao DER somente após a
+consolidação desse modelo, evitando registrar atributos ou relacionamentos ainda
+não aprovados.
