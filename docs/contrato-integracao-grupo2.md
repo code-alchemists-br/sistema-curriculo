@@ -2,24 +2,63 @@
 
 - **Sistema Emissor (Grupo 1):** `sistema-curriculo` (Plataforma de Apoio Profissional)
 - **Sistema Integrado (Grupo 2):** `esw3_cvmatcher` (Engine de Busca e Recomendação de Vagas)
-- **Documentador:** Marcelo Aparecido da Rosa
+- **Documentador Oficial:** Marcelo Aparecido da Rosa ([@marcelo-3com](https://github.com/marcelo-3com))
 - **Líder Técnico (Grupo 1):** Rodolpho P. M. Ferreira
-- **Responsável Integração Vagas (Grupo 1):** André Luiz da Silva Lima
+- **Responsável Técnico pela Integração (Grupo 1):** André Luiz da Silva Lima
 - **Líder Técnico (Grupo 2):** Carybé
-- **Versão do Contrato:** 1.0.0
-- **Data:** Outubro de 2026
+- **Versão do Contrato:** 1.1.0
+- **Data de Atualização:** Outubro de 2026
 
 ---
 
 ## 1. Visão Geral da Integração
 
-O **Sistema Currículo (Grupo 1)** coleta, estrutura e gerencia as informações profissionais e acadêmicas dos estudantes da FATEC-SP. Para oferecer recomendações personalizadas de oportunidades, o sistema consome a API de busca do **CV Matcher (Grupo 2)** via requisições HTTP REST com payload JSON.
+O **Sistema Currículo (Grupo 1)** coleta, estrutura e gerencia as informações profissionais e acadêmicas dos estudantes da FATEC-SP. Para oferecer recomendações personalizadas de oportunidades, o sistema consome a API de busca do **CV Matcher (Grupo 2)** via requisições HTTP REST com payload estruturado em JSON.
 
 O Grupo 2 processa a compatibilidade semântica e técnica entre o perfil do estudante e a base de vagas, retornando uma lista priorizada com as oportunidades de maior aderência.
 
 ---
 
-## 2. Regras de Negócio e Parâmetros de Volume
+## 2. Diagrama de Sequência da Integração (UML)
+
+O fluxo de comunicação assíncrona/síncrona entre as camadas e os sistemas é detalhado abaixo:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Aluno as Estudante (FATEC-SP)
+    participant UI as Frontend (UI/UX)
+    participant Backend as Backend G1 (sistema-curriculo)
+    participant DB as Banco de Dados G1
+    participant G2 as CV Matcher G2 (esw3_cvmatcher)
+
+    Aluno->>UI: Clica em "Buscar Vagas Compatíveis"
+    UI->>Backend: GET /api/curriculos/{id}/vagas-recomendadas?limit=10
+    Backend->>DB: Consulta dados completos do currículo do aluno
+    DB-->>Backend: Retorna competências, formação e experiências
+    
+    Note over Backend,G2: Chamada de Integração REST (Contrato Grupo 1 <-> Grupo 2)
+    Backend->>G2: POST /api/v1/vagas/match?limit=10 (Payload JSON do Currículo)
+    
+    alt Sucesso no Matching (HTTP 200 OK)
+        G2-->>Backend: Retorna lista com até 10 vagas ordenadas por compatibilidade (score)
+        Backend->>DB: Persiste associação curriculo_vaga (Histórico de Recomendações)
+        DB-->>Backend: Confirmação de persistência
+        Backend-->>UI: HTTP 200 OK com as vagas e scores calculados
+        UI-->>Aluno: Exibe cards de vagas com porcentagem de match e link de candidatura
+    else Erro de Validação de Parâmetros (HTTP 400 Bad Request)
+        G2-->>Backend: HTTP 400 (ex: limite fora do intervalo de 1 a 100)
+        Backend-->>UI: Exibe alerta de parâmetro inválido
+    else Serviço Externo Indisponível (HTTP 503 Service Unavailable)
+        G2-->>Backend: Falha na conexão / Timeout
+        Backend->>DB: Busca últimas vagas salvas em cache local
+        Backend-->>UI: Retorna vagas locais com aviso de indisponibilidade momentânea
+    end
+```
+
+---
+
+## 3. Regras de Negócio e Parâmetros de Volume
 
 Conforme alinhado entre as equipes:
 1. **Limite de Vagas (`limit`):**
@@ -34,7 +73,7 @@ Conforme alinhado entre as equipes:
 
 ---
 
-## 3. Especificação do Endpoint
+## 4. Especificação do Endpoint
 
 ### `POST /api/v1/vagas/match`
 
@@ -54,7 +93,7 @@ Accept: application/json
 
 ---
 
-### 3.1. Payload de Envio (Request Body - Grupo 1 $\rightarrow$ Grupo 2)
+### 4.1. Payload de Envio (Request Body - Grupo 1 $\rightarrow$ Grupo 2)
 
 ```json
 {
@@ -100,7 +139,7 @@ Accept: application/json
 
 ---
 
-### 3.2. Payload de Resposta de Sucesso (HTTP 200 OK - Grupo 2 $\rightarrow$ Grupo 1)
+### 4.2. Payload de Resposta de Sucesso (HTTP 200 OK - Grupo 2 $\rightarrow$ Grupo 1)
 
 ```json
 {
@@ -150,7 +189,7 @@ Accept: application/json
 
 ---
 
-## 4. Tratamento de Erros e Códigos de Status HTTP
+## 5. Tratamento de Erros e Códigos de Status HTTP
 
 | Código HTTP | Motivo | Exemplo de Cenário |
 | :--- | :--- | :--- |
@@ -171,7 +210,7 @@ Accept: application/json
 
 ---
 
-## 5. Próximos Passos e Responsáveis
+## 6. Próximos Passos e Responsáveis
 1. **Validação do Contrato:** Submissão deste documento para revisão do **Rodolpho** (Líder Grupo 1) e do **Carybé** (Líder Grupo 2).
 2. **Implementação de Consumo:** **André Luiz da Silva Lima** (Grupo 1) utilizará este contrato para construir a camada de adaptação de interface (`interface adapters`) e chamada HTTP.
 3. **Persistência das Associações:** Estruturação no banco de dados da tabela `curriculo_vaga` para salvar as recomendações recebidas.
