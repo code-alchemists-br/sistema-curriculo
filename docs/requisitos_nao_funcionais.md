@@ -14,7 +14,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 |---|---|---|---|
 | RNF01 | Usabilidade | A interface deve ser simples e compreensível para estudantes sem experiência na elaboração de currículos. | Derivado do objetivo do projeto; critério de aceitação a validar. |
 | RNF02 | Acessibilidade | A interface deve oferecer recursos de acessibilidade, incluindo navegação por teclado, identificação dos campos e apresentação compreensível de erros. | Proposta derivada; escopo e metas a definir. |
-| RNF03 | Compatibilidade e adaptação da interface | A interface web deve manter suas funcionalidades em computadores e dispositivos móveis. | Proposta derivada; dispositivos e navegadores suportados a definir. |
+| RNF03 | Compatibilidade e adaptação da interface | A interface web deve manter suas funcionalidades em computadores e dispositivos móveis. | Matriz de navegadores, larguras e critérios de responsividade definida em [compatibilidade-responsividade.md](compatibilidade-responsividade.md). |
 | RNF04 | Segurança e autorização | O sistema deve proteger dados pessoais, currículos e associações com vagas, permitindo consulta e alteração somente por usuários autorizados. | Derivado da proteção dos dados e da autenticação confirmada; regras de autorização a detalhar. |
 | RNF05 | Integridade dos dados | A persistência deve preservar a integridade das associações entre currículos e vagas, impedir referências inválidas e garantir que toda associação com candidatura também possua interesse. | Derivado da persistência prevista e da regra de negócio confirmada. |
 | RNF06 | Tolerância a falhas de integração | O sistema deve tratar indisponibilidade, demora e respostas inválidas da API de vagas de forma controlada, apresentando mensagem compreensível e preservando as informações dos currículos. | Proposta derivada da integração externa. |
@@ -29,7 +29,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 |---|---|
 | RNF01 | Observar estudantes representativos realizando cadastro de informações e exportação de um currículo sem auxílio externo; taxa de sucesso e tempo esperado a definir. |
 | RNF02 | Verificar navegação por teclado, identificação dos campos e compreensão das mensagens de erro; padrão de referência e nível de conformidade a definir. |
-| RNF03 | Executar os fluxos principais na matriz de navegadores, dispositivos e tamanhos de tela que vier a ser aprovada. |
+| RNF03 | Executar os fluxos principais na matriz definida em [compatibilidade-responsividade.md](compatibilidade-responsividade.md), verificando preservação das funcionalidades, ausência de quebra impeditiva de layout e usabilidade entre 360 px e 1280 px. |
 | RNF04 | Verificar que usuários não autenticados ou sem autorização não conseguem consultar ou alterar dados protegidos de outro estudante. |
 | RNF05 | Verificar a rejeição de referências inválidas e de estados em que candidatura exista sem interesse; validar o tratamento de exclusões conforme a regra que vier a ser definida. |
 | RNF06 | Simular indisponibilidade, tempo limite excedido e JSON inválido; verificar mensagens de erro e preservação dos dados dos currículos. |
@@ -48,7 +48,6 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 
 ## Detalhamentos ainda necessários
 
-- Matriz de navegadores e dispositivos suportados.
 - Aplicativos e versões utilizados para verificar os arquivos DOCX exportados.
 - Política de tratamento das associações na exclusão de currículos ou indisponibilidade de vagas.
 - Contratos dos módulos plugáveis, incluindo entradas, saídas e tratamento de falhas.
