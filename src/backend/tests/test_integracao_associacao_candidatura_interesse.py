@@ -2,19 +2,31 @@
 
 O prefixo test_ difere do nome sugerido na análise por decisão explícita do
 usuário: discover deve coletar e ignorar com motivo se faltar driver/grafo.
-P01–P03 e N01–N06/N08 verificam SQL bruto antes de reconstruir os agregados;
-N07 foi deliberadamente omitido pelo usuário por pertencer ao nível unitário.
+P01–P03 e N01–N06/N08–N10 verificam SQL bruto antes de reconstruir agregados
+em sessões independentes. N09/N10 caracterizam tipos internos, não JSON.
+RN03 define interesse implícito: candidatura inclui interesse como linha própria;
+remover candidatura preserva interesse. A vaga é texto opaco sem catálogo, FK
+ou oráculo de existência. O emissor e o autenticador persistidos fornecem o ator
+no harness; os casos internos não validam sessão nem conta ativa.
 
 Não é integração HTTP: não prova middleware/handler de associação, main.py,
 composição de produção, cadeia original do Alembic sob experimento temporário,
 PostgreSQL/lock FOR UPDATE, concorrência, indisponibilidade de banco, exclusão
 integral, política de interesse/consentimento/retenção ou existência/formato da
-vaga. O card não tem aceite fornecido; seu aceite oficial não é verificável.
+vaga. É integração de componentes, não sistema completo nem E2E. Não há rota,
+DTO ou handler de associação: não se testam sessão ausente/inválida/expirada/
+revogada, conta excluída, payload malformado ou dono enviado pelo cliente.
+N07, vaga inexistente e exclusão de associação/currículo associado ficam fora,
+sem placeholders. O card não tem aceite fornecido; os critérios são inferidos
+do título e de RF12/RN01–RN07 e seu aceite oficial não é verificável.
 """
 
 # Proveniência: decision-analysis prompts/backend/20261024-171508-integracao-associacao-candidatura-interesse-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
 
+from time import perf_counter
 from unittest import IsolatedAsyncioTestCase, skipUnless
+from unittest.mock import AsyncMock, patch
 
 from backend.application.associacao_curriculo_vaga import (
     AlterarClassificacaoAssociacaoCurriculoVagaEntrada,
@@ -59,31 +71,38 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
     para provar colaboração real e distinguir skip de comportamento aprovado.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def asyncSetUp(self) -> None:
         """Valida o grafo por AST antes de instanciar qualquer banco de cenário.
 
-        Converte somente defeitos preexistentes conhecidos em skip, permitindo
-        identificar bloqueio ambiental sem ocultar falhas de SQL ou asserções.
+        Classifica duplicatas e múltiplas heads como skips explícitos, permitindo
+        identificar bloqueio ambiental sem ocultar parsing, ciclos ou erro SQL.
         """
         verificar_grafo()
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def _banco(self, *, incluir_ausente=False):
         """Prepara um arquivo SQLite próprio e registra cleanup antes de migrar.
 
-        Revalida o grafo e usa a fixture compartilhada para contas, evitando
+        Revalida o grafo, usa a fixture compartilhada e mede seu preparo com
+        perf_counter, para informar custo real sem compartilhar bancos ou deixar
         recursos abandonados quando preparação, skip ou variante falhar.
         """
         verificar_grafo()
         banco = BancoAssociacoes()
         self.addAsyncCleanup(banco.fechar)
+        inicio = perf_counter()
         await banco.preparar(USUARIO_A, USUARIO_B, incluir_ausente=incluir_ausente)
+        print(f"BancoAssociacoes.preparar: {perf_counter() - inicio:.6f} s", flush=True)
         return banco
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def _conferir(self, banco, esperado):
-        """Compara linhas brutas antes de listar em outra sessão por proprietário.
+        """Compara SQL bruto, agregados e listagens por sessões independentes.
 
-        Exige raízes e classificações exatas, sem normalização intermediária,
-        para detectar persistência incompleta e efeitos em outro currículo.
+        Exige raízes e classes exatas antes de reconstruir cada agregado e de
+        listar por proprietário com spies delegantes, para detectar persistência
+        incompleta e efeitos em outro currículo sem simular filtragem SQL.
         """
         snapshot = await banco.snapshot()
         self.assertEqual(set(snapshot["raizes"]), set(esperado))
@@ -91,12 +110,31 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
             (curriculo, vaga, classe.value)
             for (curriculo, vaga), classes in esperado.items() for classe in classes
         })
+        for (curriculo, vaga), classes in esperado.items():
+            async with banco.base.sessoes() as sessao:
+                agregado = await RepositorioAssociacaoCurriculoVagaSqlAlchemy(
+                    sessao,
+                ).obter_para_atualizacao(CurriculoId(curriculo), VagaId(vaga))
+            self.assertIsNotNone(agregado)
+            self.assertEqual(agregado.curriculo_id, CurriculoId(curriculo))
+            self.assertEqual(agregado.vaga_id, VagaId(vaga))
+            self.assertEqual(set(agregado.classificacoes), set(classes))
         donos = {linha[0]: linha[1] for linha in snapshot["curriculos"]}
         for usuario in (USUARIO_A, USUARIO_B):
             async with banco.base.sessoes() as sessao:
-                pagina = await ListarAssociacoesCurriculoVaga(
-                    RepositorioAssociacaoCurriculoVagaSqlAlchemy(sessao),
-                ).executar(ListarAssociacoesCurriculoVagaEntrada(UsuarioId(usuario), 0, 100))
+                repositorio = RepositorioAssociacaoCurriculoVagaSqlAlchemy(sessao)
+                caso = ListarAssociacoesCurriculoVaga(repositorio)
+                entrada = ListarAssociacoesCurriculoVagaEntrada(UsuarioId(usuario), 0, 100)
+                with (
+                    patch.object(caso, "executar", new=AsyncMock(wraps=caso.executar)) as executar,
+                    patch.object(
+                        repositorio, "listar_por_usuario",
+                        new=AsyncMock(wraps=repositorio.listar_por_usuario),
+                    ) as listar,
+                ):
+                    pagina = await caso.executar(entrada)
+                    executar.assert_awaited_once_with(entrada)
+                    listar.assert_awaited_once_with(UsuarioId(usuario), offset=0, limit=100)
             self.assertEqual({
                 (item.curriculo_id.valor, item.vaga_id.valor): set(item.classificacoes)
                 for item in pagina
@@ -151,10 +189,12 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
         self.assertFalse(sessao.dirty)
         self.assertFalse(sessao.deleted)
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def _recusar(self, banco, acao, ator, curriculo, vaga, classes, erro, mensagem, *, ownership=False):
         """Executa recusa após controles e compara o estado bruto global relido.
 
-        Exige caso chamado, escrita não chamada e commit sem pendências, para
+        Exige guardas, escrita não chamada e commit sem pendências; compara SQL
+        global antes de reler agregados e listagens em novas sessões, para
         detectar mutações indevidas inclusive se um adapter já tivesse flushado.
         """
         anterior = await banco.snapshot()
@@ -183,30 +223,59 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
             finally:
                 observada.fechar()
         self.assertEqual(anterior, await banco.snapshot())
+        esperado = {par: set() for par in anterior["raizes"]}
+        for curriculo_id, vaga_id, classificacao in anterior["classes"]:
+            esperado[(curriculo_id, vaga_id)].add(Classe(classificacao))
+        if (curriculo, vaga) not in esperado:
+            async with banco.base.sessoes() as sessao:
+                ausente = await RepositorioAssociacaoCurriculoVagaSqlAlchemy(
+                    sessao,
+                ).obter_para_atualizacao(CurriculoId(curriculo), VagaId(vaga))
+            self.assertIsNone(ausente)
+        self.assertEqual(anterior, await self._conferir(banco, esperado))
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
+    async def _sentinela_b(self, banco):
+        """Cria a associação sentinela de B por caso e identidade reais.
+
+        Emite e autentica sessão persistida e usa o controle positivo com I/K
+        em B1/VAGA02, para observar isolamento de uma associação já existente.
+        """
+        ator = await banco.identidade(USUARIO_B)
+        esperado = {(B1, VAGA02): {I, K}}
+        await self._positiva(banco, "criar", ator, B1, VAGA02, (I, K), esperado)
+        return esperado
+
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def test_criacao_com_candidatura_persiste_interesse_e_isola_curriculo(self):
         """P01 persiste candidatura com interesse só no currículo escolhido.
 
         Autentica sessões reais antes da criação e da consulta durável e relê
-        SQL/listagem, para provar RN03 sem alegar envio externo ou HTTP.
+        SQL/listagem com sentinela B real, para provar RN03 e isolamento sem
+        alegar envio externo ou HTTP.
         """
         banco = await self._banco()
+        esperado = await self._sentinela_b(banco)
         ator = await banco.identidade(USUARIO_A)
-        esperado = {(A1, VAGA01): {C, I}}
+        esperado[(A1, VAGA01)] = {C, I}
         await self._positiva(banco, "criar", ator, A1, VAGA01, (C,), esperado)
         anterior = await banco.snapshot()
         self.assertEqual(await banco.identidade(USUARIO_A), ator)
         self.assertEqual(anterior, await self._conferir(banco, esperado))
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def test_adicao_remocao_e_repeticao_preservam_interesse(self):
         """P02 integra transições e no-ops sem perder o interesse derivado.
 
         Confirma e relê cada passo em sessões novas para verificar RN03/05/06
-        e observar que repetições não pedem atualização ao repositório real.
+        e observar que repetições não pedem atualização ao repositório real,
+        preservando a sentinela B no SQL bruto e na listagem a cada etapa.
         """
         banco = await self._banco()
+        esperado = await self._sentinela_b(banco)
         ator = await banco.identidade(USUARIO_A)
-        await self._positiva(banco, "criar", ator, A1, VAGA01, (K,), {(A1, VAGA01): {K}})
+        esperado[(A1, VAGA01)] = {K}
+        await self._positiva(banco, "criar", ator, A1, VAGA01, (K,), esperado)
         for acao, classe, estado, escreve in (
             ("adicionar", C, {K, C, I}, True),
             ("adicionar", C, {K, C, I}, False),
@@ -215,17 +284,22 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
             ("adicionar", I, {K, I}, False),
             ("remover", K, {I}, True),
         ):
-            await self._positiva(banco, acao, ator, A1, VAGA01, classe, {(A1, VAGA01): estado}, escreve=escreve)
+            with self.subTest(acao=acao, classificacao=classe.value, escreve=escreve):
+                esperado[(A1, VAGA01)] = estado
+                await self._positiva(banco, acao, ator, A1, VAGA01, classe, esperado, escreve=escreve)
 
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
     async def test_interesse_isolado_e_candidatura_com_compativel_sao_permitidos(self):
         """P03 comprova combinações válidas em dois pares sem efeito cruzado.
 
         Cria e relê cada par por SQL antes da listagem para verificar RF12 e
-        impedir que interesse isolado seja tratado como recusa sem fundamento.
+        impedir que interesse isolado seja tratado como recusa sem fundamento,
+        mantendo a sentinela B e seus currículos inalterados em todas as etapas.
         """
         banco = await self._banco()
+        esperado = await self._sentinela_b(banco)
         ator = await banco.identidade(USUARIO_A)
-        esperado = {(A1, VAGA01): {I}}
+        esperado[(A1, VAGA01)] = {I}
         await self._positiva(banco, "criar", ator, A1, VAGA01, (I,), esperado)
         esperado[(A2, VAGA02)] = {C, K, I}
         await self._positiva(banco, "criar", ator, A2, VAGA02, (C, K), esperado)
@@ -355,3 +429,57 @@ class AssociacaoCandidaturaInteresseIntegracaoTestCase(IsolatedAsyncioTestCase):
                 banco = await self._banco()
                 ator = await banco.identidade(USUARIO_A)
                 await self._recusar(banco, "criar", ator, A1, VAGA01, classes, RegraDeDominioViolada, mensagem)
+
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
+    async def test_adicao_de_classificacao_invalida_nao_persiste(self):
+        """N09 caracteriza a rejeição do tipo interno inválido na adição.
+
+        Compara bancos equivalentes com I/K e sentinela B: o controle adiciona
+        o enum C e o negativo envia a string, para provar a recusa do domínio
+        com guardas delegantes e releitura real, sem alegar validação de JSON.
+        """
+        controle = await self._banco()
+        esperado = await self._sentinela_b(controle)
+        ator = await controle.identidade(USUARIO_A)
+        esperado[(A1, VAGA01)] = {I, K}
+        await self._positiva(controle, "criar", ator, A1, VAGA01, (I, K), esperado)
+        esperado[(A1, VAGA01)] = {I, K, C}
+        await self._positiva(controle, "adicionar", ator, A1, VAGA01, C, esperado)
+
+        banco = await self._banco()
+        esperado = await self._sentinela_b(banco)
+        ator = await banco.identidade(USUARIO_A)
+        esperado[(A1, VAGA01)] = {I, K}
+        await self._positiva(banco, "criar", ator, A1, VAGA01, (I, K), esperado)
+        await self._recusar(
+            banco, "adicionar", ator, A1, VAGA01, "candidatura",
+            RegraDeDominioViolada,
+            "Associação currículo-vaga recebeu classificação não reconhecida.",
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
+    async def test_remocao_de_classificacao_invalida_nao_persiste(self):
+        """N10 caracteriza a rejeição do tipo interno inválido na remoção.
+
+        Compara bancos equivalentes com I/K e sentinela B: o controle remove
+        o enum K e o negativo envia a string, para provar raiz e classes intactas
+        por SQL, agregado e listagem em novas sessões, sem simular transporte.
+        """
+        controle = await self._banco()
+        esperado = await self._sentinela_b(controle)
+        ator = await controle.identidade(USUARIO_A)
+        esperado[(A1, VAGA01)] = {I, K}
+        await self._positiva(controle, "criar", ator, A1, VAGA01, (I, K), esperado)
+        esperado[(A1, VAGA01)] = {I}
+        await self._positiva(controle, "remover", ator, A1, VAGA01, K, esperado)
+
+        banco = await self._banco()
+        esperado = await self._sentinela_b(banco)
+        ator = await banco.identidade(USUARIO_A)
+        esperado[(A1, VAGA01)] = {I, K}
+        await self._positiva(banco, "criar", ator, A1, VAGA01, (I, K), esperado)
+        await self._recusar(
+            banco, "remover", ator, A1, VAGA01, "compatibilidade",
+            RegraDeDominioViolada,
+            "Associação currículo-vaga recebeu classificação não reconhecida.",
+        )
