@@ -31,6 +31,11 @@ from backend.infrastructure.persistence.sqlalchemy.curso import (
     CursoRegistro,  # noqa: F401
 )
 
+# Proveniência: decision-analysis prompts/backend/20261023-170000-persistir-decisao-recomendacao-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.decisao_recomendacao import (
+    DecisaoRecomendacaoRegistro,  # noqa: F401
+)
+
 # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.documento import (
     DocumentoRegistro,  # noqa: F401
