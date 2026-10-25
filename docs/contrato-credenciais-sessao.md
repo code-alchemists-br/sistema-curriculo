@@ -36,6 +36,42 @@ incorreta produz a mesma falha de credenciais.
 - Uma conta pode manter mais de uma sessão ativa, por exemplo em dispositivos
   diferentes. Logout revoga somente a sessão apresentada naquela requisição.
 
+## Ciclo de vida da sessão
+
+A sessão autenticada passa pelos estados e transições abaixo.
+
+```mermaid
+flowchart LR
+    A[Credenciais informadas] --> B{Credenciais válidas?}
+
+    B -->|Não| C[401 Unauthorized]
+    B -->|Sim| D[Criar sessão]
+
+    D --> E[Gerar token opaco]
+    E --> F[Persistir hash e validade]
+    F --> G[Enviar cookie __Host-sessao]
+
+    G --> H[Sessão ativa]
+
+    H --> I{Requisição protegida}
+    I --> J{Sessão válida?}
+
+    J -->|Sim| K[Associar usuario_id à requisição]
+    K --> L[Executar rota protegida]
+
+    J -->|Não| M[401 Unauthorized]
+
+    H --> N[Logout]
+    N --> O[Revogar sessão]
+    O --> P[Remover cookie]
+    P --> Q[Sessão revogada]
+
+    H --> R[Expiração após 8 horas]
+    R --> S[Sessão expirada]
+
+    H --> T[Exclusão lógica da conta]
+    T --> U[Sessões da conta deixam de autenticar]
+
 ## Credencial e armazenamento
 
 Após validar as credenciais, a API gera 32 bytes usando um gerador
@@ -191,6 +227,50 @@ Os testes devem substituir a dependência de autenticação e os executores por
 doubles determinísticos, sem banco ou relógio real. Testes unitários de API
 executam no ambiente `backend`; testes de integração que exercitem persistência
 ou infraestrutura seguem o ambiente `tests` definido no `AGENTS.md` raiz.
+
+## Rastreabilidade das entregas de autenticação
+
+Este contrato consolida as decisões e comportamentos implementados pelas
+atividades #80 a #87.
+
+| Issue | Entrega | Reflexo neste contrato |
+|---|---|---|
+| #80 | Definir contrato de credenciais de sessão | Define formato, transporte, validade e regras da credencial de sessão |
+| #81 | Emitir token de acesso no login | Login válido cria token opaco e envia o cookie de sessão |
+| #82 | Persistir sessão revogável do estudante | Sessão possui registro persistido, validade e estado de revogação |
+| #83 | Implementar middleware de autenticação | Rotas privadas validam a sessão antes de executar o handler |
+| #84 | Proteger rota de perfil com middleware | Operações de perfil exigem identidade autenticada e propriedade |
+| #85 | Proteger rota de currículo com middleware | Operações de currículo exigem sessão e respeitam a identidade autenticada |
+| #86 | Registrar revogação de sessão no logout | Logout revoga a sessão apresentada e remove o cookie |
+| #87 | Testar respostas não autenticadas do middleware | Cookie ausente ou sessão inválida resulta em resposta uniforme `401 Unauthorized` |
+
+A documentação deve acompanhar alterações futuras nesses contratos. Mudanças no
+formato da credencial, duração da sessão, atributos do cookie, rotas públicas,
+regras de revogação ou forma de propagação da identidade autenticada exigem
+revisão deste documento.
+
+## Resumo do contrato
+
+| Item | Decisão atual |
+|---|---|
+| Método de autenticação | E-mail e senha |
+| Tipo de sessão | Sessão opaca mantida no servidor |
+| Transporte | Cookie HTTP |
+| Nome do cookie | `__Host-sessao` |
+| Token | 32 bytes aleatórios codificados em Base64 URL-safe |
+| Persistência do token | Somente SHA-256 |
+| Duração | 8 horas |
+| Renovação automática | Não |
+| Sessões simultâneas | Permitidas |
+| Logout | Revoga somente a sessão atual |
+| Cookie `Secure` | Sim |
+| Cookie `HttpOnly` | Sim |
+| `SameSite` | `Lax` |
+| Rotas protegidas sem sessão | `401 Unauthorized` |
+| Identidade autenticada | `request.state.usuario_id` |
+| Sessão revogada | Não autentica |
+| Sessão expirada | Não autentica |
+| Conta excluída | Sessões deixam de autenticar |
 
 ## Limites e controles ainda não implementados
 
