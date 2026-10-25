@@ -16,7 +16,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 | RNF02 | Acessibilidade | A interface deve oferecer recursos de acessibilidade, incluindo navegação por teclado, identificação dos campos e apresentação compreensível de erros. | WCAG 2.2 nível AA definida como referência e nível-alvo em [acessibilidade.md](acessibilidade.md). |
 | RNF03 | Compatibilidade e adaptação da interface | A interface web deve manter suas funcionalidades em computadores e dispositivos móveis. | Matriz de navegadores, larguras e critérios de responsividade definida em [compatibilidade-responsividade.md](compatibilidade-responsividade.md). |
 | RNF04 | Segurança e autorização | O sistema deve proteger dados pessoais, currículos e associações com vagas, permitindo consulta e alteração somente por usuários autorizados. | Derivado da proteção dos dados e da autenticação confirmada; regras de autorização a detalhar. |
-| RNF05 | Integridade dos dados | A persistência deve preservar a integridade das associações entre currículos e vagas, impedir referências inválidas e garantir que toda associação com candidatura também possua interesse. | Derivado da persistência prevista e da regra de negócio confirmada. |
+| RNF05 | Integridade dos dados | A persistência deve preservar a integridade das associações entre currículos e vagas, impedir referências inválidas e garantir que toda associação com candidatura também possua interesse. | A política de exclusão e tratamento de dependências está definida em [politica_exclusao.md](politica_exclusao.md). |
 | RNF06 | Tolerância a falhas de integração | O sistema deve tratar indisponibilidade, demora e respostas inválidas da API de vagas de forma controlada, apresentando mensagem compreensível e preservando as informações dos currículos. | Proposta derivada da integração externa. |
 | RNF07 | Qualidade da exportação | A exportação em PDF e DOCX deve preservar o conteúdo, a organização e a legibilidade do currículo, sem cortes ou sobreposições. | Derivado dos dois formatos confirmados e da proposta de layouts profissionais. |
 | RNF08 | Desempenho | As operações de salvar dados, visualizar currículos, exportar currículos e consultar vagas devem responder em tempos adequados ao uso interativo. | Proposta derivada; metas mensuráveis a definir. |
@@ -31,7 +31,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 | RNF02 | Verificar as telas conforme a lista mínima definida em [acessibilidade.md](acessibilidade.md), utilizando WCAG 2.2 nível AA como referência e combinando verificações automatizadas e manuais quando aplicável. |
 | RNF03 | Executar os fluxos principais na matriz definida em [compatibilidade-responsividade.md](compatibilidade-responsividade.md), verificando preservação das funcionalidades, ausência de quebra impeditiva de layout e usabilidade entre 360 px e 1280 px. |
 | RNF04 | Verificar que usuários não autenticados ou sem autorização não conseguem consultar ou alterar dados protegidos de outro estudante. |
-| RNF05 | Verificar a rejeição de referências inválidas e de estados em que candidatura exista sem interesse; validar o tratamento de exclusões conforme a regra que vier a ser definida. |
+| RNF05 | Verificar a rejeição de referências inválidas e de estados em que candidatura exista sem interesse; validar exclusões e dependências conforme a política definida em [politica_exclusao.md](politica_exclusao.md). |
 | RNF06 | Simular indisponibilidade, tempo limite excedido e JSON inválido; verificar mensagens de erro e preservação dos dados dos currículos. |
 | RNF07 | Exportar currículos em PDF e DOCX e conferir conteúdo, legibilidade e organização nos modelos suportados; aplicativos usados para validar DOCX a definir. |
 | RNF08 | Medir os tempos das operações sob carga e volume de dados acordados; limites, percentis e condições de medição a definir. |
@@ -48,7 +48,7 @@ Os identificadores da versão inicial foram preservados. O documento de origem n
 ## Detalhamentos ainda necessários
 
 - Aplicativos e versões utilizados para verificar os arquivos DOCX exportados.
-- Política de tratamento das associações na exclusão de currículos ou indisponibilidade de vagas.
+- Política de tratamento de associações quando uma vaga externa se tornar indisponível.
 - Contratos dos módulos plugáveis, incluindo entradas, saídas e tratamento de falhas.
 
 A integração com inteligência artificial é uma possibilidade futura. Sua implementação não é obrigatória nesta definição de escopo; a arquitetura deve estar preparada para recebê-la.
