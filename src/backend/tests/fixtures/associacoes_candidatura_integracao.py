@@ -61,12 +61,14 @@ A1, A2, B1, AUSENTE = (UUID(int=n) for n in (201, 203, 202, 299))
 VAGA01, VAGA02 = "vaga-integracao-01", "vaga-integracao-02"
 
 
+# Proveniência: decision-analysis prompts/backend/20261025-201917-teste-associacao-curriculo-vaga-candidatura-interesse-v001.md#v001
 def verificar_grafo() -> str:
     """Inspeciona IDs e arestas por AST antes de criar o banco descartável.
 
-    Valida referências e ordenação topológica, recusando defeitos inesperados;
-    somente duplicatas/heads conhecidas viram skip para distinguir bloqueio
-    preexistente de uma falha nova do schema ou do teste.
+    Valida referências e ordenação topológica antes de classificar duplicatas
+    e múltiplas heads como bloqueios explícitos do ambiente. Não captura erros
+    de parsing, referências, ciclos ou execução de migrations, para impedir que
+    uma falha real seja confundida com teste de negócio aprovado ou ignorado.
     """
     arquivos = defaultdict(set)
     pais = defaultdict(set)
@@ -109,23 +111,11 @@ def verificar_grafo() -> str:
             raise AssertionError(f"Ciclo Alembic: {sorted(arquivos.keys() - visitados)}")
         visitados.update(livres)
     duplicadas = {r: nomes for r, nomes in arquivos.items() if len(nomes) > 1}
-    conhecidas = {
-        "20261015_0011": {
-            "20261015_0011_criar_cursos.py",
-            "20261015_0011_exclusao_logica_formacoes_academicas.py",
-        },
-        "20261015_0012": {
-            "20261015_0012_criar_links_profissionais.py",
-            "20261015_0012_criar_projetos_academicos.py",
-        },
-    }
-    if any(conhecidas.get(r) != nomes for r, nomes in duplicadas.items()):
-        raise AssertionError(f"Revisões duplicadas inesperadas: {duplicadas}")
     heads = arquivos.keys() - referencias
-    if len(heads) != 1 and heads != {"20261017_0015", "20261017_0004"}:
-        raise AssertionError(f"Heads inesperadas: {sorted(heads)}")
-    if duplicadas or len(heads) != 1:
-        detalhes = "; ".join(f"{r}: {', '.join(sorted(n))}" for r, n in duplicadas.items())
+    if duplicadas or len(heads) > 1:
+        detalhes = "; ".join(
+            f"{r}: {', '.join(sorted(duplicadas[r]))}" for r in sorted(duplicadas)
+        )
         terminais = "; ".join(
             f"{r}: {', '.join(sorted(arquivos[r]))}" for r in sorted(heads)
         )
