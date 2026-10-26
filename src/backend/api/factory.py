@@ -233,6 +233,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     gerar_previa_versao_curriculo: PreviaVersaoCurriculoExecutor | None = None,
     exportar_curriculo_docx: ExportacaoCurriculoExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261025-100000-rota-exportacao-pdf-v001.md#v001
+    exportar_curriculo_pdf: ExportacaoCurriculoExecutor | None = None,
     revogador_sessao: RevogadorSessao | None = None,
     autenticador_sessao: AutenticadorSessao | None = None,
     # Proveniência: decision-analysis prompts/backend/20261013-183632-exclusao-versao-curriculo-v001.md#v001
@@ -276,7 +278,7 @@ def create_app(
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
     exclusão de versão, revisão de campos obrigatórios, experiências profissionais
-    (cadastro, edição e exclusão), prévia, exportação do currículo em DOCX, vagas de
+    (cadastro, edição e exclusão), prévia, exportação do currículo em DOCX e PDF, vagas de
     emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A exceção é o assistente de descrição de projeto: sem assistente informado,
@@ -396,7 +398,7 @@ def create_app(
         tags=[TAG_PREVIA_VERSAO_CURRICULO],
     )
     app.include_router(
-        criar_router_exportacao_curriculo(exportar_curriculo_docx),
+        criar_router_exportacao_curriculo(exportar_curriculo_docx, exportar_curriculo_pdf),
         tags=[TAG_EXPORTACAO_CURRICULO],
     )
     app.include_router(
