@@ -105,6 +105,15 @@ from backend.application.dados_contato import (
     AtualizarDadosContato,
     AtualizarDadosContatoEntrada,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261025-140000-expor-decisao-recomendacao-v001.md#v001
+from backend.application.decisao_recomendacao import (
+    ConsultarDecisoesRecomendacao,
+    ConsultarDecisoesRecomendacaoEntrada,
+    RecomendacaoNaoEncontrada,
+    RegistrarDecisaoRecomendacao,
+    RegistrarDecisaoRecomendacaoEntrada,
+)
 from backend.application.documento_renderizado import (
     BlocoDocumento,
     CabecalhoDocumento,
@@ -427,6 +436,12 @@ __all__ = [
     "BaixarDocumento",
     "BaixarDocumentoEntrada",
     "ConteudoDocumento",
+    # Proveniência: decision-analysis prompts/backend/20261025-140000-expor-decisao-recomendacao-v001.md#v001
+    "ConsultarDecisoesRecomendacao",
+    "ConsultarDecisoesRecomendacaoEntrada",
+    "RecomendacaoNaoEncontrada",
+    "RegistrarDecisaoRecomendacao",
+    "RegistrarDecisaoRecomendacaoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261008-183601-previa-versao-curriculo-v001.md#v001
     "ConsultaItemPerfil",
     "GerarPreviaVersaoCurriculo",
