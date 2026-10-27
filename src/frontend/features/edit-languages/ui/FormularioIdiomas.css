@@ -1,0 +1,213 @@
+.formulario-idiomas {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.formulario-idiomas .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.formulario-idiomas fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.formulario-idiomas .secao-titulo {
+  font-family: "Poppins", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 1.5rem 0 1.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.formulario-idiomas .item-sublista__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.formulario-idiomas .label-subtitulo {
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #a3a3a3;
+  margin: 0;
+  display: inline-block;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.formulario-idiomas .btn-remover-item {
+  background: transparent;
+  color: #f87171;
+  border: none;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.formulario-idiomas .btn-remover-item:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.formulario-idiomas .field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
+}
+
+.formulario-idiomas .titulo-campo,
+.formulario-idiomas .field > label {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 400;
+  color: #f3f3f3;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  letter-spacing: -0.01em;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.formulario-idiomas .titulo-campo--obrigatorio::after {
+  content: " *";
+  color: #d43838;
+  font-size: 0.55em;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+.formulario-idiomas input[type="text"],
+.formulario-idiomas select {
+  width: 100%;
+  height: 52px;
+  background-color: #171717;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px;
+  padding: 0 1.25rem;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.formulario-idiomas select option {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.formulario-idiomas input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+}
+
+.formulario-idiomas input:hover:not(:focus),
+.formulario-idiomas select:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: #1a1a1a;
+}
+
+.formulario-idiomas input:focus,
+.formulario-idiomas input:focus-visible,
+.formulario-idiomas select:focus,
+.formulario-idiomas select:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: #1c1c1c;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25) !important;
+}
+
+.formulario-idiomas input[aria-invalid="true"],
+.formulario-idiomas select[aria-invalid="true"] {
+  border-color: rgba(239, 68, 68, 0.85) !important;
+}
+
+.formulario-idiomas .field__error {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  color: #f87171;
+  margin: 0.4rem 0 0 0;
+  line-height: 1.35;
+}
+
+.formulario-idiomas .btn-adicionar-item {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: #ff6a00;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s;
+}
+
+.formulario-idiomas .btn-adicionar-item:hover {
+  color: #ff8533;
+  text-decoration: underline;
+}
+
+.formulario-idiomas .btn-salvar-secao {
+  align-self: flex-start;
+  background-color: #262626;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  height: 42px;
+  padding: 0 1.25rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.formulario-idiomas .btn-salvar-secao:hover {
+  background-color: #333333;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.formulario-idiomas .form-message {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}

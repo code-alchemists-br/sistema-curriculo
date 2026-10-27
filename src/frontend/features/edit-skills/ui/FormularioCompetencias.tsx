@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 
 import "./FormularioCompetencias.css";
 
@@ -17,6 +17,8 @@ import {
 export interface FormularioCompetenciasProps {
   habilidadesIniciais?: Habilidades;
   onSalvar?: (habilidades: Habilidades) => void;
+  /** Notifica a porcentagem de conclusão desta etapa (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 const VALORES_INICIAIS: Habilidades = {
@@ -35,11 +37,31 @@ const VALORES_INICIAIS: Habilidades = {
 export function FormularioCompetencias({
   habilidadesIniciais = VALORES_INICIAIS,
   onSalvar,
+  aoAlterarProgresso,
 }: FormularioCompetenciasProps) {
   const [hardSkills, setHardSkills] = useState(habilidadesIniciais.hardSkills);
   const [softSkills, setSoftSkills] = useState(habilidadesIniciais.softSkills);
   const [inputHardSkill, setInputHardSkill] = useState("");
   const [inputSoftSkill, setInputSoftSkill] = useState("");
+
+  useEffect(() => {
+    if (!aoAlterarProgresso) return;
+    let progressoHard = 0;
+    if (hardSkills.length > 0) {
+      progressoHard = 50;
+    } else if (inputHardSkill.trim().length > 0) {
+      progressoHard = 25;
+    }
+
+    let progressoSoft = 0;
+    if (softSkills.length > 0) {
+      progressoSoft = 50;
+    } else if (inputSoftSkill.trim().length > 0) {
+      progressoSoft = 25;
+    }
+
+    aoAlterarProgresso(progressoHard + progressoSoft);
+  }, [hardSkills, softSkills, inputHardSkill, inputSoftSkill, aoAlterarProgresso]);
 
   /**
    * Adiciona uma competência à categoria escolhida e limpa seu input.
@@ -108,30 +130,36 @@ export function FormularioCompetencias({
           <p>Competências técnicas e conhecimentos específicos da sua área.</p>
         </div>
 
-        <label htmlFor="hard-skill-input">Adicionar competência técnica</label>
-        <input
-          id="hard-skill-input"
-          name="hardSkill"
-          type="text"
-          value={inputHardSkill}
-          onChange={(evento) => setInputHardSkill(evento.target.value)}
-          onKeyDown={(evento) => lidarComTecla(evento, "hard")}
-          placeholder="Digite uma competência e pressione Enter"
-        />
+        <div className="field">
+          <label
+            className="titulo-campo titulo-campo--obrigatorio"
+            htmlFor="hard-skill-input"
+          >
+            Adicionar competência técnica
+          </label>
+          <input
+            id="hard-skill-input"
+            name="hardSkill"
+            type="text"
+            value={inputHardSkill}
+            onChange={(evento) => setInputHardSkill(evento.target.value)}
+            onKeyDown={(evento) => lidarComTecla(evento, "hard")}
+            placeholder="Digite uma competência e pressione Enter"
+          />
+        </div>
 
         <div aria-label="Hard Skills selecionadas" className="skills-chips">
           {hardSkills.map((habilidade) => (
-            <span className="skill-chip" key={habilidade}>
-              <span>{habilidade}</span>
-              <button
-                aria-label={`Remover ${habilidade}`}
-                className="skill-chip__remove"
-                type="button"
-                onClick={() => removerSkill("hard", habilidade)}
-              >
-                ×
-              </button>
-            </span>
+            <button
+              aria-label={`Remover ${habilidade}`}
+              className="skill-chip"
+              key={habilidade}
+              onClick={() => removerSkill("hard", habilidade)}
+              title={`Clique para remover ${habilidade}`}
+              type="button"
+            >
+              {habilidade}
+            </button>
           ))}
         </div>
 
@@ -159,32 +187,33 @@ export function FormularioCompetencias({
           <p>Competências comportamentais e habilidades interpessoais.</p>
         </div>
 
-        <label htmlFor="soft-skill-input">
-          Adicionar competência comportamental
-        </label>
-        <input
-          id="soft-skill-input"
-          name="softSkill"
-          type="text"
-          value={inputSoftSkill}
-          onChange={(evento) => setInputSoftSkill(evento.target.value)}
-          onKeyDown={(evento) => lidarComTecla(evento, "soft")}
-          placeholder="Digite uma competência e pressione Enter"
-        />
+        <div className="field">
+          <label className="titulo-campo" htmlFor="soft-skill-input">
+            Adicionar competência comportamental
+          </label>
+          <input
+            id="soft-skill-input"
+            name="softSkill"
+            type="text"
+            value={inputSoftSkill}
+            onChange={(evento) => setInputSoftSkill(evento.target.value)}
+            onKeyDown={(evento) => lidarComTecla(evento, "soft")}
+            placeholder="Digite uma competência e pressione Enter"
+          />
+        </div>
 
         <div aria-label="Soft Skills selecionadas" className="skills-chips">
           {softSkills.map((habilidade) => (
-            <span className="skill-chip" key={habilidade}>
-              <span>{habilidade}</span>
-              <button
-                aria-label={`Remover ${habilidade}`}
-                className="skill-chip__remove"
-                type="button"
-                onClick={() => removerSkill("soft", habilidade)}
-              >
-                ×
-              </button>
-            </span>
+            <button
+              aria-label={`Remover ${habilidade}`}
+              className="skill-chip"
+              key={habilidade}
+              onClick={() => removerSkill("soft", habilidade)}
+              title={`Clique para remover ${habilidade}`}
+              type="button"
+            >
+              {habilidade}
+            </button>
           ))}
         </div>
 
@@ -206,7 +235,13 @@ export function FormularioCompetencias({
         </div>
       </section>
 
-      <button type="submit">Salvar competências</button>
+      <button
+        aria-label="Salvar competências"
+        className="btn-proximo"
+        type="submit"
+      >
+        Próximo
+      </button>
     </form>
   );
 }

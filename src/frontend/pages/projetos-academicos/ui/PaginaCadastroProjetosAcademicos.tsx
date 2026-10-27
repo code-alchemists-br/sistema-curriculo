@@ -1,40 +1,66 @@
-// Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001
+import { useState } from "react";
+
 import {
   criarClienteProjetosAcademicosIndisponivel,
   FormularioCadastroProjetoAcademico,
   type ClienteProjetosAcademicos,
 } from "../../../features/cadastro-projeto-academico";
+import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
+import "./PaginaCadastroProjetosAcademicos.css";
 
-/** Define o cliente opcional que permite compor a página em cenários distintos. */
+/** Define as propriedades para compor a página de projetos acadêmicos. */
 export interface PaginaCadastroProjetosAcademicosProps {
   cliente?: ClienteProjetosAcademicos;
+  onAvancar?: () => void;
 }
 
 /**
- * Compõe a página isolada de cadastro de projetos acadêmicos.
+ * Compõe a página de cadastro de projetos acadêmicos (Etapa 6 de 8).
  *
- * A página fornece orientação estática e delega interação ao formulário da
- * feature por sua API pública; sem integração real, usa cliente que informa
- * indisponibilidade. Ela existe para disponibilizar a unidade de tela sem
- * inventar sessão, rota protegida, persistência ou navegação global.
+ * Utiliza o layout compartilhado de cadastro de currículo, com o painel visual
+ * retangular degradê e a barra de progresso segmentada na sexta etapa.
  */
 export function PaginaCadastroProjetosAcademicos({
   cliente = criarClienteProjetosAcademicosIndisponivel(),
+  onAvancar,
 }: PaginaCadastroProjetosAcademicosProps) {
+  const [progresso, setProgresso] = useState(0);
+
+  function handleAvancar(): void {
+    if (onAvancar) {
+      onAvancar();
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.location.search = "?etapa=selecionar-modelo";
+    }
+  }
+
   return (
-    <main className="app-shell">
+    <LayoutCadastroCurriculo
+      subtitulo="Projetos Acadêmicos"
+      etapaAtual={6}
+      totalEtapas={8}
+      progressoEtapaAtual={progresso}
+    >
       <section
         aria-labelledby="titulo-pagina-projetos"
-        className="app-shell__content"
+        className="pagina-projetos__conteudo"
       >
-        <p className="eyebrow">Projetos acadêmicos</p>
-        <h1 id="titulo-pagina-projetos">Cadastre seu projeto acadêmico</h1>
-        <p>
-          Explique o objetivo do projeto, sua contribuição e as principais
-          tecnologias utilizadas.
-        </p>
-        <FormularioCadastroProjetoAcademico cliente={cliente} />
+        <h1
+          id="titulo-pagina-projetos"
+          className="pagina-projetos__sr-only"
+        >
+          Projetos acadêmicos
+        </h1>
+
+        <FormularioCadastroProjetoAcademico
+          cliente={cliente}
+          aoAlterarProgresso={setProgresso}
+          aoAvancar={handleAvancar}
+        />
       </section>
-    </main>
+    </LayoutCadastroCurriculo>
   );
 }
+

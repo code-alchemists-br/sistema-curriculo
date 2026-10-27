@@ -32,8 +32,8 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       name: /nome da empresa/i,
     });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
-    const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
-    const campoFim = screen.getByLabelText(/fim \(mês\/ano\)/i);
+    const campoInicio = screen.getByLabelText(/início/i);
+    const campoFim = screen.getByLabelText(/fim/i);
     const checkboxEmpregoAtual = screen.getByRole("checkbox", {
       name: /emprego atual/i,
     });
@@ -72,8 +72,8 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       name: /nome da empresa/i,
     });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
-    const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
-    const campoFim = screen.getByLabelText(/fim \(mês\/ano\)/i);
+    const campoInicio = screen.getByLabelText(/início/i);
+    const campoFim = screen.getByLabelText(/fim/i);
     const checkboxEmpregoAtual = screen.getByRole("checkbox", {
       name: /emprego atual/i,
     });
@@ -131,7 +131,7 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       name: /nome da empresa/i,
     });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
-    const campoInicio = screen.getByLabelText(/início \(mês\/ano\)/i);
+    const campoInicio = screen.getByLabelText(/início/i);
 
     expect(campoEmpresa).toHaveAttribute("aria-invalid", "true");
     expect(campoCargo).toHaveAttribute("aria-invalid", "true");
@@ -186,10 +186,10 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       "Desenvolvedor",
     );
     await usuario.type(
-      screen.getByLabelText(/início \(mês\/ano\)/i),
-      "2023-01",
+      screen.getByLabelText(/início/i),
+      "2023-01-01",
     );
-    await usuario.type(screen.getByLabelText(/fim \(mês\/ano\)/i), "2024-05");
+    await usuario.type(screen.getByLabelText(/fim/i), "2024-05-01");
 
     await usuario.click(
       screen.getByRole("button", { name: /salvar experiências/i }),
@@ -212,7 +212,7 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioExperiencias />);
 
     const checkbox = screen.getByRole("checkbox", { name: /emprego atual/i });
-    const campoFim = screen.getByLabelText(/fim \(mês\/ano\)/i);
+    const campoFim = screen.getByLabelText(/fim/i);
 
     expect(campoFim).toBeEnabled();
 

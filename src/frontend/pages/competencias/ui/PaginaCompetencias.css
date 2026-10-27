@@ -1,0 +1,17 @@
+/* Estilos da página de cadastro de competências (Etapa 5 de 8). */
+
+.pagina-competencias__conteudo {
+  width: 100%;
+}
+
+.pagina-competencias__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

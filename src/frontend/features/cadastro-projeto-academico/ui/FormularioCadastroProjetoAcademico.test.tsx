@@ -73,4 +73,52 @@ describe("FormularioCadastroProjetoAcademico", () => {
     expect(screen.getByLabelText("Título do projeto")).toHaveValue("");
     expect(screen.getByLabelText("Descrição")).toHaveValue("");
   });
+
+  it("exibe mensagem de vazio ao clicar em 'Não possuo projetos acadêmicos' e permite restaurar os campos", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn(),
+    };
+
+    render(<FormularioCadastroProjetoAcademico cliente={cliente} />);
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Não possuo projetos acadêmicos" }),
+    );
+
+    expect(
+      screen.getByText("Nenhum projeto acadêmico cadastrado."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Título do projeto"),
+    ).not.toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar projeto acadêmico" }),
+    );
+
+    expect(screen.getByLabelText("Título do projeto")).toBeInTheDocument();
+  });
+
+  it("chama aoAvancar ao clicar em Próximo com estado sem projetos ativo", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn(),
+    };
+    const aoAvancar = vi.fn();
+
+    render(
+      <FormularioCadastroProjetoAcademico
+        aoAvancar={aoAvancar}
+        cliente={cliente}
+      />,
+    );
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Não possuo projetos acadêmicos" }),
+    );
+    await usuario.click(screen.getByRole("button", { name: "Cadastrar projeto" }));
+
+    expect(aoAvancar).toHaveBeenCalledTimes(1);
+  });
 });

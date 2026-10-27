@@ -1,128 +1,215 @@
-/* Estilos exclusivos da tela de cadastro de competências. */
+/* Estilos exclusivos da tela de cadastro de competências (Etapa 5 de 8). */
 
 .skills-form {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .skills-section {
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .skills-section + .skills-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 1.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .skills-section__heading {
-  display: grid;
-  gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
 }
 
-.skills-section__heading h2,
-.skills-section__heading p,
-.skills-suggestions h3 {
-  margin: 0;
+.skills-section__heading h2 {
+  font-family: "Poppins", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.01em;
 }
 
 .skills-section__heading p {
-  color: #475569;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #a3a3a3;
+  margin: 0;
+  line-height: 1.4;
 }
 
-.skills-section > input {
+.skills-form .field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
+.skills-form .titulo-campo {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 400;
+  color: #f3f3f3;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  letter-spacing: -0.01em;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.skills-form .titulo-campo--obrigatorio::after {
+  content: " *";
+  color: #d43838;
+  font-size: 0.55em;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.skills-form input[type="text"] {
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0.625rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
+  height: 52px;
+  background-color: #171717;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px;
+  padding: 0 1.25rem;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.skills-chips,
+.skills-form input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+}
+
+.skills-form input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: #1a1a1a;
+}
+
+.skills-form input:focus,
+.skills-form input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: #1c1c1c;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25) !important;
+}
+
+.skills-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-height: 2.25rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 1.15rem;
+  background-color: #262626;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.skill-chip:hover {
+  background-color: #333333;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.skill-chip:focus,
+.skill-chip:focus-visible {
+  outline: none;
+  border-color: #ff6a00;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25);
+}
+
+.skills-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.skills-suggestions h3 {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
 .skills-suggestions__list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.skills-chips {
-  min-height: 2rem;
-}
-
-.skill-chip {
+.skill-suggestion {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  min-height: 2rem;
-  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
-  border: 1px solid #93c5fd;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1e3a8a;
-}
-
-.skill-chip__remove {
-  min-width: 1.5rem;
-  min-height: 1.5rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: #1e3a8a;
+  height: 36px;
+  padding: 0 0.95rem;
+  background-color: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  color: #a3a3a3;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.skill-chip__remove:hover {
-  background: #dbeafe;
-}
-
-.skills-suggestions {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.skill-suggestion {
-  min-height: 2.25rem;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .skill-suggestion:hover:not(:disabled) {
-  background: #f1f5f9;
+  background-color: #262626;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .skill-suggestion:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
-  opacity: 0.7;
+  border-color: transparent;
 }
 
-.skills-form > button[type="submit"] {
-  min-height: 2.75rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: #2563eb;
-  color: #ffffff;
+.skills-form .btn-proximo {
+  width: 100%;
+  height: 52px;
+  background-color: #e5e5e5;
+  color: #000000;
+  border: none;
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+  transition: background-color 0.2s ease;
+  margin-top: 1rem;
 }
 
-.skills-form button:focus-visible,
-.skills-form input:focus-visible {
-  outline: 3px solid #93c5fd;
-  outline-offset: 2px;
-}
-
-@media (max-width: 30rem) {
-  .skills-form {
-    gap: 0.75rem;
-  }
+.skills-form .btn-proximo:hover {
+  background-color: #ffffff;
 }

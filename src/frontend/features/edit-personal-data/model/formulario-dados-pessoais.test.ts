@@ -16,7 +16,6 @@ describe("validarDadosPessoais", () => {
       }),
     ).toEqual({
       nomeCompleto: "Informe seu nome completo.",
-      enderecoCompleto: "Informe seu endereço completo.",
       email: "Informe um e-mail válido.",
       telefones: {
         0: "Informe um telefone.",

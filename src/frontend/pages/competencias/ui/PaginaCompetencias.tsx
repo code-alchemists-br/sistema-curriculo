@@ -1,22 +1,39 @@
+import { useState } from "react";
+
 import { FormularioCompetencias } from "../../../features/edit-skills";
+import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
+import "./PaginaCompetencias.css";
 
 /**
- * Compõe a página de cadastro de competências sem assumir persistência,
- * roteamento ou integração externa.
+ * Compõe a página de cadastro de competências (Etapa 5 de 8).
+ *
+ * Utiliza o layout compartilhado de cadastro de currículo, com o painel visual
+ * retangular degradê e a barra de progresso segmentada na quinta etapa.
  */
 export function PaginaCompetencias() {
-  return (
-    <main>
-      <section aria-labelledby="titulo-pagina-competencias">
-        <p>Informações complementares</p>
-        <h1 id="titulo-pagina-competencias">Competências</h1>
-        <p>
-          Informe suas competências técnicas e comportamentais para compor seu
-          currículo.
-        </p>
+  const [progresso, setProgresso] = useState(0);
 
-        <FormularioCompetencias />
+  return (
+    <LayoutCadastroCurriculo
+      subtitulo="Competências"
+      etapaAtual={5}
+      totalEtapas={8}
+      progressoEtapaAtual={progresso}
+    >
+      <section
+        aria-labelledby="titulo-pagina-competencias"
+        className="pagina-competencias__conteudo"
+      >
+        <h1
+          id="titulo-pagina-competencias"
+          className="pagina-competencias__sr-only"
+        >
+          Competências
+        </h1>
+
+        <FormularioCompetencias aoAlterarProgresso={setProgresso} />
       </section>
-    </main>
+    </LayoutCadastroCurriculo>
   );
 }
+

@@ -9,7 +9,7 @@ export const estadoSecaoObrigatoriaSchema = z.object({
 /** Representa os dados pessoais mínimos já definidos pelo formulário existente. */
 const dadosPessoaisSchema = z.object({
   nomeCompleto: z.string().trim().min(1, "Informe o nome completo."),
-  enderecoCompleto: z.string().trim().min(1, "Informe o endereço completo."),
+  enderecoCompleto: z.string().trim().default(""),
   telefones: z
     .array(z.string().trim().min(1, "Informe um telefone."))
     .min(1, "Informe pelo menos um telefone."),

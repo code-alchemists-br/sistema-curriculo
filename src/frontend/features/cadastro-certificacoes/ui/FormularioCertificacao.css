@@ -1,63 +1,148 @@
-/* Proveniência: F4.17 - Formulário acessível de certificação */
-
 .formulario-certificacao {
-  display: grid;
-  gap: 1.25rem;
-  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
+.formulario-certificacao .secao-titulo,
 .formulario-certificacao h2 {
-  margin: 0;
+  font-family: "Poppins", sans-serif;
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 1.5rem 0 1.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .formulario-certificacao__grupo {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.formulario-certificacao .field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
+}
+
+.formulario-certificacao .titulo-campo,
+.formulario-certificacao .field > label {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 400;
+  color: #f3f3f3;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  letter-spacing: -0.01em;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.formulario-certificacao .field input {
+  width: 100%;
+  height: 52px;
+  background-color: #171717;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px;
+  padding: 0 1.25rem;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.formulario-certificacao .field input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+}
+
+.formulario-certificacao .field input:hover:not(:focus):not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: #1a1a1a;
+}
+
+.formulario-certificacao .field input:focus,
+.formulario-certificacao .field input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: #1c1c1c;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25) !important;
+}
+
+.formulario-certificacao .field input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #141414 !important;
+  border-color: transparent !important;
+}
+
+.formulario-certificacao .field input[aria-invalid="true"] {
+  border-color: rgba(239, 68, 68, 0.85) !important;
+}
+
+.formulario-certificacao .field__error {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  color: #f87171;
+  margin: 0.4rem 0 0 0;
+  line-height: 1.35;
 }
 
 .formulario-certificacao__acoes {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
 .formulario-certificacao button[type="submit"] {
-  min-height: 2.75rem;
-  padding: 0.625rem 1.25rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: #2563eb;
-  color: #ffffff;
-  font: inherit;
-  font-weight: 700;
+  background-color: #262626;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  height: 42px;
+  padding: 0 1.25rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+  transition: all 0.2s;
 }
 
 .formulario-certificacao button[type="submit"]:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.formulario-certificacao button[type="submit"]:focus-visible {
-  outline: 3px solid #93c5fd;
-  outline-offset: 2px;
+  background-color: #333333;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .formulario-certificacao button:disabled {
-  opacity: 0.65;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.formulario-certificacao .form-message--sucesso {
-  color: #166534;
-  font-weight: 600;
+.formulario-certificacao .form-message {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
 }
 
-.formulario-certificacao .form-message--erro {
-  color: #991b1b;
-  font-weight: 600;
+.formulario-certificacao .form-message--sucesso,
+.formulario-certificacao .form-message[role="status"] {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.formulario-certificacao .form-message--erro,
+.formulario-certificacao .form-message[role="alert"] {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }

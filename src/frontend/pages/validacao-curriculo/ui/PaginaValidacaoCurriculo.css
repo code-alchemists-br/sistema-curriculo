@@ -1,0 +1,19 @@
+/* Estilos da página de validação e revisão do currículo (Etapa 8 de 8). */
+
+.pagina-validacao__conteudo {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.pagina-validacao__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

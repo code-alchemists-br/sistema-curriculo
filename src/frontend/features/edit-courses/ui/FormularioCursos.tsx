@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import {
   criarCursoVazio,
@@ -7,11 +7,14 @@ import {
   type Curso,
   type ErrosCurso,
 } from "../model/cursos";
+import "./FormularioCursos.css";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
 export interface FormularioCursosProps {
   cursosIniciais?: Curso[];
   onSalvar?: (cursos: Curso[]) => void;
+  /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 /**
@@ -25,10 +28,33 @@ export interface FormularioCursosProps {
 export function FormularioCursos({
   cursosIniciais = [criarCursoVazio()],
   onSalvar,
+  aoAlterarProgresso,
 }: FormularioCursosProps) {
   const [cursos, setCursos] = useState<Curso[]>(cursosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosCurso>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!aoAlterarProgresso) return;
+    if (cursos.length === 0) {
+      aoAlterarProgresso(0);
+      return;
+    }
+
+    let totalCampos = 0;
+    let preenchidos = 0;
+
+    cursos.forEach((c) => {
+      totalCampos += 3;
+      if (c.nome.trim().length > 0) preenchidos++;
+      if (c.instituicao.trim().length > 0) preenchidos++;
+      if (c.cargaHoraria.trim().length > 0) preenchidos++;
+    });
+
+    const porcentagem =
+      totalCampos > 0 ? Math.round((preenchidos / totalCampos) * 100) : 0;
+    aoAlterarProgresso(porcentagem);
+  }, [cursos, aoAlterarProgresso]);
 
   /** Atualiza um campo específico de um curso pela sua posição no array. */
   function atualizarCurso(
@@ -85,6 +111,7 @@ export function FormularioCursos({
   /** Valida todos os cursos e chama o callback se não houver erros. */
   function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
     evento.preventDefault();
+
     const novosErros = validarListaCursos(cursos);
 
     if (Object.keys(novosErros).length > 0) {
@@ -98,8 +125,8 @@ export function FormularioCursos({
   }
 
   return (
-    <form noValidate onSubmit={enviarFormulario}>
-      <h2>Cursos e Certificações</h2>
+    <form className="formulario-cursos" noValidate onSubmit={enviarFormulario}>
+      <h2 className="secao-titulo">Cursos e Certificações</h2>
 
       {cursos.map((curso, indice) => {
         const errosCurso = erros[indice];
@@ -107,10 +134,29 @@ export function FormularioCursos({
 
         return (
           <fieldset aria-label={`Curso ${indice + 1}`} key={prefixo}>
-            <legend>Curso {indice + 1}</legend>
+            <legend className="sr-only">Curso {indice + 1}</legend>
+
+            {cursos.length > 1 && (
+              <div className="item-sublista__topo">
+                <span className="label-subtitulo">Curso {indice + 1}</span>
+                <button
+                  aria-label={`Remover curso ${indice + 1}`}
+                  className="btn-remover-item"
+                  onClick={() => removerCurso(indice)}
+                  type="button"
+                >
+                  Remover
+                </button>
+              </div>
+            )}
 
             <div className="field">
-              <label htmlFor={`${prefixo}-nome`}>Nome do curso</label>
+              <label
+                className="titulo-campo"
+                htmlFor={`${prefixo}-nome`}
+              >
+                Nome do curso
+              </label>
               <input
                 aria-describedby={
                   errosCurso?.nome !== undefined
@@ -120,7 +166,7 @@ export function FormularioCursos({
                 aria-invalid={errosCurso?.nome !== undefined ? true : undefined}
                 id={`${prefixo}-nome`}
                 onChange={(e) => atualizarCurso(indice, "nome", e.target.value)}
-                required
+                placeholder="Ex.: Formação React, Node.js do Zero..."
                 type="text"
                 value={curso.nome}
               />
@@ -132,7 +178,12 @@ export function FormularioCursos({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-instituicao`}>Instituição</label>
+              <label
+                className="titulo-campo"
+                htmlFor={`${prefixo}-instituicao`}
+              >
+                Instituição
+              </label>
               <input
                 aria-describedby={
                   errosCurso?.instituicao !== undefined
@@ -146,7 +197,7 @@ export function FormularioCursos({
                 onChange={(e) =>
                   atualizarCurso(indice, "instituicao", e.target.value)
                 }
-                required
+                placeholder="Ex.: Alura, Udemy, Coursera..."
                 type="text"
                 value={curso.instituicao}
               />
@@ -158,7 +209,12 @@ export function FormularioCursos({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-carga`}>Carga horária (horas)</label>
+              <label
+                className="titulo-campo"
+                htmlFor={`${prefixo}-carga`}
+              >
+                Carga horária (horas)
+              </label>
               <input
                 aria-describedby={
                   errosCurso?.cargaHoraria !== undefined
@@ -173,7 +229,7 @@ export function FormularioCursos({
                 onChange={(e) =>
                   atualizarCurso(indice, "cargaHoraria", e.target.value)
                 }
-                required
+                placeholder="Ex.: 40"
                 type="text"
                 value={curso.cargaHoraria}
               />
@@ -183,21 +239,15 @@ export function FormularioCursos({
                 </p>
               )}
             </div>
-
-            {cursos.length > 1 && (
-              <button
-                aria-label={`Remover curso ${indice + 1}`}
-                onClick={() => removerCurso(indice)}
-                type="button"
-              >
-                Remover curso
-              </button>
-            )}
           </fieldset>
         );
       })}
 
-      <button onClick={adicionarCurso} type="button">
+      <button
+        className="btn-adicionar-item"
+        onClick={adicionarCurso}
+        type="button"
+      >
         + Adicionar curso
       </button>
 
@@ -207,7 +257,9 @@ export function FormularioCursos({
         </p>
       )}
 
-      <button type="submit">Salvar cursos</button>
+      <button className="btn-salvar-secao" type="submit">
+        Salvar cursos
+      </button>
     </form>
   );
 }

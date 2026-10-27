@@ -47,10 +47,6 @@ export function validarDadosPessoais(
     erros.nomeCompleto = "Informe seu nome completo.";
   }
 
-  if (valores.enderecoCompleto.trim() === "") {
-    erros.enderecoCompleto = "Informe seu endereço completo.";
-  }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valores.email.trim())) {
     erros.email = "Informe um e-mail válido.";
   }

@@ -1,8 +1,12 @@
+import { useState } from "react";
+
 import {
   criarClienteDadosPessoaisIndisponivel,
   FormularioDadosPessoais,
   type ClienteDadosPessoais,
 } from "../../../features/edit-personal-data";
+import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
+import "./PaginaDadosPessoais.css";
 
 /** Define o cliente opcional usado ao compor a página de dados pessoais. */
 export interface PaginaDadosPessoaisProps {
@@ -12,24 +16,33 @@ export interface PaginaDadosPessoaisProps {
 /**
  * Compõe a primeira etapa de dados do Wizard de currículo.
  *
- * A página fornece contexto e entrega a interação para a feature por sua API
- * pública. Ela existe para manter a composição de página separada das regras
- * de formulário, sem decidir roteamento ou persistência ainda indisponíveis.
+ * Apresenta a interface remodelada com o painel visual de degradê alaranjado à esquerda (~46%)
+ * e o formulário com barra de progresso segmentada à direita (~54%).
  */
 export function PaginaDadosPessoais({
   cliente = criarClienteDadosPessoaisIndisponivel(),
 }: PaginaDadosPessoaisProps) {
+  const [progresso, setProgresso] = useState(0);
+
   return (
-    <main className="app-shell">
+    <LayoutCadastroCurriculo
+      subtitulo="Dados Pessoais"
+      etapaAtual={1}
+      totalEtapas={8}
+      progressoEtapaAtual={progresso}
+    >
       <section
         aria-labelledby="titulo-dados-pessoais"
-        className="app-shell__content"
+        className="pagina-dados-pessoais__conteudo"
       >
-        <p className="eyebrow">Dados pessoais e contato</p>
-        <h1 id="titulo-dados-pessoais">Conte um pouco sobre você</h1>
-        <p>Essas informações serão usadas no cabeçalho do seu currículo.</p>
-        <FormularioDadosPessoais cliente={cliente} />
+        <h1 id="titulo-dados-pessoais" className="pagina-dados-pessoais__sr-only">
+          Conte um pouco sobre você
+        </h1>
+        <FormularioDadosPessoais
+          cliente={cliente}
+          aoAlterarProgresso={setProgresso}
+        />
       </section>
-    </main>
+    </LayoutCadastroCurriculo>
   );
 }

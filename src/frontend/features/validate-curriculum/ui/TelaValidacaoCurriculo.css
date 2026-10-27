@@ -1,0 +1,198 @@
+/* Estilos exclusivos da tela de validação e revisão do currículo (Etapa 8 de 8). */
+
+.tela-validacao-curriculo {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tela-validacao-curriculo__cabecalho {
+  margin-bottom: 1.5rem;
+}
+
+.tela-validacao-curriculo__titulo {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(20px, 2.4vw, 28px);
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.01em;
+}
+
+.tela-validacao-curriculo__descricao {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  color: #a3a3a3;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tela-validacao-curriculo__status-container {
+  margin-bottom: 1.5rem;
+}
+
+.tela-validacao-curriculo__mensagem {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.tela-validacao-curriculo__mensagem--sucesso {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.tela-validacao-curriculo__mensagem--erro {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.tela-validacao-curriculo__secoes {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tela-validacao-curriculo__secao {
+  background-color: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.tela-validacao-curriculo__secao:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tela-validacao-curriculo__secao--valida {
+  border-left: 3px solid #22c55e;
+}
+
+.tela-validacao-curriculo__secao--pendente,
+.tela-validacao-curriculo__secao--erro {
+  border-left: 3px solid #ef4444;
+}
+
+.tela-validacao-curriculo__secao-info {
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tela-validacao-curriculo__secao-info strong {
+  font-weight: 500;
+  color: #f3f3f3;
+}
+
+.status-badge {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-badge--valida {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge--pendente,
+.status-badge--erro {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.tela-validacao-curriculo__mensagens-erro {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0 0 0;
+  color: #fca5a5;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.tela-validacao-curriculo__acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tela-validacao-curriculo__acoes .btn-proximo {
+  width: 100%;
+  height: 52px;
+  background-color: #e5e5e5;
+  color: #000000;
+  border: none;
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.tela-validacao-curriculo__acoes .btn-proximo:hover:not(:disabled) {
+  background-color: #ffffff;
+}
+
+.tela-validacao-curriculo__acoes .btn-proximo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tela-validacao-curriculo__acoes-secundarias {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.tela-validacao-curriculo__acoes .btn-secundario {
+  height: 48px;
+  background-color: #262626;
+  color: #f3f3f3;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tela-validacao-curriculo__acoes .btn-secundario:hover:not(:disabled) {
+  background-color: #333333;
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.tela-validacao-curriculo__acoes .btn-secundario:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 40rem) {
+  .tela-validacao-curriculo__acoes-secundarias {
+    grid-template-columns: 1fr;
+  }
+}

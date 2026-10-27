@@ -32,29 +32,25 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
-    const campoEndereco = screen.getByRole("textbox", {
-      name: /endereço completo/i,
-    });
-    const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
-    const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
-    const campoLattes = screen.getByRole("textbox", {
-      name: /currículo lattes/i,
-    });
+    const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const botaoAdicionarTelefone = screen.getByRole("button", {
       name: /\+ adicionar telefone/i,
     });
+    const campoEndereco = screen.getByRole("textbox", {
+      name: /endereço completo/i,
+    });
+    const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
     const botaoSalvar = screen.getByRole("button", {
       name: /salvar dados pessoais/i,
     });
 
     expect(campoNome).toBeInTheDocument();
-    expect(campoEndereco).toBeInTheDocument();
-    expect(campoTelefone).toBeInTheDocument();
     expect(campoEmail).toBeInTheDocument();
-    expect(campoLinkedIn).toBeInTheDocument();
-    expect(campoLattes).toBeInTheDocument();
+    expect(campoTelefone).toBeInTheDocument();
     expect(botaoAdicionarTelefone).toBeInTheDocument();
+    expect(campoEndereco).toBeInTheDocument();
+    expect(campoLinkedIn).toBeInTheDocument();
     expect(botaoSalvar).toBeInTheDocument();
   });
 
@@ -70,18 +66,15 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     render(<FormularioDadosPessoais cliente={criarClienteSucesso()} />);
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
-    const campoEndereco = screen.getByRole("textbox", {
-      name: /endereço completo/i,
-    });
+    const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const botaoAdicionarTelefone = screen.getByRole("button", {
       name: /\+ adicionar telefone/i,
     });
-    const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
-    const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
-    const campoLattes = screen.getByRole("textbox", {
-      name: /currículo lattes/i,
+    const campoEndereco = screen.getByRole("textbox", {
+      name: /endereço completo/i,
     });
+    const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
     const botaoSalvar = screen.getByRole("button", {
       name: /salvar dados pessoais/i,
     });
@@ -91,7 +84,7 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     expect(campoNome).toHaveFocus();
 
     await usuario.tab();
-    expect(campoEndereco).toHaveFocus();
+    expect(campoEmail).toHaveFocus();
 
     await usuario.tab();
     expect(campoTelefone).toHaveFocus();
@@ -100,13 +93,10 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     expect(botaoAdicionarTelefone).toHaveFocus();
 
     await usuario.tab();
-    expect(campoEmail).toHaveFocus();
+    expect(campoEndereco).toHaveFocus();
 
     await usuario.tab();
     expect(campoLinkedIn).toHaveFocus();
-
-    await usuario.tab();
-    expect(campoLattes).toHaveFocus();
 
     await usuario.tab();
     expect(botaoSalvar).toHaveFocus();
@@ -135,28 +125,23 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
 
-    // Todos os campos obrigatórios vazios devem indicar estado inválido
+    // Campos obrigatórios vazios devem indicar estado inválido; campo opcional (endereço) não
     expect(campoNome).toHaveAttribute("aria-invalid", "true");
-    expect(campoEndereco).toHaveAttribute("aria-invalid", "true");
+    expect(campoEndereco).not.toHaveAttribute("aria-invalid");
     expect(campoTelefone).toHaveAttribute("aria-invalid", "true");
     expect(campoEmail).toHaveAttribute("aria-invalid", "true");
 
     // Os atributos aria-describedby devem apontar para IDs válidos no DOM
     const idErroNome = campoNome.getAttribute("aria-describedby");
-    const idErroEndereco = campoEndereco.getAttribute("aria-describedby");
     const idErroTelefone = campoTelefone.getAttribute("aria-describedby");
     const idErroEmail = campoEmail.getAttribute("aria-describedby");
 
     expect(idErroNome).toBeTruthy();
-    expect(idErroEndereco).toBeTruthy();
     expect(idErroTelefone).toBeTruthy();
     expect(idErroEmail).toBeTruthy();
 
     // As mensagens de erro referenciadas devem existir e conter texto explicativo
     expect(document.getElementById(idErroNome!)).toHaveTextContent(/nome/i);
-    expect(document.getElementById(idErroEndereco!)).toHaveTextContent(
-      /endereço/i,
-    );
     expect(document.getElementById(idErroTelefone!)).toHaveTextContent(
       /telefone/i,
     );
