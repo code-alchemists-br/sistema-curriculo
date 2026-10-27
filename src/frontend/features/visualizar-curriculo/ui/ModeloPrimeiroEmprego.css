@@ -1,0 +1,112 @@
+.modelo-primeiro-emprego {
+  --primeiro-emprego-destaque: #5a3db5;
+  --primeiro-emprego-fundo: #f6f4ff;
+  box-sizing: border-box;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  color: #1f2937;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+
+.modelo-primeiro-emprego__cabecalho {
+  padding: 1.5rem;
+  color: #ffffff;
+  background: var(--primeiro-emprego-destaque);
+}
+
+.modelo-primeiro-emprego__cabecalho > p {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modelo-primeiro-emprego__cabecalho h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.modelo-primeiro-emprego__cabecalho > strong {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.modelo-primeiro-emprego__contato,
+.modelo-primeiro-emprego__lista,
+.modelo-primeiro-emprego__lista-curta {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modelo-primeiro-emprego__contato {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.86rem;
+}
+
+.modelo-primeiro-emprego__contato a {
+  color: #ffffff;
+}
+
+.modelo-primeiro-emprego__secao {
+  break-inside: avoid;
+  padding-top: 1.4rem;
+}
+
+.modelo-primeiro-emprego__secao h2 {
+  display: inline-block;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 0.2rem solid var(--primeiro-emprego-destaque);
+  font-size: 1.05rem;
+}
+
+.modelo-primeiro-emprego__lista {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.modelo-primeiro-emprego__lista h3,
+.modelo-primeiro-emprego__lista p {
+  margin: 0;
+}
+
+.modelo-primeiro-emprego__lista h3 {
+  font-size: 1rem;
+}
+
+.modelo-primeiro-emprego__lista p + p {
+  margin-top: 0.3rem;
+}
+
+.modelo-primeiro-emprego__grade {
+  display: grid;
+  gap: 0 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modelo-primeiro-emprego__lista-curta {
+  display: grid;
+  gap: 0.4rem;
+}
+
+@media (max-width: 36rem) {
+  .modelo-primeiro-emprego__grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .modelo-primeiro-emprego {
+    max-width: none;
+    padding: 0;
+  }
+}
