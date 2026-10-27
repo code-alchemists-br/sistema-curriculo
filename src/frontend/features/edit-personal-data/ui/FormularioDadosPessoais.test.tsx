@@ -123,4 +123,25 @@ describe("FormularioDadosPessoais", () => {
     );
     expect(cliente.salvar).toHaveBeenCalledTimes(2);
   });
+
+  it("permite remover um telefone adicional adicionado previamente", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<FormularioDadosPessoais cliente={cliente} />);
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar telefone" }),
+    );
+    expect(screen.getByLabelText("Telefone 2")).toBeInTheDocument();
+
+    const botaoRemover = screen.getByRole("button", {
+      name: "Remover Telefone 2",
+    });
+    await usuario.click(botaoRemover);
+
+    expect(screen.queryByLabelText("Telefone 2")).not.toBeInTheDocument();
+  });
 });

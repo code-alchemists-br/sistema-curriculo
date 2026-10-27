@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import "./FormularioFormacaoAcademica.css";
 
@@ -20,6 +20,8 @@ import {
 /** Define a dependência usada pelo formulário para solicitar o cadastro. */
 export interface FormularioFormacaoAcademicaProps {
   cliente: ClienteFormacaoAcademica;
+  /** Notifica a porcentagem de campos preenchidos nesta etapa (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 const niveis: ReadonlyArray<{ valor: NivelFormacaoAcademica; rotulo: string }> =
@@ -52,6 +54,7 @@ const situacoes: ReadonlyArray<{
  */
 export function FormularioFormacaoAcademica({
   cliente,
+  aoAlterarProgresso,
 }: FormularioFormacaoAcademicaProps) {
   const [valores, setValores] = useState<ValoresFormacaoAcademica>(
     criarValoresIniciaisFormacao,
@@ -59,6 +62,24 @@ export function FormularioFormacaoAcademica({
   const [erros, setErros] = useState<ErrosFormacaoAcademica>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    if (aoAlterarProgresso) {
+      let preenchidos = 0;
+      const totalObrigatorios = valores.status === "concluido" ? 6 : 5;
+      if (valores.instituicao.trim().length > 0) preenchidos++;
+      if (valores.curso.trim().length > 0) preenchidos++;
+      if (valores.nivel.trim().length > 0) preenchidos++;
+      if (valores.dataInicio.trim().length > 0) preenchidos++;
+      if (valores.status.trim().length > 0) preenchidos++;
+      if (valores.status === "concluido" && valores.dataFim.trim().length > 0) {
+        preenchidos++;
+      }
+
+      const porcentagem = Math.round((preenchidos / totalObrigatorios) * 100);
+      aoAlterarProgresso(porcentagem);
+    }
+  }, [valores, aoAlterarProgresso]);
 
   /** Atualiza um campo e remove apenas o feedback anterior desse campo. */
   function atualizarCampo<Campo extends keyof ValoresFormacaoAcademica>(
@@ -112,6 +133,8 @@ export function FormularioFormacaoAcademica({
         id="instituicao-formacao"
         label="Instituição"
         onChange={(valor) => atualizarCampo("instituicao", valor)}
+        placeholder="Ex: USP, FATEC, PUC..."
+        required
         value={valores.instituicao}
       />
       <CampoTexto
@@ -119,6 +142,8 @@ export function FormularioFormacaoAcademica({
         id="curso-formacao"
         label="Curso"
         onChange={(valor) => atualizarCampo("curso", valor)}
+        placeholder="Ex: Análise e Desenvolvimento de Sistemas..."
+        required
         value={valores.curso}
       />
       <CampoSelecao
@@ -129,6 +154,7 @@ export function FormularioFormacaoAcademica({
           atualizarCampo("nivel", valor as NivelFormacaoAcademica)
         }
         opcoes={niveis}
+        required
         value={valores.nivel}
       />
       <CampoData
@@ -136,6 +162,7 @@ export function FormularioFormacaoAcademica({
         id="data-inicio-formacao"
         label="Data de início"
         onChange={(valor) => atualizarCampo("dataInicio", valor)}
+        required
         value={valores.dataInicio}
       />
       <CampoSelecao
@@ -146,6 +173,7 @@ export function FormularioFormacaoAcademica({
           atualizarCampo("status", valor as StatusFormacaoAcademica)
         }
         opcoes={situacoes}
+        required
         value={valores.status}
       />
       <CampoData
@@ -169,8 +197,13 @@ export function FormularioFormacaoAcademica({
           {mensagem}
         </p>
       )}
-      <button disabled={enviando} type="submit">
-        {enviando ? "Enviando formação..." : "Cadastrar formação"}
+      <button
+        aria-label={enviando ? "Enviando..." : "Cadastrar formação"}
+        className="btn-proximo"
+        disabled={enviando}
+        type="submit"
+      >
+        {enviando ? "Enviando..." : "Próximo"}
       </button>
     </form>
   );
@@ -182,6 +215,7 @@ interface CampoBaseProps {
   erro?: string;
   id: string;
   label: string;
+  placeholder?: string;
   required?: boolean;
   value: string;
 }
@@ -192,19 +226,27 @@ function CampoTexto({
   id,
   label,
   onChange,
+  placeholder,
+  required = true,
   value,
 }: CampoBaseProps & { onChange: (valor: string) => void }) {
   const idErro = `${id}-erro`;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label
+        htmlFor={id}
+        className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
+      >
+        {label}
+      </label>
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
         maxLength={200}
         onChange={(evento) => onChange(evento.target.value)}
-        required
+        placeholder={placeholder}
+        required={required}
         type="text"
         value={value}
       />
@@ -224,6 +266,7 @@ function CampoSelecao({
   label,
   onChange,
   opcoes,
+  required = true,
   value,
 }: CampoBaseProps & {
   onChange: (valor: string) => void;
@@ -232,13 +275,18 @@ function CampoSelecao({
   const idErro = `${id}-erro`;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label
+        htmlFor={id}
+        className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
+      >
+        {label}
+      </label>
       <select
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
         onChange={(evento) => onChange(evento.target.value)}
-        required
+        required={required}
         value={value}
       >
         <option value="">Selecione uma opção</option>
@@ -271,8 +319,17 @@ function CampoData({
   const idAjuda = `${id}-ajuda`;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
-      {ajuda !== undefined && <p id={idAjuda}>{ajuda}</p>}
+      <label
+        htmlFor={id}
+        className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
+      >
+        {label}
+      </label>
+      {ajuda !== undefined && (
+        <p className="field__ajuda" id={idAjuda}>
+          {ajuda}
+        </p>
+      )}
       <input
         aria-describedby={
           [

@@ -27,7 +27,7 @@
 
 .hero-section__title {
   font-family: "Clash Display", sans-serif;
-  font-size: clamp(3.25rem, 6vw, 96px);
+  font-size: clamp(3.25rem, 6vw, 92px);
   font-weight: 500;
   line-height: 1.02;
   letter-spacing: -0.02em;
@@ -242,7 +242,7 @@
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 66%;
+  width: 70%;
   max-width: 1650px;
   min-width: 920px;
   display: flex;

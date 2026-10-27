@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import "./AlternadorModeloCurriculo.css";
 
 export type ModeloApresentacaoCurriculo = "classico" | "compacto";
@@ -33,7 +34,7 @@ const opcoes: ReadonlyArray<{
 export function AlternadorModeloCurriculo({
   modeloSelecionado,
   onSelecionarModelo,
-}: AlternadorModeloCurriculoProps): JSX.Element {
+}: AlternadorModeloCurriculoProps): ReactElement {
   return (
     <fieldset className="alternador-modelo-curriculo">
       <legend>Modelo de apresentação</legend>
@@ -84,7 +85,7 @@ function PreviaEstruturalModelo({
   modelo,
 }: {
   modelo: ModeloApresentacaoCurriculo;
-}): JSX.Element {
+}): ReactElement {
   if (modelo === "classico") {
     return <PreviaModeloClassico />;
   }
@@ -95,7 +96,7 @@ function PreviaEstruturalModelo({
 /**
  * Representa o modelo clássico com cabeçalho central e seções separadas.
  */
-function PreviaModeloClassico(): JSX.Element {
+function PreviaModeloClassico(): ReactElement {
   return (
     <div
       aria-hidden="true"
@@ -126,7 +127,7 @@ function PreviaModeloClassico(): JSX.Element {
 /**
  * Representa o modelo compacto com cabeçalho à esquerda e conteúdo condensado.
  */
-function PreviaModeloCompacto(): JSX.Element {
+function PreviaModeloCompacto(): ReactElement {
   return (
     <div
       aria-hidden="true"
@@ -167,7 +168,7 @@ function SecaoMiniaturaClassica({
 }: {
   titulo: string;
   linhas: number;
-}): JSX.Element {
+}): ReactElement {
   return (
     <div className="previsao-modelo__secao-classica">
       <span className="previsao-modelo__titulo-classico">{titulo}</span>
@@ -185,7 +186,7 @@ function SecaoMiniaturaCompacta({
 }: {
   titulo: string;
   linhas: number;
-}): JSX.Element {
+}): ReactElement {
   return (
     <div className="previsao-modelo__secao-compacta">
       <span className="previsao-modelo__titulo-compacto">{titulo}</span>
@@ -197,7 +198,7 @@ function SecaoMiniaturaCompacta({
 /**
  * Gera linhas decorativas que representam itens de uma seção.
  */
-function LinhasMiniatura({ quantidade }: { quantidade: number }): JSX.Element {
+function LinhasMiniatura({ quantidade }: { quantidade: number }): ReactElement {
   return (
     <div className="previsao-modelo__linhas">
       {Array.from({ length: quantidade }, (_, indice) => (

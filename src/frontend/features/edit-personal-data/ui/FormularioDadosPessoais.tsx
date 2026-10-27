@@ -1,9 +1,10 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   FalhaDadosPessoais,
   type ClienteDadosPessoais,
 } from "../api/cliente-dados-pessoais";
+import "./FormularioDadosPessoais.css";
 import {
   criarStudent,
   criarValoresIniciais,
@@ -13,14 +14,33 @@ import {
   type ValoresDadosPessoais,
 } from "../model/formulario-dados-pessoais";
 
+/** Aplica máscara em formato brasileiro (11) 91234-5678 ou (11) 3333-4444 */
+function formatarTelefone(valor: string): string {
+  const digitos = valor.replace(/\D/g, "").slice(0, 11);
+
+  if (digitos.length <= 2) {
+    return digitos.length > 0 ? `(${digitos}` : "";
+  }
+  if (digitos.length <= 6) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+  }
+  if (digitos.length <= 10) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  }
+  return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7, 11)}`;
+}
+
 /** Define o cliente usado para manter os dados pessoais do estudante. */
 export interface FormularioDadosPessoaisProps {
   cliente: ClienteDadosPessoais;
+  /** Notifica a porcentagem de campos preenchidos nesta etapa (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 /** Renderiza e controla o formulário de dados pessoais e contato. */
 export function FormularioDadosPessoais({
   cliente,
+  aoAlterarProgresso,
 }: FormularioDadosPessoaisProps) {
   const [valores, setValores] =
     useState<ValoresDadosPessoais>(criarValoresIniciais);
@@ -28,6 +48,19 @@ export function FormularioDadosPessoais({
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const focoNoNovoTelefone = useRef(false);
+
+  useEffect(() => {
+    if (aoAlterarProgresso) {
+      let preenchidos = 0;
+      const totalObrigatorios = 3;
+      if (valores.nomeCompleto.trim().length > 0) preenchidos++;
+      if (valores.email.trim().length > 0) preenchidos++;
+      if (valores.telefones.some((t) => t.trim().length > 0)) preenchidos++;
+
+      const porcentagem = Math.round((preenchidos / totalObrigatorios) * 100);
+      aoAlterarProgresso(porcentagem);
+    }
+  }, [valores, aoAlterarProgresso]);
 
   /** Move o foco para o telefone recém-adicionado, depois que ele for renderizado. */
   function definirUltimoTelefone(elemento: HTMLInputElement | null): void {
@@ -79,6 +112,45 @@ export function FormularioDadosPessoais({
     }));
   }
 
+  /** Remove um telefone adicional e reordena os erros restantes. */
+  function removerTelefone(indiceRemover: number): void {
+    if (valores.telefones.length <= 1) return;
+
+    setValores((atuais) => ({
+      ...atuais,
+      telefones: atuais.telefones.filter(
+        (_, indice) => indice !== indiceRemover,
+      ),
+    }));
+
+    setErros((atuais) => {
+      if (!atuais.telefones) return atuais;
+
+      const novosErrosDeTelefone: Record<number, string> = {};
+      let novoIndice = 0;
+      Object.keys(atuais.telefones).forEach((key) => {
+        const indiceNum = Number(key);
+        if (indiceNum !== indiceRemover) {
+          const erro = atuais.telefones?.[indiceNum];
+          if (erro) {
+            novosErrosDeTelefone[novoIndice] = erro;
+          }
+          novoIndice++;
+        }
+      });
+
+      return {
+        ...atuais,
+        telefones:
+          Object.keys(novosErrosDeTelefone).length === 0
+            ? undefined
+            : novosErrosDeTelefone,
+      };
+    });
+
+    setMensagem(null);
+  }
+
   /** Valida e salva os dados, preservando os valores para uma tentativa posterior em caso de falha. */
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>,
@@ -107,84 +179,122 @@ export function FormularioDadosPessoais({
   }
 
   return (
-    <form aria-busy={enviando} noValidate onSubmit={enviarFormulario}>
+    <form
+      aria-busy={enviando}
+      className="formulario-dados-pessoais"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
+      {/* 1. Nome completo */}
       <CampoTexto
         erro={erros.nomeCompleto}
         id="nome-completo"
         label="Nome completo"
         onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
+        placeholder="Digite aqui..."
         required
         value={valores.nomeCompleto}
       />
-      <CampoTexto
-        erro={erros.enderecoCompleto}
-        id="endereco-completo"
-        label="Endereço completo"
-        onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
-        required
-        value={valores.enderecoCompleto}
-      />
-      <div className="field">
-        <span>Telefones</span>
-        {valores.telefones.map((telefone, indice) => {
-          const id = `telefone-${indice}`;
-          const erro = erros.telefones?.[indice];
-          const idErro = `${id}-erro`;
-          const eUltimoTelefone = indice === valores.telefones.length - 1;
 
-          return (
-            <div key={id}>
-              <label htmlFor={id}>Telefone {indice + 1}</label>
-              <input
-                aria-describedby={erro === undefined ? undefined : idErro}
-                aria-invalid={erro === undefined ? undefined : true}
-                autoComplete="tel"
-                id={id}
-                onChange={(evento) =>
-                  atualizarTelefone(indice, evento.target.value)
-                }
-                ref={eUltimoTelefone ? definirUltimoTelefone : undefined}
-                required
-                type="tel"
-                value={telefone}
-              />
-              {erro !== undefined && (
-                <p className="field__error" id={idErro}>
-                  {erro}
-                </p>
-              )}
-            </div>
-          );
-        })}
-        <button onClick={adicionarTelefone} type="button">
-          + Adicionar telefone
-        </button>
-      </div>
+      {/* 2. E-mail */}
       <CampoTexto
         erro={erros.email}
         id="email"
         label="E-mail"
         onChange={(valor) => atualizarCampo("email", valor)}
+        placeholder="Digite aqui..."
         required
         type="email"
         value={valores.email}
       />
+
+      {/* 3. Telefones */}
+      <div className="field">
+        <span className="titulo-campo titulo-campo--obrigatorio">
+          Telefones
+        </span>
+
+        <div className="lista-telefones">
+          {valores.telefones.map((telefone, indice) => {
+            const id = `telefone-${indice}`;
+            const erro = erros.telefones?.[indice];
+            const idErro = `${id}-erro`;
+            const eUltimoTelefone = indice === valores.telefones.length - 1;
+
+            return (
+              <div key={id} className="item-telefone">
+                <div className="item-telefone__topo">
+                  <label htmlFor={id} className="label-subtitulo">
+                    Telefone {indice + 1}
+                  </label>
+                  {valores.telefones.length > 1 && (
+                    <button
+                      aria-label={`Remover Telefone ${indice + 1}`}
+                      className="btn-remover-telefone"
+                      onClick={() => removerTelefone(indice)}
+                      type="button"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  aria-describedby={erro === undefined ? undefined : idErro}
+                  aria-invalid={erro === undefined ? undefined : true}
+                  autoComplete="tel"
+                  id={id}
+                  onChange={(evento) =>
+                    atualizarTelefone(
+                      indice,
+                      formatarTelefone(evento.target.value),
+                    )
+                  }
+                  placeholder="(11) 91234-5678"
+                  ref={eUltimoTelefone ? definirUltimoTelefone : undefined}
+                  required
+                  type="tel"
+                  value={telefone}
+                />
+                {erro !== undefined && (
+                  <p className="field__error" id={idErro}>
+                    {erro}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          className="btn-adicionar-telefone"
+          onClick={adicionarTelefone}
+          type="button"
+        >
+          + Adicionar telefone
+        </button>
+      </div>
+
+      {/* 4. Endereço completo */}
       <CampoTexto
-        ajuda="Informe o endereço público do seu perfil profissional, se possuir um."
+        erro={erros.enderecoCompleto}
+        id="endereco-completo"
+        label="Endereço completo"
+        onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
+        placeholder="Cidade, Estado (ou endereço completo)..."
+        value={valores.enderecoCompleto}
+      />
+
+      {/* 5. Linkedin */}
+      <CampoTexto
         id="linkedin"
-        label="LinkedIn (opcional)"
+        label="Linkedin"
         onChange={(valor) => atualizarCampo("linkedIn", valor)}
+        placeholder="Insira o link aqui"
         type="url"
         value={valores.linkedIn}
       />
-      <CampoTexto
-        ajuda="Informe o endereço público do seu currículo na Plataforma Lattes, se possuir um."
-        id="curriculo-lattes"
-        label="Currículo Lattes (opcional)"
-        onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
-        type="url"
-        value={valores.curriculoLattes}
-      />
+
       {enviando && <p role="status">Salvando dados pessoais...</p>}
       {mensagem !== null && (
         <p
@@ -194,8 +304,14 @@ export function FormularioDadosPessoais({
           {mensagem}
         </p>
       )}
-      <button disabled={enviando} type="submit">
-        {enviando ? "Salvando dados..." : "Salvar dados pessoais"}
+
+      <button
+        aria-label={enviando ? "Salvando dados..." : "Salvar dados pessoais"}
+        className="btn-proximo"
+        disabled={enviando}
+        type="submit"
+      >
+        {enviando ? "Salvando..." : "Próximo"}
       </button>
     </form>
   );
@@ -208,6 +324,7 @@ interface CampoTextoProps {
   id: string;
   label: string;
   onChange: (valor: string) => void;
+  placeholder?: string;
   required?: boolean;
   type?: "email" | "text" | "url";
   value: string;
@@ -220,6 +337,7 @@ function CampoTexto({
   id,
   label,
   onChange,
+  placeholder,
   required = false,
   type = "text",
   value,
@@ -229,7 +347,10 @@ function CampoTexto({
 
   return (
     <div className="field">
-      <label htmlFor={id}>
+      <label
+        htmlFor={id}
+        className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
+      >
         {label}
         {ajuda !== undefined && (
           <span
@@ -252,6 +373,7 @@ function CampoTexto({
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
         onChange={(evento) => onChange(evento.target.value)}
+        placeholder={placeholder}
         required={required}
         type={type}
         value={value}
