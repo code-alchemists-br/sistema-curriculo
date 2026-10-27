@@ -20,12 +20,9 @@ export interface PaginaSelecaoModeloCurriculoProps {
 /**
  * Compõe a tela que orienta e confirma o modelo de apresentação do currículo.
  *
- * O que faz: Mostra o objetivo profissional e os dois layouts atualmente
- * suportados pelo sistema: Clássico e Compacto.
- * Como faz: Mantém somente a seleção visual local e entrega o valor confirmado
- * por callback, sem realizar HTTP ou simular que houve persistência.
- * Por que existe: Permite que a rota de criação associe um layout válido à
- * versão de currículo sem duplicar o seletor já existente na feature.
+ * - O que faz: Mostra o objetivo profissional e todos os modelos reconhecidos pelo catálogo.
+ * - Como faz: Mantém somente a seleção visual local e entrega o valor confirmado por callback, sem realizar HTTP ou simular persistência.
+ * - Qual finalidade atende: Permite que a rota de criação associe um modelo válido à versão de currículo sem duplicar o seletor já existente na feature.
  */
 export function PaginaSelecaoModeloCurriculo({
   modeloInicial = "classico",
