@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { CampoFormulario } from "../../../shared";
 import {
@@ -22,6 +22,8 @@ export interface FormularioCertificacaoProps {
   titulo?: string;
   /** Prefixo para os identificadores dos campos no DOM. Padrão: 'certificacao'. */
   prefixoId?: string;
+  /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 interface MensagemFeedback {
@@ -41,11 +43,22 @@ export function FormularioCertificacao({
   onSalvar,
   titulo = "Certificações",
   prefixoId = "certificacao",
+  aoAlterarProgresso,
 }: FormularioCertificacaoProps) {
   const [valores, setValores] = useState<ValoresCertificacao>(valoresIniciais);
   const [erros, setErros] = useState<ErrosCertificacao>({});
   const [mensagem, setMensagem] = useState<MensagemFeedback | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    if (!aoAlterarProgresso) return;
+    let preenchidos = 0;
+    const total = 2;
+    if (valores.nome.trim().length > 0) preenchidos++;
+    if (valores.organizacaoEmissora.trim().length > 0) preenchidos++;
+
+    aoAlterarProgresso(Math.round((preenchidos / total) * 100));
+  }, [valores, aoAlterarProgresso]);
 
   /**
    * Atualiza o valor de um campo e limpa o erro e feedback ativo correspondente.
@@ -130,7 +143,6 @@ export function FormularioCertificacao({
           desabilitado={enviando}
           erro={erros.nome}
           id={idNome}
-          obrigatorio
           onChange={(valor) => atualizarCampo("nome", valor)}
           rotulo="Nome da certificação"
           valor={valores.nome}
@@ -140,7 +152,6 @@ export function FormularioCertificacao({
           desabilitado={enviando}
           erro={erros.organizacaoEmissora}
           id={idEmissor}
-          obrigatorio
           onChange={(valor) => atualizarCampo("organizacaoEmissora", valor)}
           rotulo="Organização emissora"
           valor={valores.organizacaoEmissora}

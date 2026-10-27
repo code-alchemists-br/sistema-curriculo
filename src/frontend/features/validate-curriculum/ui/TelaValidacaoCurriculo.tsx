@@ -2,6 +2,7 @@ import {
   validarCurriculo,
   type CurriculoParaValidacao,
 } from "../model/validacao-curriculo";
+import "./TelaValidacaoCurriculo.css";
 
 /** Define os callbacks das ações finais do fluxo de currículo. */
 export interface TelaValidacaoCurriculoProps {
@@ -26,65 +27,99 @@ export function TelaValidacaoCurriculo({
   const resultado = validarCurriculo(dados);
 
   return (
-    <main>
-      <section aria-labelledby="titulo-validacao-curriculo">
-        <p>Revisão final</p>
-        <h1 id="titulo-validacao-curriculo">Valide os dados do currículo</h1>
-        <p>
+    <div className="tela-validacao-curriculo">
+      <div className="tela-validacao-curriculo__cabecalho">
+        <h2
+          id="titulo-validacao-curriculo"
+          className="tela-validacao-curriculo__titulo"
+        >
+          Valide os dados do currículo
+        </h2>
+        <p className="tela-validacao-curriculo__descricao">
           Confira as seções obrigatórias antes de visualizar ou exportar seu
           currículo.
         </p>
+      </div>
 
-        <div aria-live="polite">
-          {resultado.valido ? (
-            <p role="status">Todas as seções obrigatórias estão válidas.</p>
-          ) : (
-            <p role="alert">
-              Há pendências que precisam ser corrigidas antes de continuar.
-            </p>
-          )}
-        </div>
+      <div
+        aria-live="polite"
+        className="tela-validacao-curriculo__status-container"
+      >
+        {resultado.valido ? (
+          <p
+            role="status"
+            className="tela-validacao-curriculo__mensagem tela-validacao-curriculo__mensagem--sucesso"
+          >
+            Todas as seções obrigatórias estão válidas.
+          </p>
+        ) : (
+          <p
+            role="alert"
+            className="tela-validacao-curriculo__mensagem tela-validacao-curriculo__mensagem--erro"
+          >
+            Há pendências que precisam ser corrigidas antes de continuar.
+          </p>
+        )}
+      </div>
 
-        <ul aria-label="Status das seções obrigatórias">
-          {resultado.secoes.map((secao) => (
-            <li key={secao.id}>
-              <strong>{secao.titulo}</strong>: {textoStatus(secao.status)}
-              {secao.mensagens.length > 0 && (
-                <ul>
-                  {secao.mensagens.map((mensagem, indice) => (
-                    <li key={`${secao.id}-${indice}`}>{mensagem}</li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
+      <ul
+        aria-label="Status das seções obrigatórias"
+        className="tela-validacao-curriculo__secoes"
+      >
+        {resultado.secoes.map((secao) => (
+          <li
+            key={secao.id}
+            className={`tela-validacao-curriculo__secao tela-validacao-curriculo__secao--${secao.status}`}
+          >
+            <div className="tela-validacao-curriculo__secao-info">
+              <span>
+                <strong>{secao.titulo}</strong>:
+              </span>
+              <span className={`status-badge status-badge--${secao.status}`}>
+                {textoStatus(secao.status)}
+              </span>
+            </div>
+            {secao.mensagens.length > 0 && (
+              <ul className="tela-validacao-curriculo__mensagens-erro">
+                {secao.mensagens.map((mensagem, indice) => (
+                  <li key={`${secao.id}-${indice}`}>{mensagem}</li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
 
-        <div>
+      <div className="tela-validacao-curriculo__acoes">
+        <button
+          className="btn-proximo"
+          disabled={!resultado.podeExportarPdf}
+          onClick={onConfirmarCurriculo}
+          type="button"
+        >
+          Confirmar currículo
+        </button>
+
+        <div className="tela-validacao-curriculo__acoes-secundarias">
           <button
+            className="btn-secundario"
             disabled={!resultado.podeVisualizarPreview}
-            type="button"
             onClick={onVisualizarPreview}
+            type="button"
           >
             Visualizar prévia
           </button>
           <button
+            className="btn-secundario"
             disabled={!resultado.podeExportarPdf}
-            type="button"
-            onClick={onConfirmarCurriculo}
-          >
-            Confirmar currículo
-          </button>
-          <button
-            disabled={!resultado.podeExportarPdf}
-            type="button"
             onClick={onExportarPdf}
+            type="button"
           >
             Exportar PDF
           </button>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 

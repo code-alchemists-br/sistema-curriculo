@@ -1,0 +1,191 @@
+.layout-cadastro {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #050505;
+  box-sizing: border-box;
+  color: #ffffff;
+}
+
+/* Coluna Esquerda: Ocupa altura total da viewport com largura ampliada (~46%) */
+.layout-cadastro__visual {
+  flex: 0 0 46%;
+  width: 46%;
+  max-width: 46%;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: clamp(20px, 3vw, 44px);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.layout-cadastro__card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 42px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4rem 2.5rem 3.5rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.layout-cadastro__bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.layout-cadastro__titulo {
+  position: relative;
+  z-index: 2;
+  font-family: "Clash Display", sans-serif;
+  font-size: clamp(2.2rem, 3.6vw, 68px);
+  font-weight: 500;
+  line-height: 1.1;
+  color: #dbdbdb;
+  mix-blend-mode: color-dodge;
+  margin: auto 0;
+  max-width: 600px;
+  text-align: center;
+}
+
+.layout-cadastro__subtitulo {
+  position: relative;
+  z-index: 2;
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(1.4rem, 2.2vw, 32px);
+  font-weight: 400;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+}
+
+/* Coluna Direita: ~54% */
+.layout-cadastro__conteudo {
+  flex: 0 0 54%;
+  width: 54%;
+  max-width: 54%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 3.5rem 3.5rem 4rem;
+  box-sizing: border-box;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.layout-cadastro__container {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Barra de progresso horizontal segmentada */
+.layout-cadastro__progresso {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 3.5rem;
+}
+
+.layout-cadastro__progresso-trilha {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.layout-cadastro__progresso-preenchimento {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+}
+
+.layout-cadastro__progresso-preenchimento.completa,
+.layout-cadastro__progresso-preenchimento.ativa {
+  background: #ff6a00;
+}
+
+.layout-cadastro__formulario {
+  width: 100%;
+}
+
+/* Responsividade Mobile e Telas Menores */
+@media (max-width: 960px) {
+  .layout-cadastro {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .layout-cadastro__visual {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: unset;
+    position: static;
+    padding: 1rem 1rem 0 1rem;
+    box-sizing: border-box;
+  }
+
+  .layout-cadastro__card {
+    height: auto;
+    min-height: 160px;
+    border-radius: 26px;
+    padding: 1.75rem 1.25rem 1.5rem;
+    justify-content: center;
+    gap: 0.65rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .layout-cadastro__titulo {
+    font-size: clamp(1.25rem, 5vw, 1.65rem);
+    max-width: 90%;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .layout-cadastro__subtitulo {
+    font-size: clamp(0.95rem, 3.8vw, 1.15rem);
+    margin: 0;
+  }
+
+  .layout-cadastro__conteudo {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    height: auto;
+    overflow-y: visible;
+    padding: 1.25rem 1.25rem 3.5rem;
+    box-sizing: border-box;
+  }
+
+  .layout-cadastro__container {
+    max-width: 100%;
+  }
+
+  .layout-cadastro__progresso {
+    margin-top: 0.25rem;
+    margin-bottom: 2rem;
+    gap: 6px;
+  }
+}

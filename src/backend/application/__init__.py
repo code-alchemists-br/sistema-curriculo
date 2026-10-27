@@ -153,6 +153,8 @@ from backend.application.exclusao_versao_curriculo import (
 )
 from backend.application.exportacao_curriculo import (
     FORMATO_DOCX,
+    # Proveniência: decision-analysis prompts/backend/20261025-100000-rota-exportacao-pdf-v001.md#v001
+    FORMATO_PDF,
     ArquivoCurriculoExportado,
     ExportarCurriculo,
     ExportarCurriculoEntrada,
@@ -452,6 +454,8 @@ __all__ = [
     "DocumentoCurriculoRenderizado",
     "RenderizadorDocumentoCurriculo",
     "FORMATO_DOCX",
+    # Proveniência: decision-analysis prompts/backend/20261025-100000-rota-exportacao-pdf-v001.md#v001
+    "FORMATO_PDF",
     "ArquivoCurriculoExportado",
     "ExportarCurriculo",
     "ExportarCurriculoEntrada",

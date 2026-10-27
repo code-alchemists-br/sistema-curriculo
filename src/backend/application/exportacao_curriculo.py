@@ -38,6 +38,9 @@ FORMATO_DOCX = FormatoExportacao(
     tipo_mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 )
 
+# Proveniência: decision-analysis prompts/backend/20261025-100000-rota-exportacao-pdf-v001.md#v001
+FORMATO_PDF = FormatoExportacao(extensao="pdf", tipo_mime="application/pdf")
+
 
 @dataclass(frozen=True, slots=True)
 class ExportarCurriculoEntrada:

@@ -59,7 +59,7 @@ describe("FormularioExperiencias", () => {
     const checkbox = screen.getByLabelText("Emprego atual");
     await usuario.click(checkbox);
 
-    expect(screen.getByLabelText("Fim (Mês/Ano)")).toBeDisabled();
+    expect(screen.getByLabelText("Fim")).toBeDisabled();
   });
 
   it("reabilita o campo Fim quando Emprego atual é desmarcado", async () => {
@@ -75,14 +75,16 @@ describe("FormularioExperiencias", () => {
     const checkbox = screen.getByLabelText("Emprego atual");
     await usuario.click(checkbox);
 
-    expect(screen.getByLabelText("Fim (Mês/Ano)")).not.toBeDisabled();
+    expect(screen.getByLabelText("Fim")).not.toBeDisabled();
   });
 
   it("exibe erros de validação quando campos obrigatórios estão vazios", async () => {
     const usuario = userEvent.setup();
     render(<FormularioExperiencias />);
 
-    await usuario.click(screen.getByText("Salvar experiências"));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar experiências" }),
+    );
 
     expect(screen.getByText("Informe o nome da empresa.")).toBeInTheDocument();
     expect(screen.getByText("Informe o cargo exercido.")).toBeInTheDocument();
@@ -113,7 +115,9 @@ describe("FormularioExperiencias", () => {
       />,
     );
 
-    await usuario.click(screen.getByText("Salvar experiências"));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar experiências" }),
+    );
 
     expect(onSalvar).toHaveBeenCalledTimes(1);
     const resultado = onSalvar.mock.calls[0][0] as Experiencia[];
@@ -130,7 +134,9 @@ describe("FormularioExperiencias", () => {
 
     render(<FormularioExperiencias onSalvar={onSalvar} />);
 
-    await usuario.click(screen.getByText("Salvar experiências"));
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar experiências" }),
+    );
 
     expect(onSalvar).not.toHaveBeenCalled();
   });

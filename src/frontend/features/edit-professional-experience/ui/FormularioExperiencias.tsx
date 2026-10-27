@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import {
   criarExperienciaVazia,
@@ -7,9 +7,11 @@ import {
   type ErrosExperiencia,
   type Experiencia,
 } from "../model/experiencias";
+import "./FormularioExperiencias.css";
 
-/** Define os valores iniciais e o callback de persistência da tela. */
+/** Define os valores iniciais e os callbacks do formulário. */
 export interface FormularioExperienciasProps {
+  aoAlterarProgresso?: (progresso: number) => void;
   experienciasIniciais?: Experiencia[];
   onSalvar?: (experiencias: Experiencia[]) => void;
 }
@@ -23,6 +25,7 @@ export interface FormularioExperienciasProps {
  * antes de chamar o callback de persistência.
  */
 export function FormularioExperiencias({
+  aoAlterarProgresso,
   experienciasIniciais = [criarExperienciaVazia()],
   onSalvar,
 }: FormularioExperienciasProps) {
@@ -30,6 +33,37 @@ export function FormularioExperiencias({
     useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  /** Calcula e notifica o progresso da etapa atual */
+  useEffect(() => {
+    if (!aoAlterarProgresso) return;
+    if (experiencias.length === 0) {
+      aoAlterarProgresso(100);
+      return;
+    }
+
+    let totalObrigatorios = 0;
+    let preenchidos = 0;
+
+    experiencias.forEach((exp) => {
+      totalObrigatorios += 3;
+      if (exp.empresa.trim().length > 0) preenchidos += 1;
+      if (exp.cargo.trim().length > 0) preenchidos += 1;
+      if (exp.inicio.trim().length > 0) preenchidos += 1;
+
+      if (!exp.empregoAtual) {
+        totalObrigatorios += 1;
+        if (exp.fim.trim().length > 0) preenchidos += 1;
+      }
+    });
+
+    const porcentagem =
+      totalObrigatorios > 0
+        ? Math.round((preenchidos / totalObrigatorios) * 100)
+        : 100;
+
+    aoAlterarProgresso(porcentagem);
+  }, [experiencias, aoAlterarProgresso]);
 
   /** Atualiza um campo de texto de uma experiência pela sua posição. */
   function atualizarCampo(
@@ -107,15 +141,16 @@ export function FormularioExperiencias({
 
   /**
    * Valida, ordena cronologicamente e comunica o status de envio do formulário.
-   *
-   * O manipulador impede o envio nativo, verifica inconsistências de preenchimento
-   * através de `validarListaExperiencias`, emite alerta acessível quando há campos
-   * inválidos e, em caso de sucesso, normaliza e ordena as experiências antes de
-   * acionar o callback `onSalvar`. Ele existe para assegurar feedback imediato e
-   * acessível para usuários de tecnologias assistivas e de navegação por teclado.
    */
   function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
     evento.preventDefault();
+
+    if (experiencias.length === 0) {
+      onSalvar?.([]);
+      setMensagem("Experiências salvas com sucesso.");
+      return;
+    }
+
     const novosErros = validarListaExperiencias(experiencias);
 
     if (Object.keys(novosErros).length > 0) {
@@ -141,8 +176,22 @@ export function FormularioExperiencias({
   }
 
   return (
-    <form noValidate onSubmit={enviarFormulario}>
-      <h2>Experiências Profissionais</h2>
+    <form
+      className="formulario-experiencias"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
+      {experiencias.length === 0 && (
+        <div className="experiencias-vazio" role="status">
+          <p className="experiencias-vazio__texto">
+            Nenhuma experiência profissional cadastrada.
+          </p>
+          <p className="experiencias-vazio__subtexto">
+            Se você não possui experiência profissional formal ou busca o
+            primeiro emprego, pode avançar para a próxima etapa.
+          </p>
+        </div>
+      )}
 
       {experiencias.map((exp, indice) => {
         const errosExp = erros[indice];
@@ -150,10 +199,31 @@ export function FormularioExperiencias({
 
         return (
           <fieldset aria-label={`Experiência ${indice + 1}`} key={prefixo}>
-            <legend>Experiência {indice + 1}</legend>
+            <legend className="sr-only">Experiência {indice + 1}</legend>
+
+            {experiencias.length > 1 && (
+              <div className="experiencia-header">
+                <span className="experiencia-header__titulo">
+                  Experiência {indice + 1}
+                </span>
+                <button
+                  aria-label={`Remover experiência ${indice + 1}`}
+                  className="btn-remover-experiencia"
+                  onClick={() => removerExperiencia(indice)}
+                  type="button"
+                >
+                  Remover
+                </button>
+              </div>
+            )}
 
             <div className="field">
-              <label htmlFor={`${prefixo}-empresa`}>Nome da empresa</label>
+              <label
+                className="titulo-campo titulo-campo--obrigatorio"
+                htmlFor={`${prefixo}-empresa`}
+              >
+                Nome da empresa
+              </label>
               <input
                 aria-describedby={
                   errosExp?.empresa !== undefined
@@ -167,6 +237,7 @@ export function FormularioExperiencias({
                 onChange={(e) =>
                   atualizarCampo(indice, "empresa", e.target.value)
                 }
+                placeholder="Ex.: Google, Microsoft, FATEC..."
                 required
                 type="text"
                 value={exp.empresa}
@@ -179,7 +250,12 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-cargo`}>Cargo</label>
+              <label
+                className="titulo-campo titulo-campo--obrigatorio"
+                htmlFor={`${prefixo}-cargo`}
+              >
+                Cargo
+              </label>
               <input
                 aria-describedby={
                   errosExp?.cargo !== undefined
@@ -191,6 +267,7 @@ export function FormularioExperiencias({
                 onChange={(e) =>
                   atualizarCampo(indice, "cargo", e.target.value)
                 }
+                placeholder="Ex.: Desenvolvedor Frontend Jr"
                 required
                 type="text"
                 value={exp.cargo}
@@ -203,7 +280,12 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-inicio`}>Início (Mês/Ano)</label>
+              <label
+                className="titulo-campo titulo-campo--obrigatorio"
+                htmlFor={`${prefixo}-inicio`}
+              >
+                Início
+              </label>
               <input
                 aria-describedby={
                   errosExp?.inicio !== undefined
@@ -216,7 +298,7 @@ export function FormularioExperiencias({
                   atualizarCampo(indice, "inicio", e.target.value)
                 }
                 required
-                type="month"
+                type="date"
                 value={exp.inicio}
               />
               {errosExp?.inicio !== undefined && (
@@ -227,7 +309,12 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-fim`}>Fim (Mês/Ano)</label>
+              <label
+                className={`titulo-campo ${!exp.empregoAtual ? "titulo-campo--obrigatorio" : ""}`}
+                htmlFor={`${prefixo}-fim`}
+              >
+                Fim
+              </label>
               <input
                 aria-describedby={
                   errosExp?.fim !== undefined
@@ -239,7 +326,7 @@ export function FormularioExperiencias({
                 id={`${prefixo}-fim`}
                 onChange={(e) => atualizarCampo(indice, "fim", e.target.value)}
                 required={!exp.empregoAtual}
-                type="month"
+                type="date"
                 value={exp.fim}
               />
               {errosExp?.fim !== undefined && (
@@ -249,46 +336,44 @@ export function FormularioExperiencias({
               )}
             </div>
 
-            <div className="field">
-              <label htmlFor={`${prefixo}-emprego-atual`}>
+            <div className="field-checkbox">
+              <label
+                className="label-checkbox"
+                htmlFor={`${prefixo}-emprego-atual`}
+              >
                 <input
                   checked={exp.empregoAtual}
                   id={`${prefixo}-emprego-atual`}
                   onChange={() => alternarEmpregoAtual(indice)}
                   type="checkbox"
-                />{" "}
+                />
                 Emprego atual
               </label>
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-descricao`}>
-                Descrição das atividades (opcional)
+              <label className="titulo-campo" htmlFor={`${prefixo}-descricao`}>
+                Descrição das atividades
               </label>
               <textarea
                 id={`${prefixo}-descricao`}
                 onChange={(e) =>
                   atualizarCampo(indice, "descricao", e.target.value)
                 }
+                placeholder="Principais responsabilidades, projetos e tecnologias utilizadas..."
                 rows={4}
                 value={exp.descricao}
               />
             </div>
-
-            {experiencias.length > 1 && (
-              <button
-                aria-label={`Remover experiência ${indice + 1}`}
-                onClick={() => removerExperiencia(indice)}
-                type="button"
-              >
-                Remover experiência
-              </button>
-            )}
           </fieldset>
         );
       })}
 
-      <button onClick={adicionarExperiencia} type="button">
+      <button
+        className="btn-adicionar-experiencia"
+        onClick={adicionarExperiencia}
+        type="button"
+      >
         + Adicionar experiência
       </button>
 
@@ -301,7 +386,23 @@ export function FormularioExperiencias({
         </p>
       )}
 
-      <button type="submit">Salvar experiências</button>
+      <button
+        aria-label="Salvar experiências"
+        className="btn-proximo"
+        type="submit"
+      >
+        Próximo
+      </button>
+
+      {experiencias.length > 0 && (
+        <button
+          className="btn-limpar-experiencias"
+          onClick={() => setExperiencias([])}
+          type="button"
+        >
+          Não possuo experiência profissional
+        </button>
+      )}
     </form>
   );
 }

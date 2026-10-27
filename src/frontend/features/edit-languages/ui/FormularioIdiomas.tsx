@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import {
   criarIdiomaVazio,
@@ -8,11 +8,14 @@ import {
   type Idioma,
   type NivelIdioma,
 } from "../model/idiomas";
+import "./FormularioIdiomas.css";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
 export interface FormularioIdiomasProps {
   idiomasIniciais?: Idioma[];
   onSalvar?: (idiomas: Idioma[]) => void;
+  /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
+  aoAlterarProgresso?: (progresso: number) => void;
 }
 
 /**
@@ -26,10 +29,32 @@ export interface FormularioIdiomasProps {
 export function FormularioIdiomas({
   idiomasIniciais = [criarIdiomaVazio()],
   onSalvar,
+  aoAlterarProgresso,
 }: FormularioIdiomasProps) {
   const [idiomas, setIdiomas] = useState<Idioma[]>(idiomasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosIdioma>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!aoAlterarProgresso) return;
+    if (idiomas.length === 0) {
+      aoAlterarProgresso(0);
+      return;
+    }
+
+    let totalCampos = 0;
+    let preenchidos = 0;
+
+    idiomas.forEach((item) => {
+      totalCampos += 2;
+      if (item.nome.trim().length > 0) preenchidos++;
+      if (item.nivel.trim().length > 0) preenchidos++;
+    });
+
+    const porcentagem =
+      totalCampos > 0 ? Math.round((preenchidos / totalCampos) * 100) : 0;
+    aoAlterarProgresso(porcentagem);
+  }, [idiomas, aoAlterarProgresso]);
 
   /** Atualiza o nome de um idioma pela sua posição no array. */
   function atualizarNome(indice: number, nome: string): void {
@@ -110,8 +135,8 @@ export function FormularioIdiomas({
   }
 
   return (
-    <form noValidate onSubmit={enviarFormulario}>
-      <h2>Idiomas</h2>
+    <form className="formulario-idiomas" noValidate onSubmit={enviarFormulario}>
+      <h2 className="secao-titulo">Idiomas</h2>
 
       {idiomas.map((idioma, indice) => {
         const errosIdioma = erros[indice];
@@ -119,10 +144,29 @@ export function FormularioIdiomas({
 
         return (
           <fieldset aria-label={`Idioma ${indice + 1}`} key={prefixo}>
-            <legend>Idioma {indice + 1}</legend>
+            <legend className="sr-only">Idioma {indice + 1}</legend>
+
+            {idiomas.length > 1 && (
+              <div className="item-sublista__topo">
+                <span className="label-subtitulo">Idioma {indice + 1}</span>
+                <button
+                  aria-label={`Remover idioma ${indice + 1}`}
+                  className="btn-remover-item"
+                  onClick={() => removerIdioma(indice)}
+                  type="button"
+                >
+                  Remover
+                </button>
+              </div>
+            )}
 
             <div className="field">
-              <label htmlFor={`${prefixo}-nome`}>Idioma</label>
+              <label
+                className="titulo-campo titulo-campo--obrigatorio"
+                htmlFor={`${prefixo}-nome`}
+              >
+                Idioma
+              </label>
               <input
                 aria-describedby={
                   errosIdioma?.nome !== undefined
@@ -134,6 +178,7 @@ export function FormularioIdiomas({
                 }
                 id={`${prefixo}-nome`}
                 onChange={(e) => atualizarNome(indice, e.target.value)}
+                placeholder="Ex.: Inglês, Espanhol, Francês..."
                 required
                 type="text"
                 value={idioma.nome}
@@ -146,7 +191,12 @@ export function FormularioIdiomas({
             </div>
 
             <div className="field">
-              <label htmlFor={`${prefixo}-nivel`}>Nível de proficiência</label>
+              <label
+                className="titulo-campo titulo-campo--obrigatorio"
+                htmlFor={`${prefixo}-nivel`}
+              >
+                Nível de proficiência
+              </label>
               <select
                 aria-describedby={
                   errosIdioma?.nivel !== undefined
@@ -178,21 +228,15 @@ export function FormularioIdiomas({
                 </p>
               )}
             </div>
-
-            {idiomas.length > 1 && (
-              <button
-                aria-label={`Remover idioma ${indice + 1}`}
-                onClick={() => removerIdioma(indice)}
-                type="button"
-              >
-                Remover idioma
-              </button>
-            )}
           </fieldset>
         );
       })}
 
-      <button onClick={adicionarIdioma} type="button">
+      <button
+        className="btn-adicionar-item"
+        onClick={adicionarIdioma}
+        type="button"
+      >
         + Adicionar idioma
       </button>
 
@@ -202,7 +246,9 @@ export function FormularioIdiomas({
         </p>
       )}
 
-      <button type="submit">Salvar idiomas</button>
+      <button className="btn-salvar-secao" type="submit">
+        Salvar idiomas
+      </button>
     </form>
   );
 }
