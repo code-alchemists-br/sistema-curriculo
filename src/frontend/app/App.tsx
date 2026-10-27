@@ -44,8 +44,17 @@ export function App() {
       if (etapa === "projetos-academicos") return "projetos-academicos";
       if (etapa === "selecionar-modelo") return "selecionar-modelo";
       if (etapa === "validacao-curriculo") return "validacao-curriculo";
+      if (etapa === "acesso") return "acesso";
     }
     return "inicio";
+  });
+
+  const [abaAcesso, setAbaAcesso] = useState<"acesso" | "cadastro">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("aba") === "cadastro") return "cadastro";
+    }
+    return "acesso";
   });
 
   if (rotaAtiva === "dados-pessoais") {
@@ -114,13 +123,45 @@ export function App() {
   }
 
   if (rotaAtiva === "acesso") {
-    return <PaginaAcessoEstudante />;
+    return (
+      <PaginaAcessoEstudante
+        abaInicial={abaAcesso}
+        onVoltarInicio={() => {
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("etapa");
+            url.searchParams.delete("aba");
+            window.history.pushState({}, "", url.toString());
+          }
+          setRotaAtiva("inicio");
+        }}
+      />
+    );
   }
 
   return (
     <PaginaInicio
-      onNavegarCadastro={() => setRotaAtiva("dados-pessoais")}
-      onNavegarLogin={() => setRotaAtiva("acesso")}
+      onCriarCurriculo={() => setRotaAtiva("dados-pessoais")}
+      onNavegarCadastro={() => {
+        setAbaAcesso("cadastro");
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          url.searchParams.set("etapa", "acesso");
+          url.searchParams.set("aba", "cadastro");
+          window.history.pushState({}, "", url.toString());
+        }
+        setRotaAtiva("acesso");
+      }}
+      onNavegarLogin={() => {
+        setAbaAcesso("acesso");
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          url.searchParams.set("etapa", "acesso");
+          url.searchParams.delete("aba");
+          window.history.pushState({}, "", url.toString());
+        }
+        setRotaAtiva("acesso");
+      }}
       onNavegarInicio={() => setRotaAtiva("inicio")}
     />
   );

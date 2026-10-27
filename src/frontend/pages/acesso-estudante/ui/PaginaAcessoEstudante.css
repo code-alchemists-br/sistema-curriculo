@@ -1,0 +1,160 @@
+/* Estilos da Página de Acesso do Estudante (Login e Cadastro) */
+
+.pagina-acesso-estudante {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  width: 100% !important;
+  padding: 2rem 1.5rem !important;
+  background-color: #050505 !important;
+  background: #050505 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__glow {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  object-fit: contain !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 0 !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__container {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  gap: 1.25rem !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__voltar {
+  align-self: flex-start !important;
+  background: transparent !important;
+  border: none !important;
+  color: #a3a3a3 !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  padding: 0.25rem 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: color 0.2s ease !important;
+  min-height: auto !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__voltar:hover {
+  color: #ffffff !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__card,
+.pagina-acesso-estudante .app-shell__content {
+  width: 100% !important;
+  max-width: 480px !important;
+  background: rgba(20, 20, 20, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 2.5rem !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__eyebrow,
+.pagina-acesso-estudante .eyebrow {
+  display: inline-block !important;
+  font-family:
+    "Candara",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  margin: 0 0 0.5rem 0 !important;
+  user-select: none !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__titulo {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 1.75rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin: 0 0 1.75rem 0 !important;
+  line-height: 1.25 !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__formulario-wrapper,
+.pagina-acesso-estudante .account-form {
+  width: 100% !important;
+}
+
+/* Rodapé Externo de Alternância entre Login e Cadastro */
+.pagina-acesso-estudante .pagina-acesso-estudante__alternador {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 0.25rem 0 !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__alternador-texto {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.95rem !important;
+  color: #a3a3a3 !important;
+  margin: 0 !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__alternador-botao {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 0 0 0.25rem !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+  min-height: auto !important;
+}
+
+.pagina-acesso-estudante .pagina-acesso-estudante__alternador-botao:hover {
+  color: #ff6a00 !important;
+}
+
+.pagina-acesso-estudante
+  .pagina-acesso-estudante__alternador-botao:focus-visible {
+  outline: 2px solid #ff6a00 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+@media (max-width: 32rem) {
+  .pagina-acesso-estudante {
+    padding: 1rem !important;
+  }
+
+  .pagina-acesso-estudante .pagina-acesso-estudante__card,
+  .pagina-acesso-estudante .app-shell__content {
+    padding: 1.5rem !important;
+    border-radius: 16px !important;
+  }
+
+  .pagina-acesso-estudante .pagina-acesso-estudante__titulo {
+    font-size: 1.45rem !important;
+  }
+}

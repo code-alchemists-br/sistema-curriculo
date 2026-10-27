@@ -11,6 +11,8 @@ import {
   type ErrosFormulario,
   type ValoresCadastro,
 } from "../model/formulario-acesso";
+import { BotaoHero } from "../../../shared";
+import "./FormularioCadastro.css";
 
 /** Define os colaboradores e a consequência local de um cadastro concluído. */
 export interface FormularioCadastroProps {
@@ -95,7 +97,7 @@ export function FormularioCadastro({
   }
 
   return (
-    <form noValidate onSubmit={enviarCadastro}>
+    <form className="formulario-cadastro" noValidate onSubmit={enviarCadastro}>
       <Campo
         autoComplete="name"
         erro={erros.nome}
@@ -136,9 +138,14 @@ export function FormularioCadastro({
           {mensagem}
         </p>
       )}
-      <button disabled={enviando} type="submit">
+      <BotaoHero
+        disabled={enviando}
+        mostrarIcone={false}
+        type="submit"
+        wrapperClassName="formulario-cadastro__botao-wrapper botao-hero-wrapper--full-width"
+      >
         {enviando ? "Criando conta..." : "Criar conta"}
-      </button>
+      </BotaoHero>
     </form>
   );
 }
