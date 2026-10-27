@@ -136,14 +136,13 @@ class CriacaoVersaoCurriculoExecutor(Protocol):
 class CriarVersaoCurriculoRequisicao(BaseModel):
     """Representa o JSON aceito para criar uma versão de currículo.
 
-    O DTO limita presença e tamanho na fronteira antes da conversão ao caso de
-    uso, torna a visibilidade opcional com padrão privado e não aceita
-    identidade, proprietário nem referências. Ele existe para separar transporte
-    do núcleo de criação de versão.
+    - O que faz: Recebe título, modelo reconhecido e visibilidade da nova versão.
+    - Como faz: Usa ``ModeloCurriculo`` na fronteira e converte a enumeração em texto antes do caso de uso.
+    - Qual finalidade atende: Garante que criação e edição aceitem o mesmo catálogo, sem bloquear a leitura de versões legadas já gravadas.
     """
 
     titulo_versao: str = Field(min_length=1, max_length=200)
-    layout: str = Field(min_length=1, max_length=100)
+    layout: ModeloCurriculo
     is_public: bool = False
 
 
@@ -188,7 +187,10 @@ def criar_router(
         Ele existe para publicar o payload mínimo sem expor o agregado.
         """
         if atualizar_ordem_secoes_curriculo is None:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Atualização da ordem indisponível.")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Atualização da ordem indisponível.",
+            )
         entrada = AtualizarOrdemSecoesCurriculoEntrada(
             usuario_id=UsuarioId(usuario_id),
             curriculo_id=CurriculoId(curriculo_id),
@@ -197,9 +199,15 @@ def criar_router(
         try:
             await atualizar_ordem_secoes_curriculo.executar(entrada)
         except CurriculoNaoEncontrado as erro:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(erro),
+            ) from erro
         except RegraDeDominioViolada as erro:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(erro),
+            ) from erro
 
     @router.put(
         "/estudantes/{usuario_id}/curriculos/{curriculo_id}",
@@ -217,7 +225,10 @@ def criar_router(
         internos. Ele existe para expor a edição sem levar HTTP à Application.
         """
         if editar_versao_curriculo is None:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Edição indisponível.")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Edição indisponível.",
+            )
         entrada = EditarVersaoCurriculoEntrada(
             usuario_id=UsuarioId(usuario_id),
             curriculo_id=CurriculoId(curriculo_id),
@@ -228,9 +239,15 @@ def criar_router(
         try:
             curriculo = await editar_versao_curriculo.executar(entrada)
         except CurriculoNaoEncontrado as erro:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(erro),
+            ) from erro
         except RegraDeDominioViolada as erro:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(erro),
+            ) from erro
         return VersaoCurriculoResposta(
             id=curriculo.id.valor,
             titulo_versao=curriculo.titulo_versao,
@@ -244,7 +261,10 @@ def criar_router(
         response_model=VersaoCurriculoResposta,
         status_code=status.HTTP_201_CREATED,
     )
-    async def criar(usuario_id: UUID, requisicao: CriarVersaoCurriculoRequisicao) -> VersaoCurriculoResposta:
+    async def criar(
+        usuario_id: UUID,
+        requisicao: CriarVersaoCurriculoRequisicao,
+    ) -> VersaoCurriculoResposta:
         """Executa a criação HTTP e devolve os dados públicos da versão criada.
 
         O handler monta a entrada da Application a partir da rota e do corpo,
@@ -252,17 +272,23 @@ def criar_router(
         internos. Ele existe para expor a criação sem levar HTTP à Application.
         """
         if criar_versao_curriculo is None:
-            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Criação indisponível.")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Criação indisponível.",
+            )
         entrada = CriarVersaoCurriculoEntrada(
             usuario_id=UsuarioId(usuario_id),
             titulo_versao=requisicao.titulo_versao,
-            layout=requisicao.layout,
+            layout=requisicao.layout.value,
             is_public=requisicao.is_public,
         )
         try:
             curriculo = await criar_versao_curriculo.executar(entrada)
         except RegraDeDominioViolada as erro:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)) from erro
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(erro),
+            ) from erro
         return VersaoCurriculoResposta(
             id=curriculo.id.valor,
             titulo_versao=curriculo.titulo_versao,

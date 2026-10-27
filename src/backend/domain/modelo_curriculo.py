@@ -13,12 +13,15 @@ from enum import Enum
 class ModeloCurriculo(str, Enum):
     """Identifica cada modelo de apresentação disponível para uma versão.
 
-    Os valores textuais são identificadores estáveis, iguais aos que o
-    front-end já oferece ao estudante (clássico e compacto). A enumeração existe
-    para que o modelo seja um vocabulário fechado, reconhecido em qualquer
-    camada, e para que um modelo desconhecido possa ser recusado sem interpretar
-    texto livre.
+    - O que faz: Define os identificadores estáveis aceitos para apresentação.
+    - Como faz: Centraliza os valores em uma enumeração textual usada pela API e pelo domínio.
+    - Qual finalidade atende: Impede que uma versão seja criada ou editada com um modelo que a prévia não conhece.
     """
 
     CLASSICO = "classico"
     COMPACTO = "compacto"
+    ATS_SIMPLES = "ats-simples"
+    CRIATIVO = "criativo"
+    MODERNO = "moderno"
+    ACADEMICO = "academico"
+    PRIMEIRO_EMPREGO = "primeiro-emprego"

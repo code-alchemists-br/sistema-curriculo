@@ -1,0 +1,131 @@
+.modelo-academico {
+  --academico-azul: #146384;
+  --academico-texto: #263238;
+  --academico-suave: #63707a;
+  box-sizing: border-box;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  color: var(--academico-texto);
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.45;
+}
+
+.modelo-academico__cabecalho {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 0 0 1.5rem 1rem;
+  border-left: 0.25rem solid var(--academico-azul);
+  border-bottom: 0.1rem solid #cbd5dc;
+}
+
+.modelo-academico__cabecalho h1 {
+  margin: 0;
+  color: var(--academico-azul);
+  font-size: clamp(1.6rem, 4vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.modelo-academico__cabecalho p {
+  margin: 0.4rem 0 0;
+  color: var(--academico-suave);
+  font-weight: 700;
+}
+
+.modelo-academico__contato,
+.modelo-academico__lista,
+.modelo-academico__lista-curta,
+.modelo-academico__documentos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modelo-academico__contato {
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.modelo-academico__contato a {
+  color: var(--academico-azul);
+}
+
+.modelo-academico__secao {
+  break-inside: avoid;
+  padding-top: 1.5rem;
+}
+
+.modelo-academico__secao h2 {
+  margin: 0 0 0.85rem;
+  color: var(--academico-azul);
+  font-size: 1.05rem;
+}
+
+.modelo-academico__lista {
+  display: grid;
+  gap: 1rem;
+}
+
+.modelo-academico__lista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+}
+
+.modelo-academico__lista h3,
+.modelo-academico__lista p {
+  margin: 0;
+}
+
+.modelo-academico__lista h3 {
+  font-size: 1rem;
+}
+
+.modelo-academico__lista p + p {
+  margin-top: 0.25rem;
+}
+
+.modelo-academico__periodo {
+  color: var(--academico-suave);
+  font-size: 0.82rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.modelo-academico__documentos,
+.modelo-academico__lista-curta {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.modelo-academico__grade-final {
+  display: grid;
+  gap: 0 2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 40rem) {
+  .modelo-academico__cabecalho,
+  .modelo-academico__lista li,
+  .modelo-academico__grade-final {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .modelo-academico__contato,
+  .modelo-academico__periodo {
+    text-align: left;
+  }
+}
+
+@media print {
+  .modelo-academico {
+    max-width: none;
+    padding: 0;
+  }
+}
