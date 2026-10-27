@@ -30,21 +30,22 @@ export const OPCOES_OBJETIVO_CURRICULO: ReadonlyArray<OpcaoObjetivoCurriculo> =
 /**
  * Produz uma recomendação textual sem alterar a escolha feita pelo estudante.
  *
- * O que faz: Relaciona a categoria selecionada a um layout já suportado pelo
- * front-end e pelo backend.
- * Como faz: Usa uma decisão local, determinística e apenas informativa.
- * Por que existe: Orienta iniciantes sem restringir sua autonomia na seleção.
+ * - O que faz: Relaciona a categoria informada a um modelo oficial do catálogo.
+ * - Como faz: Usa uma decisão local, determinística e apenas informativa.
+ * - Qual finalidade atende: Orienta iniciantes sem restringir a autonomia na seleção de layout.
  */
 export function obterRecomendacaoModelo(objetivo: ObjetivoCurriculo): string {
   switch (objetivo) {
     case "primeiro-emprego":
+      return "Recomendamos o modelo Primeiro emprego para valorizar formação, projetos e competências.";
     case "tecnologia":
-    case "criativo-design":
-      return "Recomendamos o modelo Compacto por oferecer uma leitura direta das informações.";
-    case "administrativo-corporativo":
-    case "academico-pesquisador":
-      return "Recomendamos o modelo Clássico por sua hierarquia visual sóbria.";
     case "outro":
-      return "Você pode escolher o modelo que melhor representa seu objetivo.";
+      return "Recomendamos o modelo Moderno por equilibrar competências, projetos e experiência.";
+    case "administrativo-corporativo":
+      return "Recomendamos o modelo Profissional clássico por sua hierarquia visual sóbria.";
+    case "criativo-design":
+      return "Recomendamos o modelo Criativo para dar maior destaque à identidade e aos projetos.";
+    case "academico-pesquisador":
+      return "Recomendamos o modelo Acadêmico para priorizar formação e projetos acadêmicos.";
   }
 }
