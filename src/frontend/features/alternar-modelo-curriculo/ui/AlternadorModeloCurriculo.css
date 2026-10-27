@@ -19,14 +19,14 @@
 }
 
 .alternador-modelo-curriculo__opcao {
-  background: #ffffff;
-  border: 1px solid #c7c7c7;
-  border-radius: 0.375rem;
   display: grid;
-  gap: 0.75rem;
   grid-template-columns: auto 1fr;
+  gap: 0.75rem;
   min-width: 13rem;
   padding: 0.75rem;
+  border: 1px solid #c7c7c7;
+  border-radius: 0.375rem;
+  background: #ffffff;
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease,
@@ -50,8 +50,12 @@
   font-weight: 700;
 }
 
-.alternador-modelo-curriculo__opcao > p {
+.alternador-modelo-curriculo__opcao > p,
+.miniatura-modelo {
   grid-column: 1 / -1;
+}
+
+.alternador-modelo-curriculo__opcao > p {
   margin: 0;
 }
 
@@ -60,137 +64,162 @@
   outline-offset: 3px;
 }
 
-.previsao-modelo {
-  background: #ffffff;
+.miniatura-modelo {
+  display: grid;
+  min-height: 11rem;
+  overflow: hidden;
   border: 1px solid #d8e0ea;
   border-radius: 0.25rem;
-  display: grid;
-  gap: 0.4rem;
-  grid-column: 1 / -1;
-  min-height: 18rem;
-  padding: 0.75rem;
+  color: #172b4d;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.4rem;
 }
 
-.previsao-modelo__nome {
-  color: #172b4d;
-  font-size: 0.625rem;
+.miniatura-modelo__cabecalho {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid #bdc8d7;
+}
+
+.miniatura-modelo__cabecalho span,
+.miniatura-modelo b {
+  font-size: 0.42rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
-.previsao-modelo__contato,
-.previsao-modelo__links {
-  color: #64748b;
-  font-size: 0.5rem;
-}
-
-.previsao-modelo__links {
-  text-decoration: underline;
-}
-
-.previsao-modelo__linhas {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.previsao-modelo__linha {
-  background: #b8c5d6;
-  border-radius: 999px;
+.miniatura-modelo i {
   display: block;
-  height: 0.25rem;
+  width: 88%;
+  height: 0.18rem;
+  border-radius: 999px;
+  background: #b8c5d6;
 }
 
-.previsao-modelo__linha--longa {
-  width: 92%;
+.miniatura-modelo i + i {
+  width: 66%;
 }
 
-.previsao-modelo__linha--media {
-  width: 68%;
+.miniatura-modelo__corpo {
+  display: grid;
+  grid-template-columns: 30% 1fr;
+  min-height: 0;
 }
 
-.previsao-modelo--classico {
-  color: #172b4d;
+.miniatura-modelo__corpo > aside {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-right: 1px solid #d8e0ea;
+}
+
+.miniatura-modelo__corpo > div {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  padding: 0.5rem;
+}
+
+.miniatura-modelo section {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.miniatura-modelo--ats-simples .miniatura-modelo__corpo {
+  display: block;
+}
+
+.miniatura-modelo--ats-simples .miniatura-modelo__corpo > aside {
+  display: none;
+}
+
+.miniatura-modelo--ats-simples .miniatura-modelo__cabecalho,
+.miniatura-modelo--ats-simples .miniatura-modelo__corpo > div {
+  border: 0;
+}
+
+.miniatura-modelo--classico {
   font-family: Georgia, "Times New Roman", serif;
 }
 
-.previsao-modelo__cabecalho-classico {
-  align-items: center;
-  border-bottom: 1px solid #334155;
-  display: grid;
-  gap: 0.2rem;
-  justify-items: center;
-  padding-bottom: 0.4rem;
+.miniatura-modelo--classico .miniatura-modelo__cabecalho {
   text-align: center;
 }
 
-.previsao-modelo--classico .previsao-modelo__nome {
-  font-size: 0.6875rem;
+.miniatura-modelo--classico .miniatura-modelo__corpo > aside {
+  display: none;
 }
 
-.previsao-modelo__secao-classica {
-  border-top: 1px solid #94a3b8;
-  display: grid;
-  gap: 0.25rem;
-  padding-top: 0.3rem;
+.miniatura-modelo--classico .miniatura-modelo__corpo {
+  display: block;
 }
 
-.previsao-modelo__titulo-classico {
-  color: #172b4d;
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.miniatura-modelo--moderno .miniatura-modelo__cabecalho {
+  border-bottom-width: 0.15rem;
 }
 
-.previsao-modelo__grade-classica {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.miniatura-modelo--moderno .miniatura-modelo__corpo > aside {
+  border-right-color: #1b1d21;
 }
 
-.previsao-modelo__grade-classica .previsao-modelo__linha {
-  width: 100%;
+.miniatura-modelo--criativo {
+  grid-template-columns: 32% 1fr;
 }
 
-.previsao-modelo--compacto {
-  background: #f8fafc;
-  border-top: 0.25rem solid #2563eb;
-  color: #1f2937;
-  font-family: Arial, Helvetica, sans-serif;
+.miniatura-modelo--criativo .miniatura-modelo__cabecalho {
+  grid-row: 1 / -1;
+  color: #ffffff;
+  background: #075647;
+  border: 0;
 }
 
-.previsao-modelo__cabecalho-compacto {
-  border-bottom: 2px solid #2563eb;
-  display: grid;
-  gap: 0.2rem;
-  padding-bottom: 0.45rem;
+.miniatura-modelo--criativo .miniatura-modelo__cabecalho i,
+.miniatura-modelo--criativo .miniatura-modelo__corpo > aside i {
+  background: #a8ddd0;
 }
 
-.previsao-modelo--compacto .previsao-modelo__nome {
-  font-size: 0.6875rem;
+.miniatura-modelo--criativo .miniatura-modelo__corpo {
+  grid-column: 2;
+  grid-template-columns: 1fr;
 }
 
-.previsao-modelo__secao-compacta {
-  display: grid;
-  gap: 0.2rem;
+.miniatura-modelo--criativo .miniatura-modelo__corpo > aside {
+  display: none;
 }
 
-.previsao-modelo__titulo-compacto {
-  color: #1e3a8a;
-  font-size: 0.5625rem;
-  font-weight: 700;
+.miniatura-modelo--academico {
+  color: #146384;
 }
 
-.previsao-modelo__itens-inline {
-  background: #eff6ff;
-  color: #475569;
-  display: grid;
-  font-size: 0.5rem;
-  gap: 0.2rem;
-  padding: 0.35rem;
+.miniatura-modelo--academico .miniatura-modelo__cabecalho {
+  border-left: 0.2rem solid #146384;
 }
 
-.previsao-modelo__itens-inline strong {
-  color: #1e3a8a;
+.miniatura-modelo--academico .miniatura-modelo__corpo > aside {
+  display: none;
+}
+
+.miniatura-modelo--academico .miniatura-modelo__corpo {
+  display: block;
+}
+
+.miniatura-modelo--primeiro-emprego .miniatura-modelo__cabecalho {
+  color: #ffffff;
+  background: #5a3db5;
+  border-bottom: 0;
+}
+
+.miniatura-modelo--primeiro-emprego .miniatura-modelo__corpo > aside {
+  display: none;
+}
+
+.miniatura-modelo--primeiro-emprego .miniatura-modelo__corpo {
+  display: block;
 }
 
 @media (max-width: 40rem) {
@@ -208,4 +237,334 @@
   .alternador-modelo-curriculo__opcao:focus-within {
     transform: none;
   }
+}
+
+/* As composições abaixo espelham a estrutura real de cada modelo, sem conteúdo pessoal. */
+.miniatura-modelo {
+  min-height: 12.5rem;
+  color: #1d3557;
+  font-size: 0.4rem;
+  line-height: 1.22;
+}
+
+.miniatura-modelo strong,
+.miniatura-modelo b {
+  display: block;
+  font-size: 0.42rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.miniatura-modelo__linhas {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.miniatura-modelo__linhas i {
+  display: block;
+  width: 92%;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: #b8c5d6;
+}
+
+.miniatura-modelo__linhas i + i {
+  width: 68%;
+}
+
+.miniatura-modelo__secao {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+/* ATS: leitura estritamente linear e sem lateral decorativa. */
+.miniatura-modelo--ats-simples {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #397bd1;
+}
+
+.miniatura-modelo__cabecalho-linear {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.65rem 0.7rem;
+  border-bottom: 0.11rem solid #9cbce2;
+}
+
+.miniatura-modelo__cabecalho-linear strong {
+  font-size: 0.62rem;
+}
+
+.miniatura-modelo__cabecalho-linear span {
+  font-size: 0.34rem;
+}
+
+.miniatura-modelo__coluna-linear {
+  display: grid;
+  align-content: start;
+  gap: 0.42rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.miniatura-modelo--ats-simples .miniatura-modelo__secao {
+  padding-bottom: 0.32rem;
+  border-bottom: 1px solid #d6dae0;
+}
+
+.miniatura-modelo--ats-simples .miniatura-modelo__linhas i {
+  background: #b9cce5;
+}
+
+/* Clássico: identificação centralizada e seções separadas horizontalmente. */
+.miniatura-modelo--classico {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #12213d;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.miniatura-modelo__cabecalho-classico {
+  display: grid;
+  justify-items: center;
+  gap: 0.18rem;
+  padding: 0.62rem;
+  border-bottom: 0.08rem solid #172b4d;
+  text-align: center;
+}
+
+.miniatura-modelo__cabecalho-classico strong {
+  font-size: 0.62rem;
+}
+
+.miniatura-modelo__cabecalho-classico span {
+  font-size: 0.33rem;
+}
+
+.miniatura-modelo__coluna-classica {
+  display: grid;
+  gap: 0.38rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.miniatura-modelo--classico .miniatura-modelo__secao {
+  padding-top: 0.28rem;
+  border-top: 1px solid #8090a6;
+}
+
+/* Compacto: uma coluna condensada, com cabeçalho azul e pouco espaçamento. */
+.miniatura-modelo--compacto {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #173d8f;
+}
+
+.miniatura-modelo__cabecalho-compacto {
+  display: grid;
+  gap: 0.16rem;
+  padding: 0.55rem 0.65rem;
+  border-top: 0.16rem solid #2463eb;
+  border-bottom: 1px solid #93b4ec;
+}
+
+.miniatura-modelo__cabecalho-compacto strong {
+  font-size: 0.6rem;
+}
+
+.miniatura-modelo__cabecalho-compacto span {
+  font-size: 0.31rem;
+}
+
+.miniatura-modelo__coluna-compacta {
+  display: grid;
+  gap: 0.32rem;
+  padding: 0.42rem 0.65rem;
+}
+
+.miniatura-modelo--compacto .miniatura-modelo__secao b {
+  color: #173d8f;
+  font-size: 0.39rem;
+}
+
+.miniatura-modelo--compacto .miniatura-modelo__linhas i {
+  height: 0.14rem;
+  background: #b9cbe6;
+}
+
+.miniatura-modelo__grade-classica,
+.miniatura-modelo__grade-compacta,
+.miniatura-modelo__grade-academica,
+.miniatura-modelo__grade-primeiro-emprego {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Moderno: cabeçalho destacado, lateral estreita e corpo principal. */
+.miniatura-modelo--moderno {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #1b1d21;
+}
+
+.miniatura-modelo__cabecalho-moderno {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.7rem 0.45rem;
+  border-bottom: 0.08rem solid #c3c5c7;
+}
+
+.miniatura-modelo__cabecalho-moderno strong {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.miniatura-modelo__cabecalho-moderno span {
+  color: #777d84;
+  font-size: 0.34rem;
+}
+
+.miniatura-modelo__duas-colunas {
+  display: grid;
+  grid-template-columns: 31% 1fr;
+}
+
+.miniatura-modelo__lateral-moderna {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  border-right: 0.08rem solid #25282d;
+}
+
+.miniatura-modelo__corpo-moderno {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  padding: 0.55rem;
+}
+
+.miniatura-modelo--moderno .miniatura-modelo__secao b {
+  padding-bottom: 0.12rem;
+  border-bottom: 0.1rem solid #25282d;
+}
+
+/* Criativo: faixa verde contínua para identidade, contato e habilidades. */
+.miniatura-modelo--criativo {
+  display: grid;
+  grid-template-columns: 32% 1fr;
+  color: #263238;
+}
+
+.miniatura-modelo__lateral-criativa {
+  display: grid;
+  align-content: start;
+  gap: 0.48rem;
+  padding: 0.65rem 0.48rem;
+  color: #ffffff;
+  background: #075647;
+}
+
+.miniatura-modelo__lateral-criativa > strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.6rem;
+}
+
+.miniatura-modelo__lateral-criativa > span {
+  color: #c9e7df;
+  font-size: 0.31rem;
+}
+
+.miniatura-modelo--criativo .miniatura-modelo__secao b {
+  color: #ffffff;
+}
+
+.miniatura-modelo--criativo .miniatura-modelo__linhas i {
+  background: #a8ddd0;
+}
+
+.miniatura-modelo__corpo-criativo {
+  display: grid;
+  align-content: start;
+  gap: 0.58rem;
+  padding: 0.75rem 0.62rem;
+}
+
+.miniatura-modelo--criativo
+  .miniatura-modelo__corpo-criativo
+  .miniatura-modelo__secao
+  b {
+  color: #075647;
+  font-size: 0.46rem;
+}
+
+/* Acadêmico: acento azul à esquerda e fluxo majoritariamente vertical. */
+.miniatura-modelo--academico {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #146384;
+}
+
+.miniatura-modelo__cabecalho-academico {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.62rem 0.7rem;
+  border-bottom: 1px solid #cbd5dc;
+  border-left: 0.25rem solid #146384;
+}
+
+.miniatura-modelo__cabecalho-academico strong {
+  font-size: 0.62rem;
+}
+
+.miniatura-modelo__cabecalho-academico span {
+  color: #63707a;
+  font-size: 0.32rem;
+}
+
+.miniatura-modelo__coluna-academica {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.52rem 0.68rem;
+}
+
+.miniatura-modelo--academico .miniatura-modelo__secao b {
+  color: #146384;
+}
+
+/* Primeiro emprego: cabeçalho roxo e evidências antes da experiência. */
+.miniatura-modelo--primeiro-emprego {
+  display: grid;
+  grid-template-columns: 1fr;
+  color: #1f2937;
+}
+
+.miniatura-modelo__cabecalho-primeiro-emprego {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.62rem 0.7rem;
+  color: #ffffff;
+  background: #5a3db5;
+}
+
+.miniatura-modelo__cabecalho-primeiro-emprego strong {
+  font-size: 0.65rem;
+}
+
+.miniatura-modelo__cabecalho-primeiro-emprego span {
+  color: #e9e2ff;
+  font-size: 0.31rem;
+}
+
+.miniatura-modelo__coluna-primeiro-emprego {
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.miniatura-modelo--primeiro-emprego .miniatura-modelo__secao b {
+  display: inline-block;
+  width: fit-content;
+  padding-bottom: 0.1rem;
+  border-bottom: 0.12rem solid #5a3db5;
 }
