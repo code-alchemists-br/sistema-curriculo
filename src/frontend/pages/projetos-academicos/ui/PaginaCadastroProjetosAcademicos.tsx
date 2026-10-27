@@ -47,10 +47,7 @@ export function PaginaCadastroProjetosAcademicos({
         aria-labelledby="titulo-pagina-projetos"
         className="pagina-projetos__conteudo"
       >
-        <h1
-          id="titulo-pagina-projetos"
-          className="pagina-projetos__sr-only"
-        >
+        <h1 id="titulo-pagina-projetos" className="pagina-projetos__sr-only">
           Projetos acadêmicos
         </h1>
 
@@ -63,4 +60,3 @@ export function PaginaCadastroProjetosAcademicos({
     </LayoutCadastroCurriculo>
   );
 }
-

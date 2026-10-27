@@ -77,7 +77,9 @@
   cursor: pointer;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
-  transition: color 0.2s, background-color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
 }
 
 .formulario-dados-pessoais .btn-remover-telefone:hover {
@@ -98,7 +100,10 @@
   font-family: "Poppins", sans-serif;
   font-size: 1rem;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .formulario-dados-pessoais input::placeholder,
@@ -188,7 +193,9 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   margin-top: 2rem;
   display: flex;
   align-items: center;

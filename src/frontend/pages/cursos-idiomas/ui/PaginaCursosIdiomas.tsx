@@ -17,7 +17,9 @@ export interface PaginaCursosIdiomasProps {
  * Utiliza o layout compartilhado de cadastro de currículo, com o painel visual
  * retangular degradê e a barra de progresso segmentada na quarta etapa.
  */
-export function PaginaCursosIdiomas({ onAvancar }: PaginaCursosIdiomasProps = {}) {
+export function PaginaCursosIdiomas({
+  onAvancar,
+}: PaginaCursosIdiomasProps = {}) {
   const [progressoCursos, setProgressoCursos] = useState(0);
   const [progressoCertificacao, setProgressoCertificacao] = useState(0);
   const [progressoIdiomas, setProgressoIdiomas] = useState(0);
@@ -52,7 +54,10 @@ export function PaginaCursosIdiomas({ onAvancar }: PaginaCursosIdiomasProps = {}
         aria-labelledby="titulo-cursos-idiomas"
         className="pagina-cursos-idiomas__conteudo"
       >
-        <h1 id="titulo-cursos-idiomas" className="pagina-cursos-idiomas__sr-only">
+        <h1
+          id="titulo-cursos-idiomas"
+          className="pagina-cursos-idiomas__sr-only"
+        >
           Cursos, Certificações e Idiomas
         </h1>
 

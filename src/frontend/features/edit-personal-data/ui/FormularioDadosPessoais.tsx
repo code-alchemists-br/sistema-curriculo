@@ -15,7 +15,7 @@ import {
 } from "../model/formulario-dados-pessoais";
 
 /** Aplica máscara em formato brasileiro (11) 91234-5678 ou (11) 3333-4444 */
-export function formatarTelefone(valor: string): string {
+function formatarTelefone(valor: string): string {
   const digitos = valor.replace(/\D/g, "").slice(0, 11);
 
   if (digitos.length <= 2) {
@@ -118,7 +118,9 @@ export function FormularioDadosPessoais({
 
     setValores((atuais) => ({
       ...atuais,
-      telefones: atuais.telefones.filter((_, indice) => indice !== indiceRemover),
+      telefones: atuais.telefones.filter(
+        (_, indice) => indice !== indiceRemover,
+      ),
     }));
 
     setErros((atuais) => {

@@ -35,7 +35,10 @@ export function PaginaDadosPessoais({
         aria-labelledby="titulo-dados-pessoais"
         className="pagina-dados-pessoais__conteudo"
       >
-        <h1 id="titulo-dados-pessoais" className="pagina-dados-pessoais__sr-only">
+        <h1
+          id="titulo-dados-pessoais"
+          className="pagina-dados-pessoais__sr-only"
+        >
           Conte um pouco sobre você
         </h1>
         <FormularioDadosPessoais

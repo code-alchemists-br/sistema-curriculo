@@ -70,8 +70,9 @@ export function LayoutCadastroCurriculo({
               return (
                 <div key={etapa} className="layout-cadastro__progresso-trilha">
                   <div
-                    className={`layout-cadastro__progresso-preenchimento ${completa ? "completa" : ativa ? "ativa" : ""
-                      }`}
+                    className={`layout-cadastro__progresso-preenchimento ${
+                      completa ? "completa" : ativa ? "ativa" : ""
+                    }`}
                     style={{
                       width: completa
                         ? "100%"

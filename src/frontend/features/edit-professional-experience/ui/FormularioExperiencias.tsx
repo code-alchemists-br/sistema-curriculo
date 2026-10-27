@@ -176,14 +176,19 @@ export function FormularioExperiencias({
   }
 
   return (
-    <form className="formulario-experiencias" noValidate onSubmit={enviarFormulario}>
+    <form
+      className="formulario-experiencias"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
       {experiencias.length === 0 && (
         <div className="experiencias-vazio" role="status">
           <p className="experiencias-vazio__texto">
             Nenhuma experiência profissional cadastrada.
           </p>
           <p className="experiencias-vazio__subtexto">
-            Se você não possui experiência profissional formal ou busca o primeiro emprego, pode avançar para a próxima etapa.
+            Se você não possui experiência profissional formal ou busca o
+            primeiro emprego, pode avançar para a próxima etapa.
           </p>
         </div>
       )}
@@ -332,7 +337,10 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field-checkbox">
-              <label className="label-checkbox" htmlFor={`${prefixo}-emprego-atual`}>
+              <label
+                className="label-checkbox"
+                htmlFor={`${prefixo}-emprego-atual`}
+              >
                 <input
                   checked={exp.empregoAtual}
                   id={`${prefixo}-emprego-atual`}
@@ -344,10 +352,7 @@ export function FormularioExperiencias({
             </div>
 
             <div className="field">
-              <label
-                className="titulo-campo"
-                htmlFor={`${prefixo}-descricao`}
-              >
+              <label className="titulo-campo" htmlFor={`${prefixo}-descricao`}>
                 Descrição das atividades
               </label>
               <textarea

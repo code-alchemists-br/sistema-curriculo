@@ -185,10 +185,7 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
       screen.getByRole("textbox", { name: /cargo/i }),
       "Desenvolvedor",
     );
-    await usuario.type(
-      screen.getByLabelText(/início/i),
-      "2023-01-01",
-    );
+    await usuario.type(screen.getByLabelText(/início/i), "2023-01-01");
     await usuario.type(screen.getByLabelText(/fim/i), "2024-05-01");
 
     await usuario.click(

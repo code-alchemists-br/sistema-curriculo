@@ -117,7 +117,9 @@ describe("FormularioCadastroProjetoAcademico", () => {
     await usuario.click(
       screen.getByRole("button", { name: "Não possuo projetos acadêmicos" }),
     );
-    await usuario.click(screen.getByRole("button", { name: "Cadastrar projeto" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Cadastrar projeto" }),
+    );
 
     expect(aoAvancar).toHaveBeenCalledTimes(1);
   });

@@ -29,7 +29,10 @@ export function TelaValidacaoCurriculo({
   return (
     <div className="tela-validacao-curriculo">
       <div className="tela-validacao-curriculo__cabecalho">
-        <h2 id="titulo-validacao-curriculo" className="tela-validacao-curriculo__titulo">
+        <h2
+          id="titulo-validacao-curriculo"
+          className="tela-validacao-curriculo__titulo"
+        >
           Valide os dados do currículo
         </h2>
         <p className="tela-validacao-curriculo__descricao">
@@ -38,7 +41,10 @@ export function TelaValidacaoCurriculo({
         </p>
       </div>
 
-      <div aria-live="polite" className="tela-validacao-curriculo__status-container">
+      <div
+        aria-live="polite"
+        className="tela-validacao-curriculo__status-container"
+      >
         {resultado.valido ? (
           <p
             role="status"

@@ -37,7 +37,8 @@ export function App() {
       const etapa = params.get("etapa");
       if (etapa === "dados-pessoais") return "dados-pessoais";
       if (etapa === "formacao-academica") return "formacao-academica";
-      if (etapa === "experiencias-profissionais") return "experiencias-profissionais";
+      if (etapa === "experiencias-profissionais")
+        return "experiencias-profissionais";
       if (etapa === "cursos-idiomas") return "cursos-idiomas";
       if (etapa === "competencias") return "competencias";
       if (etapa === "projetos-academicos") return "projetos-academicos";

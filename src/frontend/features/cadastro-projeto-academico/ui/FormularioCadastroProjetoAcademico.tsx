@@ -142,7 +142,8 @@ export function FormularioCadastroProjetoAcademico({
             Nenhum projeto acadêmico cadastrado.
           </p>
           <p className="projetos-vazio__subtexto">
-            Se você não possui projetos acadêmicos ou de extensão para destacar no momento, pode avançar para a próxima etapa.
+            Se você não possui projetos acadêmicos ou de extensão para destacar
+            no momento, pode avançar para a próxima etapa.
           </p>
           <button
             className="btn-adicionar-projeto"

@@ -32,7 +32,9 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   margin-top: 2.5rem;
   display: flex;
   align-items: center;

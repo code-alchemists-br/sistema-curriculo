@@ -61,7 +61,13 @@ export function FormularioCompetencias({
     }
 
     aoAlterarProgresso(progressoHard + progressoSoft);
-  }, [hardSkills, softSkills, inputHardSkill, inputSoftSkill, aoAlterarProgresso]);
+  }, [
+    hardSkills,
+    softSkills,
+    inputHardSkill,
+    inputSoftSkill,
+    aoAlterarProgresso,
+  ]);
 
   /**
    * Adiciona uma competência à categoria escolhida e limpa seu input.

@@ -29,7 +29,8 @@ const DADOS_VALIDACAO_PADRAO: CurriculoParaValidacao = {
   projetosAcademicos: [
     {
       titulo: "Sistema Currículo",
-      descricao: "Plataforma web para criação e exportação de currículos universitários.",
+      descricao:
+        "Plataforma web para criação e exportação de currículos universitários.",
       tecnologias: "React, TypeScript, CSS3",
     },
   ],
@@ -58,10 +59,7 @@ export function PaginaValidacaoCurriculo({
         aria-labelledby="titulo-pagina-validacao"
         className="pagina-validacao__conteudo"
       >
-        <h1
-          id="titulo-pagina-validacao"
-          className="pagina-validacao__sr-only"
-        >
+        <h1 id="titulo-pagina-validacao" className="pagina-validacao__sr-only">
           Validação e Revisão do Currículo
         </h1>
 

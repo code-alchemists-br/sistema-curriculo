@@ -151,10 +151,7 @@ export function FormularioCursos({
             )}
 
             <div className="field">
-              <label
-                className="titulo-campo"
-                htmlFor={`${prefixo}-nome`}
-              >
+              <label className="titulo-campo" htmlFor={`${prefixo}-nome`}>
                 Nome do curso
               </label>
               <input
@@ -209,10 +206,7 @@ export function FormularioCursos({
             </div>
 
             <div className="field">
-              <label
-                className="titulo-campo"
-                htmlFor={`${prefixo}-carga`}
-              >
+              <label className="titulo-campo" htmlFor={`${prefixo}-carga`}>
                 Carga horária (horas)
               </label>
               <input

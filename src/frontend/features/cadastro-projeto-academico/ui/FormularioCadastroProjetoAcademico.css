@@ -45,7 +45,10 @@
   color: #ffffff;
   font-family: "Poppins", sans-serif;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .formulario-projeto-academico input[type="text"] {
