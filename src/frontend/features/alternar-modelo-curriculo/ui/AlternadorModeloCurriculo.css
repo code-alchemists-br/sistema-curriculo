@@ -2,20 +2,34 @@
   border: 0;
   margin: 0;
   padding: 0;
+  width: 100%;
 }
 
 .alternador-modelo-curriculo legend {
-  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
 }
 
 .alternador-modelo-curriculo > p {
-  margin: 0.5rem 0 1rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  color: #a3a3a3;
+  margin: 0 0 1.25rem 0;
 }
 
 .alternador-modelo-curriculo__opcoes {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 48rem) {
+  .alternador-modelo-curriculo__opcoes {
+    grid-template-columns: 1fr;
+  }
 }
 
 .alternador-modelo-curriculo__opcao {
@@ -23,31 +37,43 @@
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
   min-width: 13rem;
-  padding: 0.75rem;
-  border: 1px solid #c7c7c7;
-  border-radius: 0.375rem;
-  background: #ffffff;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: #171717;
+  cursor: pointer;
+  box-sizing: border-box;
   transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
 }
 
 .alternador-modelo-curriculo__opcao:hover,
 .alternador-modelo-curriculo__opcao:focus-within {
-  border-color: #175cd3;
-  box-shadow: 0 0.25rem 0.75rem rgb(23 92 211 / 18%);
-  transform: translateY(-0.125rem);
+  border-color: #ff6a00;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.alternador-modelo-curriculo__opcao * {
+  cursor: pointer;
 }
 
 .alternador-modelo-curriculo__opcao input {
-  accent-color: #175cd3;
-  margin-top: 0.25rem;
+  accent-color: #ff6a00;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.2rem;
+  cursor: pointer;
 }
 
 .alternador-modelo-curriculo__opcao label {
   cursor: pointer;
-  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #ffffff;
 }
 
 .alternador-modelo-curriculo__opcao > p,
@@ -56,12 +82,16 @@
 }
 
 .alternador-modelo-curriculo__opcao > p {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  color: #a3a3a3;
+  line-height: 1.4;
   margin: 0;
 }
 
 .alternador-modelo-curriculo__opcao input:focus-visible {
-  outline: 3px solid #175cd3;
-  outline-offset: 3px;
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
 }
 
 .miniatura-modelo {

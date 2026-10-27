@@ -7,6 +7,7 @@ import {
   type ModeloApresentacaoCurriculo,
   type ObjetivoCurriculo,
 } from "../../../features/alternar-modelo-curriculo";
+import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaSelecaoModeloCurriculo.css";
 
 /** Define os dados necessários para confirmar a escolha de modelo na página. */
@@ -34,20 +35,32 @@ export function PaginaSelecaoModeloCurriculo({
   const recomendacao = obterRecomendacaoModelo(objetivo);
 
   return (
-    <main className="pagina-selecao-modelo">
+    <LayoutCadastroCurriculo
+      subtitulo="Seleção de Modelo"
+      etapaAtual={7}
+      totalEtapas={8}
+      progressoEtapaAtual={modeloSelecionado ? 100 : 0}
+    >
       <section
         aria-labelledby="titulo-selecao-modelo"
         className="pagina-selecao-modelo__conteudo"
       >
-        <p className="pagina-selecao-modelo__sobretitulo">Currículo</p>
-        <h1 id="titulo-selecao-modelo">Escolha um modelo de currículo</h1>
-        <p>
-          O modelo altera somente a apresentação. Suas informações continuam as
-          mesmas e você poderá trocar a escolha depois.
+        <h1
+          id="titulo-selecao-modelo"
+          className="pagina-selecao-modelo__sr-only"
+        >
+          Escolha um modelo de currículo
+        </h1>
+        <p className="pagina-selecao-modelo__descricao">
+          O modelo altera somente a apresentação visual. Suas informações
+          permanecem salvas e você poderá alternar entre os modelos a qualquer
+          momento.
         </p>
 
         <div className="pagina-selecao-modelo__campo">
-          <label htmlFor="objetivo-curriculo">Objetivo do currículo</label>
+          <label className="titulo-campo" htmlFor="objetivo-curriculo">
+            Objetivo do currículo
+          </label>
           <select
             id="objetivo-curriculo"
             onChange={(evento) =>
@@ -73,13 +86,14 @@ export function PaginaSelecaoModeloCurriculo({
         />
 
         <button
-          className="pagina-selecao-modelo__confirmar"
+          aria-label="Continuar com o modelo selecionado"
+          className="btn-proximo"
           onClick={() => aoConfirmar(modeloSelecionado)}
           type="button"
         >
-          Continuar com o modelo selecionado
+          Próximo
         </button>
       </section>
-    </main>
+    </LayoutCadastroCurriculo>
   );
 }

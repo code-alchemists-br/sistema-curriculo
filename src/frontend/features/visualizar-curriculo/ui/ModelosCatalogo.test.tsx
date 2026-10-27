@@ -90,11 +90,13 @@ describe("modelos do catálogo", () => {
         screen.getByRole("heading", { level: 1, name: "Ana Silva" }),
       ).toBeInTheDocument();
       expect(screen.getByText("ana@example.com")).toBeInTheDocument();
-      expect(screen.getByText("Empresa Exemplo")).toBeInTheDocument();
-      expect(screen.getByText("Universidade Exemplo")).toBeInTheDocument();
-      expect(screen.getByText("Sistema Currículo")).toBeInTheDocument();
-      expect(screen.getByText("React")).toBeInTheDocument();
-      expect(screen.getByText("Inglês")).toBeInTheDocument();
+      expect(screen.getAllByText(/Empresa Exemplo/)[0]).toBeInTheDocument();
+      expect(
+        screen.getAllByText(/Universidade Exemplo/)[0],
+      ).toBeInTheDocument();
+      expect(screen.getAllByText(/Sistema Currículo/)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/React/)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/Inglês/)[0]).toBeInTheDocument();
       expect(screen.getByText("certificado.pdf (PDF)")).toBeInTheDocument();
     },
   );

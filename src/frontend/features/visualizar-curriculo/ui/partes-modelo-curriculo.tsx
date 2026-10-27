@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
 
 import type {
@@ -101,7 +102,9 @@ export function ListaContato({
   return (
     <ul aria-label="Informações de contato" className={classe}>
       <li>{estudante.email}</li>
-      {contato?.telefones.map((telefone) => <li key={telefone}>{telefone}</li>)}
+      {contato?.telefones.map((telefone) => (
+        <li key={telefone}>{telefone}</li>
+      ))}
       {contato !== null && <li>{contato.endereco}</li>}
       {linkedin !== null && linkedin !== undefined && (
         <li>
