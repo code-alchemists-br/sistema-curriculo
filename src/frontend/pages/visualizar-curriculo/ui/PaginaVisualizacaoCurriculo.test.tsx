@@ -26,8 +26,13 @@ const previa: PreviaCurriculo = {
 
 describe("PaginaVisualizacaoCurriculo", () => {
   it.each([
-    ["classico", "Clássico"],
+    ["classico", "Profissional clássico"],
     ["compacto", "Compacto"],
+    ["ats-simples", "ATS simples"],
+    ["criativo", "Criativo"],
+    ["moderno", "Moderno"],
+    ["academico", "Acadêmico"],
+    ["primeiro-emprego", "Primeiro emprego"],
   ] as const)("apresenta o currículo no modelo %s", (modelo, rotulo) => {
     render(<PaginaVisualizacaoCurriculo modelo={modelo} previa={previa} />);
 

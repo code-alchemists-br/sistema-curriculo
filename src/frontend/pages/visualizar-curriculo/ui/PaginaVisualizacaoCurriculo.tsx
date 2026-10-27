@@ -1,8 +1,15 @@
+import type { ComponentType } from "react";
+
 import type { PreviaCurriculo } from "../../../entities/curriculo";
 import type { ModeloApresentacaoCurriculo } from "../../../features/alternar-modelo-curriculo";
 import {
+  ModeloAcademico,
+  ModeloAtsSimples,
   ModeloClassico,
   ModeloCompacto,
+  ModeloCriativo,
+  ModeloModerno,
+  ModeloPrimeiroEmprego,
 } from "../../../features/visualizar-curriculo";
 import "./PaginaVisualizacaoCurriculo.css";
 
@@ -16,22 +23,44 @@ export interface PaginaVisualizacaoCurriculoProps {
   aoAlterarModelo?: () => void;
 }
 
+const rotulosModelo: Readonly<Record<ModeloApresentacaoCurriculo, string>> = {
+  classico: "Profissional clássico",
+  compacto: "Compacto",
+  "ats-simples": "ATS simples",
+  criativo: "Criativo",
+  moderno: "Moderno",
+  academico: "Acadêmico",
+  "primeiro-emprego": "Primeiro emprego",
+};
+
+const modelos: Readonly<
+  Record<
+    ModeloApresentacaoCurriculo,
+    ComponentType<{ previa: PreviaCurriculo }>
+  >
+> = {
+  classico: ModeloClassico,
+  compacto: ModeloCompacto,
+  "ats-simples": ModeloAtsSimples,
+  criativo: ModeloCriativo,
+  moderno: ModeloModerno,
+  academico: ModeloAcademico,
+  "primeiro-emprego": ModeloPrimeiroEmprego,
+};
+
 /**
  * Compõe a tela de visualização do currículo no modelo escolhido.
  *
- * O que faz: Exibe a prévia recebida usando o componente Clássico ou Compacto
- * que já existe no projeto.
- * Como faz: Escolhe exclusivamente entre os dois valores suportados pelo
- * contrato atual e repassa a mesma referência de `previa` ao modelo.
- * Por que existe: Separa a página do layout e garante que uma troca de modelo
- * não remove ou transforma os dados selecionados pelo estudante.
+ * - O que faz: Exibe a prévia recebida em um dos modelos reconhecidos pelo catálogo.
+ * - Como faz: Seleciona somente o componente visual e repassa a mesma referência de `previa`, sem transformar dados.
+ * - Qual finalidade atende: Permite comparar apresentações diferentes preservando integralmente as informações escolhidas pelo estudante.
  */
 export function PaginaVisualizacaoCurriculo({
   previa,
   modelo,
   aoAlterarModelo,
 }: PaginaVisualizacaoCurriculoProps) {
-  const rotuloModelo = modelo === "classico" ? "Clássico" : "Compacto";
+  const ModeloSelecionado = modelos[modelo];
 
   return (
     <main className="pagina-visualizacao-curriculo">
@@ -48,7 +77,7 @@ export function PaginaVisualizacaoCurriculo({
               Visualização do currículo
             </h1>
             <p>
-              Modelo selecionado: <strong>{rotuloModelo}</strong>
+              Modelo selecionado: <strong>{rotulosModelo[modelo]}</strong>
             </p>
           </div>
           {aoAlterarModelo !== undefined && (
@@ -58,11 +87,7 @@ export function PaginaVisualizacaoCurriculo({
           )}
         </header>
 
-        {modelo === "classico" ? (
-          <ModeloClassico previa={previa} />
-        ) : (
-          <ModeloCompacto previa={previa} />
-        )}
+        <ModeloSelecionado previa={previa} />
       </section>
     </main>
   );
