@@ -86,7 +86,11 @@ export function AlternadorModeloCurriculo({
 
           return (
             <div
-              className="alternador-modelo-curriculo__opcao"
+              className={`alternador-modelo-curriculo__opcao ${
+                modeloSelecionado === opcao.valor
+                  ? "alternador-modelo-curriculo__opcao--selecionada"
+                  : ""
+              }`}
               key={opcao.valor}
             >
               <input

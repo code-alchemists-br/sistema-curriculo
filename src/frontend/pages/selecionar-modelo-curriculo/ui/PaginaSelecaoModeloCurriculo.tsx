@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import {
   AlternadorModeloCurriculo,
+  obterModeloRecomendadoPorObjetivo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
   type ModeloApresentacaoCurriculo,
@@ -34,6 +35,12 @@ export function PaginaSelecaoModeloCurriculo({
     useState<ModeloApresentacaoCurriculo>(modeloInicial);
   const recomendacao = obterRecomendacaoModelo(objetivo);
 
+  function aoAlterarObjetivo(novoObjetivo: ObjetivoCurriculo): void {
+    setObjetivo(novoObjetivo);
+    const modeloSugerido = obterModeloRecomendadoPorObjetivo(novoObjetivo);
+    setModeloSelecionado(modeloSugerido);
+  }
+
   return (
     <LayoutCadastroCurriculo
       subtitulo="Seleção de Modelo"
@@ -64,7 +71,7 @@ export function PaginaSelecaoModeloCurriculo({
           <select
             id="objetivo-curriculo"
             onChange={(evento) =>
-              setObjetivo(evento.target.value as ObjetivoCurriculo)
+              aoAlterarObjetivo(evento.target.value as ObjetivoCurriculo)
             }
             value={objetivo}
           >

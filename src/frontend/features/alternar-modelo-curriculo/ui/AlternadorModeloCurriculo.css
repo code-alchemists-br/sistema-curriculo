@@ -33,6 +33,7 @@
 }
 
 .alternador-modelo-curriculo__opcao {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem;
@@ -50,7 +51,9 @@
 }
 
 .alternador-modelo-curriculo__opcao:hover,
-.alternador-modelo-curriculo__opcao:focus-within {
+.alternador-modelo-curriculo__opcao:focus-within,
+.alternador-modelo-curriculo__opcao:has(input:checked),
+.alternador-modelo-curriculo__opcao--selecionada {
   border-color: #ff6a00;
   box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25);
   transform: translateY(-2px);
@@ -66,6 +69,8 @@
   height: 18px;
   margin-top: 0.2rem;
   cursor: pointer;
+  position: relative;
+  z-index: 3;
 }
 
 .alternador-modelo-curriculo__opcao label {
@@ -74,6 +79,16 @@
   font-size: 1.05rem;
   font-weight: 500;
   color: #ffffff;
+}
+
+/* Pseudo-elemento do label cobre todo o card, tornando qualquer clique no card capaz de selecionar o modelo */
+.alternador-modelo-curriculo__opcao label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 2;
 }
 
 .alternador-modelo-curriculo__opcao > p,
