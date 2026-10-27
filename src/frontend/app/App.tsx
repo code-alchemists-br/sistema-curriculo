@@ -95,7 +95,18 @@ export function App() {
   }
 
   if (rotaAtiva === "selecionar-modelo") {
-    return <PaginaSelecaoModeloCurriculo />;
+    return (
+      <PaginaSelecaoModeloCurriculo
+        aoConfirmar={() => {
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.set("etapa", "validacao-curriculo");
+            window.history.pushState({}, "", url.toString());
+          }
+          setRotaAtiva("validacao-curriculo");
+        }}
+      />
+    );
   }
 
   if (rotaAtiva === "validacao-curriculo") {
