@@ -18,7 +18,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Fazer login" }));
 
     expect(
-      screen.getByRole("heading", { name: "Acesse sua conta" }),
+      screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
     ).toBeInTheDocument();
   });
 });

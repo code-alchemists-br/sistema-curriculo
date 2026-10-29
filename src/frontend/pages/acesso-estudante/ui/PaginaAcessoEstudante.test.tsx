@@ -20,7 +20,7 @@ describe("PaginaAcessoEstudante", () => {
 
     render(<PaginaAcessoEstudante cliente={cliente} />);
 
-    await usuario.click(screen.getByRole("tab", { name: "Criar conta" }));
+    await usuario.click(screen.getByRole("button", { name: "Criar conta" }));
     await usuario.type(screen.getByLabelText("Nome"), "Ana Estudante");
     await usuario.type(screen.getByLabelText("E-mail"), "ana@fatec.sp.gov.br");
     await usuario.type(screen.getByLabelText("Senha"), "segredo123");
@@ -28,8 +28,9 @@ describe("PaginaAcessoEstudante", () => {
     await usuario.click(screen.getByRole("button", { name: "Criar conta" }));
 
     expect(
-      await screen.findByRole("tab", { name: "Entrar", selected: true }),
+      await screen.findByRole("heading", { name: "Conecte-se na LIMINAL" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
     expect(screen.getByLabelText("E-mail")).toHaveValue("ana@fatec.sp.gov.br");
     expect(screen.getByLabelText("Senha")).toHaveValue("");
   });
