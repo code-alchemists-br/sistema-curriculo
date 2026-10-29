@@ -3,6 +3,7 @@ export {
   type ModeloApresentacaoCurriculo,
 } from "./ui/AlternadorModeloCurriculo";
 export {
+  obterModeloRecomendadoPorObjetivo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
 } from "./model/recomendacao-modelo";

@@ -1,0 +1,191 @@
+.modelo-moderno {
+  --moderno-texto: #16181d;
+  --moderno-secundario: #5e6672;
+  --moderno-linha: #d5d9df;
+  box-sizing: border-box;
+  min-height: 52rem;
+  padding: clamp(2rem, 6vw, 4.5rem);
+  color: var(--moderno-texto);
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 0.125rem 0.75rem rgb(15 23 42 / 15%);
+}
+
+.modelo-moderno__cabecalho {
+  padding-bottom: 1.75rem;
+  border-bottom: 0.15rem solid var(--moderno-linha);
+}
+
+.modelo-moderno__cabecalho h1 {
+  max-width: 14ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.modelo-moderno__cabecalho p {
+  margin: 0.8rem 0 0;
+  color: var(--moderno-secundario);
+}
+
+.modelo-moderno__estrutura {
+  display: grid;
+  grid-template-columns: minmax(11rem, 25%) minmax(0, 1fr);
+  gap: clamp(2rem, 6vw, 4.5rem);
+  padding-top: 2rem;
+}
+
+.modelo-moderno__lateral {
+  padding-right: clamp(1.5rem, 4vw, 3.5rem);
+  border-right: 0.1rem solid var(--moderno-linha);
+}
+
+.modelo-moderno__secao-lateral,
+.modelo-moderno__secao {
+  break-inside: avoid;
+}
+
+.modelo-moderno__secao-lateral {
+  margin-bottom: 2.25rem;
+}
+
+.modelo-moderno__secao-lateral h2,
+.modelo-moderno__secao h2 {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 0.2rem solid var(--moderno-texto);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.modelo-moderno__contato,
+.modelo-moderno__lista-lateral,
+.modelo-moderno__lista-principal,
+.modelo-moderno__documentos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modelo-moderno__contato,
+.modelo-moderno__lista-lateral {
+  display: grid;
+  gap: 0.55rem;
+  font-size: 0.83rem;
+}
+
+.modelo-moderno__contato a {
+  overflow-wrap: anywhere;
+  color: inherit;
+}
+
+.modelo-moderno__lista-lateral li {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 0.2rem solid #1b1d21;
+}
+
+.modelo-moderno__lista-lateral span {
+  color: var(--moderno-secundario);
+}
+
+.modelo-moderno__secao {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 0.1rem solid var(--moderno-linha);
+}
+
+.modelo-moderno__secao:last-child {
+  border-bottom: 0;
+}
+
+.modelo-moderno__lista-principal {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.modelo-moderno__lista-principal li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
+}
+
+.modelo-moderno__lista-principal h3,
+.modelo-moderno__lista-principal p {
+  margin: 0;
+}
+
+.modelo-moderno__lista-principal h3 {
+  font-size: 1rem;
+}
+
+.modelo-moderno__lista-principal p + p {
+  margin-top: 0.35rem;
+}
+
+.modelo-moderno__periodo {
+  color: var(--moderno-secundario);
+  font-size: 0.8rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.modelo-moderno__descricao {
+  grid-column: 1 / -1;
+  line-height: 1.55;
+}
+
+.modelo-moderno__lista-principal--projetos li {
+  display: block;
+  padding-left: 1rem;
+  border-left: 0.2rem solid var(--moderno-texto);
+}
+
+.modelo-moderno__documentos {
+  display: grid;
+  gap: 0.45rem;
+}
+
+@media (max-width: 48rem) {
+  .modelo-moderno {
+    padding: 2rem 1.5rem;
+  }
+
+  .modelo-moderno__estrutura {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .modelo-moderno__lateral {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0 1.5rem;
+    padding: 0;
+    border-right: 0;
+  }
+}
+
+@media (max-width: 34rem) {
+  .modelo-moderno__lista-principal li {
+    grid-template-columns: 1fr;
+  }
+
+  .modelo-moderno__periodo {
+    text-align: left;
+  }
+}
+
+@media print {
+  .modelo-moderno {
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}
