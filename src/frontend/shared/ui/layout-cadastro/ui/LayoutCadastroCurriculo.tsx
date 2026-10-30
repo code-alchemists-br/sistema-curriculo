@@ -8,7 +8,7 @@ export interface LayoutCadastroCurriculoProps {
   subtitulo: string;
   /** Número da etapa atual (1 a totalEtapas) */
   etapaAtual?: number;
-  /** Total de etapas do cadastro (padrão 8) */
+  /** Total de etapas do cadastro (padrão 9) */
   totalEtapas?: number;
   /** Porcentagem de preenchimento da etapa atual (0 a 100) */
   progressoEtapaAtual?: number;
@@ -25,7 +25,7 @@ export interface LayoutCadastroCurriculoProps {
 export function LayoutCadastroCurriculo({
   subtitulo,
   etapaAtual = 1,
-  totalEtapas = 8,
+  totalEtapas = 9,
   progressoEtapaAtual = 0,
   children,
 }: LayoutCadastroCurriculoProps) {

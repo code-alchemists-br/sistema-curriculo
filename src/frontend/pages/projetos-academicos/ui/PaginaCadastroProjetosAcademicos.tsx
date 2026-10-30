@@ -1,9 +1,10 @@
 import { useState } from "react";
 
 import {
-  criarClienteProjetosAcademicosIndisponivel,
+  criarClienteProjetosAcademicosEmMemoria,
   FormularioCadastroProjetoAcademico,
   type ClienteProjetosAcademicos,
+  type ValoresProjetoAcademico,
 } from "../../../features/cadastro-projeto-academico";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaCadastroProjetosAcademicos.css";
@@ -12,17 +13,23 @@ import "./PaginaCadastroProjetosAcademicos.css";
 export interface PaginaCadastroProjetosAcademicosProps {
   cliente?: ClienteProjetosAcademicos;
   onAvancar?: () => void;
+  onVoltar?: () => void;
+  projetosIniciais?: ValoresProjetoAcademico[];
+  aoAlterarProjetos?: (projetos: ValoresProjetoAcademico[]) => void;
 }
 
 /**
- * Compõe a página de cadastro de projetos acadêmicos (Etapa 6 de 8).
+ * Compõe a página de cadastro de projetos acadêmicos (Etapa 7 de 9).
  *
  * Utiliza o layout compartilhado de cadastro de currículo, com o painel visual
- * retangular degradê e a barra de progresso segmentada na sexta etapa.
+ * retangular degradê e a barra de progresso segmentada na sétima etapa.
  */
 export function PaginaCadastroProjetosAcademicos({
-  cliente = criarClienteProjetosAcademicosIndisponivel(),
+  cliente = criarClienteProjetosAcademicosEmMemoria(),
   onAvancar,
+  onVoltar,
+  projetosIniciais,
+  aoAlterarProjetos,
 }: PaginaCadastroProjetosAcademicosProps) {
   const [progresso, setProgresso] = useState(0);
 
@@ -36,11 +43,21 @@ export function PaginaCadastroProjetosAcademicos({
     }
   }
 
+  function handleVoltar(): void {
+    if (onVoltar) {
+      onVoltar();
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.location.search = "?etapa=competencias";
+    }
+  }
+
   return (
     <LayoutCadastroCurriculo
       subtitulo="Projetos Acadêmicos"
-      etapaAtual={6}
-      totalEtapas={8}
+      etapaAtual={7}
+      totalEtapas={9}
       progressoEtapaAtual={progresso}
     >
       <section
@@ -55,6 +72,9 @@ export function PaginaCadastroProjetosAcademicos({
           cliente={cliente}
           aoAlterarProgresso={setProgresso}
           aoAvancar={handleAvancar}
+          onVoltar={handleVoltar}
+          projetosIniciais={projetosIniciais}
+          aoAlterarProjetos={aoAlterarProjetos}
         />
       </section>
     </LayoutCadastroCurriculo>

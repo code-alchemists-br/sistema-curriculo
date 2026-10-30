@@ -26,6 +26,10 @@
   width: 100%;
 }
 
+.formulario-experiencias fieldset + fieldset {
+  margin-top: 3.5rem;
+}
+
 .formulario-experiencias .experiencia-header {
   display: flex;
   justify-content: space-between;
@@ -37,20 +41,26 @@
 
 .formulario-experiencias .experiencia-header__titulo {
   font-family: "Poppins", sans-serif;
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: #e5e5e5;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #a3a3a3;
+  margin: 0;
+  display: inline-block;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .formulario-experiencias .btn-remover-experiencia {
   background: transparent;
+  color: #f87171;
   border: none;
-  color: #a3a3a3;
   font-family: "Poppins", sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
   transition:
     color 0.2s,
     background-color 0.2s;
@@ -92,16 +102,16 @@
 }
 
 .formulario-experiencias input:not([type="checkbox"]),
-.formulario-experiencias textarea,
-.formulario-experiencias .field input:not([type="checkbox"]),
-.formulario-experiencias .field textarea {
+.formulario-experiencias .field input:not([type="checkbox"]) {
   width: 100%;
+  height: 52px;
   background-color: #171717;
   border: 1px solid transparent !important;
   outline: none !important;
   border-radius: 12px;
   padding: 0 1.25rem;
   color: #ffffff;
+  color-scheme: dark;
   font-family: "Poppins", sans-serif;
   font-size: 1rem;
   box-sizing: border-box;
@@ -111,17 +121,26 @@
     background-color 0.2s ease;
 }
 
-.formulario-experiencias input:not([type="checkbox"]),
-.formulario-experiencias .field input:not([type="checkbox"]) {
-  height: 52px;
+.formulario-experiencias textarea,
+.formulario-experiencias .field textarea {
+  width: 100%;
+  background-color: #171717;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  color: #ffffff;
   color-scheme: dark;
-}
-
-.formulario-experiencias textarea {
-  padding: 1rem 1.25rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  box-sizing: border-box;
   min-height: 120px;
-  line-height: 1.5;
+  line-height: 1.6;
   resize: vertical;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .formulario-experiencias input::placeholder,
@@ -187,11 +206,14 @@
 }
 
 .formulario-experiencias .label-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 18px !important;
+  height: 18px !important;
   accent-color: #ff6a00;
   cursor: pointer;
   border-radius: 4px;
+  color-scheme: dark;
+  margin: 0;
+  padding: 0;
 }
 
 .formulario-experiencias .btn-adicionar-experiencia {
@@ -204,14 +226,35 @@
   font-weight: 500;
   cursor: pointer;
   padding: 0.25rem 0;
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2.5rem;
   transition: color 0.2s;
 }
 
 .formulario-experiencias .btn-adicionar-experiencia:hover {
   color: #ff8533;
   text-decoration: underline;
+}
+
+.formulario-experiencias .btn-adicionar-experiencia:active {
+  color: #ff944d;
+}
+
+.formulario-experiencias fieldset:not(:only-of-type):last-of-type {
+  animation: surgimento-item 0.4s ease-out;
+}
+
+@keyframes surgimento-item {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: none;
+  }
 }
 
 .formulario-experiencias .form-message {

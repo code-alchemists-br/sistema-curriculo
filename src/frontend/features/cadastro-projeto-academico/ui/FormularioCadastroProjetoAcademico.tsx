@@ -7,6 +7,7 @@ import {
 } from "../api/cliente-projetos-academicos";
 import {
   traduzirFalhaCadastroProjeto,
+  validarListaProjetosAcademicos,
   validarProjetoAcademico,
   type ErrosProjetoAcademico,
   type ValoresProjetoAcademico,
@@ -19,8 +20,14 @@ export interface FormularioCadastroProjetoAcademicoProps {
   cliente: ClienteProjetosAcademicos;
   /** Notifica a porcentagem de campos preenchidos nesta etapa (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
-  /** Permite avançar caso o usuário não possua projetos. */
+  /** Permite avançar caso o usuário não possua projetos ou conclua o cadastro. */
   aoAvancar?: () => void;
+  /** Callback para voltar à etapa anterior. */
+  onVoltar?: () => void;
+  /** Projetos iniciais opcionais para restauração de estado. */
+  projetosIniciais?: ValoresProjetoAcademico[];
+  /** Notifica a lista de projetos sempre que houver alteração. */
+  aoAlterarProjetos?: (projetos: ValoresProjetoAcademico[]) => void;
 }
 
 const valoresIniciais: ValoresProjetoAcademico = {
@@ -30,22 +37,29 @@ const valoresIniciais: ValoresProjetoAcademico = {
 };
 
 /**
- * Renderiza e controla a entrada de um projeto acadêmico do estudante.
+ * Renderiza e controla a entrada de um ou mais projetos acadêmicos do estudante.
  *
- * O componente mantém valores e feedback no estado local, valida antes de
- * chamar o cliente injetado e preserva o formulário em falhas. Ele existe para
- * oferecer o cadastro acessível sem conhecer HTTP, usuário autenticado ou banco.
+ * O componente mantém valores e feedback no estado local em lista, valida antes de
+ * chamar o cliente injetado e preserva o formulário em falhas.
  */
 export function FormularioCadastroProjetoAcademico({
   cliente,
   aoAlterarProgresso,
   aoAvancar,
+  onVoltar,
+  projetosIniciais = [valoresIniciais],
+  aoAlterarProjetos,
 }: FormularioCadastroProjetoAcademicoProps) {
-  const [valores, setValores] = useState(valoresIniciais);
-  const [erros, setErros] = useState<ErrosProjetoAcademico>({});
+  const [projetos, setProjetos] =
+    useState<ValoresProjetoAcademico[]>(projetosIniciais);
+  const [erros, setErros] = useState<Record<number, ErrosProjetoAcademico>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [semProjetos, setSemProjetos] = useState(false);
+
+  useEffect(() => {
+    aoAlterarProjetos?.(projetos);
+  }, [projetos, aoAlterarProjetos]);
 
   useEffect(() => {
     if (!aoAlterarProgresso) return;
@@ -54,30 +68,69 @@ export function FormularioCadastroProjetoAcademico({
       return;
     }
     let preenchidos = 0;
-    const total = 3;
-    if (valores.titulo.trim().length > 0) preenchidos++;
-    if (valores.descricao.trim().length > 0) preenchidos++;
-    if (valores.tecnologias.trim().length > 0) preenchidos++;
+    const total = projetos.length * 3;
+    projetos.forEach((proj) => {
+      if (proj.titulo.trim().length > 0) preenchidos++;
+      if (proj.descricao.trim().length > 0) preenchidos++;
+      if (proj.tecnologias.trim().length > 0) preenchidos++;
+    });
 
-    aoAlterarProgresso(Math.round((preenchidos / total) * 100));
-  }, [valores, semProjetos, aoAlterarProgresso]);
+    const porcentagem =
+      total > 0 ? Math.round((preenchidos / total) * 100) : 100;
+    aoAlterarProgresso(porcentagem);
+  }, [projetos, semProjetos, aoAlterarProgresso]);
 
-  /** Atualiza um valor e remove feedback que já não descreve o campo editado. */
+  /** Atualiza um campo de um projeto pela sua posição. */
   function atualizarCampo(
+    indice: number,
     campo: keyof ValoresProjetoAcademico,
     valor: string,
   ): void {
-    setValores((atuais) => ({ ...atuais, [campo]: valor }));
-    setErros((atuais) => ({ ...atuais, [campo]: undefined }));
+    setProjetos((atuais) =>
+      atuais.map((proj, i) =>
+        i === indice ? { ...proj, [campo]: valor } : proj,
+      ),
+    );
+    setErros((atuais) => {
+      const errosProj = { ...atuais[indice] };
+      delete errosProj[campo];
+      const novoMapa = { ...atuais };
+      if (Object.keys(errosProj).length === 0) {
+        delete novoMapa[indice];
+      } else {
+        novoMapa[indice] = errosProj;
+      }
+      return novoMapa;
+    });
+    setMensagem(null);
+  }
+
+  /** Adiciona um novo projeto acadêmico no final da lista. */
+  function adicionarProjeto(): void {
+    setProjetos((atuais) => [...atuais, { ...valoresIniciais }]);
+  }
+
+  /** Remove um projeto acadêmico pela sua posição na lista. */
+  function removerProjeto(indice: number): void {
+    if (projetos.length <= 1) return;
+    setProjetos((atuais) => atuais.filter((_, i) => i !== indice));
+    setErros((atuais) => {
+      const novoMapa: Record<number, ErrosProjetoAcademico> = {};
+      Object.entries(atuais).forEach(([chave, valor]) => {
+        const idx = Number(chave);
+        if (idx < indice) {
+          novoMapa[idx] = valor;
+        } else if (idx > indice) {
+          novoMapa[idx - 1] = valor;
+        }
+      });
+      return novoMapa;
+    });
     setMensagem(null);
   }
 
   /**
-   * Valida e encaminha o projeto pelo contrato injetado da feature.
-   *
-   * O manipulador evita o submit nativo, envia somente os três valores do
-   * projeto e distingue sucesso de falhas controladas. Ele existe para manter
-   * regras de experiência na feature e transporte fora do componente visual.
+   * Valida e encaminha os projetos pelo contrato injetado da feature.
    */
   async function enviarProjeto(
     evento: FormEvent<HTMLFormElement>,
@@ -89,17 +142,19 @@ export function FormularioCadastroProjetoAcademico({
       return;
     }
 
-    const todosVazios =
-      valores.titulo.trim() === "" &&
-      valores.descricao.trim() === "" &&
-      valores.tecnologias.trim() === "";
+    const todosVazios = projetos.every(
+      (p) =>
+        p.titulo.trim() === "" &&
+        p.descricao.trim() === "" &&
+        p.tecnologias.trim() === "",
+    );
 
     if (todosVazios) {
       aoAvancar?.();
       return;
     }
 
-    const novosErros = validarProjetoAcademico(valores);
+    const novosErros = validarListaProjetosAcademicos(projetos);
 
     if (Object.keys(novosErros).length > 0) {
       setErros(novosErros);
@@ -110,13 +165,19 @@ export function FormularioCadastroProjetoAcademico({
     setMensagem(null);
 
     try {
-      await cliente.cadastrar({
-        titulo: valores.titulo.trim(),
-        descricao: valores.descricao.trim(),
-        tecnologias: valores.tecnologias.trim(),
-      });
-      setValores(valoresIniciais);
+      for (const proj of projetos) {
+        await cliente.cadastrar({
+          titulo: proj.titulo.trim(),
+          descricao: proj.descricao.trim(),
+          tecnologias: proj.tecnologias.trim(),
+        });
+      }
       setMensagem("Dados do projeto enviados para processamento.");
+      if (!aoAvancar) {
+        setProjetos([{ ...valoresIniciais }]);
+      }
+      setErros({});
+      aoAvancar?.();
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaCadastroProjeto(
@@ -149,6 +210,7 @@ export function FormularioCadastroProjetoAcademico({
             className="btn-adicionar-projeto"
             onClick={() => {
               setSemProjetos(false);
+              setProjetos([{ ...valoresIniciais }]);
               setMensagem(null);
             }}
             type="button"
@@ -160,33 +222,77 @@ export function FormularioCadastroProjetoAcademico({
 
       {!semProjetos && (
         <>
-          <CampoTexto
-            erro={erros.titulo}
-            id="titulo-projeto"
-            label="Título do projeto"
-            obrigatorio
-            onChange={(valor) => atualizarCampo("titulo", valor)}
-            placeholder="Ex.: Sistema de Gestão Acadêmica"
-            value={valores.titulo}
-          />
-          <CampoTexto
-            erro={erros.descricao}
-            id="descricao-projeto"
-            label="Descrição"
-            multiline
-            obrigatorio
-            onChange={(valor) => atualizarCampo("descricao", valor)}
-            placeholder="Explique o objetivo do projeto, sua contribuição e os principais desafios..."
-            value={valores.descricao}
-          />
-          <CampoTexto
-            erro={erros.tecnologias}
-            id="tecnologias-projeto"
-            label="Tecnologias utilizadas"
-            onChange={(valor) => atualizarCampo("tecnologias", valor)}
-            placeholder="Ex.: React, TypeScript, Python"
-            value={valores.tecnologias}
-          />
+          {projetos.map((valores, indice) => {
+            const prefixo = `projeto-${indice}`;
+            const errosItem = erros[indice] ?? {};
+
+            return (
+              <fieldset
+                aria-label={`Projeto acadêmico ${indice + 1}`}
+                key={`projeto-${indice}`}
+              >
+                <legend className="sr-only">
+                  Projeto acadêmico {indice + 1}
+                </legend>
+                {projetos.length > 1 && (
+                  <div className="item-sublista__topo">
+                    <span className="label-subtitulo">
+                      Projeto acadêmico {indice + 1}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-remover-item"
+                      onClick={() => removerProjeto(indice)}
+                      aria-label={`Remover Projeto acadêmico ${indice + 1}`}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+
+                <CampoTexto
+                  erro={errosItem.titulo}
+                  id={`${prefixo}-titulo`}
+                  label="Título do projeto"
+                  obrigatorio
+                  onChange={(valor) => atualizarCampo(indice, "titulo", valor)}
+                  placeholder="Ex.: Sistema de Gestão Acadêmica"
+                  value={valores.titulo}
+                />
+                <CampoTexto
+                  erro={errosItem.descricao}
+                  id={`${prefixo}-descricao`}
+                  label="Descrição"
+                  multiline
+                  obrigatorio
+                  onChange={(valor) =>
+                    atualizarCampo(indice, "descricao", valor)
+                  }
+                  placeholder="Explique o objetivo do projeto, sua contribuição e os principais desafios..."
+                  value={valores.descricao}
+                />
+                <CampoTexto
+                  erro={errosItem.tecnologias}
+                  id={`${prefixo}-tecnologias`}
+                  label="Tecnologias utilizadas"
+                  obrigatorio
+                  onChange={(valor) =>
+                    atualizarCampo(indice, "tecnologias", valor)
+                  }
+                  placeholder="Ex.: React, TypeScript, Python"
+                  value={valores.tecnologias}
+                />
+              </fieldset>
+            );
+          })}
+
+          <button
+            type="button"
+            className="btn-adicionar-item"
+            onClick={adicionarProjeto}
+          >
+            + Adicionar projeto acadêmico
+          </button>
         </>
       )}
 
@@ -199,21 +305,31 @@ export function FormularioCadastroProjetoAcademico({
         </p>
       )}
 
-      <button
-        aria-label="Cadastrar projeto"
-        className="btn-proximo"
-        disabled={enviando}
-        type="submit"
-      >
-        {enviando ? "Enviando projeto..." : "Próximo"}
-      </button>
+      <div className="botoes-navegacao">
+        <button
+          aria-label="Voltar para a etapa anterior"
+          className="btn-voltar"
+          onClick={onVoltar}
+          type="button"
+        >
+          Voltar
+        </button>
+        <button
+          aria-label="Cadastrar projeto"
+          className="btn-proximo"
+          disabled={enviando}
+          type="submit"
+        >
+          {enviando ? "Enviando projeto..." : "Próximo"}
+        </button>
+      </div>
 
       {!semProjetos && (
         <button
           className="btn-pular-projeto"
           onClick={() => {
             setSemProjetos(true);
-            setValores(valoresIniciais);
+            setProjetos([{ ...valoresIniciais }]);
             setErros({});
             setMensagem(null);
           }}

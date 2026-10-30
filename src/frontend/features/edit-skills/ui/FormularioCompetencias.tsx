@@ -17,8 +17,12 @@ import {
 export interface FormularioCompetenciasProps {
   habilidadesIniciais?: Habilidades;
   onSalvar?: (habilidades: Habilidades) => void;
+  aoAvancar?: () => void;
+  onVoltar?: () => void;
   /** Notifica a porcentagem de conclusão desta etapa (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Notifica alterações nas competências para preservação de estado. */
+  aoAlterarHabilidades?: (habilidades: Habilidades) => void;
 }
 
 const VALORES_INICIAIS: Habilidades = {
@@ -37,12 +41,22 @@ const VALORES_INICIAIS: Habilidades = {
 export function FormularioCompetencias({
   habilidadesIniciais = VALORES_INICIAIS,
   onSalvar,
+  aoAvancar,
+  onVoltar,
   aoAlterarProgresso,
+  aoAlterarHabilidades,
 }: FormularioCompetenciasProps) {
   const [hardSkills, setHardSkills] = useState(habilidadesIniciais.hardSkills);
   const [softSkills, setSoftSkills] = useState(habilidadesIniciais.softSkills);
   const [inputHardSkill, setInputHardSkill] = useState("");
   const [inputSoftSkill, setInputSoftSkill] = useState("");
+
+  useEffect(() => {
+    aoAlterarHabilidades?.({
+      hardSkills,
+      softSkills,
+    });
+  }, [hardSkills, softSkills, aoAlterarHabilidades]);
 
   useEffect(() => {
     if (!aoAlterarProgresso) return;
@@ -120,6 +134,7 @@ export function FormularioCompetencias({
       hardSkills,
       softSkills,
     });
+    aoAvancar?.();
   }
 
   return (
@@ -241,13 +256,23 @@ export function FormularioCompetencias({
         </div>
       </section>
 
-      <button
-        aria-label="Salvar competências"
-        className="btn-proximo"
-        type="submit"
-      >
-        Próximo
-      </button>
+      <div className="botoes-navegacao">
+        <button
+          aria-label="Voltar para a etapa anterior"
+          className="btn-voltar"
+          onClick={onVoltar}
+          type="button"
+        >
+          Voltar
+        </button>
+        <button
+          aria-label="Salvar competências"
+          className="btn-proximo"
+          type="submit"
+        >
+          Próximo
+        </button>
+      </div>
     </form>
   );
 }

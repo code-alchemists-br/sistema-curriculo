@@ -35,7 +35,10 @@ const competenciasSchema = z
 const projetoAcademicoSchema = z.object({
   titulo: z.string().trim().min(1, "Informe o título do projeto."),
   descricao: z.string().trim().min(1, "Informe a descrição do projeto."),
-  tecnologias: z.string().trim(),
+  tecnologias: z
+    .string()
+    .trim()
+    .min(1, "Informe as tecnologias utilizadas no projeto."),
 });
 
 /** Representa todo o estado necessário para a validação final do currículo. */

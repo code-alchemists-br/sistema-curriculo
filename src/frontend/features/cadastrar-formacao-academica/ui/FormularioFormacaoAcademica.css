@@ -4,6 +4,114 @@
   width: 100%;
 }
 
+.formulario-formacao-academica .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.formulario-formacao-academica fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.formulario-formacao-academica fieldset + fieldset {
+  margin-top: 3.5rem;
+}
+
+.formulario-formacao-academica .item-sublista__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.formulario-formacao-academica .label-subtitulo {
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #a3a3a3;
+  margin: 0;
+  display: inline-block;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.formulario-formacao-academica .btn-remover-item {
+  background: transparent;
+  color: #f87171;
+  border: none;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.formulario-formacao-academica .btn-remover-item:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.formulario-formacao-academica .btn-adicionar-item {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: #ff6a00;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-top: 1rem;
+  margin-bottom: 2.5rem;
+  transition: color 0.2s;
+}
+
+.formulario-formacao-academica .btn-adicionar-item:hover {
+  color: #ff8533;
+  text-decoration: underline;
+}
+
+.formulario-formacao-academica .btn-adicionar-item:active {
+  color: #ff944d;
+}
+
+.formulario-formacao-academica fieldset:not(:only-of-type):last-of-type {
+  animation: surgimento-item 0.4s ease-out;
+}
+
+@keyframes surgimento-item {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
 .formulario-formacao-academica .field {
   display: flex;
   flex-direction: column;
@@ -46,6 +154,7 @@
   border-radius: 12px;
   padding: 0 1.25rem;
   color: #ffffff;
+  color-scheme: dark;
   font-family: "Poppins", sans-serif;
   font-size: 1rem;
   box-sizing: border-box;
@@ -53,6 +162,31 @@
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background-color 0.2s ease;
+}
+
+.formulario-formacao-academica select,
+.formulario-formacao-academica .field select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.25rem center;
+  background-size: 16px 16px;
+  padding-right: 3rem;
+}
+
+.formulario-formacao-academica
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.formulario-formacao-academica
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .formulario-formacao-academica select option {
@@ -160,4 +294,53 @@
 .formulario-formacao-academica .btn-proximo:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.formulario-formacao-academica input:disabled,
+.formulario-formacao-academica .field input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background-color: #121212 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.formulario-formacao-academica .secao-lattes {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.formulario-formacao-academica .campo-dispensa-lattes {
+  margin-top: -1.25rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.formulario-formacao-academica .checkbox-lattes-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  user-select: none;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.92rem;
+  color: #a3a3a3;
+  transition: color 0.2s ease;
+}
+
+.formulario-formacao-academica .checkbox-lattes-label:hover {
+  color: #f3f3f3;
+}
+
+.formulario-formacao-academica .checkbox-lattes-label input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #ff6a00;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border-radius: 4px;
 }
