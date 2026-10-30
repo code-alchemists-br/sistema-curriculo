@@ -177,13 +177,15 @@
   padding-right: 3rem;
 }
 
-.formulario-formacao-academica input[type="date"]::-webkit-calendar-picker-indicator {
+.formulario-formacao-academica
+  input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0.9;
   transition: opacity 0.2s;
 }
 
-.formulario-formacao-academica input[type="date"]::-webkit-calendar-picker-indicator:hover {
+.formulario-formacao-academica
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 

@@ -1,6 +1,9 @@
 import { useState } from "react";
 
-import { FormularioCompetencias, type Habilidades } from "../../../features/edit-skills";
+import {
+  FormularioCompetencias,
+  type Habilidades,
+} from "../../../features/edit-skills";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaCompetencias.css";
 

@@ -56,8 +56,7 @@ export function validarFormacaoAcademica(
   }
 
   const ehEnsinoBasico =
-    valores.nivel === "ensino_fundamental" ||
-    valores.nivel === "ensino_medio";
+    valores.nivel === "ensino_fundamental" || valores.nivel === "ensino_medio";
 
   if (!ehEnsinoBasico) {
     if (valores.curso.trim() === "") {
@@ -199,8 +198,7 @@ export function criarEntradaFormacaoAcademica(
   }
 
   const ehEnsinoBasico =
-    valores.nivel === "ensino_fundamental" ||
-    valores.nivel === "ensino_medio";
+    valores.nivel === "ensino_fundamental" || valores.nivel === "ensino_medio";
 
   const nomeCursoPadrao =
     valores.nivel === "ensino_fundamental"
@@ -223,7 +221,9 @@ export function criarEntradaFormacaoAcademica(
     dataInicio: valores.dataInicio,
     ...(valores.dataFim === "" ? {} : { dataFim: valores.dataFim }),
     status: valores.status,
-    ...(lattesTrim && lattesTrim.length > 0 ? { curriculoLattes: lattesTrim } : {}),
+    ...(lattesTrim && lattesTrim.length > 0
+      ? { curriculoLattes: lattesTrim }
+      : {}),
   };
 }
 

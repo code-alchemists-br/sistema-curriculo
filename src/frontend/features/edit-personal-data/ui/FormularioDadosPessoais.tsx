@@ -228,9 +228,7 @@ export function FormularioDadosPessoais({
 
       {/* 3. Telefone */}
       <div className="field">
-        <span className="titulo-campo titulo-campo--obrigatorio">
-          Telefone
-        </span>
+        <span className="titulo-campo titulo-campo--obrigatorio">Telefone</span>
 
         <div
           className={`lista-telefones ${valores.telefones.length > 1 ? "lista-telefones--multipla" : ""}`}

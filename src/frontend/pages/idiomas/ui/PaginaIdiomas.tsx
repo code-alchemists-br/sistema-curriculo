@@ -1,6 +1,9 @@
 import { useState } from "react";
 
-import { FormularioIdiomas, type Idioma } from "../../../features/edit-languages";
+import {
+  FormularioIdiomas,
+  type Idioma,
+} from "../../../features/edit-languages";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaIdiomas.css";
 

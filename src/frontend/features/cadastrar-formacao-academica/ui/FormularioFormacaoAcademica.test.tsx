@@ -292,10 +292,7 @@ describe("FormularioFormacaoAcademica", () => {
     };
     const aoAvancar = vi.fn();
     render(
-      <FormularioFormacaoAcademica
-        aoAvancar={aoAvancar}
-        cliente={cliente}
-      />,
+      <FormularioFormacaoAcademica aoAvancar={aoAvancar} cliente={cliente} />,
     );
 
     await preencherFormacao(usuario);

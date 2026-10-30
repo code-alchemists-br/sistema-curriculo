@@ -89,9 +89,7 @@ export function FormularioCertificacao({
       if (cert.organizacaoEmissora.trim().length > 0) preenchidos++;
     });
 
-    aoAlterarProgresso(
-      total > 0 ? Math.round((preenchidos / total) * 100) : 0,
-    );
+    aoAlterarProgresso(total > 0 ? Math.round((preenchidos / total) * 100) : 0);
   }, [certificacoes, aoAlterarProgresso]);
 
   function atualizarCampo(

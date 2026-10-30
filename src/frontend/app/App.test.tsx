@@ -29,9 +29,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(
-      screen.getByRole("button", { name: "CRIAR CURRÍCULO →" }),
-    );
+    await user.click(screen.getByRole("button", { name: "CRIAR CURRÍCULO →" }));
 
     expect(
       screen.getByRole("heading", { name: "Conte um pouco sobre você" }),
@@ -58,10 +56,16 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Conte um pouco sobre você" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Nome Completo")).toHaveValue("Ricardo Santos");
-    expect(screen.getByLabelText("Endereço")).toHaveValue("Rua das Acácias, 123");
+    expect(screen.getByLabelText("Nome Completo")).toHaveValue(
+      "Ricardo Santos",
+    );
+    expect(screen.getByLabelText("Endereço")).toHaveValue(
+      "Rua das Acácias, 123",
+    );
     expect(screen.getByLabelText("Telefone 1")).toHaveValue("(11) 98765-4321");
-    expect(screen.getByLabelText("E-mail")).toHaveValue("ricardo@fatec.sp.gov.br");
+    expect(screen.getByLabelText("E-mail")).toHaveValue(
+      "ricardo@fatec.sp.gov.br",
+    );
 
     // Avança novamente para a etapa 2
     await user.click(

@@ -79,10 +79,13 @@ export function FormularioFormacaoAcademica({
   const [formacoes, setFormacoes] =
     useState<ValoresFormacaoAcademica[]>(formacoesIniciais);
   const [curriculoLattes, setCurriculoLattes] = useState<string>(lattesInicial);
-  const [naoPossuiLattes, setNaoPossuiLattes] =
-    useState<boolean>(naoPossuiLattesInicial);
+  const [naoPossuiLattes, setNaoPossuiLattes] = useState<boolean>(
+    naoPossuiLattesInicial,
+  );
   const [erroLattes, setErroLattes] = useState<string | undefined>(undefined);
-  const [erros, setErros] = useState<Record<number, ErrosFormacaoAcademica>>({});
+  const [erros, setErros] = useState<Record<number, ErrosFormacaoAcademica>>(
+    {},
+  );
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -118,8 +121,7 @@ export function FormularioFormacaoAcademica({
           valores.nivel === "ensino_medio";
 
         totalObrigatorios +=
-          (valores.status === "concluido" ? 6 : 5) -
-          (ehEnsinoBasico ? 1 : 0);
+          (valores.status === "concluido" ? 6 : 5) - (ehEnsinoBasico ? 1 : 0);
 
         if (valores.instituicao.trim().length > 0) preenchidos++;
         if (!ehEnsinoBasico && valores.curso.trim().length > 0) preenchidos++;
@@ -288,9 +290,7 @@ export function FormularioFormacaoAcademica({
             aria-label={`Formação acadêmica ${indice + 1}`}
             key={`formacao-${indice}`}
           >
-            <legend className="sr-only">
-              Formação acadêmica {indice + 1}
-            </legend>
+            <legend className="sr-only">Formação acadêmica {indice + 1}</legend>
             {formacoes.length > 1 && (
               <div className="item-sublista__topo">
                 <span className="label-subtitulo">
@@ -339,11 +339,7 @@ export function FormularioFormacaoAcademica({
               id={`${prefixo}-nivel`}
               label="Nível de formação"
               onChange={(valor) =>
-                atualizarCampo(
-                  indice,
-                  "nivel",
-                  valor as NivelFormacaoAcademica,
-                )
+                atualizarCampo(indice, "nivel", valor as NivelFormacaoAcademica)
               }
               opcoes={niveis}
               required
@@ -426,10 +422,7 @@ export function FormularioFormacaoAcademica({
         />
         {algumMestradoOuDoutorado && (
           <div className="campo-dispensa-lattes">
-            <label
-              className="checkbox-lattes-label"
-              htmlFor="dispensa-lattes"
-            >
+            <label className="checkbox-lattes-label" htmlFor="dispensa-lattes">
               <input
                 checked={naoPossuiLattes}
                 id="dispensa-lattes"
