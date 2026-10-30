@@ -13,11 +13,8 @@ afterEach(cleanup);
 async function preencherCamposObrigatorios(
   usuario: ReturnType<typeof userEvent.setup>,
 ): Promise<void> {
-  await usuario.type(screen.getByLabelText("Nome completo"), "Ana Silva");
-  await usuario.type(
-    screen.getByLabelText("Endereço completo"),
-    "Rua das Flores, 10",
-  );
+  await usuario.type(screen.getByLabelText("Nome Completo"), "Ana Silva");
+  await usuario.type(screen.getByLabelText("Endereço"), "Rua das Flores, 10");
   await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
   await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
 }
@@ -109,7 +106,7 @@ describe("FormularioDadosPessoais", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível salvar",
     );
-    expect(screen.getByLabelText("Nome completo")).toHaveValue("Ana Silva");
+    expect(screen.getByLabelText("Nome Completo")).toHaveValue("Ana Silva");
     expect(
       screen.getByRole("button", { name: "Salvar dados pessoais" }),
     ).toBeEnabled();
@@ -143,5 +140,34 @@ describe("FormularioDadosPessoais", () => {
     await usuario.click(botaoRemover);
 
     expect(screen.queryByLabelText("Telefone 2")).not.toBeInTheDocument();
+  });
+
+  it("permite preencher o LinkedIn opcional juntamente com os dados pessoais", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<FormularioDadosPessoais cliente={cliente} />);
+
+    await preencherCamposObrigatorios(usuario);
+    await usuario.type(
+      screen.getByLabelText("Linkedin"),
+      "https://linkedin.com/in/anasilva",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "salvos com sucesso",
+    );
+    expect(cliente.salvar).toHaveBeenCalledWith({
+      nomeCompleto: "Ana Silva",
+      enderecoCompleto: "Rua das Flores, 10",
+      telefones: ["(11) 99999-0000"],
+      email: "ana@exemplo.com",
+      linkedIn: "https://linkedin.com/in/anasilva",
+    });
   });
 });

@@ -42,3 +42,18 @@ export function criarClienteDadosPessoaisIndisponivel(): ClienteDadosPessoais {
     },
   };
 }
+
+/**
+ * Cria um cliente em memória que armazena os dados localmente e resolve com sucesso,
+ * permitindo navegar e testar o funcionamento completo do assistente de currículo.
+ */
+export function criarClienteDadosPessoaisEmMemoria(
+  aoSalvar?: (dados: Student) => void,
+): ClienteDadosPessoais {
+  return {
+    async salvar(dados: Student): Promise<void> {
+      aoSalvar?.(dados);
+      return Promise.resolve();
+    },
+  };
+}

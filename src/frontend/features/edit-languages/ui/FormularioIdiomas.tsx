@@ -16,6 +16,12 @@ export interface FormularioIdiomasProps {
   onSalvar?: (idiomas: Idioma[]) => void;
   /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Notifica a lista atual de idiomas preenchidos para preservação de estado. */
+  aoAlterarDados?: (idiomas: Idioma[]) => void;
+  /** Controla a exibição do subtítulo interno (padrão: true). */
+  exibirTitulo?: boolean;
+  /** Controla a exibição do botão interno de salvar (padrão: true). */
+  exibirBotaoSalvar?: boolean;
 }
 
 /**
@@ -30,10 +36,17 @@ export function FormularioIdiomas({
   idiomasIniciais = [criarIdiomaVazio()],
   onSalvar,
   aoAlterarProgresso,
+  aoAlterarDados,
+  exibirTitulo = true,
+  exibirBotaoSalvar = true,
 }: FormularioIdiomasProps) {
   const [idiomas, setIdiomas] = useState<Idioma[]>(idiomasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosIdioma>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  useEffect(() => {
+    aoAlterarDados?.(idiomas);
+  }, [idiomas, aoAlterarDados]);
 
   useEffect(() => {
     if (!aoAlterarProgresso) return;
@@ -136,7 +149,7 @@ export function FormularioIdiomas({
 
   return (
     <form className="formulario-idiomas" noValidate onSubmit={enviarFormulario}>
-      <h2 className="secao-titulo">Idiomas</h2>
+      {exibirTitulo && <h2 className="secao-titulo">Idiomas</h2>}
 
       {idiomas.map((idioma, indice) => {
         const errosIdioma = erros[indice];
@@ -246,9 +259,11 @@ export function FormularioIdiomas({
         </p>
       )}
 
-      <button className="btn-salvar-secao" type="submit">
-        Salvar idiomas
-      </button>
+      {exibirBotaoSalvar && (
+        <button className="btn-salvar-secao" type="submit">
+          Salvar idiomas
+        </button>
+      )}
     </form>
   );
 }

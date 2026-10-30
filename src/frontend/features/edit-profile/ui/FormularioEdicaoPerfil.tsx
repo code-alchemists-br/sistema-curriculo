@@ -215,10 +215,10 @@ export function FormularioEdicaoPerfil({
           value={valores.linkedIn}
         />
         <CampoTexto
-          ajuda="Informe o endereço público do seu currículo na Plataforma Lattes, se possuir um."
+          ajuda="Informe o link público na Plataforma Lattes do CNPq (obrigatório para formação acadêmica, pesquisa, mestrado e doutorado)."
           erro={erros.curriculoLattes}
           id="perfil-curriculo-lattes"
-          label="Currículo Lattes (opcional)"
+          label="Currículo Lattes"
           onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
           type="url"
           value={valores.curriculoLattes}

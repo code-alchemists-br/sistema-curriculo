@@ -38,7 +38,7 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
       name: /\+ adicionar telefone/i,
     });
     const campoEndereco = screen.getByRole("textbox", {
-      name: /endereço completo/i,
+      name: /endereço/i,
     });
     const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
     const botaoSalvar = screen.getByRole("button", {
@@ -72,7 +72,7 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
       name: /\+ adicionar telefone/i,
     });
     const campoEndereco = screen.getByRole("textbox", {
-      name: /endereço completo/i,
+      name: /endereço/i,
     });
     const campoLinkedIn = screen.getByRole("textbox", { name: /linkedin/i });
     const botaoSalvar = screen.getByRole("button", {
@@ -120,7 +120,7 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
 
     const campoNome = screen.getByRole("textbox", { name: /nome completo/i });
     const campoEndereco = screen.getByRole("textbox", {
-      name: /endereço completo/i,
+      name: /endereço/i,
     });
     const campoTelefone = screen.getByRole("textbox", { name: /telefone 1/i });
     const campoEmail = screen.getByRole("textbox", { name: /e-mail/i });
@@ -196,7 +196,7 @@ describe("FormularioDadosPessoais — Testes de Acessibilidade (a11y)", () => {
       "Carlos Silva",
     );
     await usuario.type(
-      screen.getByRole("textbox", { name: /endereço completo/i }),
+      screen.getByRole("textbox", { name: /endereço/i }),
       "Rua A, 100",
     );
     await usuario.type(

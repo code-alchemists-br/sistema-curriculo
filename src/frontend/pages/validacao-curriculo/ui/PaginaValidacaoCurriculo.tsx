@@ -11,6 +11,7 @@ export interface PaginaValidacaoCurriculoProps {
   onVisualizarPreview?: () => void;
   onExportarPdf?: () => void;
   onConfirmarCurriculo?: () => void;
+  onVoltar?: () => void;
 }
 
 const DADOS_VALIDACAO_PADRAO: CurriculoParaValidacao = {
@@ -47,12 +48,13 @@ export function PaginaValidacaoCurriculo({
   onVisualizarPreview,
   onExportarPdf,
   onConfirmarCurriculo,
+  onVoltar,
 }: PaginaValidacaoCurriculoProps) {
   return (
     <LayoutCadastroCurriculo
       subtitulo="Validação e Revisão"
-      etapaAtual={8}
-      totalEtapas={8}
+      etapaAtual={9}
+      totalEtapas={9}
       progressoEtapaAtual={100}
     >
       <section
@@ -68,6 +70,7 @@ export function PaginaValidacaoCurriculo({
           onVisualizarPreview={onVisualizarPreview}
           onExportarPdf={onExportarPdf}
           onConfirmarCurriculo={onConfirmarCurriculo}
+          onVoltar={onVoltar}
         />
       </section>
     </LayoutCadastroCurriculo>

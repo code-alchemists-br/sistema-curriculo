@@ -35,19 +35,36 @@ export interface FormularioDadosPessoaisProps {
   cliente: ClienteDadosPessoais;
   /** Notifica a porcentagem de campos preenchidos nesta etapa (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Callback para avançar para a próxima etapa ao salvar com sucesso. */
+  aoAvancar?: () => void;
+  /** Callback para retornar para a etapa anterior. */
+  onVoltar?: () => void;
+  /** Valores iniciais opcionais para restauração de estado. */
+  valoresIniciais?: ValoresDadosPessoais;
+  /** Notifica alterações nos valores para preservação de estado. */
+  aoAlterarValores?: (valores: ValoresDadosPessoais) => void;
 }
 
 /** Renderiza e controla o formulário de dados pessoais e contato. */
 export function FormularioDadosPessoais({
   cliente,
   aoAlterarProgresso,
+  aoAvancar,
+  onVoltar,
+  valoresIniciais,
+  aoAlterarValores,
 }: FormularioDadosPessoaisProps) {
-  const [valores, setValores] =
-    useState<ValoresDadosPessoais>(criarValoresIniciais);
+  const [valores, setValores] = useState<ValoresDadosPessoais>(
+    valoresIniciais ?? criarValoresIniciais(),
+  );
   const [erros, setErros] = useState<ErrosDadosPessoais>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const focoNoNovoTelefone = useRef(false);
+
+  useEffect(() => {
+    aoAlterarValores?.(valores);
+  }, [valores, aoAlterarValores]);
 
   useEffect(() => {
     if (aoAlterarProgresso) {
@@ -169,6 +186,7 @@ export function FormularioDadosPessoais({
     try {
       await cliente.salvar(criarStudent(valores));
       setMensagem("Dados pessoais salvos com sucesso.");
+      aoAvancar?.();
     } catch (erro: unknown) {
       const codigo =
         erro instanceof FalhaDadosPessoais ? erro.codigo : "resposta-invalida";
@@ -185,13 +203,13 @@ export function FormularioDadosPessoais({
       noValidate
       onSubmit={enviarFormulario}
     >
-      {/* 1. Nome completo */}
+      {/* 1. Nome Completo */}
       <CampoTexto
         erro={erros.nomeCompleto}
         id="nome-completo"
-        label="Nome completo"
+        label="Nome Completo"
         onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
-        placeholder="Digite aqui..."
+        placeholder="Ex.: Carlos Eduardo da Silva"
         required
         value={valores.nomeCompleto}
       />
@@ -202,19 +220,21 @@ export function FormularioDadosPessoais({
         id="email"
         label="E-mail"
         onChange={(valor) => atualizarCampo("email", valor)}
-        placeholder="Digite aqui..."
+        placeholder="seu.email@exemplo.com"
         required
         type="email"
         value={valores.email}
       />
 
-      {/* 3. Telefones */}
+      {/* 3. Telefone */}
       <div className="field">
         <span className="titulo-campo titulo-campo--obrigatorio">
-          Telefones
+          Telefone
         </span>
 
-        <div className="lista-telefones">
+        <div
+          className={`lista-telefones ${valores.telefones.length > 1 ? "lista-telefones--multipla" : ""}`}
+        >
           {valores.telefones.map((telefone, indice) => {
             const id = `telefone-${indice}`;
             const erro = erros.telefones?.[indice];
@@ -275,11 +295,11 @@ export function FormularioDadosPessoais({
         </button>
       </div>
 
-      {/* 4. Endereço completo */}
+      {/* 4. Endereço */}
       <CampoTexto
         erro={erros.enderecoCompleto}
         id="endereco-completo"
-        label="Endereço completo"
+        label="Endereço"
         onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
         placeholder="Cidade, Estado (ou endereço completo)..."
         value={valores.enderecoCompleto}
@@ -290,7 +310,7 @@ export function FormularioDadosPessoais({
         id="linkedin"
         label="Linkedin"
         onChange={(valor) => atualizarCampo("linkedIn", valor)}
-        placeholder="Insira o link aqui"
+        placeholder="https://linkedin.com/in/seuperfil"
         type="url"
         value={valores.linkedIn}
       />
@@ -305,14 +325,26 @@ export function FormularioDadosPessoais({
         </p>
       )}
 
-      <button
-        aria-label={enviando ? "Salvando dados..." : "Salvar dados pessoais"}
-        className="btn-proximo"
-        disabled={enviando}
-        type="submit"
-      >
-        {enviando ? "Salvando..." : "Próximo"}
-      </button>
+      <div className="botoes-navegacao">
+        {onVoltar && (
+          <button
+            type="button"
+            className="btn-voltar"
+            onClick={onVoltar}
+            aria-label="Voltar para a etapa anterior"
+          >
+            Voltar
+          </button>
+        )}
+        <button
+          aria-label={enviando ? "Salvando dados..." : "Salvar dados pessoais"}
+          className="btn-proximo"
+          disabled={enviando}
+          type="submit"
+        >
+          {enviando ? "Salvando..." : "Próximo"}
+        </button>
+      </div>
     </form>
   );
 }
@@ -345,6 +377,16 @@ function CampoTexto({
   const idErro = `${id}-erro`;
   const idAjuda = `${id}-ajuda`;
 
+  const idsDescricao: string[] = [];
+  if (erro !== undefined) {
+    idsDescricao.push(idErro);
+  }
+  if (ajuda !== undefined) {
+    idsDescricao.push(idAjuda);
+  }
+  const ariaDescribedBy =
+    idsDescricao.length > 0 ? idsDescricao.join(" ") : undefined;
+
   return (
     <div className="field">
       <label
@@ -352,24 +394,14 @@ function CampoTexto({
         className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
       >
         {label}
-        {ajuda !== undefined && (
-          <span
-            aria-describedby={idAjuda}
-            aria-label={`Ajuda: ${ajuda}`}
-            title={ajuda}
-          >
-            {" "}
-            ?
-          </span>
-        )}
       </label>
       {ajuda !== undefined && (
-        <span hidden id={idAjuda}>
+        <span className="field__help" id={idAjuda}>
           {ajuda}
         </span>
       )}
       <input
-        aria-describedby={erro === undefined ? undefined : idErro}
+        aria-describedby={ariaDescribedBy}
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
         onChange={(evento) => onChange(evento.target.value)}

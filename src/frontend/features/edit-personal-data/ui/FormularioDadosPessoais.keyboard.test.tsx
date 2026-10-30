@@ -25,7 +25,7 @@ describe("FormularioDadosPessoais — navegação por teclado", () => {
     render(<FormularioDadosPessoais cliente={criarCliente()} />);
 
     await usuario.tab();
-    expect(screen.getByLabelText("Nome completo")).toHaveFocus();
+    expect(screen.getByLabelText("Nome Completo")).toHaveFocus();
 
     await usuario.tab();
     expect(screen.getByLabelText("E-mail")).toHaveFocus();
@@ -48,6 +48,6 @@ describe("FormularioDadosPessoais — navegação por teclado", () => {
     ).toHaveFocus();
 
     await usuario.tab();
-    expect(screen.getByLabelText("Endereço completo")).toHaveFocus();
+    expect(screen.getByLabelText("Endereço")).toHaveFocus();
   });
 });
