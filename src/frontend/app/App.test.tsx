@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { App } from "./App";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.history.pushState({}, "", "/");
+});
 
 describe("App", () => {
   it("apresenta a porta de entrada com a seção hero e permite acessar a conta", async () => {
@@ -18,7 +21,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Fazer login" }));
 
     expect(
-      screen.getByRole("heading", { name: "Acesse sua conta" }),
+      screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
     ).toBeInTheDocument();
   });
 

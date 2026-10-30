@@ -1,0 +1,111 @@
+/* Estilos do Formulário de Acesso / Login do Estudante */
+
+.pagina-acesso-estudante .formulario-acesso,
+.formulario-acesso {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  gap: 0 !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .field,
+.formulario-acesso .field {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 1.25rem !important;
+  gap: 0 !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .field label,
+.formulario-acesso .field label {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #e5e5e5 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso input[type="email"],
+.pagina-acesso-estudante .formulario-acesso input[type="password"],
+.formulario-acesso input {
+  width: 100% !important;
+  height: 52px !important;
+  background-color: #171717 !important;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px !important;
+  padding: 0 1.25rem !important;
+  color: #ffffff !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 1rem !important;
+  box-sizing: border-box !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso input:hover:not(:focus),
+.formulario-acesso input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: #1a1a1a !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso input:focus,
+.pagina-acesso-estudante .formulario-acesso input:focus-visible,
+.formulario-acesso input:focus,
+.formulario-acesso input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: #1c1c1c !important;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25) !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso input[aria-invalid="true"],
+.formulario-acesso input[aria-invalid="true"] {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4) !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .field__error,
+.formulario-acesso .field__error {
+  color: #ef4444 !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.8125rem !important;
+  margin: 0.45rem 0 0 0 !important;
+  line-height: 1.4 !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .form-message,
+.formulario-acesso .form-message {
+  padding: 0.875rem 1rem !important;
+  border-radius: 10px !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin: 0.25rem 0 1.25rem 0 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #e5e5e5 !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .form-message--status-error,
+.formulario-acesso .form-message--status-error {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .form-message--status-info,
+.formulario-acesso .form-message--status-info {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+.pagina-acesso-estudante .formulario-acesso .formulario-acesso__botao-wrapper,
+.formulario-acesso .formulario-acesso__botao-wrapper {
+  margin-top: 0.75rem !important;
+  width: 100% !important;
+}

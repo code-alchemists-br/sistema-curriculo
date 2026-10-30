@@ -1,0 +1,104 @@
+/* Estilos do Formulário de Criação de Conta do Estudante */
+
+.pagina-acesso-estudante .formulario-cadastro,
+.formulario-cadastro {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  gap: 0 !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro .field,
+.formulario-cadastro .field {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 1.25rem !important;
+  gap: 0 !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro .field label,
+.formulario-cadastro .field label {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #e5e5e5 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro input[type="text"],
+.pagina-acesso-estudante .formulario-cadastro input[type="email"],
+.pagina-acesso-estudante .formulario-cadastro input[type="password"],
+.formulario-cadastro input {
+  width: 100% !important;
+  height: 52px !important;
+  background-color: #171717 !important;
+  border: 1px solid transparent !important;
+  outline: none !important;
+  border-radius: 12px !important;
+  padding: 0 1.25rem !important;
+  color: #ffffff !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 1rem !important;
+  box-sizing: border-box !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro input:hover:not(:focus),
+.formulario-cadastro input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: #1a1a1a !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro input:focus,
+.pagina-acesso-estudante .formulario-cadastro input:focus-visible,
+.formulario-cadastro input:focus,
+.formulario-cadastro input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: #1c1c1c !important;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.25) !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro input[aria-invalid="true"],
+.formulario-cadastro input[aria-invalid="true"] {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4) !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro .field__error,
+.formulario-cadastro .field__error {
+  color: #ef4444 !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.8125rem !important;
+  margin: 0.45rem 0 0 0 !important;
+  line-height: 1.4 !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro .form-message,
+.formulario-cadastro .form-message {
+  padding: 0.875rem 1rem !important;
+  border-radius: 10px !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin: 0.25rem 0 1.25rem 0 !important;
+}
+
+.pagina-acesso-estudante .formulario-cadastro .form-message--error,
+.formulario-cadastro .form-message--error {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+.pagina-acesso-estudante
+  .formulario-cadastro
+  .formulario-cadastro__botao-wrapper,
+.formulario-cadastro .formulario-cadastro__botao-wrapper {
+  margin-top: 0.75rem !important;
+  width: 100% !important;
+}

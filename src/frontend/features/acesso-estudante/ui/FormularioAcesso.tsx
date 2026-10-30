@@ -10,6 +10,8 @@ import {
   validarAcesso,
   type ErrosFormulario,
 } from "../model/formulario-acesso";
+import { BotaoHero } from "../../../shared";
+import "./FormularioAcesso.css";
 
 /** Define os colaboradores e o e-mail inicial do formulário de acesso. */
 export interface FormularioAcessoProps {
@@ -85,7 +87,7 @@ export function FormularioAcesso({
   }
 
   return (
-    <form noValidate onSubmit={enviarAcesso}>
+    <form className="formulario-acesso" noValidate onSubmit={enviarAcesso}>
       <div className="field">
         <label htmlFor="email-acesso">E-mail</label>
         <input
@@ -127,13 +129,25 @@ export function FormularioAcesso({
         )}
       </div>
       {mensagem !== null && (
-        <p className="form-message" role="status">
+        <p
+          className={`form-message ${
+            mensagem.includes("sessão")
+              ? "form-message--status-info"
+              : "form-message--status-error"
+          }`}
+          role="status"
+        >
           {mensagem}
         </p>
       )}
-      <button disabled={enviando} type="submit">
+      <BotaoHero
+        disabled={enviando}
+        mostrarIcone={false}
+        type="submit"
+        wrapperClassName="formulario-acesso__botao-wrapper botao-hero-wrapper--full-width"
+      >
         {enviando ? "Confirmando..." : "Entrar"}
-      </button>
+      </BotaoHero>
     </form>
   );
 }
