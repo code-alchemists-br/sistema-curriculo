@@ -117,13 +117,12 @@ export function App() {
       telefones:
         dadosPessoais?.telefones?.filter((t) => t.trim().length > 0) || [],
       email: dadosPessoais?.email || "",
-      linkedIn: dadosPessoais?.linkedIn || undefined,
     },
     formacaoAcademica: {
-      status: formacoes && formacoes.length > 0 ? "preenchida" : "vazia",
+      status: formacoes && formacoes.length > 0 ? "preenchida" : "pulada",
     },
     experienciasProfissionais: {
-      status: experiencias && experiencias.length > 0 ? "preenchida" : "vazia",
+      status: experiencias && experiencias.length > 0 ? "preenchida" : "pulada",
     },
     competencias: competencias ?? {
       hardSkills: [],
