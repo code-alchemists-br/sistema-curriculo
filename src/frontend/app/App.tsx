@@ -7,8 +7,10 @@ import { PaginaExperienciasProfissionais } from "../pages/experiencias-profissio
 import { PaginaFormacaoAcademica } from "../pages/formacao-academica";
 import { PaginaInicio } from "../pages/inicio";
 import { PaginaDadosPessoais } from "../pages/personal-data";
+import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
+import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 
 type RotaAtiva =
@@ -21,6 +23,8 @@ type RotaAtiva =
   | "competencias"
   | "projetos-academicos"
   | "selecionar-modelo"
+  | "termos-de-uso"
+  | "politica-de-privacidade"
   | "validacao-curriculo";
 
 /**
@@ -43,6 +47,8 @@ export function App() {
       if (etapa === "competencias") return "competencias";
       if (etapa === "projetos-academicos") return "projetos-academicos";
       if (etapa === "selecionar-modelo") return "selecionar-modelo";
+      if (etapa === "termos-de-uso") return "termos-de-uso";
+      if (etapa === "politica-de-privacidade") return "politica-de-privacidade";
       if (etapa === "validacao-curriculo") return "validacao-curriculo";
       if (etapa === "acesso") return "acesso";
     }
@@ -56,6 +62,70 @@ export function App() {
     }
     return "acesso";
   });
+
+  /**
+   * Abre uma página pública de documento e registra a etapa na URL.
+   *
+   * Como faz: atualiza somente o parâmetro `etapa` do histórico local e o
+   * estado da rota, preservando o mecanismo de navegação leve já usado no App.
+   *
+   * Qual finalidade atende: permite que os documentos legais sejam acessíveis
+   * por links internos e por URL sem introduzir uma biblioteca de rotas.
+   */
+  function abrirDocumentoPublico(
+    rota: "termos-de-uso" | "politica-de-privacidade",
+  ): void {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("etapa", rota);
+      url.searchParams.delete("aba");
+      window.history.pushState({}, "", url.toString());
+    }
+    setRotaAtiva(rota);
+  }
+
+  /**
+   * Retorna à página inicial e remove parâmetros de navegação temporários.
+   *
+   * Como faz: limpa os parâmetros usados pelo App no endereço atual antes de
+   * atualizar o estado local que determina a composição exibida.
+   *
+   * Qual finalidade atende: garante que os documentos públicos tenham um
+   * caminho de retorno previsível, inclusive para navegação por teclado.
+   */
+  function voltarAoInicio(): void {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("etapa");
+      url.searchParams.delete("aba");
+      window.history.pushState({}, "", url.toString());
+    }
+    setRotaAtiva("inicio");
+  }
+
+  /**
+   * Abre o acesso da conta já selecionando a aba solicitada.
+   *
+   * Como faz: sincroniza o estado local da aba com os parâmetros da URL antes
+   * de trocar a composição ativa para a página de acesso.
+   *
+   * Qual finalidade atende: reutiliza a mesma entrada de autenticação nos
+   * cabeçalhos das páginas públicas sem duplicar a regra de navegação.
+   */
+  function abrirAcesso(aba: "acesso" | "cadastro"): void {
+    setAbaAcesso(aba);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("etapa", "acesso");
+      if (aba === "cadastro") {
+        url.searchParams.set("aba", "cadastro");
+      } else {
+        url.searchParams.delete("aba");
+      }
+      window.history.pushState({}, "", url.toString());
+    }
+    setRotaAtiva("acesso");
+  }
 
   if (rotaAtiva === "dados-pessoais") {
     return <PaginaDadosPessoais />;
@@ -122,19 +192,35 @@ export function App() {
     return <PaginaValidacaoCurriculo />;
   }
 
+  if (rotaAtiva === "termos-de-uso") {
+    return (
+      <PaginaTermosDeUso
+        onNavegarCadastro={() => abrirAcesso("cadastro")}
+        onNavegarInicio={voltarAoInicio}
+        onNavegarLogin={() => abrirAcesso("acesso")}
+        onNavegarPoliticaDePrivacidade={() =>
+          abrirDocumentoPublico("politica-de-privacidade")
+        }
+      />
+    );
+  }
+
+  if (rotaAtiva === "politica-de-privacidade") {
+    return (
+      <PaginaPoliticaDePrivacidade
+        onNavegarCadastro={() => abrirAcesso("cadastro")}
+        onNavegarInicio={voltarAoInicio}
+        onNavegarLogin={() => abrirAcesso("acesso")}
+        onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
+      />
+    );
+  }
+
   if (rotaAtiva === "acesso") {
     return (
       <PaginaAcessoEstudante
         abaInicial={abaAcesso}
-        onVoltarInicio={() => {
-          if (typeof window !== "undefined") {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("etapa");
-            url.searchParams.delete("aba");
-            window.history.pushState({}, "", url.toString());
-          }
-          setRotaAtiva("inicio");
-        }}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -142,27 +228,13 @@ export function App() {
   return (
     <PaginaInicio
       onCriarCurriculo={() => setRotaAtiva("dados-pessoais")}
-      onNavegarCadastro={() => {
-        setAbaAcesso("cadastro");
-        if (typeof window !== "undefined") {
-          const url = new URL(window.location.href);
-          url.searchParams.set("etapa", "acesso");
-          url.searchParams.set("aba", "cadastro");
-          window.history.pushState({}, "", url.toString());
-        }
-        setRotaAtiva("acesso");
-      }}
-      onNavegarLogin={() => {
-        setAbaAcesso("acesso");
-        if (typeof window !== "undefined") {
-          const url = new URL(window.location.href);
-          url.searchParams.set("etapa", "acesso");
-          url.searchParams.delete("aba");
-          window.history.pushState({}, "", url.toString());
-        }
-        setRotaAtiva("acesso");
-      }}
-      onNavegarInicio={() => setRotaAtiva("inicio")}
+      onNavegarCadastro={() => abrirAcesso("cadastro")}
+      onNavegarLogin={() => abrirAcesso("acesso")}
+      onNavegarInicio={voltarAoInicio}
+      onNavegarPoliticaDePrivacidade={() =>
+        abrirDocumentoPublico("politica-de-privacidade")
+      }
+      onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
     />
   );
 }
