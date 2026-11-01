@@ -7,6 +7,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 
+@unittest.skipUnless(
+    os.environ.get("DATABASE_URL"),
+    "Requer DATABASE_URL fornecida pelo executor de integração PostgreSQL.",
+)
 class PostgreSqlNixIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
     """Confirma o contrato de conexão do PostgreSQL oferecido pelo shell Nix.
 

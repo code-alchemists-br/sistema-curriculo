@@ -11,7 +11,6 @@ antes das próximas alterações lineares do schema.
 
 from typing import Sequence, Union
 
-
 revision: str = "20261101_0017_unificar_ramos"
 down_revision: Union[str, Sequence[str], None] = (
     "20261023_0016",
