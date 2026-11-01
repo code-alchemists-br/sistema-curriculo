@@ -24,7 +24,8 @@ export interface FormularioAcessoProps {
  *
  * O componente mantém os valores no estado local, valida a experiência antes
  * do envio e usa o cliente injetado para isolar transporte. Ele existe para
- * informar o resultado de 204 sem inventar sessão, token ou navegação protegida.
+ * comunicar o início da sessão criada pelo backend sem acoplar a tela a token
+ * ou a uma rota protegida específica.
  */
 export function FormularioAcesso({
   cliente,
@@ -54,8 +55,8 @@ export function FormularioAcesso({
    * Confirma credenciais e comunica somente o nível de sucesso oferecido pela API.
    *
    * O manipulador valida antes de delegar ao cliente e preserva valores em erros;
-   * após 204 ele limpa a senha e informa que não há sessão criada. Ele existe para
-   * representar precisamente o contrato atual de acesso do backend.
+   * após 204 ele limpa a senha e informa que a sessão foi iniciada. Ele existe
+   * para representar precisamente o contrato de acesso persistido pelo backend.
    */
   async function enviarAcesso(
     evento: FormEvent<HTMLFormElement>,
@@ -74,7 +75,7 @@ export function FormularioAcesso({
     try {
       await cliente.acessar({ email: email.trim(), senha });
       setSenha("");
-      setMensagem("Credenciais confirmadas. Uma sessão ainda não foi criada.");
+      setMensagem("Acesso realizado. Sua sessão foi iniciada.");
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaAcesso(
