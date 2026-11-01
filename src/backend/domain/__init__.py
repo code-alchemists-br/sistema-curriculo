@@ -7,6 +7,15 @@ futuros dependam do domínio, e não o contrário.
 """
 
 # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
+# Proveniência: docs/adequacao_semantica_ia.md#papel-da-ia.
+from backend.domain.adequacao_semantica import (
+    AcaoAdequacaoSemantica,
+    ItemSelecionadoAdequacao,
+    PropostaAdequacaoCurriculoVaga,
+    SolicitacaoAdequacaoCurriculoVaga,
+    SugestaoAdequacao,
+    TipoSugestaoAdequacao,
+)
 from backend.domain.associacao_curriculo_vaga import (
     AssociacaoCurriculoVaga,
     ClassificacaoAssociacao,
@@ -143,6 +152,13 @@ from backend.domain.value_objects import (
 __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261011-023511-associacao-curriculo-vaga-v002.md#v002
     "AssociacaoCurriculoVaga",
+    # Proveniência: docs/adequacao_semantica_ia.md#papel-da-ia.
+    "AcaoAdequacaoSemantica",
+    "ItemSelecionadoAdequacao",
+    "PropostaAdequacaoCurriculoVaga",
+    "SolicitacaoAdequacaoCurriculoVaga",
+    "SugestaoAdequacao",
+    "TipoSugestaoAdequacao",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "CARGA_HORARIA_MAXIMA_CURSO",
     "CARGA_HORARIA_MINIMA_CURSO",
