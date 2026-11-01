@@ -194,4 +194,26 @@ describe("FormularioCertificacao", () => {
       screen.getByRole("button", { name: "Salvar certificação" }),
     ).toBeEnabled();
   });
+
+  it("adiciona e remove entradas de certificação dinamicamente", async () => {
+    const usuario = userEvent.setup();
+    render(<FormularioCertificacao />);
+
+    expect(screen.getAllByLabelText("Nome da certificação")).toHaveLength(1);
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar certificação" }),
+    );
+
+    expect(screen.getAllByLabelText("Nome da certificação")).toHaveLength(2);
+    expect(
+      screen.getByRole("button", { name: "Remover certificação 2" }),
+    ).toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Remover certificação 2" }),
+    );
+
+    expect(screen.getAllByLabelText("Nome da certificação")).toHaveLength(1);
+  });
 });

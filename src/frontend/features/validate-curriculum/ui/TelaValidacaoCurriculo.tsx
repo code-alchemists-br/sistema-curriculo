@@ -10,6 +10,7 @@ export interface TelaValidacaoCurriculoProps {
   onVisualizarPreview?: () => void;
   onExportarPdf?: () => void;
   onConfirmarCurriculo?: () => void;
+  onVoltar?: () => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export function TelaValidacaoCurriculo({
   onVisualizarPreview,
   onExportarPdf,
   onConfirmarCurriculo,
+  onVoltar,
 }: TelaValidacaoCurriculoProps) {
   const resultado = validarCurriculo(dados);
 
@@ -91,14 +93,26 @@ export function TelaValidacaoCurriculo({
       </ul>
 
       <div className="tela-validacao-curriculo__acoes">
-        <button
-          className="btn-proximo"
-          disabled={!resultado.podeExportarPdf}
-          onClick={onConfirmarCurriculo}
-          type="button"
-        >
-          Confirmar currículo
-        </button>
+        <div className="botoes-navegacao">
+          {onVoltar && (
+            <button
+              aria-label="Voltar para a etapa anterior"
+              className="btn-voltar"
+              onClick={onVoltar}
+              type="button"
+            >
+              Voltar
+            </button>
+          )}
+          <button
+            className="btn-proximo"
+            disabled={!resultado.podeExportarPdf}
+            onClick={onConfirmarCurriculo}
+            type="button"
+          >
+            Confirmar currículo
+          </button>
+        </div>
 
         <div className="tela-validacao-curriculo__acoes-secundarias">
           <button

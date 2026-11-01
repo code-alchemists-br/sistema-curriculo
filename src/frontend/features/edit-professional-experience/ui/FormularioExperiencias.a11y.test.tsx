@@ -132,10 +132,14 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     });
     const campoCargo = screen.getByRole("textbox", { name: /cargo/i });
     const campoInicio = screen.getByLabelText(/início/i);
+    const campoDescricao = screen.getByRole("textbox", {
+      name: /descrição das atividades/i,
+    });
 
     expect(campoEmpresa).toHaveAttribute("aria-invalid", "true");
     expect(campoCargo).toHaveAttribute("aria-invalid", "true");
     expect(campoInicio).toHaveAttribute("aria-invalid", "true");
+    expect(campoDescricao).toHaveAttribute("aria-invalid", "true");
 
     const idDescritoEmpresa = campoEmpresa.getAttribute("aria-describedby");
     expect(idDescritoEmpresa).toBeTruthy();
@@ -151,6 +155,13 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     expect(idDescritoInicio).toBeTruthy();
     const elementoErroInicio = document.getElementById(idDescritoInicio!);
     expect(elementoErroInicio).toHaveTextContent("Informe a data de início.");
+
+    const idDescritoDescricao = campoDescricao.getAttribute("aria-describedby");
+    expect(idDescritoDescricao).toBeTruthy();
+    const elementoErroDescricao = document.getElementById(idDescritoDescricao!);
+    expect(elementoErroDescricao).toHaveTextContent(
+      "Informe a descrição das atividades.",
+    );
   });
 
   /**
@@ -187,6 +198,10 @@ describe("FormularioExperiencias — Testes de Acessibilidade (a11y)", () => {
     );
     await usuario.type(screen.getByLabelText(/início/i), "2023-01-01");
     await usuario.type(screen.getByLabelText(/fim/i), "2024-05-01");
+    await usuario.type(
+      screen.getByRole("textbox", { name: /descrição das atividades/i }),
+      "Desenvolvimento de interfaces acessíveis.",
+    );
 
     await usuario.click(
       screen.getByRole("button", { name: /salvar experiências/i }),

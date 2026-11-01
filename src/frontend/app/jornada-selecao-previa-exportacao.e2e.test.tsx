@@ -217,11 +217,8 @@ async function criarDadosPessoais(
   usuario: ReturnType<typeof userEvent.setup>,
   nome: string,
 ): Promise<void> {
-  await usuario.type(screen.getByLabelText("Nome completo"), nome);
-  await usuario.type(
-    screen.getByLabelText("Endereço completo"),
-    "Rua das Flores, 10",
-  );
+  await usuario.type(screen.getByLabelText("Nome Completo"), nome);
+  await usuario.type(screen.getByLabelText("Endereço"), "Rua das Flores, 10");
   await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
   await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
   await usuario.click(
@@ -277,7 +274,7 @@ describe("Jornada E2E: criação, seleção, prévia e exportação", () => {
     await usuario.click(
       screen.getByRole("button", { name: "Editar dados pessoais" }),
     );
-    const nome = screen.getByLabelText("Nome completo");
+    const nome = screen.getByLabelText("Nome Completo");
     await usuario.clear(nome);
     await usuario.type(nome, "Ana Souza Silva");
     await usuario.click(

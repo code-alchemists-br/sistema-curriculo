@@ -49,3 +49,18 @@ export function criarClienteProjetosAcademicosIndisponivel(): ClienteProjetosAca
     },
   };
 }
+
+/**
+ * Cria um cliente em memória que armazena os dados localmente e resolve com sucesso,
+ * permitindo testar o fluxo de cadastro de projetos acadêmicos no frontend.
+ */
+export function criarClienteProjetosAcademicosEmMemoria(
+  aoCadastrar?: (entrada: ProjetoAcademicoEntrada) => void,
+): ClienteProjetosAcademicos {
+  return {
+    async cadastrar(entrada: ProjetoAcademicoEntrada): Promise<void> {
+      aoCadastrar?.(entrada);
+      return Promise.resolve();
+    },
+  };
+}

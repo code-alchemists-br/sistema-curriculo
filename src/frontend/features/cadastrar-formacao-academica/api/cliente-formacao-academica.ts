@@ -21,6 +21,7 @@ export interface CadastroFormacaoAcademicaEntrada {
   dataInicio: string;
   dataFim?: string;
   status: StatusFormacaoAcademica;
+  curriculoLattes?: string;
 }
 
 /** Enumera as falhas que a interface consegue comunicar sem expor transporte. */
@@ -51,6 +52,21 @@ export function criarClienteFormacaoAcademicaIndisponivel(): ClienteFormacaoAcad
   return {
     async cadastrar() {
       throw new FalhaFormacaoAcademica("indisponivel");
+    },
+  };
+}
+
+/**
+ * Cria um cliente em memória que armazena os dados localmente e resolve com sucesso,
+ * permitindo testar o fluxo de cadastro de formação acadêmica no frontend.
+ */
+export function criarClienteFormacaoAcademicaEmMemoria(
+  aoCadastrar?: (entrada: CadastroFormacaoAcademicaEntrada) => void,
+): ClienteFormacaoAcademica {
+  return {
+    async cadastrar(entrada: CadastroFormacaoAcademicaEntrada): Promise<void> {
+      aoCadastrar?.(entrada);
+      return Promise.resolve();
     },
   };
 }

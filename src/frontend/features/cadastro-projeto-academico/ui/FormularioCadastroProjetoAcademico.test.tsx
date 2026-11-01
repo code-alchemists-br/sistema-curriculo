@@ -63,6 +63,10 @@ describe("FormularioCadastroProjetoAcademico", () => {
       screen.getByLabelText("Descrição"),
       "Aplicação para organizar currículos.",
     );
+    await usuario.type(
+      screen.getByLabelText("Tecnologias utilizadas"),
+      "React e TypeScript",
+    );
     await usuario.click(
       screen.getByRole("button", { name: "Cadastrar projeto" }),
     );
@@ -72,6 +76,35 @@ describe("FormularioCadastroProjetoAcademico", () => {
     );
     expect(screen.getByLabelText("Título do projeto")).toHaveValue("");
     expect(screen.getByLabelText("Descrição")).toHaveValue("");
+    expect(screen.getByLabelText("Tecnologias utilizadas")).toHaveValue("");
+  });
+
+  it("exibe erro acessível e não cadastra ao deixar tecnologias em branco", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn(),
+    };
+
+    render(<FormularioCadastroProjetoAcademico cliente={cliente} />);
+
+    await usuario.type(
+      screen.getByLabelText("Título do projeto"),
+      "Sistema Currículo",
+    );
+    await usuario.type(
+      screen.getByLabelText("Descrição"),
+      "Aplicação para organizar currículos.",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Cadastrar projeto" }),
+    );
+
+    const inputTecnologias = screen.getByLabelText("Tecnologias utilizadas");
+    expect(inputTecnologias).toHaveAttribute("aria-invalid", "true");
+    expect(
+      await screen.findByText("Informe as tecnologias utilizadas no projeto."),
+    ).toBeInTheDocument();
+    expect(cliente.cadastrar).not.toHaveBeenCalled();
   });
 
   it("exibe mensagem de vazio ao clicar em 'Não possuo projetos acadêmicos' e permite restaurar os campos", async () => {
@@ -121,6 +154,103 @@ describe("FormularioCadastroProjetoAcademico", () => {
       screen.getByRole("button", { name: "Cadastrar projeto" }),
     );
 
+    expect(aoAvancar).toHaveBeenCalledTimes(1);
+  });
+
+  it("adiciona uma nova entrada de projeto ao clicar no botão", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn(),
+    };
+
+    render(<FormularioCadastroProjetoAcademico cliente={cliente} />);
+
+    expect(
+      screen.getByRole("group", { name: "Projeto acadêmico 1" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Projeto acadêmico 2" }),
+    ).not.toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar projeto acadêmico" }),
+    );
+
+    expect(
+      screen.getByRole("group", { name: "Projeto acadêmico 2" }),
+    ).toBeInTheDocument();
+  });
+
+  it("remove uma entrada de projeto ao clicar no botão de remoção", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn(),
+    };
+
+    render(<FormularioCadastroProjetoAcademico cliente={cliente} />);
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar projeto acadêmico" }),
+    );
+    expect(
+      screen.getByRole("group", { name: "Projeto acadêmico 2" }),
+    ).toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Remover Projeto acadêmico 2" }),
+    );
+
+    expect(
+      screen.queryByRole("group", { name: "Projeto acadêmico 2" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("envia múltiplos projetos chamando o cliente para cada item", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn().mockResolvedValue(undefined),
+    };
+    const aoAvancar = vi.fn();
+
+    render(
+      <FormularioCadastroProjetoAcademico
+        aoAvancar={aoAvancar}
+        cliente={cliente}
+      />,
+    );
+
+    await usuario.type(
+      screen.getByLabelText("Título do projeto"),
+      "Sistema de Biblioteca",
+    );
+    await usuario.type(
+      screen.getByLabelText("Descrição"),
+      "Controle de empréstimos acadêmicos.",
+    );
+    await usuario.type(
+      screen.getByLabelText("Tecnologias utilizadas"),
+      "Java e Spring",
+    );
+
+    await usuario.click(
+      screen.getByRole("button", { name: "+ Adicionar projeto acadêmico" }),
+    );
+
+    const camposTitulo = screen.getAllByLabelText("Título do projeto");
+    const camposDescricao = screen.getAllByLabelText("Descrição");
+    const camposTecnologias = screen.getAllByLabelText(
+      "Tecnologias utilizadas",
+    );
+
+    await usuario.type(camposTitulo[1], "App de Gestão");
+    await usuario.type(camposDescricao[1], "App móvel de estágio.");
+    await usuario.type(camposTecnologias[1], "React Native");
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Cadastrar projeto" }),
+    );
+
+    expect(cliente.cadastrar).toHaveBeenCalledTimes(2);
     expect(aoAvancar).toHaveBeenCalledTimes(1);
   });
 });
