@@ -59,6 +59,14 @@ class PostgreSqlNixIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
         }
         primeira = await solicitar_asgi(app, "POST", "/estudantes", dados=dados)
         repetida = await solicitar_asgi(app, "POST", "/estudantes", dados=dados)
+        acesso = await solicitar_asgi(
+            app,
+            "POST",
+            "/acessos",
+            dados={"email": dados["email"], "senha": dados["senha"]},
+        )
 
         self.assertEqual(primeira.status, 201)
         self.assertEqual(repetida.status, 409)
+        self.assertEqual(acesso.status, 204)
+        self.assertTrue(acesso.cabecalhos("set-cookie"))
