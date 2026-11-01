@@ -12,17 +12,27 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from backend.api.factory import create_app
+from backend.application.ports import GeradorUsuarioId
 from backend.application.saude import VerificadorPersistencia
 from backend.configuracao_logging import configurar_logging
+from backend.infrastructure.identificadores.geradores import GeradorUsuarioIdUuid4
+from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
+    CadastroEstudanteSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
 )
 from backend.infrastructure.security.autenticador_sessao_indisponivel import (
     AutenticadorSessaoIndisponivel,
 )
+from backend.infrastructure.security.senhas import DerivadorSenhaScrypt
 
 configurar_logging()
 
@@ -47,6 +57,26 @@ def _criar_engine_persistencia(database_url: str | None) -> AsyncEngine | None:
     )
 
 
+def _criar_cadastrar_estudante(
+    engine: AsyncEngine | None,
+    gerador_usuario_id: GeradorUsuarioId | None = None,
+) -> CadastroEstudanteSqlAlchemy | None:
+    """Compõe o executor transacional de cadastro quando há persistência.
+
+    A função cria uma fábrica de sessões assíncronas e combina o adapter de
+    transação com o gerador de UUID da infraestrutura; sem engine, mantém a
+    ausência explícita tratada pela API. Ela existe para habilitar o cadastro
+    real sem introduzir dependências de banco no controller ou na Application.
+    """
+    if engine is None:
+        return None
+    sessoes = async_sessionmaker(engine, expire_on_commit=False)
+    return CadastroEstudanteSqlAlchemy(
+        sessoes,
+        gerador_usuario_id or GeradorUsuarioIdUuid4(),
+    )
+
+
 _engine_persistencia = _criar_engine_persistencia(
     os.environ.get("DATABASE_URL")
 )
@@ -55,6 +85,8 @@ _verificador_persistencia: VerificadorPersistencia | None = (
     if _engine_persistencia is not None
     else None
 )
+_cadastrar_estudante = _criar_cadastrar_estudante(_engine_persistencia)
+_derivador_senha = DerivadorSenhaScrypt() if _cadastrar_estudante is not None else None
 
 
 @asynccontextmanager
@@ -73,6 +105,8 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
 
 # Proveniência: decision-analysis prompts/backend/20260913-fundamentos-fastapi-v001.md#v001
 app = create_app(
+    cadastrar_estudante=_cadastrar_estudante,
+    derivador_senha=_derivador_senha,
     autenticador_sessao=AutenticadorSessaoIndisponivel(),
     verificador_persistencia=_verificador_persistencia,
     lifespan=_ciclo_vida_aplicacao,

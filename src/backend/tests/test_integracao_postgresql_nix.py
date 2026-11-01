@@ -6,6 +6,8 @@ import unittest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from backend.tests.fixtures.credenciais_sessao import solicitar_asgi
+
 
 @unittest.skipUnless(
     os.environ.get("DATABASE_URL"),
@@ -37,3 +39,26 @@ class PostgreSqlNixIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
             database_name = await connection.scalar(text("SELECT current_database()"))
 
         self.assertEqual(database_name, "sistema_curriculo_test")
+
+    async def test_aplicacao_composta_cadastra_conta_e_recusa_email_duplicado(
+        self,
+    ) -> None:
+        """Exercita o cadastro da aplicação real contra PostgreSQL migrado.
+
+        O cenário importa a aplicação somente após o executor definir a URL,
+        envia duas requisições HTTP ASGI pela rota pública e repete o e-mail.
+        Ele existe para impedir que o cadastro volte a receber dependências
+        ausentes ou responda sucesso sem persistir a conta.
+        """
+        from backend.main import app
+
+        dados = {
+            "nome": "Ana Integração",
+            "email": "ana.integracao@example.test",
+            "senha": "Senha-Integracao-123",
+        }
+        primeira = await solicitar_asgi(app, "POST", "/estudantes", dados=dados)
+        repetida = await solicitar_asgi(app, "POST", "/estudantes", dados=dados)
+
+        self.assertEqual(primeira.status, 201)
+        self.assertEqual(repetida.status, 409)

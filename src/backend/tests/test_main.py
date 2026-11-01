@@ -3,7 +3,11 @@
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
-from backend.main import _ciclo_vida_aplicacao, _criar_engine_persistencia
+from backend.main import (
+    _ciclo_vida_aplicacao,
+    _criar_cadastrar_estudante,
+    _criar_engine_persistencia,
+)
 
 
 class ComposicaoAplicacaoTestCase(unittest.TestCase):
@@ -45,6 +49,35 @@ class ComposicaoAplicacaoTestCase(unittest.TestCase):
             criar_engine.call_args.kwargs["connect_args"],
             {"connect_timeout": 2},
         )
+
+    def test_compoe_cadastro_transacional_somente_com_engine_de_persistencia(
+        self,
+    ) -> None:
+        """Injeta sessão e gerador no adapter somente quando há banco configurado.
+
+        O cenário substitui a fábrica SQLAlchemy e o adapter para conferir as
+        dependências compostas sem abrir conexão. Ele existe para impedir que a
+        aplicação executada volte a expor cadastro indisponível apesar de uma
+        `DATABASE_URL` válida.
+        """
+        engine = Mock()
+        gerador = Mock()
+        sessoes = Mock()
+        executor = Mock()
+
+        with (
+            patch("backend.main.async_sessionmaker", return_value=sessoes) as criar_sessoes,
+            patch(
+                "backend.main.CadastroEstudanteSqlAlchemy",
+                return_value=executor,
+            ) as criar_executor,
+        ):
+            resultado = _criar_cadastrar_estudante(engine, gerador)
+
+        self.assertIs(resultado, executor)
+        criar_sessoes.assert_called_once_with(engine, expire_on_commit=False)
+        criar_executor.assert_called_once_with(sessoes, gerador)
+        self.assertIsNone(_criar_cadastrar_estudante(None))
 
 
 class CicloVidaAplicacaoTestCase(unittest.IsolatedAsyncioTestCase):

@@ -59,4 +59,6 @@ export DATABASE_URL="postgresql+psycopg://postgres@/sistema_curriculo_test?host=
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}src"
 export PYTHONDONTWRITEBYTECODE=1
 
+alembic upgrade head
+
 "$@"
