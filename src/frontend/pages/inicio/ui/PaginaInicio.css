@@ -3,3 +3,40 @@
   background: #050505;
   color: #ffffff;
 }
+
+.pagina-inicio__rodape {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #050505;
+}
+
+.pagina-inicio__rodape nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pagina-inicio__rodape button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #c7c7c7;
+  cursor: pointer;
+  font:
+    0.875rem "Poppins",
+    sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.pagina-inicio__rodape button:hover {
+  color: #ffffff;
+}
+
+.pagina-inicio__rodape button:focus-visible {
+  outline: 3px solid #ff8a50;
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}

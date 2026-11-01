@@ -6,7 +6,7 @@ import { App } from "./App";
 
 afterEach(() => {
   cleanup();
-  window.history.pushState({}, "", "/");
+  window.history.replaceState({}, "", "/");
 });
 
 describe("App", () => {
@@ -22,6 +22,28 @@ describe("App", () => {
 
     expect(
       screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
+    ).toBeInTheDocument();
+  });
+
+  it("navega entre os documentos públicos pela URL e pelos controles da tela", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/?etapa=termos-de-uso");
+
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Termos de Uso" }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Ler Política de Privacidade" }),
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Política de Privacidade",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -48,7 +70,6 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Formação acadêmica" }),
     ).toBeInTheDocument();
 
-    // Clica no botão Voltar para retornar à etapa 1 (Dados Pessoais)
     await user.click(
       screen.getByRole("button", { name: "Voltar para a etapa anterior" }),
     );
@@ -67,7 +88,6 @@ describe("App", () => {
       "ricardo@fatec.sp.gov.br",
     );
 
-    // Avança novamente para a etapa 2
     await user.click(
       screen.getByRole("button", { name: "Salvar dados pessoais" }),
     );
