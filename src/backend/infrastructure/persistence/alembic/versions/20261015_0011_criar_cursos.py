@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
-revision = "20261015_0011"
+revision = "20261015_0011_cursos"
 down_revision = "20261015_0010"
 branch_labels = None
 depends_on = None
