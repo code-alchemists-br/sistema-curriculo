@@ -174,6 +174,20 @@ nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
 
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
+### Testes de integração com PostgreSQL
+
+O ambiente `tests` também disponibiliza PostgreSQL para cenários de integração.
+Use o executor abaixo para iniciar um cluster efêmero, criar um banco isolado e
+expor uma `DATABASE_URL` somente durante o comando de teste:
+
+```bash
+nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh \
+  python -m unittest backend.tests.test_integracao_postgresql_nix
+```
+
+O executor encerra o servidor e remove os dados temporários ao final, inclusive
+quando o teste falha. Não use essa URL para desenvolvimento nem produção.
+
 Por exemplo, caso o ambiente `backend` inclua o `python3`, não é necessário que o Python esteja instalado globalmente no sistema. Enquanto o ambiente Nix estiver ativo, o comando estará disponível.
 
 Para verificar a versão instalada no ambiente:
