@@ -233,6 +233,7 @@ precisar delas; os exemplos locais não devem ser reutilizados em produção.
 | `LOG_ACTOR_HMAC_KEY` | Backend | Não | Chave de pelo menos 32 bytes para gerar referências estáveis de atores nos logs. Sem ela, o processo usa uma chave aleatória temporária. |
 | `DATABASE_URL` | Backend e Alembic | Não para iniciar a API; sim para executar migrations | URL de um PostgreSQL local. Sem ela, `/ready` retorna HTTP 503. |
 | `VITE_API_URL` | Frontend | Sim para chamadas à API | URL base pública da API, por exemplo `http://127.0.0.1:8000`. O Vite disponibiliza variáveis `VITE_*` no código do navegador; nunca coloque senhas, tokens ou outras credenciais nelas. |
+| `CORS_ALLOWED_ORIGINS` | Backend | Não | Lista de origens separadas por vírgula autorizadas a chamar a API pelo navegador. Sem configuração, permite somente `http://127.0.0.1:5173` e `http://localhost:5173` para o Vite local. |
 
 Credenciais de banco devem usar uma conta local de desenvolvimento com acesso
 somente ao banco de desenvolvimento. Se a senha contiver caracteres especiais

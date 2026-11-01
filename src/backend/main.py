@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -35,6 +36,45 @@ from backend.infrastructure.security.autenticador_sessao_indisponivel import (
 from backend.infrastructure.security.senhas import DerivadorSenhaScrypt
 
 configurar_logging()
+
+ORIGENS_CORS_DESENVOLVIMENTO = (
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+)
+
+
+def _obter_origens_cors(valor_configurado: str | None) -> tuple[str, ...]:
+    """Define as origens permitidas para chamadas HTTP feitas pelo navegador.
+
+    A função usa as duas origens locais do Vite quando a variável não foi
+    definida e, quando foi, divide sua lista separada por vírgulas removendo
+    espaços e valores vazios. Ela existe para liberar o desenvolvimento local
+    sem tornar CORS aberto e permitir que cada ambiente publique suas origens.
+    """
+    if not valor_configurado:
+        return ORIGENS_CORS_DESENVOLVIMENTO
+    return tuple(
+        origem.strip()
+        for origem in valor_configurado.split(",")
+        if origem.strip()
+    )
+
+
+def _configurar_cors(aplicacao: FastAPI, origens: tuple[str, ...]) -> None:
+    """Instala a política CORS que protege e permite o frontend configurado.
+
+    A função registra middleware com credenciais, métodos e cabeçalhos usados
+    pela API, restringindo as origens à lista recebida. Ela existe para que o
+    navegador possa chamar a API de outra porta sem expor a aplicação a todas
+    as origens ou duplicar configuração nos controllers.
+    """
+    aplicacao.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(origens),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type"],
+    )
 
 
 def _criar_engine_persistencia(database_url: str | None) -> AsyncEngine | None:
@@ -111,3 +151,4 @@ app = create_app(
     verificador_persistencia=_verificador_persistencia,
     lifespan=_ciclo_vida_aplicacao,
 )
+_configurar_cors(app, _obter_origens_cors(os.environ.get("CORS_ALLOWED_ORIGINS")))
