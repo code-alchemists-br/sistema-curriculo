@@ -174,6 +174,38 @@ nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
 
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
+### Testes de integração com PostgreSQL
+
+O ambiente `tests` também disponibiliza PostgreSQL para cenários de integração.
+Use o executor abaixo para iniciar um cluster efêmero, criar um banco isolado e
+expor uma `DATABASE_URL` somente durante o comando de teste:
+
+```bash
+nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh \
+  python -m unittest backend.tests.test_integracao_postgresql_nix
+```
+
+O executor encerra o servidor e remove os dados temporários ao final, inclusive
+quando o teste falha. Não use essa URL para desenvolvimento nem produção.
+
+### PostgreSQL persistente para E2E humano
+
+Para repetir cenários manualmente no navegador, use o gerenciador de cluster
+persistente também pelo ambiente `tests`. Escolha um diretório fora do
+repositório e defina-o explicitamente antes de executar os comandos:
+
+```bash
+export POSTGRES_E2E_STATE_DIR="/caminho/local/sistema-curriculo-e2e"
+nix develop .#tests --command ./scripts/postgres-e2e iniciar
+nix develop .#tests --command ./scripts/postgres-e2e status
+```
+
+O comando `iniciar` preserva o banco existente e aplica migrations. Para voltar
+ao estado vazio, execute `nix develop .#tests --command ./scripts/postgres-e2e
+reset`; ele recria somente o banco local `sistema_curriculo_e2e`. Ao encerrar a
+sessão humana, use `nix develop .#tests --command ./scripts/postgres-e2e parar`.
+O diretório do estado não deve apontar para dados de desenvolvimento ou produção.
+
 Por exemplo, caso o ambiente `backend` inclua o `python3`, não é necessário que o Python esteja instalado globalmente no sistema. Enquanto o ambiente Nix estiver ativo, o comando estará disponível.
 
 Para verificar a versão instalada no ambiente:
