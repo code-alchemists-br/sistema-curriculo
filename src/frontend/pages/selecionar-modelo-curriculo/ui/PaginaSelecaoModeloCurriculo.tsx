@@ -17,6 +17,8 @@ export interface PaginaSelecaoModeloCurriculoProps {
   modeloInicial?: ModeloApresentacaoCurriculo;
   /** Ação que a composição da rota usa para associar o modelo ao currículo. */
   aoConfirmar: (modelo: ModeloApresentacaoCurriculo) => void;
+  /** Ação para retornar à etapa anterior. */
+  onVoltar?: () => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export interface PaginaSelecaoModeloCurriculoProps {
 export function PaginaSelecaoModeloCurriculo({
   modeloInicial = "classico",
   aoConfirmar,
+  onVoltar,
 }: PaginaSelecaoModeloCurriculoProps) {
   const [objetivo, setObjetivo] = useState<ObjetivoCurriculo>("outro");
   const [modeloSelecionado, setModeloSelecionado] =
@@ -44,8 +47,8 @@ export function PaginaSelecaoModeloCurriculo({
   return (
     <LayoutCadastroCurriculo
       subtitulo="Seleção de Modelo"
-      etapaAtual={7}
-      totalEtapas={8}
+      etapaAtual={8}
+      totalEtapas={9}
       progressoEtapaAtual={modeloSelecionado ? 100 : 0}
     >
       <section
@@ -92,14 +95,24 @@ export function PaginaSelecaoModeloCurriculo({
           onSelecionarModelo={setModeloSelecionado}
         />
 
-        <button
-          aria-label="Continuar com o modelo selecionado"
-          className="btn-proximo"
-          onClick={() => aoConfirmar(modeloSelecionado)}
-          type="button"
-        >
-          Próximo
-        </button>
+        <div className="botoes-navegacao">
+          <button
+            aria-label="Voltar para a etapa anterior"
+            className="btn-voltar"
+            onClick={onVoltar}
+            type="button"
+          >
+            Voltar
+          </button>
+          <button
+            aria-label="Continuar com o modelo selecionado"
+            className="btn-proximo"
+            onClick={() => aoConfirmar(modeloSelecionado)}
+            type="button"
+          >
+            Próximo
+          </button>
+        </div>
       </section>
     </LayoutCadastroCurriculo>
   );

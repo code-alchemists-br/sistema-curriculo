@@ -89,6 +89,9 @@ describe("FormularioExperiencias", () => {
     expect(screen.getByText("Informe o nome da empresa.")).toBeInTheDocument();
     expect(screen.getByText("Informe o cargo exercido.")).toBeInTheDocument();
     expect(screen.getByText("Informe a data de início.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Informe a descrição das atividades."),
+    ).toBeInTheDocument();
   });
 
   it("chama onSalvar com experiências ordenadas quando válidas", async () => {

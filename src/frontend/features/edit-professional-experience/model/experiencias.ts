@@ -14,6 +14,7 @@ export interface ErrosExperiencia {
   cargo?: string;
   inicio?: string;
   fim?: string;
+  descricao?: string;
 }
 
 /** Cria uma entrada de experiência vazia para adição dinâmica. */
@@ -31,8 +32,8 @@ export function criarExperienciaVazia(): Experiencia {
 /**
  * Valida os campos de uma única experiência profissional.
  *
- * A função verifica presença dos campos obrigatórios e ignora o campo Fim
- * quando o checkbox de emprego atual está marcado. Ela existe para oferecer
+ * A função verifica presença dos campos obrigatórios (empresa, cargo, início,
+ * descrição e fim se não for emprego atual). Ela existe para oferecer
  * feedback imediato sem substituir as regras definitivas do backend.
  */
 export function validarExperiencia(experiencia: Experiencia): ErrosExperiencia {
@@ -48,6 +49,10 @@ export function validarExperiencia(experiencia: Experiencia): ErrosExperiencia {
 
   if (experiencia.inicio === "") {
     erros.inicio = "Informe a data de início.";
+  }
+
+  if (experiencia.descricao.trim() === "") {
+    erros.descricao = "Informe a descrição das atividades.";
   }
 
   if (!experiencia.empregoAtual && experiencia.fim === "") {

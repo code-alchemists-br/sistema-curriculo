@@ -65,9 +65,9 @@ describe("validarExperiencia", () => {
     );
   });
 
-  it("aceita descrição vazia sem erro", () => {
+  it("reporta descrição ausente quando vazia", () => {
     const erros = validarExperiencia({ ...experienciaValida, descricao: "" });
-    expect(Object.keys(erros)).toHaveLength(0);
+    expect(erros.descricao).toBe("Informe a descrição das atividades.");
   });
 });
 
