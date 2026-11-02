@@ -10,6 +10,7 @@ from backend.main import (
     _ciclo_vida_aplicacao,
     _configurar_cors,
     _criar_cadastrar_estudante,
+    _criar_configuracao_cookie_sessao,
     _criar_engine_persistencia,
     _obter_origens_cors,
 )
@@ -113,6 +114,19 @@ class ComposicaoAplicacaoTestCase(unittest.TestCase):
         self.assertIs(middleware.cls, CORSMiddleware)
         self.assertEqual(middleware.kwargs["allow_origins"], list(origens))
         self.assertTrue(middleware.kwargs["allow_credentials"])
+
+    def test_cookie_de_sessao_exige_https_salvo_em_desenvolvimento_explicito(self) -> None:
+        """Mantém cookie Host seguro por padrão e libera HTTP apenas por opt-in.
+
+        O cenário exercita valores ausente, inesperado e ``false`` sem alterar
+        o ambiente do processo. Ele existe para evitar que desenvolvimento
+        local torne produção insegura e para permitir testes HTTP deliberados.
+        """
+        self.assertTrue(_criar_configuracao_cookie_sessao(None).seguro)
+        self.assertTrue(_criar_configuracao_cookie_sessao("qualquer").seguro)
+        configuracao_local = _criar_configuracao_cookie_sessao("false")
+        self.assertFalse(configuracao_local.seguro)
+        self.assertEqual(configuracao_local.nome, "sessao")
 
 
 class CicloVidaAplicacaoTestCase(unittest.IsolatedAsyncioTestCase):

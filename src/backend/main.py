@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
@@ -66,6 +67,18 @@ def _obter_origens_cors(valor_configurado: str | None) -> tuple[str, ...]:
         for origem in valor_configurado.split(",")
         if origem.strip()
     )
+
+
+def _criar_configuracao_cookie_sessao(
+    valor_secure: str | None,
+) -> ConfiguracaoCookieSessao:
+    """Configura o cookie de sessão sem reduzir a segurança por padrão.
+
+    A função exige o valor literal ``false`` para liberar cookie HTTP local;
+    qualquer ausência ou outro valor mantém HTTPS obrigatório. Ela existe para
+    distinguir desenvolvimento deliberado da política segura de produção.
+    """
+    return ConfiguracaoCookieSessao(seguro=valor_secure != "false")
 
 
 def _configurar_cors(aplicacao: FastAPI, origens: tuple[str, ...]) -> None:
@@ -197,6 +210,9 @@ _acessar_estudante = _criar_acessar_estudante(
 )
 _criador_sessao = _criar_criador_sessao(_sessoes_persistencia)
 _autenticador_sessao = _criar_autenticador_sessao(_sessoes_persistencia)
+_configuracao_cookie_sessao = _criar_configuracao_cookie_sessao(
+    os.environ.get("SESSION_COOKIE_SECURE")
+)
 
 
 @asynccontextmanager
@@ -222,5 +238,6 @@ app = create_app(
     autenticador_sessao=_autenticador_sessao,
     verificador_persistencia=_verificador_persistencia,
     lifespan=_ciclo_vida_aplicacao,
+    configuracao_cookie=_configuracao_cookie_sessao,
 )
 _configurar_cors(app, _obter_origens_cors(os.environ.get("CORS_ALLOWED_ORIGINS")))
