@@ -30,6 +30,7 @@ from backend.api.certificacao import (
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
 from backend.api.competencia import CadastroCompetenciaExecutor
 from backend.api.competencia import criar_router as criar_router_competencia
+from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 from backend.api.curso import CadastroCursoExecutor
@@ -282,6 +283,7 @@ def create_app(
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
+    configuracao_cookie: ConfiguracaoCookieSessao = ConfiguracaoCookieSessao(),
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -314,14 +316,20 @@ def create_app(
     )
     if autenticador_sessao is not None:
         app.add_middleware(
-            MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao
+            MiddlewareAutenticacaoSessao,
+            autenticador=autenticador_sessao,
+            nome_cookie=configuracao_cookie.nome,
         )
     configurar_documentacao(
         app, ROTAS_PUBLICAS if autenticador_sessao is not None else None
     )
     app.include_router(
         criar_router_cadastro_acesso(
-            cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
+            cadastrar_estudante,
+            acessar_estudante,
+            derivador_senha,
+            criador_sessao,
+            configuracao_cookie,
         ),
         tags=[TAG_CADASTRO_ACESSO],
     )
@@ -431,7 +439,9 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])
-    app.include_router(criar_router_sessoes(revogador_sessao), tags=[TAG_SESSOES])
+    app.include_router(
+        criar_router_sessoes(revogador_sessao, configuracao_cookie), tags=[TAG_SESSOES]
+    )
     app.include_router(
         criar_router_saude(verificadores_saude, verificador_persistencia),
         tags=[TAG_SAUDE],

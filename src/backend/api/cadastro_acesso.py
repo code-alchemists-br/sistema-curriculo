@@ -12,6 +12,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
+from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.application import (
     AcessarEstudanteEntrada,
     CadastrarEstudanteEntrada,
@@ -121,12 +122,15 @@ def criar_router(
     acessar_estudante: AcessoEstudanteExecutor | None,
     derivador_senha: DerivadorSenha | None = None,
     criador_sessao: CriadorSessao | None = None,
+    configuracao_cookie: ConfiguracaoCookieSessao = ConfiguracaoCookieSessao(),
 ) -> APIRouter:
     """Cria rotas HTTP usando casos de uso injetados pela composição externa.
 
     A função deriva senhas apenas no cadastro, converte exceções conhecidas em
     status seguros e registra recusas de login sem credenciais. Ela existe para
-    registrar a API e permitir testes unitários sem banco ou servidor real.
+    registrar a API e permitir testes unitários sem banco ou servidor real. A
+    configuração de cookie é recebida para manter o transporte de sessão
+    seguro em produção e viável no ambiente local explicitamente configurado.
     """
     router = APIRouter()
 
@@ -178,11 +182,11 @@ def criar_router(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha não conferem.") from erro
         token = await criador_sessao.criar(usuario_id)
         resposta.set_cookie(
-            key="__Host-sessao",
+            key=configuracao_cookie.nome,
             value=token,
-            max_age=28_800,
+            max_age=configuracao_cookie.duracao_segundos,
             path="/",
-            secure=True,
+            secure=configuracao_cookie.seguro,
             httponly=True,
             samesite="lax",
         )
