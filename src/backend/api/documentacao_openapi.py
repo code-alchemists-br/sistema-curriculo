@@ -14,6 +14,8 @@ from fastapi.openapi.utils import get_openapi
 
 from backend.api.sessoes import COOKIE_SESSAO
 
+# Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+TAG_ASSOCIACOES_CURRICULO_VAGA = "Associações currículo-vaga"
 TAG_CADASTRO_ACESSO = "Cadastro e acesso"
 TAG_SESSOES = "Sessões"
 TAG_PERFIL_ESTUDANTE = "Perfil do estudante"
@@ -38,6 +40,14 @@ TAG_SAUDE = "Saúde"
 ESQUEMA_SESSAO = "sessaoCookie"
 
 METADADOS_TAGS: list[dict[str, str]] = [
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    {
+        "name": TAG_ASSOCIACOES_CURRICULO_VAGA,
+        "description": (
+            "Listagem paginada das associações entre currículos e vagas do "
+            "estudante autenticado."
+        ),
+    },
     {
         "name": TAG_CADASTRO_ACESSO,
         "description": (

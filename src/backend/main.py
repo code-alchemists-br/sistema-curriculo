@@ -36,6 +36,11 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
 from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
     CadastroEstudanteSqlAlchemy,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_vaga import (
+    ListarAssociacoesCurriculoVagaSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
 )
@@ -63,9 +68,7 @@ def _obter_origens_cors(valor_configurado: str | None) -> tuple[str, ...]:
     if not valor_configurado:
         return ORIGENS_CORS_DESENVOLVIMENTO
     return tuple(
-        origem.strip()
-        for origem in valor_configurado.split(",")
-        if origem.strip()
+        origem.strip() for origem in valor_configurado.split(",") if origem.strip()
     )
 
 
@@ -193,9 +196,7 @@ def _criar_autenticador_sessao(
     )
 
 
-_engine_persistencia = _criar_engine_persistencia(
-    os.environ.get("DATABASE_URL")
-)
+_engine_persistencia = _criar_engine_persistencia(os.environ.get("DATABASE_URL"))
 _verificador_persistencia: VerificadorPersistencia | None = (
     VerificadorPersistenciaSqlalchemy(_engine_persistencia)
     if _engine_persistencia is not None
@@ -203,6 +204,12 @@ _verificador_persistencia: VerificadorPersistencia | None = (
 )
 _cadastrar_estudante = _criar_cadastrar_estudante(_engine_persistencia)
 _sessoes_persistencia = _criar_sessoes_persistencia(_engine_persistencia)
+# Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+_listar_associacoes_curriculo_vaga = (
+    ListarAssociacoesCurriculoVagaSqlAlchemy(_sessoes_persistencia)
+    if _sessoes_persistencia is not None
+    else None
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -229,6 +236,7 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
         if _engine_persistencia is not None:
             await _engine_persistencia.dispose()
 
+
 # Proveniência: decision-analysis prompts/backend/20260913-fundamentos-fastapi-v001.md#v001
 app = create_app(
     cadastrar_estudante=_cadastrar_estudante,
@@ -236,6 +244,8 @@ app = create_app(
     criador_sessao=_criador_sessao,
     derivador_senha=_derivador_senha,
     autenticador_sessao=_autenticador_sessao,
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    listar_associacoes_curriculo_vaga=_listar_associacoes_curriculo_vaga,
     verificador_persistencia=_verificador_persistencia,
     lifespan=_ciclo_vida_aplicacao,
     configuracao_cookie=_configuracao_cookie_sessao,
