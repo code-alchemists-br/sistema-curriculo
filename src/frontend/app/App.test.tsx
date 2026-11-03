@@ -76,4 +76,34 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "Formação acadêmica" }),
     ).toBeInTheDocument();
   });
+
+  it("permite navegar para a tela de vagas sugeridas e exibe vagas fictícias por padrão", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("button", { name: /Menu de navegação e perfil/i }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /Vagas/i }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Oportunidades compatíveis com o seu perfil",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Desenvolvedor(a) Frontend Júnior",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "← Voltar ao início" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "O currículo que abre portas" }),
+    ).toBeInTheDocument();
+  });
 });

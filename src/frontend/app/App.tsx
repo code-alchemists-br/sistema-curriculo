@@ -17,10 +17,19 @@ import { PaginaExperienciasProfissionais } from "../pages/experiencias-profissio
 import { PaginaFormacaoAcademica } from "../pages/formacao-academica";
 import { PaginaIdiomas } from "../pages/idiomas";
 import { PaginaInicio } from "../pages/inicio";
+import { PaginaConfiguracoesPerfil } from "../pages/profile-settings";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
+import { PaginaVagasGrupo2 } from "../pages/vagas";
+import {
+  criarClienteVagasDemonstracao,
+  criarClienteDecisoesDemonstracao,
+} from "../features/listar-vagas";
+
+const clienteVagasDemo = criarClienteVagasDemonstracao();
+const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
 
 type RotaAtiva =
   | "inicio"
@@ -34,7 +43,9 @@ type RotaAtiva =
   | "competencias"
   | "projetos-academicos"
   | "selecionar-modelo"
-  | "validacao-curriculo";
+  | "validacao-curriculo"
+  | "vagas"
+  | "configuracoes-perfil";
 
 /**
  * Ponto de entrada da aplicação.
@@ -59,6 +70,9 @@ export function App() {
       if (etapa === "projetos-academicos") return "projetos-academicos";
       if (etapa === "selecionar-modelo") return "selecionar-modelo";
       if (etapa === "validacao-curriculo") return "validacao-curriculo";
+      if (etapa === "vagas") return "vagas";
+      if (etapa === "configuracoes-perfil" || etapa === "perfil")
+        return "configuracoes-perfil";
       if (etapa === "acesso") return "acesso";
     }
     return "inicio";
@@ -254,6 +268,20 @@ export function App() {
     );
   }
 
+  if (rotaAtiva === "vagas") {
+    return (
+      <PaginaVagasGrupo2
+        cliente={clienteVagasDemo}
+        clienteDecisoes={clienteDecisoesDemo}
+        onVoltar={() => navegar("inicio")}
+      />
+    );
+  }
+
+  if (rotaAtiva === "configuracoes-perfil") {
+    return <PaginaConfiguracoesPerfil onVoltar={() => navegar("inicio")} />;
+  }
+
   return (
     <PaginaInicio
       onCriarCurriculo={() => navegar("dados-pessoais")}
@@ -278,6 +306,8 @@ export function App() {
         setRotaAtiva("acesso");
       }}
       onNavegarInicio={() => navegar("inicio")}
+      onNavegarVagas={() => navegar("vagas")}
+      onNavegarPerfil={() => navegar("configuracoes-perfil")}
     />
   );
 }

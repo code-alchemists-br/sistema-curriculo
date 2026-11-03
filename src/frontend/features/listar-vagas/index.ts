@@ -9,6 +9,11 @@ export type {
   CodigoFalhaVagasGrupo2,
   CriteriosPesquisaVagas,
 } from "./api/cliente-vagas-grupo2";
+export {
+  VAGAS_DEMONSTRACAO,
+  criarClienteVagasDemonstracao,
+  criarClienteDecisoesDemonstracao,
+} from "./api/cliente-vagas-demonstracao";
 export { criarClienteDecisoesRecomendacaoIndisponivel } from "./api/cliente-decisoes-recomendacao";
 export type {
   ClienteDecisoesRecomendacao,

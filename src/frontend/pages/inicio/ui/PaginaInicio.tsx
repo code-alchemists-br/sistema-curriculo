@@ -8,6 +8,8 @@ export interface PaginaInicioProps {
   onNavegarLogin?: () => void;
   onNavegarInicio?: () => void;
   onCriarCurriculo?: () => void;
+  onNavegarVagas?: () => void;
+  onNavegarPerfil?: () => void;
 }
 
 export function PaginaInicio({
@@ -15,6 +17,8 @@ export function PaginaInicio({
   onNavegarLogin,
   onNavegarInicio,
   onCriarCurriculo,
+  onNavegarVagas,
+  onNavegarPerfil,
 }: PaginaInicioProps) {
   return (
     <div className="pagina-inicio">
@@ -22,6 +26,8 @@ export function PaginaInicio({
         onNavegarCadastro={onNavegarCadastro}
         onNavegarLogin={onNavegarLogin}
         onNavegarInicio={onNavegarInicio}
+        onNavegarVagas={onNavegarVagas}
+        onNavegarPerfil={onNavegarPerfil}
       />
       <main>
         <Hero onCriarCurriculo={onCriarCurriculo ?? onNavegarCadastro} />

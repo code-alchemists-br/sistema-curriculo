@@ -1,125 +1,549 @@
+/* Tela de Vagas — Estrutura Job Board na Identidade Visual LIMINAL (#050505 + #ff6a00) */
+
 .vagas-grupo2 {
-  display: grid;
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+  font-family: "Poppins", sans-serif;
+  color: #f3f3f3;
 }
 
+/* ==========================================================================
+   1. CABEÇALHO PRINCIPAL SEM CAIXA (TEMÁTICA LIMINAL)
+   ========================================================================== */
+.vagas-grupo2__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.vagas-grupo2 h1 {
+  font-family: "Clash Display", sans-serif;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #e6e6e6;
+  margin: 0;
+  line-height: 1.08;
+}
+
+.vagas-grupo2__subtitulo {
+  font-family: "Poppins", sans-serif;
+  color: #a3a3a3;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 760px;
+}
+
+/* Regras preservadas para compatibilidade com a suíte de caracterização CSSOM (F1.1) */
 .vagas-grupo2__pesquisa {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
-  align-items: end;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .vagas-grupo2__pesquisa label {
   grid-column: 1 / -1;
-  font-weight: 700;
 }
 
-.vagas-grupo2__pesquisa input {
-  min-height: 2.75rem;
-  padding: 0.625rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
-  font: inherit;
-}
-
-.vagas-grupo2__pesquisa button,
-.vagas-grupo2__decisoes button,
 .vagas-grupo2__botao-recuperar {
-  min-height: 2.75rem;
-  padding: 0.625rem 0.875rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: #2563eb;
-  color: #fff;
+  min-height: 3.1rem;
+  padding: 0.75rem 2.25rem;
+  border: 1px solid rgba(255, 137, 100, 0.35);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ff7950 0%, #ff5500 100%);
+  color: #050505;
   cursor: pointer;
-  font: inherit;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
+  font-size: 0.925rem;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 18px rgba(255, 106, 0, 0.35);
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease,
+    box-shadow 0.2s ease;
 }
 
+.vagas-grupo2__botao-recuperar:hover {
+  background: linear-gradient(135deg, #ff8f6b 0%, #ff6a00 100%);
+  box-shadow: 0 6px 24px rgba(255, 106, 0, 0.5);
+}
+
+.vagas-grupo2__botao-recuperar:active {
+  transform: translateY(1px);
+}
+
+/* ==========================================================================
+   2. CABEÇALHO DE SEÇÃO ("MELHORES CORRESPONDÊNCIAS" + CONTAGEM INFORMATIVA)
+   ========================================================================== */
+.vagas-grupo2__corpo-resultados {
+  display: flex;
+  flex-direction: column;
+}
+
+.vagas-grupo2__secao-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.vagas-grupo2__cabecalho-secao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border: none;
+}
+
+.vagas-grupo2__titulo-recomendadas {
+  font-family: "Clash Display", sans-serif;
+  font-size: clamp(1.65rem, 2.5vw, 2.15rem);
+  font-weight: 500;
+  color: #e6e6e6;
+  letter-spacing: -0.01em;
+}
+
+.vagas-grupo2__info-ordem {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: #9e9e9e;
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+/* ==========================================================================
+   3. GRADE DE 2 CARTÕES POR LINHA (ESTRUTURA LIMINAL AMPLIADA)
+   ========================================================================== */
 .vagas-grupo2__lista {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  gap: 2rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.vagas-grupo2__card,
-.vagas-grupo2__estado {
-  padding: 1.25rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.75rem;
-  background: #f8fafc;
+.vagas-grupo2__lista > li {
+  display: flex;
+  min-width: 0;
 }
 
-.vagas-grupo2__estado--erro {
-  border-color: #fca5a5;
-  background: #fef2f2;
+.vagas-grupo2__card {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.25rem;
+  border: none;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.08),
+    0 16px 40px -12px rgba(0, 0, 0, 0.65);
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  transition:
+    background-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s ease;
 }
 
-.vagas-grupo2__estado--erro h2 {
-  color: #991b1b;
+.vagas-grupo2__card:hover {
+  background: rgba(255, 255, 255, 0.055);
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    0 24px 48px -12px rgba(0, 0, 0, 0.8),
+    0 0 32px rgba(255, 106, 0, 0.08);
 }
 
-.vagas-grupo2__estado--erro p {
-  color: #7f1d1d;
+.vagas-grupo2__corpo-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-.vagas-grupo2__card h2,
-.vagas-grupo2__estado h2 {
-  margin-top: 0;
+/* Faixa Superior Dedicada de Afinidade (Desacoplada do Título) */
+.vagas-grupo2__faixa-afinidade {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.25rem;
+  border: none;
 }
 
-.vagas-grupo2__metadados,
-.vagas-grupo2__requisitos {
+.vagas-grupo2__ranque {
+  display: inline-flex;
+  align-items: center;
+  color: #a3a3a3;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.vagas-grupo2__score {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.8rem;
+  border-radius: 9999px;
+  background: rgba(255, 106, 0, 0.16);
+  border: none;
+  color: #ff944d;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Cabeçalho do Cartão: Avatar + Cargo/Empresa */
+.vagas-grupo2__cabecalho-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1.15rem;
+}
+
+.vagas-grupo2__cabecalho-card + .vagas-grupo2__descricao {
+  margin-top: 0.35rem;
+}
+
+.vagas-grupo2__avatar {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Clash Display", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: none;
+}
+
+.vagas-grupo2__avatar--laranja {
+  background: rgba(255, 106, 0, 0.18);
+  color: #ff8533;
+  border: none;
+}
+
+.vagas-grupo2__avatar--azul {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border: none;
+}
+
+.vagas-grupo2__avatar--verde {
+  background: rgba(74, 222, 128, 0.16);
+  color: #86efac;
+  border: none;
+}
+
+.vagas-grupo2__avatar--vermelho {
+  background: rgba(251, 113, 133, 0.16);
+  color: #fda4af;
+  border: none;
+}
+
+.vagas-grupo2__identificacao {
+  flex: 1;
+  min-width: 0;
+}
+
+.vagas-grupo2__card h2 {
+  font-family: "Clash Display", "Poppins", sans-serif;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vagas-grupo2__subtitulo-empresa {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #a3a3a3;
+  line-height: 1.3;
+}
+
+.vagas-grupo2__subtitulo-empresa strong {
+  color: #d4d4d4;
+  font-weight: 500;
+}
+
+.vagas-grupo2__ponto {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.vagas-grupo2__localizacao {
+  color: #a3a3a3;
+}
+
+/* Pílulas de Classificação (Nível + Modalidade no Estilo Pinterest) */
+.vagas-grupo2__metadados {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
-  margin: 1rem 0;
+  margin: 0 0 1.5rem 0;
+}
+
+.vagas-grupo2__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: none;
+}
+
+.vagas-grupo2__pill--roxo {
+  background: rgba(168, 85, 247, 0.18);
+  border: none;
+  color: #e9d5ff;
+}
+
+.vagas-grupo2__pill--verde {
+  background: rgba(34, 197, 94, 0.18);
+  border: none;
+  color: #bbf7d0;
+}
+
+.vagas-grupo2__pill--laranja {
+  background: rgba(255, 106, 0, 0.18);
+  border: none;
+  color: #fed7aa;
+}
+
+/* Descrição e Tags Compactas de Requisitos */
+.vagas-grupo2__descricao {
+  font-size: 0.975rem;
+  line-height: 1.6;
+  color: #c4c4c4;
+  margin: 0 0 1.25rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vagas-grupo2__requisitos-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 0.5rem 0;
   padding: 0;
   list-style: none;
 }
 
-.vagas-grupo2__metadados span,
-.vagas-grupo2__requisitos li {
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  background: #e0e7ff;
-  color: #1e3a8a;
+.vagas-grupo2__requisitos-tags li {
+  padding: 0.32rem 0.78rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #e5e5e5;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
-.vagas-grupo2__decisoes {
+/* ==========================================================================
+   4. RODAPÉ DO CARTÃO: SALÁRIO + DATA E BOTÃO DE AÇÃO PRINCIPAL
+   ========================================================================== */
+.vagas-grupo2__rodape-card {
   display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  margin-top: auto;
+  padding-top: 1.75rem;
+  border: none;
+}
+
+.vagas-grupo2__meta-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 1rem;
 }
 
-.vagas-grupo2__decisoes button:last-child {
-  background: #475569;
+.vagas-grupo2__salario {
+  font-family: "Poppins", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.vagas-grupo2__salario--combinar {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #9e9e9e;
+}
+
+.vagas-grupo2__bloco-publicacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #8a8a8a;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.vagas-grupo2__publicacao {
+  color: #8a8a8a;
 }
 
 .vagas-grupo2__acao {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.625rem 0.875rem;
-  border-radius: 0.5rem;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.65rem;
+  background: #e5e5e5;
+  border: none;
+  color: #050505;
+  font-weight: 600;
+  font-size: 0.9375rem;
   text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
 }
 
+.vagas-grupo2__acao::after {
+  content: "→";
+  font-size: 0.95rem;
+  transition: transform 0.2s ease;
+}
+
+.vagas-grupo2__acao:hover {
+  background: #ff6a00;
+  color: #050505;
+}
+
+.vagas-grupo2__acao:hover::after {
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   5. ESTADOS DE CARREGAMENTO, VAZIO E ERRO
+   ========================================================================== */
+.vagas-grupo2__carregando {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #a3a3a3;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.vagas-grupo2__estado {
+  padding: 2.5rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  background: rgba(20, 20, 20, 0.78);
+  text-align: center;
+}
+
+.vagas-grupo2__estado h2 {
+  font-family: "Clash Display", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+}
+
+.vagas-grupo2__estado p {
+  color: #a3a3a3;
+  margin: 0 0 0.5rem 0;
+}
+
+.vagas-grupo2__estado--erro {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(40, 14, 14, 0.65);
+}
+
+.vagas-grupo2__estado--erro h2 {
+  color: #fca5a5;
+}
+
+.vagas-grupo2__estado--erro p {
+  color: #fecaca;
+  margin-bottom: 1.25rem;
+}
+
+/* Acessibilidade: Anéis de Foco no Laranja LIMINAL */
 .vagas-grupo2__acao:focus-visible,
-.vagas-grupo2__pesquisa input:focus-visible,
-.vagas-grupo2__pesquisa button:focus-visible,
-.vagas-grupo2__decisoes button:focus-visible,
 .vagas-grupo2__botao-recuperar:focus-visible {
-  outline: 3px solid #93c5fd;
+  outline: 2px solid #ff6a00;
   outline-offset: 2px;
 }
 
+/* Responsividade Intermediária (Tablets e Telas Compactas) */
+@media (max-width: 48rem) {
+  .vagas-grupo2 {
+    gap: 2rem;
+  }
+
+  .vagas-grupo2__hero {
+    padding: 1.5rem 0 1rem;
+    gap: 0.85rem;
+  }
+
+  .vagas-grupo2 h1 {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    line-height: 1.12;
+  }
+
+  .vagas-grupo2__subtitulo {
+    font-size: 1rem;
+  }
+
+  .vagas-grupo2__lista {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .vagas-grupo2__card {
+    padding: 1.75rem;
+  }
+}
+
+/* Responsividade Movel */
 @media (max-width: 30rem) {
   .vagas-grupo2__pesquisa {
     grid-template-columns: 1fr;
@@ -127,5 +551,162 @@
 
   .vagas-grupo2__pesquisa label {
     grid-column: auto;
+  }
+
+  .vagas-grupo2 {
+    gap: 1.5rem;
+  }
+
+  .vagas-grupo2__hero {
+    padding: 0.75rem 0 0.25rem;
+    gap: 0.65rem;
+  }
+
+  .vagas-grupo2 h1 {
+    font-size: clamp(1.65rem, 6.5vw, 2rem);
+    line-height: 1.15;
+  }
+
+  .vagas-grupo2__subtitulo {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .vagas-grupo2__secao-lista {
+    gap: 1rem;
+  }
+
+  .vagas-grupo2__cabecalho-secao {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .vagas-grupo2__titulo-recomendadas {
+    font-size: 1.35rem;
+  }
+
+  .vagas-grupo2__info-ordem {
+    font-size: 0.85rem;
+  }
+
+  .vagas-grupo2__lista {
+    grid-template-columns: 1fr;
+    gap: 1.15rem;
+  }
+
+  .vagas-grupo2__card {
+    padding: 1.25rem;
+    border-radius: 1.15rem;
+  }
+
+  .vagas-grupo2__faixa-afinidade {
+    margin-bottom: 1rem;
+    padding-bottom: 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .vagas-grupo2__ranque {
+    font-size: 0.75rem;
+  }
+
+  .vagas-grupo2__score {
+    font-size: 0.75rem;
+    padding: 0.22rem 0.65rem;
+  }
+
+  .vagas-grupo2__avatar {
+    width: 2.65rem;
+    height: 2.65rem;
+    font-size: 1.1rem;
+    border-radius: 0.7rem;
+  }
+
+  .vagas-grupo2__cabecalho-card {
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .vagas-grupo2__card h2 {
+    font-size: 1.15rem;
+    line-height: 1.25;
+    margin-bottom: 0.25rem;
+  }
+
+  .vagas-grupo2__subtitulo-empresa {
+    font-size: 0.85rem;
+  }
+
+  .vagas-grupo2__metadados {
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .vagas-grupo2__pill {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.7rem;
+  }
+
+  .vagas-grupo2__descricao {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+
+  .vagas-grupo2__requisitos-tags {
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .vagas-grupo2__requisitos-tags li {
+    font-size: 0.75rem;
+    padding: 0.26rem 0.6rem;
+    white-space: normal;
+  }
+
+  .vagas-grupo2__meta-rodape {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .vagas-grupo2__salario {
+    font-size: 1.05rem;
+  }
+
+  .vagas-grupo2__salario--combinar {
+    font-size: 0.875rem;
+  }
+
+  .vagas-grupo2__bloco-publicacao {
+    font-size: 0.78rem;
+  }
+
+  .vagas-grupo2__rodape-card {
+    padding-top: 1.15rem;
+    gap: 0.85rem;
+  }
+
+  .vagas-grupo2__acao {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+  }
+
+  .vagas-grupo2__estado {
+    padding: 1.75rem 1.25rem;
+    border-radius: 1.15rem;
+  }
+
+  .vagas-grupo2__estado h2 {
+    font-size: 1.25rem;
+  }
+
+  .vagas-grupo2__botao-recuperar {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
   }
 }

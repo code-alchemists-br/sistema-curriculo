@@ -47,4 +47,29 @@ describe("CabecalhoPublico", () => {
     await user.click(screen.getByRole("button", { name: /LIMINAL/i }));
     expect(onInicio).toHaveBeenCalledTimes(1);
   });
+
+  it("abre o menu de acesso rápido e aciona navegação para Meu perfil e Vagas", async () => {
+    const onPerfil = vi.fn();
+    const onVagas = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <CabecalhoPublico
+        onNavegarPerfil={onPerfil}
+        onNavegarVagas={onVagas}
+      />,
+    );
+
+    const gatilhoMenu = screen.getByRole("button", {
+      name: /Menu de navegação e perfil/i,
+    });
+
+    await user.click(gatilhoMenu);
+    await user.click(screen.getByRole("menuitem", { name: /Meu perfil/i }));
+    expect(onPerfil).toHaveBeenCalledTimes(1);
+
+    await user.click(gatilhoMenu);
+    await user.click(screen.getByRole("menuitem", { name: /Vagas/i }));
+    expect(onVagas).toHaveBeenCalledTimes(1);
+  });
 });
