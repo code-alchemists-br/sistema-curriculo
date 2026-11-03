@@ -200,8 +200,8 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
     vaga.modalidade !== null ||
     Boolean(
       vaga.requisitos.length === 0 &&
-        vaga.palavrasChave &&
-        vaga.palavrasChave.length > 0,
+      vaga.palavrasChave &&
+      vaga.palavrasChave.length > 0,
     );
 
   return (

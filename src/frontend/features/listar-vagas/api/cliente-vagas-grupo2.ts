@@ -141,11 +141,15 @@ function formatarSalario(
   }
 
   if (typeof salario === "number") {
-    return salario > 0 ? `${simbolo} ${formatarNumeroMonetario(salario)}` : null;
+    return salario > 0
+      ? `${simbolo} ${formatarNumeroMonetario(salario)}`
+      : null;
   }
 
   const valoresNumericos = Object.values(salario)
-    .filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0)
+    .filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
+    )
     .sort((a, b) => a - b);
 
   if (valoresNumericos.length === 0) return null;
@@ -187,9 +191,7 @@ export interface CriteriosPesquisaVagas {
  * Enumera os códigos das falhas que a tela de vagas comunica ao estudante de modo controlado.
  */
 export type CodigoFalhaVagasGrupo2 =
-  | "indisponivel"
-  | "resposta-invalida"
-  | "tempo-limite";
+  "indisponivel" | "resposta-invalida" | "tempo-limite";
 
 /**
  * Representa uma falha conhecida e controlada da fronteira de vagas externas.
@@ -306,17 +308,19 @@ export function adaptarRespostaGrupo2(resposta: unknown): SugestaoVaga[] {
     throw new FalhaVagasGrupo2("resposta-invalida");
   }
 
-  return resultadoAssociacoes.data.associacoes.map(({ curriculo_id, vaga }) => ({
-    curriculoId: curriculo_id,
-    vaga: {
-      id: vaga.id,
-      titulo: vaga.titulo,
-      empresa: vaga.empresa,
-      descricao: vaga.descricao,
-      requisitos: vaga.requisitos,
-      localizacao: vaga.localizacao,
-      modalidade: vaga.modalidade,
-      urlCandidatura: vaga.url_candidatura,
-    },
-  }));
+  return resultadoAssociacoes.data.associacoes.map(
+    ({ curriculo_id, vaga }) => ({
+      curriculoId: curriculo_id,
+      vaga: {
+        id: vaga.id,
+        titulo: vaga.titulo,
+        empresa: vaga.empresa,
+        descricao: vaga.descricao,
+        requisitos: vaga.requisitos,
+        localizacao: vaga.localizacao,
+        modalidade: vaga.modalidade,
+        urlCandidatura: vaga.url_candidatura,
+      },
+    }),
+  );
 }

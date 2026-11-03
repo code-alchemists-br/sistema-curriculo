@@ -159,13 +159,13 @@ export function criarClienteVagasDemonstracao(
           .includes(termoLimpo);
         return Boolean(
           noTitulo ||
-            naEmpresa ||
-            naDescricao ||
-            nosRequisitos ||
-            nasPalavrasChave ||
-            naModalidade ||
-            naLocalizacao ||
-            naSenioridade,
+          naEmpresa ||
+          naDescricao ||
+          nosRequisitos ||
+          nasPalavrasChave ||
+          naModalidade ||
+          naLocalizacao ||
+          naSenioridade,
         );
       });
     },

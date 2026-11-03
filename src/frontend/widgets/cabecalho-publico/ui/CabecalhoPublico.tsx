@@ -100,10 +100,7 @@ export function CabecalhoPublico({
                 Criar conta
               </button>
 
-              <span
-                className="cabecalho-publico__divisor"
-                aria-hidden="true"
-              />
+              <span className="cabecalho-publico__divisor" aria-hidden="true" />
 
               <div
                 className="cabecalho-publico__menu-wrapper"

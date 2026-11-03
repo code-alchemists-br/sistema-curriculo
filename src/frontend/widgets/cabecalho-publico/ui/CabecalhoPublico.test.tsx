@@ -54,10 +54,7 @@ describe("CabecalhoPublico", () => {
     const user = userEvent.setup();
 
     render(
-      <CabecalhoPublico
-        onNavegarPerfil={onPerfil}
-        onNavegarVagas={onVagas}
-      />,
+      <CabecalhoPublico onNavegarPerfil={onPerfil} onNavegarVagas={onVagas} />,
     );
 
     const gatilhoMenu = screen.getByRole("button", {
