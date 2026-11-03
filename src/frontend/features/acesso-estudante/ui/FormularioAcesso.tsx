@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import {
   FalhaAcessoEstudante,
@@ -17,6 +17,8 @@ import "./FormularioAcesso.css";
 export interface FormularioAcessoProps {
   cliente: ClienteAcessoEstudante;
   emailInicial: string;
+  aoAcessar?: (email?: string) => void;
+  aoAlterarEmail?: (email: string) => void;
 }
 
 /**
@@ -30,18 +32,28 @@ export interface FormularioAcessoProps {
 export function FormularioAcesso({
   cliente,
   emailInicial,
+  aoAcessar,
+  aoAlterarEmail,
 }: FormularioAcessoProps) {
   const [email, setEmail] = useState(emailInicial);
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erros, setErros] = useState<ErrosFormulario>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    if (emailInicial !== undefined) {
+      setEmail(emailInicial);
+    }
+  }, [emailInicial]);
 
   /** Atualiza o e-mail e remove feedback que já não descreve o valor atual. */
   function atualizarEmail(valor: string): void {
     setEmail(valor);
     setErros((atuais) => ({ ...atuais, email: undefined }));
     setMensagem(null);
+    aoAlterarEmail?.(valor);
   }
 
   /** Atualiza a senha somente no estado transitório da unidade. */
@@ -75,7 +87,11 @@ export function FormularioAcesso({
     try {
       await cliente.acessar({ email: email.trim(), senha });
       setSenha("");
-      setMensagem("Acesso realizado. Sua sessão foi iniciada.");
+      if (aoAcessar) {
+        aoAcessar(email.trim());
+      } else {
+        setMensagem("Acesso realizado. Sua sessão foi iniciada.");
+      }
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaAcesso(
@@ -111,18 +127,69 @@ export function FormularioAcesso({
       </div>
       <div className="field">
         <label htmlFor="senha-acesso">Senha</label>
-        <input
-          aria-describedby={
-            erros.senha === undefined ? undefined : "senha-acesso-erro"
-          }
-          aria-invalid={erros.senha === undefined ? undefined : true}
-          autoComplete="current-password"
-          id="senha-acesso"
-          onChange={(evento) => atualizarSenha(evento.target.value)}
-          required
-          type="password"
-          value={senha}
-        />
+        <div className="field__input-container">
+          <input
+            aria-describedby={
+              erros.senha === undefined ? undefined : "senha-acesso-erro"
+            }
+            aria-invalid={erros.senha === undefined ? undefined : true}
+            autoComplete="current-password"
+            id="senha-acesso"
+            onChange={(evento) => atualizarSenha(evento.target.value)}
+            required
+            type={mostrarSenha ? "text" : "password"}
+            value={senha}
+          />
+          <button
+            type="button"
+            className="field__btn-toggle-senha"
+            onClick={() => setMostrarSenha((v) => !v)}
+            tabIndex={-1}
+            aria-label={mostrarSenha ? "Ocultar senha" : "Ver senha"}
+            title={mostrarSenha ? "Ocultar senha" : "Ver senha"}
+          >
+            {mostrarSenha ? (
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 3L17 17M8.5 8.5A3 3 0 0012.7 12.7M9.88 5.04C9.92 5.04 9.96 5.04 10 5.04C14.5 5.04 18 10 18 10C17.43 10.98 16.64 12.02 15.65 12.93M6.53 6.53C4.42 7.57 3 10 3 10C3 10 6.5 15 10 15C11.31 15 12.52 14.36 13.53 13.53"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : (
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 5C5.5 5 2 10 2 10C2 10 5.5 15 10 15C14.5 15 18 10 18 10C18 10 14.5 5 10 5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
         {erros.senha !== undefined && (
           <p className="field__error" id="senha-acesso-erro">
             {erros.senha}

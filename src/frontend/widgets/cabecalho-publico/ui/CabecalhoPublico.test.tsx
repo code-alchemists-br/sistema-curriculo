@@ -69,4 +69,48 @@ describe("CabecalhoPublico", () => {
     await user.click(screen.getByRole("menuitem", { name: /Vagas/i }));
     expect(onVagas).toHaveBeenCalledTimes(1);
   });
+
+  it("exibe saudacao do usuario e oculta botoes publicos quando autenticado", () => {
+    render(
+      <CabecalhoPublico
+        usuarioLogado={{
+          nome: "Ricardo Santos",
+          email: "ricardo@fatec.sp.gov.br",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Ricardo")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Fazer login" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("permite acionar logout atraves do menu quando autenticado", async () => {
+    const onLogout = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <CabecalhoPublico
+        usuarioLogado={{ nome: "Ana Paula", email: "ana@fatec.sp.gov.br" }}
+        onLogout={onLogout}
+      />,
+    );
+
+    const gatilhoMenu = screen.getByRole("button", {
+      name: /Menu de navegação e perfil/i,
+    });
+    await user.click(gatilhoMenu);
+
+    const botaoLogout = screen.getByRole("menuitem", {
+      name: /Sair da conta/i,
+    });
+    expect(botaoLogout).toBeInTheDocument();
+
+    await user.click(botaoLogout);
+    expect(onLogout).toHaveBeenCalledTimes(1);
+  });
 });

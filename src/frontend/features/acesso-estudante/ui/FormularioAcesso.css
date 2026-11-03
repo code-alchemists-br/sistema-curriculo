@@ -104,6 +104,39 @@
   color: #93c5fd !important;
 }
 
+.field__input-container {
+  position: relative !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.field__btn-toggle-senha {
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  transition: color 0.15s ease !important;
+}
+
+.field__btn-toggle-senha:hover {
+  color: #ffffff !important;
+}
+
+.field__btn-toggle-senha svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
 .pagina-acesso-estudante .formulario-acesso .formulario-acesso__botao-wrapper,
 .formulario-acesso .formulario-acesso__botao-wrapper {
   margin-top: 0.75rem !important;

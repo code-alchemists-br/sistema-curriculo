@@ -44,4 +44,12 @@ describe("Hero", () => {
 
     expect(onCriarCurriculo).toHaveBeenCalledTimes(1);
   });
+
+  it("permite customizar o texto do botão de ação quando informado por prop", () => {
+    render(<Hero textoBotao="CONTINUAR CURRÍCULO" />);
+
+    expect(
+      screen.getByRole("button", { name: /CONTINUAR CURRÍCULO →/i }),
+    ).toBeInTheDocument();
+  });
 });

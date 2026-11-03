@@ -25,13 +25,16 @@ import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curricu
 import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
+import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
 import {
   criarClienteVagasDemonstracao,
   criarClienteDecisoesDemonstracao,
 } from "../features/listar-vagas";
+import { criarClienteAcessoDemonstracao } from "../features/acesso-estudante";
 
 const clienteVagasDemo = criarClienteVagasDemonstracao();
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
+const clienteAcessoDemo = criarClienteAcessoDemonstracao();
 
 type RotaAtiva =
   | "inicio"
@@ -84,6 +87,37 @@ export function App() {
     return "inicio";
   });
 
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAutenticado | null>(
+    () => {
+      if (typeof window !== "undefined") {
+        try {
+          const salvo = sessionStorage.getItem("liminal_usuario_sessao");
+          if (salvo) return JSON.parse(salvo);
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    },
+  );
+
+  const [intencaoAcesso, setIntencaoAcesso] = useState<
+    "criar-curriculo" | "criar-conta" | "login" | null
+  >(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const intencao = params.get("intencao");
+      if (
+        intencao === "criar-curriculo" ||
+        intencao === "criar-conta" ||
+        intencao === "login"
+      ) {
+        return intencao;
+      }
+    }
+    return null;
+  });
+
   const [abaAcesso, setAbaAcesso] = useState<"acesso" | "cadastro">(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -108,6 +142,7 @@ export function App() {
       const url = new URL(window.location.href);
       url.searchParams.set("etapa", rota);
       url.searchParams.delete("aba");
+      url.searchParams.delete("intencao");
       window.history.pushState({}, "", url.toString());
     }
     setRotaAtiva(rota);
@@ -127,22 +162,24 @@ export function App() {
       const url = new URL(window.location.href);
       url.searchParams.delete("etapa");
       url.searchParams.delete("aba");
+      url.searchParams.delete("intencao");
       window.history.pushState({}, "", url.toString());
     }
+    setIntencaoAcesso(null);
     setRotaAtiva("inicio");
   }
 
   /**
-   * Abre o acesso da conta já selecionando a aba solicitada.
-   *
-   * Como faz: sincroniza o estado local da aba com os parâmetros da URL antes
-   * de trocar a composição ativa para a página de acesso.
-   *
-   * Qual finalidade atende: reutiliza a mesma entrada de autenticação nos
-   * cabeçalhos das páginas públicas sem duplicar a regra de navegação.
+   * Abre o acesso da conta já selecionando a aba e preservando a intenção do fluxo.
    */
-  function abrirAcesso(aba: "acesso" | "cadastro"): void {
+  function abrirAcesso(
+    aba: "acesso" | "cadastro",
+    intencao?: "criar-curriculo" | "criar-conta" | "login",
+  ): void {
     setAbaAcesso(aba);
+    if (intencao) {
+      setIntencaoAcesso(intencao);
+    }
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("etapa", "acesso");
@@ -151,9 +188,34 @@ export function App() {
       } else {
         url.searchParams.delete("aba");
       }
+      if (intencao) {
+        url.searchParams.set("intencao", intencao);
+      } else {
+        url.searchParams.delete("intencao");
+      }
       window.history.pushState({}, "", url.toString());
     }
     setRotaAtiva("acesso");
+  }
+
+  function aoFazerLogout(): void {
+    setUsuarioLogado(null);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("liminal_usuario_sessao");
+      } catch {
+        // Ignora erro em ambientes sem suporte
+      }
+    }
+    voltarAoInicio();
+  }
+
+  function aoClicarCriarCurriculo(): void {
+    if (usuarioLogado) {
+      navegar("dados-pessoais");
+    } else {
+      abrirAcesso("cadastro", "criar-curriculo");
+    }
   }
 
   // Estados persistidos em memória de cada etapa do cadastro
@@ -202,6 +264,9 @@ export function App() {
     function aoMudarHistorico(): void {
       const params = new URLSearchParams(window.location.search);
       const etapa = params.get("etapa") as RotaAtiva | null;
+      const intencao = params.get("intencao") as
+        "criar-curriculo" | "criar-conta" | "login" | null;
+      setIntencaoAcesso(intencao);
       if (etapa) {
         setRotaAtiva(etapa);
       } else {
@@ -342,9 +407,9 @@ export function App() {
   if (rotaAtiva === "termos-de-uso") {
     return (
       <PaginaTermosDeUso
-        onNavegarCadastro={() => abrirAcesso("cadastro")}
+        onNavegarCadastro={() => abrirAcesso("cadastro", "criar-conta")}
         onNavegarInicio={voltarAoInicio}
-        onNavegarLogin={() => abrirAcesso("acesso")}
+        onNavegarLogin={() => abrirAcesso("acesso", "login")}
         onNavegarPoliticaDePrivacidade={() =>
           abrirDocumentoPublico("politica-de-privacidade")
         }
@@ -355,9 +420,9 @@ export function App() {
   if (rotaAtiva === "politica-de-privacidade") {
     return (
       <PaginaPoliticaDePrivacidade
-        onNavegarCadastro={() => abrirAcesso("cadastro")}
+        onNavegarCadastro={() => abrirAcesso("cadastro", "criar-conta")}
         onNavegarInicio={voltarAoInicio}
-        onNavegarLogin={() => abrirAcesso("acesso")}
+        onNavegarLogin={() => abrirAcesso("acesso", "login")}
         onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
       />
     );
@@ -367,6 +432,49 @@ export function App() {
     return (
       <PaginaAcessoEstudante
         abaInicial={abaAcesso}
+        cliente={clienteAcessoDemo}
+        onSucessoAcesso={(dados) => {
+          const nomeResolvido = dados?.nome?.trim() || "";
+          const emailResolvido = dados?.email?.trim() || "";
+          const usuario: UsuarioAutenticado = {
+            nome:
+              nomeResolvido ||
+              (emailResolvido ? emailResolvido.split("@")[0] : "Estudante"),
+            email: emailResolvido,
+          };
+
+          setUsuarioLogado(usuario);
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(
+                "liminal_usuario_sessao",
+                JSON.stringify(usuario),
+              );
+            } catch {
+              // Ignora erro em ambientes sem suporte a sessionStorage
+            }
+          }
+
+          if (nomeResolvido || emailResolvido) {
+            setDadosPessoais((atuais) => ({
+              enderecoCompleto: atuais?.enderecoCompleto || "",
+              telefones: atuais?.telefones || [""],
+              linkedIn: atuais?.linkedIn || "",
+              curriculoLattes: atuais?.curriculoLattes || "",
+              nomeCompleto: nomeResolvido || atuais?.nomeCompleto || "",
+              email: emailResolvido || atuais?.email || "",
+            }));
+          }
+
+          const intencao = intencaoAcesso;
+          setIntencaoAcesso(null);
+
+          if (intencao === "criar-curriculo") {
+            navegar("dados-pessoais");
+          } else {
+            voltarAoInicio();
+          }
+        }}
         onVoltarInicio={voltarAoInicio}
       />
     );
@@ -388,9 +496,9 @@ export function App() {
 
   return (
     <PaginaInicio
-      onCriarCurriculo={() => navegar("dados-pessoais")}
-      onNavegarCadastro={() => abrirAcesso("cadastro")}
-      onNavegarLogin={() => abrirAcesso("acesso")}
+      onCriarCurriculo={aoClicarCriarCurriculo}
+      onNavegarCadastro={() => abrirAcesso("cadastro", "criar-conta")}
+      onNavegarLogin={() => abrirAcesso("acesso", "login")}
       onNavegarInicio={voltarAoInicio}
       onNavegarVagas={() => navegar("vagas")}
       onNavegarPerfil={() => navegar("configuracoes-perfil")}
@@ -398,6 +506,14 @@ export function App() {
         abrirDocumentoPublico("politica-de-privacidade")
       }
       onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
+      usuarioLogado={usuarioLogado}
+      temProgressoCurriculo={Boolean(
+        dadosPessoais?.nomeCompleto ||
+        (formacoes && formacoes.length > 0) ||
+        (experiencias && experiencias.length > 0) ||
+        (cursos && cursos.length > 0),
+      )}
+      onLogout={aoFazerLogout}
     />
   );
 }
