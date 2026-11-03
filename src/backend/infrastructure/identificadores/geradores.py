@@ -22,6 +22,7 @@ from backend.application.ports import (
     GeradorLinkProfissionalId,
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     GeradorProjetoAcademicoId,
+    GeradorUsuarioId,
 )
 from backend.domain.value_objects import (
     # Proveniência: decision-analysis prompts/backend/20261015-115730-cadastro-certificacao-api-v001.md#v001
@@ -38,9 +39,28 @@ from backend.domain.value_objects import (
     LinkProfissionalId,
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
     ProjetoAcademicoId,
+    UsuarioId,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+
+
+class GeradorUsuarioIdUuid4(GeradorUsuarioId):
+    """Gera identidades de usuário com UUID versão 4.
+
+    A implementação cria um UUID aleatório a cada chamada e o encapsula em
+    ``UsuarioId``. Ela existe para fornecer a identidade exigida pelo cadastro
+    sem fazer a Application depender da biblioteca de aleatoriedade.
+    """
+
+    def gerar(self) -> UsuarioId:
+        """Devolve uma identidade nova e tipada para uma conta de estudante.
+
+        O método delega a aleatoriedade ao UUID4 e converte o resultado para o
+        value object aceito pelo caso de uso. Ele existe para manter a geração
+        de IDs concreta na infraestrutura e substituível nos testes.
+        """
+        return UsuarioId(uuid4())
 
 
 class GeradorCurriculoIdUuid4(GeradorCurriculoId):

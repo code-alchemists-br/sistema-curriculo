@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+
+# Gerencia um cluster PostgreSQL persistente e exclusivo para testes E2E humanos.
+#
+# Como faz: usa somente executáveis fornecidos por `nix develop .#tests`, cria
+# um cluster em diretório explicitamente informado e limita reset e migrations
+# ao banco local de nome fixo. Ele existe para permitir repetição manual de
+# fluxos E2E sem instalar PostgreSQL globalmente ou arriscar outro ambiente.
+
+set -euo pipefail
+
+nome_banco="sistema_curriculo_e2e"
+
+# Interrompe a execução quando o diretório persistente não foi escolhido.
+#
+# Como faz: exige POSTGRES_E2E_STATE_DIR e recusa caminhos com espaços, que não
+# podem compor com segurança a URL baseada em socket. Existe para manter os
+# dados E2E fora do repositório e tornar o alvo de operações explícito.
+validar_diretorio_estado() {
+  if [ -z "${POSTGRES_E2E_STATE_DIR:-}" ]; then
+    echo "Defina POSTGRES_E2E_STATE_DIR com um diretório fora do repositório." >&2
+    exit 64
+  fi
+  if [[ "$POSTGRES_E2E_STATE_DIR" =~ [[:space:]] ]]; then
+    echo "POSTGRES_E2E_STATE_DIR não pode conter espaços." >&2
+    exit 64
+  fi
+
+  mkdir -p "$POSTGRES_E2E_STATE_DIR"
+  diretorio_estado="$(cd "$POSTGRES_E2E_STATE_DIR" && pwd -P)"
+  diretorio_dados="$diretorio_estado/dados"
+  diretorio_socket="$diretorio_estado/socket"
+  arquivo_porta="$diretorio_estado/porta"
+}
+
+# Escolhe uma porta livre uma única vez e a mantém para os próximos usos.
+#
+# Como faz: reutiliza a porta gravada no diretório persistente ou consulta o
+# sistema por uma porta livre e a registra. Existe para que o navegador e os
+# comandos E2E recebam uma URL estável enquanto o cluster for reutilizado.
+obter_porta() {
+  if [ -f "$arquivo_porta" ]; then
+    porta="$(<"$arquivo_porta")"
+  else
+    porta="$(python -c 'import socket; sock = socket.socket(); sock.bind(("127.0.0.1", 0)); print(sock.getsockname()[1]); sock.close()')"
+    printf '%s\n' "$porta" > "$arquivo_porta"
+  fi
+}
+
+# Retorna a URL do banco E2E local sem incluir credenciais externas.
+#
+# Como faz: compõe usuário local, banco fixo, socket e porta persistidos. Existe
+# para que aplicação, migrations e testes humanos apontem ao mesmo destino.
+url_banco() {
+  printf 'postgresql+psycopg://postgres@/%s?host=%s&port=%s\n' \
+    "$nome_banco" "$diretorio_socket" "$porta"
+}
+
+# Inicializa e inicia o servidor local quando ainda não estiver em execução.
+#
+# Como faz: cria o cluster somente na primeira execução e usa pg_ctl com socket
+# local e autenticação trust restrita ao diretório do estado. Existe para que o
+# fluxo E2E seja repetível sem serviço global e sem acesso TCP externo.
+iniciar_servidor() {
+  if [ ! -d "$diretorio_dados" ]; then
+    initdb \
+      --pgdata="$diretorio_dados" \
+      --username=postgres \
+      --auth=trust \
+      --encoding=UTF8 \
+      --no-locale \
+      >/dev/null
+  fi
+
+  mkdir -p "$diretorio_socket"
+  if pg_ctl --pgdata="$diretorio_dados" status >/dev/null 2>&1; then
+    return
+  fi
+
+  pg_ctl \
+    --pgdata="$diretorio_dados" \
+    --wait \
+    --options="-k $diretorio_socket -p $porta" \
+    start \
+    >/dev/null
+}
+
+# Cria o banco fixo caso o cluster ainda não possua o destino E2E.
+#
+# Como faz: consulta o catálogo pelo socket local e executa createdb apenas se
+# não encontrar o nome reservado. Existe para que iniciar seja idempotente e
+# preserve dados enquanto reset não for solicitado.
+criar_banco_se_necessario() {
+  if ! psql \
+    --host="$diretorio_socket" \
+    --port="$porta" \
+    --username=postgres \
+    --dbname=postgres \
+    --tuples-only \
+    --no-align \
+    --command="SELECT 1 FROM pg_database WHERE datname = '$nome_banco'" \
+    | grep -qx '1'; then
+    createdb \
+      --host="$diretorio_socket" \
+      --port="$porta" \
+      --username=postgres \
+      "$nome_banco"
+  fi
+}
+
+# Aplica as migrations ao banco E2E recém-criado ou resetado.
+#
+# Como faz: exporta a URL calculada apenas para o processo Alembic e preserva
+# qualquer DATABASE_URL do terminal chamador. Existe para alinhar o schema ao
+# modelo Code First antes de uma pessoa executar o cenário E2E.
+aplicar_migrations() {
+  DATABASE_URL="$(url_banco)" PYTHONPATH=src PYTHONDONTWRITEBYTECODE=1 alembic upgrade head
+}
+
+# Exibe a sintaxe de uso quando a operação não foi reconhecida.
+#
+# Como faz: apresenta as operações públicas aceitas e encerra com erro de uso.
+# Existe para tornar a administração do cluster explícita e sem comandos ocultos.
+exibir_uso() {
+  cat >&2 <<'EOF'
+Uso: scripts/postgres-e2e <iniciar|parar|status|reset|url>
+
+Defina POSTGRES_E2E_STATE_DIR com um diretório persistente fora do repositório.
+EOF
+  exit 64
+}
+
+validar_diretorio_estado
+obter_porta
+
+case "${1:-}" in
+  iniciar)
+    iniciar_servidor
+    criar_banco_se_necessario
+    aplicar_migrations
+    echo "PostgreSQL E2E disponível em $(url_banco)"
+    ;;
+  parar)
+    if [ -d "$diretorio_dados" ] && pg_ctl --pgdata="$diretorio_dados" status >/dev/null 2>&1; then
+      pg_ctl --pgdata="$diretorio_dados" --wait stop --mode=fast >/dev/null
+    fi
+    echo "PostgreSQL E2E parado."
+    ;;
+  status)
+    if [ -d "$diretorio_dados" ] && pg_ctl --pgdata="$diretorio_dados" status >/dev/null 2>&1; then
+      echo "PostgreSQL E2E em execução em $(url_banco)"
+    else
+      echo "PostgreSQL E2E não está em execução."
+      exit 3
+    fi
+    ;;
+  reset)
+    iniciar_servidor
+    dropdb \
+      --host="$diretorio_socket" \
+      --port="$porta" \
+      --username=postgres \
+      --if-exists \
+      --force \
+      "$nome_banco"
+    createdb \
+      --host="$diretorio_socket" \
+      --port="$porta" \
+      --username=postgres \
+      "$nome_banco"
+    aplicar_migrations
+    echo "PostgreSQL E2E resetado em $(url_banco)"
+    ;;
+  url)
+    printf '%s\n' "$(url_banco)"
+    ;;
+  *)
+    exibir_uso
+    ;;
+esac
