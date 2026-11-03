@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
   FalhaAcessoEstudante,
@@ -41,12 +41,6 @@ export function FormularioAcesso({
   const [erros, setErros] = useState<ErrosFormulario>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-
-  useEffect(() => {
-    if (emailInicial !== undefined) {
-      setEmail(emailInicial);
-    }
-  }, [emailInicial]);
 
   /** Atualiza o e-mail e remove feedback que já não descreve o valor atual. */
   function atualizarEmail(valor: string): void {

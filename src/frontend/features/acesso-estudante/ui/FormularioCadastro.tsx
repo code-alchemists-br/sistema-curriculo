@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260920-232013-tela-cadastro-acesso-estudante-v001.md#v001
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
   FalhaAcessoEstudante,
@@ -51,12 +51,6 @@ export function FormularioCadastro({
   const [erros, setErros] = useState<ErrosFormulario>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-
-  useEffect(() => {
-    if (emailInicial !== undefined && emailInicial !== valores.email) {
-      setValores((atuais) => ({ ...atuais, email: emailInicial }));
-    }
-  }, [emailInicial]);
 
   /** Atualiza somente o campo alterado e remove seu feedback anterior. */
   function atualizarCampo(campo: keyof ValoresCadastro, valor: string): void {
