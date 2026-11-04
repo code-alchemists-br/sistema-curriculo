@@ -1,4 +1,7 @@
-import { CabecalhoPublico } from "../../../widgets/cabecalho-publico";
+import {
+  CabecalhoPublico,
+  type UsuarioAutenticado,
+} from "../../../widgets/cabecalho-publico";
 import { Destaques } from "../../../widgets/destaques";
 import { Hero } from "../../../widgets/hero";
 import "./PaginaInicio.css";
@@ -12,6 +15,9 @@ export interface PaginaInicioProps {
   onCriarCurriculo?: () => void;
   onNavegarVagas?: () => void;
   onNavegarPerfil?: () => void;
+  usuarioLogado?: UsuarioAutenticado | null;
+  temProgressoCurriculo?: boolean;
+  onLogout?: () => void;
 }
 
 export function PaginaInicio({
@@ -23,7 +29,15 @@ export function PaginaInicio({
   onCriarCurriculo,
   onNavegarVagas,
   onNavegarPerfil,
+  usuarioLogado,
+  temProgressoCurriculo,
+  onLogout,
 }: PaginaInicioProps) {
+  const textoBotaoHero =
+    usuarioLogado && temProgressoCurriculo
+      ? "CONTINUAR CURRÍCULO"
+      : "CRIAR CURRÍCULO";
+
   return (
     <div className="pagina-inicio">
       <CabecalhoPublico
@@ -32,9 +46,14 @@ export function PaginaInicio({
         onNavegarInicio={onNavegarInicio}
         onNavegarVagas={onNavegarVagas}
         onNavegarPerfil={onNavegarPerfil}
+        usuarioLogado={usuarioLogado}
+        onLogout={onLogout}
       />
       <main>
-        <Hero onCriarCurriculo={onCriarCurriculo ?? onNavegarCadastro} />
+        <Hero
+          onCriarCurriculo={onCriarCurriculo ?? onNavegarCadastro}
+          textoBotao={textoBotaoHero}
+        />
         <Destaques />
       </main>
       {(onNavegarTermosDeUso || onNavegarPoliticaDePrivacidade) && (

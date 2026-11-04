@@ -3,6 +3,7 @@ export {
   criarClienteAcessoEstudante,
   FalhaAcessoEstudante,
 } from "./api/cliente-acesso-estudante";
+export { criarClienteAcessoDemonstracao } from "./api/cliente-acesso-demonstracao";
 export type {
   ClienteAcessoEstudante,
   CodigoFalhaAcessoEstudante,

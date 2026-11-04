@@ -14,6 +14,7 @@ import "./PaginaAcessoEstudante.css";
 export interface PaginaAcessoEstudanteProps {
   cliente?: ClienteAcessoEstudante;
   onVoltarInicio?: () => void;
+  onSucessoAcesso?: (dados?: { email: string; nome?: string }) => void;
   abaInicial?: "acesso" | "cadastro";
 }
 
@@ -27,10 +28,11 @@ export interface PaginaAcessoEstudanteProps {
 export function PaginaAcessoEstudante({
   cliente,
   onVoltarInicio,
+  onSucessoAcesso,
   abaInicial = "acesso",
 }: PaginaAcessoEstudanteProps) {
   const [abaAtiva, setAbaAtiva] = useState<"acesso" | "cadastro">(abaInicial);
-  const [emailCadastrado, setEmailCadastrado] = useState("");
+  const [emailDigitado, setEmailDigitado] = useState("");
   const clienteDaPagina = cliente ?? criarClienteAcessoEstudante();
 
   /** Troca a aba visível preservando dados controlados por cada formulário. */
@@ -38,9 +40,13 @@ export function PaginaAcessoEstudante({
     setAbaAtiva(aba);
   }
 
-  /** Preenche o próximo acesso com o e-mail cadastrado e nunca retém a senha. */
-  function concluirCadastro(email: string): void {
-    setEmailCadastrado(email);
+  /** Conclui o cadastro redirecionando com sucesso quando há callback ou alterna para login. */
+  function concluirCadastro(email: string, nome?: string): void {
+    setEmailDigitado(email);
+    if (onSucessoAcesso) {
+      onSucessoAcesso({ email, nome });
+      return;
+    }
     setAbaAtiva("acesso");
   }
 
@@ -84,13 +90,21 @@ export function PaginaAcessoEstudante({
           >
             {abaAtiva === "acesso" ? (
               <FormularioAcesso
+                aoAcessar={(emailInformado) =>
+                  onSucessoAcesso?.({
+                    email: emailInformado || emailDigitado,
+                  })
+                }
+                aoAlterarEmail={setEmailDigitado}
                 cliente={clienteDaPagina}
-                emailInicial={emailCadastrado}
+                emailInicial={emailDigitado}
               />
             ) : (
               <FormularioCadastro
+                aoAlterarEmail={setEmailDigitado}
                 aoCadastrar={concluirCadastro}
                 cliente={clienteDaPagina}
+                emailInicial={emailDigitado}
               />
             )}
           </section>

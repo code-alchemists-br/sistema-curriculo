@@ -7,6 +7,7 @@ import { App } from "./App";
 afterEach(() => {
   cleanup();
   window.history.replaceState({}, "", "/");
+  sessionStorage.clear();
 });
 
 describe("App", () => {
@@ -48,6 +49,13 @@ describe("App", () => {
   });
 
   it("permite preencher dados pessoais, avançar para a próxima etapa, voltar e verificar que os dados continuam preenchidos", async () => {
+    sessionStorage.setItem(
+      "liminal_usuario_sessao",
+      JSON.stringify({
+        nome: "Ricardo Santos",
+        email: "ricardo@fatec.sp.gov.br",
+      }),
+    );
     const user = userEvent.setup();
     render(<App />);
 
@@ -125,5 +133,78 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "O currículo que abre portas" }),
     ).toBeInTheDocument();
+  });
+
+  it("redireciona para o inicio com cabecalho atualizado ao criar conta a partir do cabecalho", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Crie uma nova conta" }),
+    ).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Nome"), "Carlos Eduardo");
+    await user.type(screen.getByLabelText("E-mail"), "carlos@exemplo.com");
+    await user.type(screen.getByLabelText("Senha"), "senha123");
+    await user.type(screen.getByLabelText("Confirme a senha"), "senha123");
+
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "O currículo que abre portas",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Carlos")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Fazer login" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /Menu de navegação e perfil/i }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /Sair da conta/i }));
+
+    expect(
+      screen.getByRole("button", { name: "Fazer login" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Criar conta" }),
+    ).toBeInTheDocument();
+  });
+
+  it("redireciona para cadastro e depois para criacao do curriculo ao clicar em 'Criar curriculo' sem conta", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "CRIAR CURRÍCULO →" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Crie uma nova conta" }),
+    ).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Nome"), "Mariana Silva");
+    await user.type(screen.getByLabelText("E-mail"), "mariana@fatec.sp.gov.br");
+    await user.type(screen.getByLabelText("Senha"), "segredo123");
+    await user.type(screen.getByLabelText("Confirme a senha"), "segredo123");
+
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Conte um pouco sobre você",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByLabelText("Nome Completo")).toHaveValue("Mariana Silva");
+    expect(screen.getByLabelText("E-mail")).toHaveValue(
+      "mariana@fatec.sp.gov.br",
+    );
   });
 });

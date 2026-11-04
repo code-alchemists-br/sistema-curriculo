@@ -5,9 +5,13 @@ import "./Hero.css";
 
 export interface HeroProps {
   onCriarCurriculo?: () => void;
+  textoBotao?: string;
 }
 
-export function Hero({ onCriarCurriculo }: HeroProps) {
+export function Hero({
+  onCriarCurriculo,
+  textoBotao = "CRIAR CURRÍCULO",
+}: HeroProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const lightEffectRef = useRef<HTMLDivElement | null>(null);
   const rightOuterGlowRef = useRef<HTMLDivElement | null>(null);
@@ -128,7 +132,7 @@ export function Hero({ onCriarCurriculo }: HeroProps) {
                 type="button"
                 id="interactive-button"
                 className="interactive-button"
-                aria-label="CRIAR CURRÍCULO →"
+                aria-label={`${textoBotao} →`}
                 onClick={onCriarCurriculo}
                 onMouseEnter={handleMouseEnter}
                 onMouseMove={handleMouseMove}
@@ -144,7 +148,7 @@ export function Hero({ onCriarCurriculo }: HeroProps) {
                   <div className="wider-blur" />
                 </div>
 
-                <span className="button-text">CRIAR CURRÍCULO</span>
+                <span className="button-text">{textoBotao}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
