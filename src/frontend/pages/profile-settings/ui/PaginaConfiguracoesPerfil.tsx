@@ -9,6 +9,7 @@ import type { Student } from "../../../entities/student";
 export interface PaginaConfiguracoesPerfilProps {
   cliente?: ClientePerfilEstudante;
   valoresIniciais?: Student;
+  onVoltar?: () => void;
 }
 
 const DADOS_FICTICIOS: Student = {
@@ -28,6 +29,7 @@ const DADOS_FICTICIOS: Student = {
 export function PaginaConfiguracoesPerfil({
   cliente = criarClientePerfilIndisponivel(),
   valoresIniciais = DADOS_FICTICIOS,
+  onVoltar,
 }: PaginaConfiguracoesPerfilProps) {
   return (
     <main className="app-shell">
@@ -35,6 +37,18 @@ export function PaginaConfiguracoesPerfil({
         aria-labelledby="titulo-configuracoes-perfil"
         className="app-shell__content"
       >
+        {onVoltar && (
+          <div style={{ marginBottom: "1rem" }}>
+            <button
+              type="button"
+              className="btn-voltar"
+              onClick={onVoltar}
+              aria-label="Voltar para a página inicial"
+            >
+              ← Voltar para o início
+            </button>
+          </div>
+        )}
         <p className="eyebrow">Configurações</p>
         <h1 id="titulo-configuracoes-perfil">Editar perfil</h1>
         <p>Atualize seus dados pessoais ou exclua sua conta permanentemente.</p>

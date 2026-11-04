@@ -1,8 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PaginaTermosDeUso } from "./PaginaTermosDeUso";
+
+afterEach(cleanup);
 
 describe("PaginaTermosDeUso", () => {
   it("apresenta a estrutura semântica e o aviso sobre a versão informativa", () => {

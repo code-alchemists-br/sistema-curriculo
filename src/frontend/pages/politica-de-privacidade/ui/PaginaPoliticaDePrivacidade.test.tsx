@@ -1,8 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PaginaPoliticaDePrivacidade } from "./PaginaPoliticaDePrivacidade";
+
+afterEach(cleanup);
 
 describe("PaginaPoliticaDePrivacidade", () => {
   it("apresenta os dados tratados e os limites conhecidos da política", () => {
@@ -17,7 +19,9 @@ describe("PaginaPoliticaDePrivacidade", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "1. Dados tratados" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/prazo geral de retenção/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/prazo geral de retenção/i).length,
+    ).toBeGreaterThan(0);
     expect(screen.getByRole("note")).toBeInTheDocument();
   });
 

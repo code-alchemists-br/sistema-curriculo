@@ -12,11 +12,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 44px;
 }
 
 .cabecalho-publico__brand {
   display: flex;
   align-items: center;
+  height: 44px;
 }
 
 .cabecalho-publico__logo-btn {
@@ -38,6 +40,9 @@
   text-transform: uppercase;
   user-select: none;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
   transition: color 0.15s ease-in-out;
 }
 
@@ -55,6 +60,124 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-height: 44px;
+}
+
+.cabecalho-publico__divisor {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.cabecalho-publico__menu-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cabecalho-publico__menu-trigger {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background-color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.cabecalho-publico__menu-trigger:hover,
+.cabecalho-publico__menu-trigger--ativo {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.cabecalho-publico__menu-trigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
+.cabecalho-publico__menu-icone-linhas {
+  width: 16px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.cabecalho-publico__menu-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cabecalho-publico__menu-avatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cabecalho-publico__menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  right: 0;
+  min-width: 196px;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 16px;
+  padding: 0.4rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  z-index: 100;
+}
+
+.cabecalho-publico__menu-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 11px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  cursor: pointer;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: "Poppins", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+}
+
+.cabecalho-publico__menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.cabecalho-publico__menu-item:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.cabecalho-publico__menu-item-icone {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .cabecalho-publico__btn-login {
@@ -75,6 +198,8 @@
   align-items: center;
   justify-content: center;
   line-height: 1.25;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .cabecalho-publico__btn-login:hover {
@@ -104,6 +229,8 @@
   align-items: center;
   justify-content: center;
   line-height: 1.25;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .cabecalho-publico__btn-criar-conta:hover {
@@ -116,22 +243,98 @@
   outline-offset: 3px;
 }
 
+.cabecalho-publico__btn-retorno {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition:
+    color 0.2s ease,
+    transform 0.15s ease;
+  line-height: 1.25;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.cabecalho-publico__btn-retorno:hover {
+  color: #ff8533;
+  transform: translateX(-2px);
+}
+
+.cabecalho-publico__btn-retorno:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 1440px) {
+  .cabecalho-publico__container {
+    padding: 2.25rem 1.5rem;
+  }
+}
+
 @media (max-width: 640px) {
   .cabecalho-publico__container {
-    padding: 1.25rem 1.5rem;
+    padding: 1.25rem 1.25rem;
   }
 
   .cabecalho-publico__logo-btn {
-    font-size: 26px;
+    font-size: 24px;
   }
 
   .cabecalho-publico__actions {
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .cabecalho-publico__btn-criar-conta,
   .cabecalho-publico__btn-login {
-    font-size: 14px;
-    padding: 8px 16px;
+    font-size: 13px;
+    padding: 8px 13px;
+    height: 38px;
+  }
+
+  .cabecalho-publico__divisor {
+    height: 20px;
+    margin: 0 0.05rem;
+  }
+
+  .cabecalho-publico__menu-trigger {
+    height: 38px;
+    padding: 0 13px;
+    gap: 0.45rem;
+  }
+
+  .cabecalho-publico__menu-dropdown {
+    min-width: 184px;
+  }
+
+  .cabecalho-publico__btn-retorno {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cabecalho-publico__container {
+    padding: 1rem 1rem;
+  }
+
+  .cabecalho-publico__logo-btn {
+    font-size: 20px;
+  }
+
+  .cabecalho-publico__divisor {
+    display: none;
+  }
+
+  .cabecalho-publico__btn-retorno {
+    font-size: 0.8125rem;
   }
 }

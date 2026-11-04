@@ -17,12 +17,21 @@ import { PaginaExperienciasProfissionais } from "../pages/experiencias-profissio
 import { PaginaFormacaoAcademica } from "../pages/formacao-academica";
 import { PaginaIdiomas } from "../pages/idiomas";
 import { PaginaInicio } from "../pages/inicio";
+import { PaginaConfiguracoesPerfil } from "../pages/profile-settings";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
 import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
+import { PaginaVagasGrupo2 } from "../pages/vagas";
+import {
+  criarClienteVagasDemonstracao,
+  criarClienteDecisoesDemonstracao,
+} from "../features/listar-vagas";
+
+const clienteVagasDemo = criarClienteVagasDemonstracao();
+const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
 
 type RotaAtiva =
   | "inicio"
@@ -38,7 +47,9 @@ type RotaAtiva =
   | "selecionar-modelo"
   | "termos-de-uso"
   | "politica-de-privacidade"
-  | "validacao-curriculo";
+  | "validacao-curriculo"
+  | "vagas"
+  | "configuracoes-perfil";
 
 /**
  * Ponto de entrada da aplicação.
@@ -65,6 +76,9 @@ export function App() {
       if (etapa === "termos-de-uso") return "termos-de-uso";
       if (etapa === "politica-de-privacidade") return "politica-de-privacidade";
       if (etapa === "validacao-curriculo") return "validacao-curriculo";
+      if (etapa === "vagas") return "vagas";
+      if (etapa === "configuracoes-perfil" || etapa === "perfil")
+        return "configuracoes-perfil";
       if (etapa === "acesso") return "acesso";
     }
     return "inicio";
@@ -223,6 +237,7 @@ export function App() {
         tecnologias: p.tecnologias,
       })) ?? [],
   };
+
   if (rotaAtiva === "dados-pessoais") {
     return (
       <PaginaDadosPessoais
@@ -357,12 +372,28 @@ export function App() {
     );
   }
 
+  if (rotaAtiva === "vagas") {
+    return (
+      <PaginaVagasGrupo2
+        cliente={clienteVagasDemo}
+        clienteDecisoes={clienteDecisoesDemo}
+        onVoltar={() => navegar("inicio")}
+      />
+    );
+  }
+
+  if (rotaAtiva === "configuracoes-perfil") {
+    return <PaginaConfiguracoesPerfil onVoltar={() => navegar("inicio")} />;
+  }
+
   return (
     <PaginaInicio
       onCriarCurriculo={() => navegar("dados-pessoais")}
       onNavegarCadastro={() => abrirAcesso("cadastro")}
       onNavegarLogin={() => abrirAcesso("acesso")}
       onNavegarInicio={voltarAoInicio}
+      onNavegarVagas={() => navegar("vagas")}
+      onNavegarPerfil={() => navegar("configuracoes-perfil")}
       onNavegarPoliticaDePrivacidade={() =>
         abrirDocumentoPublico("politica-de-privacidade")
       }

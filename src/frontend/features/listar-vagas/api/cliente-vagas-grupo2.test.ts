@@ -24,6 +24,37 @@ const respostaValida = {
   ],
 };
 
+const respostaMatchesCompleta = {
+  matches: [
+    {
+      rank: 1,
+      job: {
+        company: "Tech Corp",
+        title: "Estágio em Engenharia de Dados",
+        description: "Pipelines de dados e integração com Python.",
+        keywords: ["ETL", "Big Data"],
+        location: {
+          city: "São Paulo",
+          state: "SP",
+        },
+        work_arrangement: "REMOTE",
+        seniority_level: "INTERN",
+        skills: ["Python", "SQL"],
+        salary: {
+          min: 2000,
+          max: 2800,
+        },
+        currency: "BRL",
+        job_url: "https://grupo2.exemplo.com/jobs/101",
+        publication_date: "2026-11-01T04:11:59.870Z",
+      },
+      score: 100,
+      embedding_model: "text-embedding-3-small",
+      algorithm_version: "1.0",
+    },
+  ],
+};
+
 describe("adaptarRespostaGrupo2", () => {
   it("converte o contrato externo em sugestões internas de vaga", () => {
     expect(adaptarRespostaGrupo2(respostaValida)).toEqual([
@@ -43,9 +74,72 @@ describe("adaptarRespostaGrupo2", () => {
     ]);
   });
 
+  it("converte o schema matches do Grupo 2 com todos os campos extraídos", () => {
+    expect(adaptarRespostaGrupo2(respostaMatchesCompleta)).toEqual([
+      {
+        curriculoId: "curriculo-padrao",
+        ranque: 1,
+        pontuacaoCompatibilidade: 100,
+        vaga: {
+          id: "vaga-1-https://grupo2.exemplo.com/jobs/101",
+          titulo: "Estágio em Engenharia de Dados",
+          empresa: "Tech Corp",
+          descricao: "Pipelines de dados e integração com Python.",
+          requisitos: ["Python", "SQL"],
+          palavrasChave: ["ETL", "Big Data"],
+          localizacao: "São Paulo - SP",
+          modalidade: "Remoto",
+          nivelSenioridade: "Estágio",
+          salario: "R$ 2.000 – R$ 2.800",
+          moeda: "BRL",
+          urlCandidatura: "https://grupo2.exemplo.com/jobs/101",
+          dataPublicacao: "01/11/2026",
+        },
+      },
+    ]);
+  });
+
+  it("aceita vaga no schema matches apenas com os campos garantidos (title, description e job_url)", () => {
+    const apenasGarantidos = {
+      matches: [
+        {
+          job: {
+            title: "Desenvolvedor Backend",
+            description: "Atuação em APIs REST.",
+            job_url: "https://grupo2.exemplo.com/jobs/minimo",
+            salary: {
+              additionalProp1: 0,
+              additionalProp2: 0,
+            },
+          },
+        },
+      ],
+    };
+
+    expect(adaptarRespostaGrupo2(apenasGarantidos)).toEqual([
+      {
+        curriculoId: "curriculo-padrao",
+        vaga: {
+          id: "vaga-1-https://grupo2.exemplo.com/jobs/minimo",
+          titulo: "Desenvolvedor Backend",
+          empresa: "Empresa confidencial",
+          descricao: "Atuação em APIs REST.",
+          requisitos: [],
+          localizacao: null,
+          modalidade: null,
+          urlCandidatura: "https://grupo2.exemplo.com/jobs/minimo",
+        },
+      },
+    ]);
+  });
+
   it("recusa uma resposta que não respeita o contrato", () => {
     expect(() =>
       adaptarRespostaGrupo2({ associacoes: [{ vaga: {} }] }),
+    ).toThrow(new FalhaVagasGrupo2("resposta-invalida"));
+
+    expect(() =>
+      adaptarRespostaGrupo2({ matches: [{ job: { title: "Sem URL" } }] }),
     ).toThrow(new FalhaVagasGrupo2("resposta-invalida"));
   });
 });
