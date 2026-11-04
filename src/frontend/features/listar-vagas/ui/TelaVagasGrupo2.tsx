@@ -178,8 +178,14 @@ function renderizarEstado(
       </div>
 
       <ul aria-label="Vagas sugeridas" className="vagas-grupo2__lista">
-        {estado.sugestoes.map((sugestao) => (
-          <li key={chaveDaSugestao(sugestao)}>
+        {estado.sugestoes.map((sugestao, indice) => (
+          <li
+            key={chaveDaSugestao(sugestao)}
+            className="vagas-grupo2__item-vaga"
+            style={{
+              animationDelay: `${Math.min(indice * 90, 900)}ms`,
+            }}
+          >
             <CartaoVaga sugestao={sugestao} />
           </li>
         ))}

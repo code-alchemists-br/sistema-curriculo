@@ -9,6 +9,7 @@
   width: min(100% - 3rem, 58rem);
   margin: 0 auto;
   padding: 2rem 0 4rem;
+  animation: animacaoEntradaFadeUp 0.95s var(--anim-curva-suave) both;
 }
 
 .pagina-documento-publico__introducao {

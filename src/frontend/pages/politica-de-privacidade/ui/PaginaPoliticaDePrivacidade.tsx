@@ -31,12 +31,14 @@ export function PaginaPoliticaDePrivacidade({
           onNavegarCadastro={onNavegarCadastro}
           onNavegarInicio={onNavegarInicio}
           onNavegarLogin={onNavegarLogin}
+          textoBotaoRetorno="← Voltar ao início"
+          onRetorno={onNavegarInicio}
         />
       }
       descricao="Informações sobre o tratamento de dados necessárias para a conta e para a construção do currículo."
       rodape={
         <div className="pagina-documento-publico__rodape-conteudo">
-          <span>LIMINAL — Sistema Currículo</span>
+          <span>LIMINAL</span>
           <nav
             aria-label="Navegação entre documentos legais"
             className="pagina-documento-publico__navegacao"

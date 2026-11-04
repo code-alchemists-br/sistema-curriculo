@@ -41,4 +41,21 @@ describe("PaginaPoliticaDePrivacidade", () => {
 
     expect(onNavegarTermosDeUso).toHaveBeenCalledTimes(1);
   });
+
+  it("permite voltar ao início pelo botão de retorno no cabeçalho", async () => {
+    const usuario = userEvent.setup();
+    const onNavegarInicio = vi.fn();
+
+    render(<PaginaPoliticaDePrivacidade onNavegarInicio={onNavegarInicio} />);
+
+    expect(
+      screen.getByRole("button", { name: "← Voltar ao início" }),
+    ).toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", { name: "← Voltar ao início" }),
+    );
+
+    expect(onNavegarInicio).toHaveBeenCalledTimes(1);
+  });
 });

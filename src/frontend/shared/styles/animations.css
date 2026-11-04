@@ -1,0 +1,108 @@
+/**
+ * Animações de entrada do sistema LIMINAL.
+ *
+ * Princípios de Engenharia de UX:
+ * 1. Performance de 60fps/120fps: Uso estrito de propriedades aceleradas por GPU (opacity e transform).
+ * 2. Curvas orgânicas: cubic-bezier(0.16, 1, 0.3, 1) com transições sutis (12px a 16px).
+ * 3. Acessibilidade (WCAG 2.1 Critério 2.3.3): Desativação automática sob prefers-reduced-motion: reduce.
+ */
+
+:root {
+  --anim-curva-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --anim-duracao-padrao: 0.9s;
+  --anim-duracao-rapida: 0.75s;
+  --anim-duracao-lenta: 1.1s;
+}
+
+/* Keyframes universais */
+@keyframes animacaoEntradaFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes animacaoEntradaFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes animacaoEntradaScaleUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.99) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes animacaoEntradaVaga {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Classes utilitárias de animação */
+.animar-entrada {
+  animation: animacaoEntradaFadeUp var(--anim-duracao-padrao)
+    var(--anim-curva-suave) both;
+}
+
+.animar-fade {
+  animation: animacaoEntradaFadeIn var(--anim-duracao-padrao)
+    var(--anim-curva-suave) both;
+}
+
+.animar-escala {
+  animation: animacaoEntradaScaleUp var(--anim-duracao-padrao)
+    var(--anim-curva-suave) both;
+}
+
+/* Delays escalonados para entradas sequenciais */
+.animar-delay-1 {
+  animation-delay: 0.08s;
+}
+
+.animar-delay-2 {
+  animation-delay: 0.16s;
+}
+
+.animar-delay-3 {
+  animation-delay: 0.24s;
+}
+
+/* Acessibilidade: respeita a preferência por movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animar-entrada,
+  .animar-fade,
+  .animar-escala,
+  .vagas-grupo2__item-vaga {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
