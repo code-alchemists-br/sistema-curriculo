@@ -10,6 +10,13 @@ from typing import AsyncContextManager
 
 from fastapi import FastAPI
 
+# Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+from backend.api.associacoes_curriculo_vaga import (
+    ListagemAssociacoesCurriculoVagaExecutor,
+)
+from backend.api.associacoes_curriculo_vaga import (
+    criar_router as criar_router_associacoes_curriculo_vaga,
+)
 from backend.api.cadastro_acesso import (
     AcessoEstudanteExecutor,
     CadastroEstudanteExecutor,
@@ -53,6 +60,8 @@ from backend.api.decisao_recomendacao import (
 from backend.api.documentacao_openapi import (
     DESCRICAO_API,
     METADADOS_TAGS,
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    TAG_ASSOCIACOES_CURRICULO_VAGA,
     TAG_CADASTRO_ACESSO,
     TAG_CERTIFICACOES,
     TAG_COMPETENCIAS,
@@ -284,14 +293,18 @@ def create_app(
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
     configuracao_cookie: ConfiguracaoCookieSessao = ConfiguracaoCookieSessao(),
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    listar_associacoes_curriculo_vaga: ListagemAssociacoesCurriculoVagaExecutor
+    | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
-    formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, revisão de campos obrigatórios, decisão sobre recomendações,
+    formações acadêmicas, versões de currículo, seleção de itens, listagem de
+    associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
+    decisão sobre recomendações,
     experiências profissionais (cadastro, edição e exclusão), prévia, exportação do
     currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
@@ -396,6 +409,11 @@ def create_app(
         criar_router_listagem_versoes_curriculo(listar_versoes_curriculo),
         tags=[TAG_VERSOES_CURRICULO],
     )
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    app.include_router(
+        criar_router_associacoes_curriculo_vaga(listar_associacoes_curriculo_vaga),
+        tags=[TAG_ASSOCIACOES_CURRICULO_VAGA],
+    )
     app.include_router(
         criar_router_experiencia_profissional(
             cadastrar_experiencia_profissional,
@@ -418,7 +436,9 @@ def create_app(
         tags=[TAG_PREVIA_VERSAO_CURRICULO],
     )
     app.include_router(
-        criar_router_exportacao_curriculo(exportar_curriculo_docx, exportar_curriculo_pdf),
+        criar_router_exportacao_curriculo(
+            exportar_curriculo_docx, exportar_curriculo_pdf
+        ),
         tags=[TAG_EXPORTACAO_CURRICULO],
     )
     app.include_router(
