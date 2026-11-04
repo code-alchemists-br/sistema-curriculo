@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 
@@ -206,5 +206,23 @@ describe("App", () => {
     expect(screen.getByLabelText("E-mail")).toHaveValue(
       "mariana@fatec.sp.gov.br",
     );
+  });
+
+  it("redefine a rolagem da janela para o topo ao navegar entre rotas", async () => {
+    const scrollToMock = vi.fn();
+    window.scrollTo = scrollToMock;
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(scrollToMock).toHaveBeenCalledWith(0, 0);
+    scrollToMock.mockClear();
+
+    await user.click(screen.getByRole("button", { name: "Termos de Uso" }));
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Termos de Uso" }),
+    ).toBeInTheDocument();
+    expect(scrollToMock).toHaveBeenCalledWith(0, 0);
   });
 });

@@ -140,6 +140,12 @@
   min-width: 0;
 }
 
+.vagas-grupo2__item-vaga {
+  display: flex;
+  min-width: 0;
+  animation: animacaoEntradaVaga 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
 .vagas-grupo2__card {
   width: 100%;
   min-width: 0;
@@ -157,6 +163,8 @@
     0 16px 40px -12px rgba(0, 0, 0, 0.65);
   box-sizing: border-box;
   overflow-wrap: break-word;
+  isolation: isolate;
+  transform: translateY(0);
   transition:
     background-color 0.25s ease,
     transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
@@ -168,8 +176,7 @@
   transform: translateY(-4px);
   box-shadow:
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
-    0 24px 48px -12px rgba(0, 0, 0, 0.8),
-    0 0 32px rgba(255, 106, 0, 0.08);
+    0 24px 48px -12px rgba(0, 0, 0, 0.8);
 }
 
 .vagas-grupo2__corpo-card {

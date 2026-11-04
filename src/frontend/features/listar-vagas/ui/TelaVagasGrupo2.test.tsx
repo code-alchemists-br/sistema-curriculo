@@ -165,4 +165,27 @@ describe("TelaVagasGrupo2", () => {
     expect(listarSugestoes).toHaveBeenCalledTimes(2);
     expect(listarSugestoes).toHaveBeenLastCalledWith({ termo: "" });
   });
+
+  it("aplica atraso de animacao sequencial em cascata para cada vaga da lista", async () => {
+    const lista = [
+      sugestao,
+      {
+        ...sugestao,
+        vaga: { ...sugestao.vaga, id: "vaga-002", titulo: "Vaga 2" },
+      },
+      {
+        ...sugestao,
+        vaga: { ...sugestao.vaga, id: "vaga-003", titulo: "Vaga 3" },
+      },
+    ];
+
+    render(<TelaVagasGrupo2 cliente={criarCliente(lista)} />);
+    await screen.findByRole("heading", { name: "Vaga 2" });
+
+    const listaVagas = screen.getByRole("list", { name: "Vagas sugeridas" });
+    const itens = Array.from(listaVagas.children);
+    expect(itens[0]).toHaveStyle({ animationDelay: "0ms" });
+    expect(itens[1]).toHaveStyle({ animationDelay: "90ms" });
+    expect(itens[2]).toHaveStyle({ animationDelay: "180ms" });
+  });
 });

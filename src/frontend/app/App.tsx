@@ -31,6 +31,7 @@ import {
   criarClienteDecisoesDemonstracao,
 } from "../features/listar-vagas";
 import { criarClienteAcessoDemonstracao } from "../features/acesso-estudante";
+import "../shared/styles/animations.css";
 
 const clienteVagasDemo = criarClienteVagasDemonstracao();
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
@@ -53,6 +54,45 @@ type RotaAtiva =
   | "validacao-curriculo"
   | "vagas"
   | "configuracoes-perfil";
+
+/**
+ * Redefine a posição de rolagem da janela e de contêineres internos para o topo.
+ *
+ * Como faz: desativa a restauração automática nativa do histórico (history.scrollRestoration = 'manual')
+ * e redefine o scroll da janela (window), dos elementos raiz (documentElement, body) e de contêineres
+ * internos com rolagem independente (como o painel de etapas do currículo e documentos legais).
+ *
+ * Qual finalidade atende: garante que aterrissar em qualquer tela ou alternar entre etapas
+ * sempre inicie a visualização no topo, mesmo após rolagem prévia até o rodapé.
+ */
+function resetarScroll(): void {
+  if (typeof window !== "undefined") {
+    try {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+    } catch {
+      // Ignora erro em ambientes restritos
+    }
+
+    if (typeof window.scrollTo === "function") {
+      window.scrollTo(0, 0);
+    }
+    if (document.documentElement) {
+      document.documentElement.scrollTop = 0;
+    }
+    if (document.body) {
+      document.body.scrollTop = 0;
+    }
+
+    const conteineres = document.querySelectorAll<HTMLElement>(
+      ".layout-cadastro__conteudo, .pagina-documento-publico, .pagina-vagas, main, [data-scroll-container]",
+    );
+    conteineres.forEach((el) => {
+      el.scrollTop = 0;
+    });
+  }
+}
 
 /**
  * Ponto de entrada da aplicação.
@@ -145,6 +185,7 @@ export function App() {
       url.searchParams.delete("intencao");
       window.history.pushState({}, "", url.toString());
     }
+    resetarScroll();
     setRotaAtiva(rota);
   }
 
@@ -165,6 +206,7 @@ export function App() {
       url.searchParams.delete("intencao");
       window.history.pushState({}, "", url.toString());
     }
+    resetarScroll();
     setIntencaoAcesso(null);
     setRotaAtiva("inicio");
   }
@@ -195,6 +237,7 @@ export function App() {
       }
       window.history.pushState({}, "", url.toString());
     }
+    resetarScroll();
     setRotaAtiva("acesso");
   }
 
@@ -248,8 +291,19 @@ export function App() {
       }
       window.history.pushState({}, "", url.toString());
     }
+    resetarScroll();
     setRotaAtiva(etapa);
   }
+
+  useEffect(() => {
+    resetarScroll();
+    if (typeof requestAnimationFrame === "function") {
+      const frameId = requestAnimationFrame(() => {
+        resetarScroll();
+      });
+      return () => cancelAnimationFrame(frameId);
+    }
+  }, [rotaAtiva]);
 
   useEffect(() => {
     /**

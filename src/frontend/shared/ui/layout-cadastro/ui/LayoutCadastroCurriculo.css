@@ -35,6 +35,7 @@
   padding: 4rem 2.5rem 3.5rem;
   box-sizing: border-box;
   text-align: center;
+  animation: animacaoEntradaFadeIn 1s var(--anim-curva-suave) both;
 }
 
 .layout-cadastro__bg-image {
@@ -126,6 +127,7 @@
 
 .layout-cadastro__formulario {
   width: 100%;
+  animation: animacaoEntradaFadeUp 0.85s var(--anim-curva-suave) both;
 }
 
 /* Botões de navegação compartilhados entre as etapas (Voltar e Próximo) */

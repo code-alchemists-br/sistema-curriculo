@@ -23,6 +23,7 @@
   pointer-events: none !important;
   user-select: none !important;
   z-index: 0 !important;
+  animation: animacaoEntradaFadeIn 1.3s var(--anim-curva-suave) both;
 }
 
 .pagina-acesso-estudante .pagina-acesso-estudante__container {
@@ -33,6 +34,7 @@
   gap: 1.25rem !important;
   position: relative !important;
   z-index: 1 !important;
+  animation: animacaoEntradaFadeUp 0.95s var(--anim-curva-suave) both;
 }
 
 .pagina-acesso-estudante .pagina-acesso-estudante__voltar {
