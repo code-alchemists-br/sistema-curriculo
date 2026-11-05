@@ -172,13 +172,10 @@ async function preencherCamposDadosPessoais(
   },
 ): Promise<void> {
   await usuario.type(
-    screen.getByLabelText("Nome completo"),
+    screen.getByLabelText("Nome Completo"),
     dados.nomeCompleto,
   );
-  await usuario.type(
-    screen.getByLabelText("Endereço completo"),
-    dados.enderecoCompleto,
-  );
+  await usuario.type(screen.getByLabelText("Endereço"), dados.enderecoCompleto);
   await usuario.type(screen.getByLabelText("Telefone 1"), dados.telefone);
   await usuario.type(screen.getByLabelText("E-mail"), dados.email);
 }
@@ -412,10 +409,10 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
       "Não foi possível salvar os dados pessoais no momento. Tente novamente mais tarde.",
     );
 
-    expect(screen.getByLabelText("Nome completo")).toHaveValue(
+    expect(screen.getByLabelText("Nome Completo")).toHaveValue(
       "Juliana Mendes",
     );
-    expect(screen.getByLabelText("Endereço completo")).toHaveValue(
+    expect(screen.getByLabelText("Endereço")).toHaveValue(
       "Rua do Comércio, 120 - Santos - SP",
     );
     expect(screen.getByLabelText("Telefone 1")).toHaveValue("(13) 97777-6655");
@@ -478,7 +475,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     ).toBeInTheDocument();
 
     // Campo de nome deve conter o valor anterior
-    const campoNome = screen.getByLabelText("Nome completo");
+    const campoNome = screen.getByLabelText("Nome Completo");
     expect(campoNome).toHaveValue("Beatriz Lima");
 
     // Atualiza o nome e salva novamente

@@ -33,6 +33,7 @@
   letter-spacing: -0.02em;
   color: #e6e6e6;
   margin: 0 0 1.5rem 0;
+  animation: animacaoEntradaFadeUp 0.95s var(--anim-curva-suave) both;
 }
 
 .hero-section__subtitle {
@@ -43,11 +44,13 @@
   color: #c7c7c7;
   max-width: 44rem;
   margin: 0 0 4.75rem 0;
+  animation: animacaoEntradaFadeUp 0.95s var(--anim-curva-suave) 0.12s both;
 }
 
 .hero-section__actions {
   display: flex;
   align-items: center;
+  animation: animacaoEntradaFadeUp 0.95s var(--anim-curva-suave) 0.24s both;
 }
 
 /* --- Efeito Botão Huly (Light Leaks & Glow) --- */
@@ -250,6 +253,7 @@
   align-items: flex-end;
   pointer-events: none;
   z-index: 1;
+  animation: animacaoEntradaFadeIn 1.1s var(--anim-curva-suave) 0.15s both;
 }
 
 .hero-section__image {

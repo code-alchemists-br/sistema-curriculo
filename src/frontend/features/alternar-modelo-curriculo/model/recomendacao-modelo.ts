@@ -101,7 +101,7 @@ export function obterRecomendacaoModelo(objetivo: ObjetivoCurriculo): string {
     case "criativo-design":
       return "Recomendamos o modelo Criativo para dar maior destaque à identidade visual e aos projetos.";
     case "academico-pesquisador":
-      return "Recomendamos o modelo Acadêmico para priorizar formação e projetos acadêmicos.";
+      return "Recomendamos o modelo Acadêmico para priorizar formação e projetos acadêmicos. Para perfis acadêmicos e pós-graduação, o Currículo Lattes é obrigatório.";
     case "primeiro-emprego":
       return "Recomendamos o modelo Primeiro emprego para valorizar formação, projetos e competências antes da experiência.";
     case "outro":

@@ -11,10 +11,12 @@ import "./PaginaExperienciasProfissionais.css";
 export interface PaginaExperienciasProfissionaisProps {
   experienciasIniciais?: Experiencia[];
   onSalvar?: (experiencias: Experiencia[]) => void;
+  onVoltar?: () => void;
+  aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
 }
 
 /**
- * Compõe a página de cadastro de experiências profissionais (Etapa 3 de 8).
+ * Compõe a página de cadastro de experiências profissionais (Etapa 3 de 9).
  *
  * Utiliza o layout compartilhado de cadastro de currículo, com o painel visual
  * retangular degradê e a barra de progresso segmentada na terceira etapa.
@@ -22,6 +24,8 @@ export interface PaginaExperienciasProfissionaisProps {
 export function PaginaExperienciasProfissionais({
   experienciasIniciais,
   onSalvar,
+  onVoltar,
+  aoAlterarExperiencias,
 }: PaginaExperienciasProfissionaisProps) {
   const [progresso, setProgresso] = useState(0);
 
@@ -29,7 +33,7 @@ export function PaginaExperienciasProfissionais({
     <LayoutCadastroCurriculo
       subtitulo="Experiência Profissional"
       etapaAtual={3}
-      totalEtapas={8}
+      totalEtapas={9}
       progressoEtapaAtual={progresso}
     >
       <section
@@ -46,6 +50,8 @@ export function PaginaExperienciasProfissionais({
           aoAlterarProgresso={setProgresso}
           experienciasIniciais={experienciasIniciais}
           onSalvar={onSalvar}
+          onVoltar={onVoltar}
+          aoAlterarExperiencias={aoAlterarExperiencias}
         />
       </section>
     </LayoutCadastroCurriculo>

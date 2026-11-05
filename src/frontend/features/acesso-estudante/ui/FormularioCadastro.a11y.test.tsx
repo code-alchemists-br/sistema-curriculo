@@ -226,4 +226,24 @@ describe("FormularioCadastro — Testes de Acessibilidade (a11y)", () => {
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+
+  it("permite alternar a visualizacao da senha e da confirmacao de senha", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteAcessoEstudante = {
+      cadastrar: vi.fn(),
+      acessar: vi.fn(),
+    };
+
+    render(<FormularioCadastro aoCadastrar={vi.fn()} cliente={cliente} />);
+
+    const campoSenha = screen.getByLabelText("Senha");
+    expect(campoSenha).toHaveAttribute("type", "password");
+
+    const botaoAlternar = screen.getByRole("button", { name: "Mostrar senha" });
+    await usuario.click(botaoAlternar);
+    expect(campoSenha).toHaveAttribute("type", "text");
+
+    await usuario.click(screen.getByRole("button", { name: "Ocultar senha" }));
+    expect(campoSenha).toHaveAttribute("type", "password");
+  });
 });

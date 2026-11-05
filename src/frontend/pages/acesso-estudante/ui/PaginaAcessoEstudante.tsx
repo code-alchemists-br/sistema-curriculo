@@ -7,10 +7,15 @@ import {
   FormularioCadastro,
   type ClienteAcessoEstudante,
 } from "../../../features/acesso-estudante";
+import gradienteLogin from "../../../shared/assets/images/gradiente_login.webp";
+import "./PaginaAcessoEstudante.css";
 
 /** Define o colaborador da página para permitir composição e testes isolados. */
 export interface PaginaAcessoEstudanteProps {
   cliente?: ClienteAcessoEstudante;
+  onVoltarInicio?: () => void;
+  onSucessoAcesso?: (dados?: { email: string; nome?: string }) => void;
+  abaInicial?: "acesso" | "cadastro";
 }
 
 /**
@@ -20,9 +25,14 @@ export interface PaginaAcessoEstudanteProps {
  * formulários de feature através de sua API pública. Ela existe para unir os
  * dois fluxos de conta sem criar navegação autenticada ainda não definida.
  */
-export function PaginaAcessoEstudante({ cliente }: PaginaAcessoEstudanteProps) {
-  const [abaAtiva, setAbaAtiva] = useState<"acesso" | "cadastro">("acesso");
-  const [emailCadastrado, setEmailCadastrado] = useState("");
+export function PaginaAcessoEstudante({
+  cliente,
+  onVoltarInicio,
+  onSucessoAcesso,
+  abaInicial = "acesso",
+}: PaginaAcessoEstudanteProps) {
+  const [abaAtiva, setAbaAtiva] = useState<"acesso" | "cadastro">(abaInicial);
+  const [emailDigitado, setEmailDigitado] = useState("");
   const clienteDaPagina = cliente ?? criarClienteAcessoEstudante();
 
   /** Troca a aba visível preservando dados controlados por cada formulário. */
@@ -30,65 +40,102 @@ export function PaginaAcessoEstudante({ cliente }: PaginaAcessoEstudanteProps) {
     setAbaAtiva(aba);
   }
 
-  /** Preenche o próximo acesso com o e-mail cadastrado e nunca retém a senha. */
-  function concluirCadastro(email: string): void {
-    setEmailCadastrado(email);
+  /** Conclui o cadastro redirecionando com sucesso quando há callback ou alterna para login. */
+  function concluirCadastro(email: string, nome?: string): void {
+    setEmailDigitado(email);
+    if (onSucessoAcesso) {
+      onSucessoAcesso({ email, nome });
+      return;
+    }
     setAbaAtiva("acesso");
   }
 
   return (
-    <main className="app-shell">
-      <section aria-labelledby="titulo-acesso" className="app-shell__content">
-        <p className="eyebrow">Sistema Currículo</p>
-        <h1 id="titulo-acesso">Acesse sua conta</h1>
-        <p>
-          Crie sua conta ou confirme suas credenciais para iniciar sua jornada.
-        </p>
-        <div
-          aria-label="Escolha o fluxo de conta"
-          className="tabs"
-          role="tablist"
-        >
+    <main className="pagina-acesso-estudante app-shell">
+      <img
+        alt=""
+        aria-hidden="true"
+        className="pagina-acesso-estudante__glow"
+        src={gradienteLogin}
+      />
+      <div className="pagina-acesso-estudante__container">
+        {onVoltarInicio && (
           <button
-            aria-selected={abaAtiva === "acesso"}
-            className="tabs__button"
-            onClick={() => selecionarAba("acesso")}
-            role="tab"
+            className="pagina-acesso-estudante__voltar"
+            onClick={onVoltarInicio}
             type="button"
           >
-            Entrar
+            ← Voltar para o início
           </button>
-          <button
-            aria-selected={abaAtiva === "cadastro"}
-            className="tabs__button"
-            onClick={() => selecionarAba("cadastro")}
-            role="tab"
-            type="button"
-          >
-            Criar conta
-          </button>
-        </div>
+        )}
         <section
-          aria-label={
-            abaAtiva === "acesso"
-              ? "Formulário de acesso"
-              : "Formulário de cadastro"
-          }
-          className="account-form"
+          aria-labelledby="titulo-acesso"
+          className="pagina-acesso-estudante__card app-shell__content"
         >
-          {abaAtiva === "acesso" ? (
-            <FormularioAcesso
-              cliente={clienteDaPagina}
-              emailInicial={emailCadastrado}
-            />
-          ) : (
-            <FormularioCadastro
-              aoCadastrar={concluirCadastro}
-              cliente={clienteDaPagina}
-            />
-          )}
+          <span className="pagina-acesso-estudante__eyebrow eyebrow">
+            LIMINAL
+          </span>
+          <h1 className="pagina-acesso-estudante__titulo" id="titulo-acesso">
+            {abaAtiva === "acesso"
+              ? "Conecte-se na LIMINAL"
+              : "Crie uma nova conta"}
+          </h1>
+          <section
+            aria-label={
+              abaAtiva === "acesso"
+                ? "Formulário de acesso"
+                : "Formulário de cadastro"
+            }
+            className="pagina-acesso-estudante__formulario-wrapper account-form"
+          >
+            {abaAtiva === "acesso" ? (
+              <FormularioAcesso
+                aoAcessar={(emailInformado) =>
+                  onSucessoAcesso?.({
+                    email: emailInformado || emailDigitado,
+                  })
+                }
+                aoAlterarEmail={setEmailDigitado}
+                cliente={clienteDaPagina}
+                emailInicial={emailDigitado}
+              />
+            ) : (
+              <FormularioCadastro
+                aoAlterarEmail={setEmailDigitado}
+                aoCadastrar={concluirCadastro}
+                cliente={clienteDaPagina}
+                emailInicial={emailDigitado}
+              />
+            )}
+          </section>
         </section>
-      </section>
+
+        <footer className="pagina-acesso-estudante__alternador">
+          {abaAtiva === "acesso" ? (
+            <p className="pagina-acesso-estudante__alternador-texto">
+              Não tem uma conta?{" "}
+              <button
+                className="pagina-acesso-estudante__alternador-botao"
+                onClick={() => selecionarAba("cadastro")}
+                type="button"
+              >
+                Criar conta
+              </button>
+            </p>
+          ) : (
+            <p className="pagina-acesso-estudante__alternador-texto">
+              Já tem uma conta?{" "}
+              <button
+                className="pagina-acesso-estudante__alternador-botao"
+                onClick={() => selecionarAba("acesso")}
+                type="button"
+              >
+                Entrar
+              </button>
+            </p>
+          )}
+        </footer>
+      </div>
     </main>
   );
 }

@@ -16,9 +16,8 @@ export type ErrosProjetoAcademico = Partial<
 /**
  * Valida presença mínima para orientar o preenchimento antes do envio.
  *
- * A função trata título e descrição em branco como informação insuficiente e
- * preserva tecnologias como texto livre, sem determinar regras do domínio. Ela
- * existe para dar feedback imediato sem substituir as validações do backend.
+ * A função exige título, descrição e tecnologias utilizadas para garantir
+ * informações suficientes sobre a participação e competências aplicadas no projeto.
  */
 export function validarProjetoAcademico(
   valores: ValoresProjetoAcademico,
@@ -29,8 +28,28 @@ export function validarProjetoAcademico(
     erros.titulo = "Informe o título do projeto.";
   if (valores.descricao.trim() === "")
     erros.descricao = "Descreva o objetivo ou sua contribuição no projeto.";
+  if (valores.tecnologias.trim() === "")
+    erros.tecnologias = "Informe as tecnologias utilizadas no projeto.";
 
   return erros;
+}
+
+/**
+ * Valida uma lista de projetos acadêmicos, retornando um mapa de erros por índice.
+ */
+export function validarListaProjetosAcademicos(
+  projetos: ValoresProjetoAcademico[],
+): Record<number, ErrosProjetoAcademico> {
+  const mapaErros: Record<number, ErrosProjetoAcademico> = {};
+
+  projetos.forEach((projeto, indice) => {
+    const erros = validarProjetoAcademico(projeto);
+    if (Object.keys(erros).length > 0) {
+      mapaErros[indice] = erros;
+    }
+  });
+
+  return mapaErros;
 }
 
 /**

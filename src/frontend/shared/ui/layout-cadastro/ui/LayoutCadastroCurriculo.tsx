@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import gradienteCadastro from "../../../assets/images/gradiente_cadastro.webp";
 import "./LayoutCadastroCurriculo.css";
@@ -8,7 +8,7 @@ export interface LayoutCadastroCurriculoProps {
   subtitulo: string;
   /** Número da etapa atual (1 a totalEtapas) */
   etapaAtual?: number;
-  /** Total de etapas do cadastro (padrão 8) */
+  /** Total de etapas do cadastro (padrão 9) */
   totalEtapas?: number;
   /** Porcentagem de preenchimento da etapa atual (0 a 100) */
   progressoEtapaAtual?: number;
@@ -25,10 +25,18 @@ export interface LayoutCadastroCurriculoProps {
 export function LayoutCadastroCurriculo({
   subtitulo,
   etapaAtual = 1,
-  totalEtapas = 8,
+  totalEtapas = 9,
   progressoEtapaAtual = 0,
   children,
 }: LayoutCadastroCurriculoProps) {
+  const conteudoRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (conteudoRef.current) {
+      conteudoRef.current.scrollTop = 0;
+    }
+  }, [etapaAtual]);
+
   const etapas = Array.from({ length: totalEtapas }, (_, index) => index + 1);
 
   return (
@@ -52,7 +60,7 @@ export function LayoutCadastroCurriculo({
       </aside>
 
       {/* Coluna Direita: 60% */}
-      <main className="layout-cadastro__conteudo">
+      <main ref={conteudoRef} className="layout-cadastro__conteudo">
         <div className="layout-cadastro__container">
           {/* Barra de progresso segmentada */}
           <div
@@ -87,7 +95,9 @@ export function LayoutCadastroCurriculo({
           </div>
 
           {/* Área do formulário da seção */}
-          <div className="layout-cadastro__formulario">{children}</div>
+          <div key={etapaAtual} className="layout-cadastro__formulario">
+            {children}
+          </div>
         </div>
       </main>
     </div>

@@ -1,25 +1,63 @@
-"""Expõe o encerramento HTTP de uma sessão autenticada."""
+"""Expõe consulta e encerramento HTTP da sessão autenticada."""
 
-from fastapi import APIRouter, Cookie, HTTPException, Response, status
+from uuid import UUID
 
+from fastapi import APIRouter, HTTPException, Request, Response, status
+from pydantic import BaseModel
+
+from backend.api.configuracao_cookie_sessao import (
+    COOKIE_SESSAO_SEGURA,
+    ConfiguracaoCookieSessao,
+)
 from backend.application.sessoes import RevogadorSessao
 
-COOKIE_SESSAO = "__Host-sessao"
+COOKIE_SESSAO = COOKIE_SESSAO_SEGURA
 
 
-def criar_router(revogador_sessao: RevogadorSessao | None) -> APIRouter:
+class SessaoAtualResposta(BaseModel):
+    """Representa a identidade mínima associada à sessão HTTP válida.
+
+    O DTO serializa somente o UUID instalado pelo middleware e não consulta ou
+    revela credenciais. Ele existe para que clientes restaurem autenticação
+    após recarregar a aplicação sem receber o token do cookie.
+    """
+
+    usuario_id: UUID
+
+
+def criar_router(
+    revogador_sessao: RevogadorSessao | None,
+    configuracao_cookie: ConfiguracaoCookieSessao = ConfiguracaoCookieSessao(),
+) -> APIRouter:
     """Cria rota de logout com revogador injetado pela composição externa.
 
     A rota lê somente o cookie de sessão, revoga seu registro se houver e
-    remove o cookie com os atributos compatíveis com sua emissão. Ela existe
-    para oferecer encerramento idempotente da sessão atual.
+    remove o cookie com os atributos compatíveis com sua emissão. Também expõe
+    a identidade já validada pelo middleware. Ela existe para permitir
+    restauração de sessão e encerramento idempotente da sessão atual.
     """
     router = APIRouter()
+
+    @router.get("/sessao/atual", response_model=SessaoAtualResposta)
+    async def consultar_atual(requisicao: Request) -> SessaoAtualResposta:
+        """Devolve a identidade instalada pelo middleware para a sessão válida.
+
+        O handler lê somente o UUID que o middleware autenticado colocou no
+        estado da requisição e responde 401 se a composição não o forneceu. Ele
+        existe para expor a sessão atual sem consultar token ou banco novamente.
+        """
+        usuario_id = getattr(requisicao.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessão ausente ou inválida.",
+            )
+        return SessaoAtualResposta(usuario_id=usuario_id)
 
     @router.delete("/sessao/atual", status_code=status.HTTP_204_NO_CONTENT)
     async def encerrar(
         resposta: Response,
-        token: str | None = Cookie(default=None, alias=COOKIE_SESSAO),
+        requisicao: Request,
     ) -> None:
         """Revoga a sessão do cookie, quando presente, e limpa o navegador.
 
@@ -27,6 +65,7 @@ def criar_router(revogador_sessao: RevogadorSessao | None) -> APIRouter:
         expiração ou desconhecimento e remove o cookie. Ele existe para tornar
         logout idempotente sem afetar outras sessões do estudante.
         """
+        token = requisicao.cookies.get(configuracao_cookie.nome)
         if token is not None:
             if revogador_sessao is None:
                 raise HTTPException(
@@ -35,9 +74,9 @@ def criar_router(revogador_sessao: RevogadorSessao | None) -> APIRouter:
                 )
             await revogador_sessao.revogar(token)
         resposta.delete_cookie(
-            key=COOKIE_SESSAO,
+            key=configuracao_cookie.nome,
             path="/",
-            secure=True,
+            secure=configuracao_cookie.seguro,
             httponly=True,
             samesite="lax",
         )

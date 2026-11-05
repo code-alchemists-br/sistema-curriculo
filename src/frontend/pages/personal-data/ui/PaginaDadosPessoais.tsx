@@ -1,34 +1,62 @@
 import { useState } from "react";
 
+import type { Student } from "../../../entities/student";
 import {
-  criarClienteDadosPessoaisIndisponivel,
+  criarClienteDadosPessoaisEmMemoria,
   FormularioDadosPessoais,
   type ClienteDadosPessoais,
 } from "../../../features/edit-personal-data";
+import type { ValoresDadosPessoais } from "../../../features/edit-personal-data/model/formulario-dados-pessoais";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaDadosPessoais.css";
 
-/** Define o cliente opcional usado ao compor a página de dados pessoais. */
+/** Define as propriedades da página de dados pessoais. */
 export interface PaginaDadosPessoaisProps {
   cliente?: ClienteDadosPessoais;
+  aoAvancar?: () => void;
+  onVoltar?: () => void;
+  valoresIniciais?: ValoresDadosPessoais;
+  aoSalvar?: (dados: Student) => void;
+  aoAlterarValores?: (valores: ValoresDadosPessoais) => void;
 }
 
 /**
  * Compõe a primeira etapa de dados do Wizard de currículo.
  *
- * Apresenta a interface remodelada com o painel visual de degradê alaranjado à esquerda (~46%)
- * e o formulário com barra de progresso segmentada à direita (~54%).
+ * Apresenta a interface com o painel visual à esquerda e o formulário
+ * com barra de progresso segmentada à direita.
  */
 export function PaginaDadosPessoais({
-  cliente = criarClienteDadosPessoaisIndisponivel(),
+  cliente,
+  aoAvancar,
+  onVoltar,
+  valoresIniciais,
+  aoSalvar,
+  aoAlterarValores,
 }: PaginaDadosPessoaisProps) {
   const [progresso, setProgresso] = useState(0);
+
+  const clienteEfetivo =
+    cliente ??
+    criarClienteDadosPessoaisEmMemoria((dados) => {
+      aoSalvar?.(dados);
+    });
+
+  function handleAvancar(): void {
+    if (aoAvancar) {
+      aoAvancar();
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.location.search = "?etapa=formacao-academica";
+    }
+  }
 
   return (
     <LayoutCadastroCurriculo
       subtitulo="Dados Pessoais"
       etapaAtual={1}
-      totalEtapas={8}
+      totalEtapas={9}
       progressoEtapaAtual={progresso}
     >
       <section
@@ -42,8 +70,12 @@ export function PaginaDadosPessoais({
           Conte um pouco sobre você
         </h1>
         <FormularioDadosPessoais
-          cliente={cliente}
+          cliente={clienteEfetivo}
           aoAlterarProgresso={setProgresso}
+          aoAvancar={handleAvancar}
+          onVoltar={onVoltar}
+          valoresIniciais={valoresIniciais}
+          aoAlterarValores={aoAlterarValores}
         />
       </section>
     </LayoutCadastroCurriculo>

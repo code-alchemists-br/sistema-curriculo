@@ -174,6 +174,38 @@ nix develop .#quality --command gitleaks git --redact --no-banner --exit-code 1
 
 O comando `nix develop` utiliza a configuração definida no arquivo `flake.nix` e disponibiliza temporariamente as ferramentas e dependências configuradas para o ambiente selecionado.
 
+### Testes de integração com PostgreSQL
+
+O ambiente `tests` também disponibiliza PostgreSQL para cenários de integração.
+Use o executor abaixo para iniciar um cluster efêmero, criar um banco isolado e
+expor uma `DATABASE_URL` somente durante o comando de teste:
+
+```bash
+nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh \
+  python -m unittest backend.tests.test_integracao_postgresql_nix
+```
+
+O executor encerra o servidor e remove os dados temporários ao final, inclusive
+quando o teste falha. Não use essa URL para desenvolvimento nem produção.
+
+### PostgreSQL persistente para E2E humano
+
+Para repetir cenários manualmente no navegador, use o gerenciador de cluster
+persistente também pelo ambiente `tests`. Escolha um diretório fora do
+repositório e defina-o explicitamente antes de executar os comandos:
+
+```bash
+export POSTGRES_E2E_STATE_DIR="/caminho/local/sistema-curriculo-e2e"
+nix develop .#tests --command ./scripts/postgres-e2e iniciar
+nix develop .#tests --command ./scripts/postgres-e2e status
+```
+
+O comando `iniciar` preserva o banco existente e aplica migrations. Para voltar
+ao estado vazio, execute `nix develop .#tests --command ./scripts/postgres-e2e
+reset`; ele recria somente o banco local `sistema_curriculo_e2e`. Ao encerrar a
+sessão humana, use `nix develop .#tests --command ./scripts/postgres-e2e parar`.
+O diretório do estado não deve apontar para dados de desenvolvimento ou produção.
+
 Por exemplo, caso o ambiente `backend` inclua o `python3`, não é necessário que o Python esteja instalado globalmente no sistema. Enquanto o ambiente Nix estiver ativo, o comando estará disponível.
 
 Para verificar a versão instalada no ambiente:
@@ -201,6 +233,7 @@ precisar delas; os exemplos locais não devem ser reutilizados em produção.
 | `LOG_ACTOR_HMAC_KEY` | Backend | Não | Chave de pelo menos 32 bytes para gerar referências estáveis de atores nos logs. Sem ela, o processo usa uma chave aleatória temporária. |
 | `DATABASE_URL` | Backend e Alembic | Não para iniciar a API; sim para executar migrations | URL de um PostgreSQL local. Sem ela, `/ready` retorna HTTP 503. |
 | `VITE_API_URL` | Frontend | Sim para chamadas à API | URL base pública da API, por exemplo `http://127.0.0.1:8000`. O Vite disponibiliza variáveis `VITE_*` no código do navegador; nunca coloque senhas, tokens ou outras credenciais nelas. |
+| `CORS_ALLOWED_ORIGINS` | Backend | Não | Lista de origens separadas por vírgula autorizadas a chamar a API pelo navegador. Sem configuração, permite somente `http://127.0.0.1:5173` e `http://localhost:5173` para o Vite local. |
 
 Credenciais de banco devem usar uma conta local de desenvolvimento com acesso
 somente ao banco de desenvolvimento. Se a senha contiver caracteres especiais

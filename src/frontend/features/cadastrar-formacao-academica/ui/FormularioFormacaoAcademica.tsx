@@ -12,7 +12,9 @@ import {
   criarEntradaFormacaoAcademica,
   criarValoresIniciaisFormacao,
   traduzirFalhaFormacaoAcademica,
+  validarCurriculoLattes,
   validarFormacaoAcademica,
+  validarListaFormacoes,
   type ErrosFormacaoAcademica,
   type ValoresFormacaoAcademica,
 } from "../model/formulario-formacao-academica";
@@ -22,6 +24,14 @@ export interface FormularioFormacaoAcademicaProps {
   cliente: ClienteFormacaoAcademica;
   /** Notifica a porcentagem de campos preenchidos nesta etapa (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Callback para avançar para a próxima etapa ao salvar. */
+  aoAvancar?: () => void;
+  /** Valores iniciais opcionais para restauração de estado. */
+  formacoesIniciais?: ValoresFormacaoAcademica[];
+  /** Callback para retornar para a etapa anterior. */
+  onVoltar?: () => void;
+  /** Notifica alterações nas formações para preservação de estado. */
+  aoAlterarFormacoes?: (formacoes: ValoresFormacaoAcademica[]) => void;
 }
 
 const niveis: ReadonlyArray<{ valor: NivelFormacaoAcademica; rotulo: string }> =
@@ -46,59 +56,186 @@ const situacoes: ReadonlyArray<{
 ];
 
 /**
- * Renderiza o cadastro acessível de uma formação acadêmica.
+ * Renderiza o cadastro acessível de uma ou mais formações acadêmicas.
  *
- * O componente controla valores, erros e estados de envio localmente, e usa o
- * cliente injetado para manter a interface livre de HTTP. Ele existe para
- * permitir testar o preenchimento e substituir a integração futuramente.
+ * O componente controla valores, erros e estados de envio localmente em lista,
+ * permite adicionar e remover entradas de formação dinamicamente e usa o
+ * cliente injetado para persistência.
  */
 export function FormularioFormacaoAcademica({
   cliente,
   aoAlterarProgresso,
+  aoAvancar,
+  onVoltar,
+  formacoesIniciais = [criarValoresIniciaisFormacao()],
+  aoAlterarFormacoes,
 }: FormularioFormacaoAcademicaProps) {
-  const [valores, setValores] = useState<ValoresFormacaoAcademica>(
-    criarValoresIniciaisFormacao,
+  const lattesInicial =
+    formacoesIniciais.find((f) => f.curriculoLattes)?.curriculoLattes ?? "";
+  const naoPossuiLattesInicial = formacoesIniciais.some(
+    (f) => f.naoPossuiLattes,
   );
-  const [erros, setErros] = useState<ErrosFormacaoAcademica>({});
+
+  const [formacoes, setFormacoes] =
+    useState<ValoresFormacaoAcademica[]>(formacoesIniciais);
+  const [curriculoLattes, setCurriculoLattes] = useState<string>(lattesInicial);
+  const [naoPossuiLattes, setNaoPossuiLattes] = useState<boolean>(
+    naoPossuiLattesInicial,
+  );
+  const [erroLattes, setErroLattes] = useState<string | undefined>(undefined);
+  const [erros, setErros] = useState<Record<number, ErrosFormacaoAcademica>>(
+    {},
+  );
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    const lattesFinal = naoPossuiLattes
+      ? undefined
+      : curriculoLattes.trim() || undefined;
+    const formacoesComLattes = formacoes.map((f) => ({
+      ...f,
+      curriculoLattes: lattesFinal,
+      naoPossuiLattes,
+    }));
+    aoAlterarFormacoes?.(formacoesComLattes);
+  }, [formacoes, curriculoLattes, naoPossuiLattes, aoAlterarFormacoes]);
+
+  const algumMestradoOuDoutorado = formacoes.some(
+    (f) => f.nivel === "mestrado" || f.nivel === "doutorado",
+  );
+
+  useEffect(() => {
     if (aoAlterarProgresso) {
-      let preenchidos = 0;
-      const totalObrigatorios = valores.status === "concluido" ? 6 : 5;
-      if (valores.instituicao.trim().length > 0) preenchidos++;
-      if (valores.curso.trim().length > 0) preenchidos++;
-      if (valores.nivel.trim().length > 0) preenchidos++;
-      if (valores.dataInicio.trim().length > 0) preenchidos++;
-      if (valores.status.trim().length > 0) preenchidos++;
-      if (valores.status === "concluido" && valores.dataFim.trim().length > 0) {
-        preenchidos++;
+      if (formacoes.length === 0) {
+        aoAlterarProgresso(100);
+        return;
       }
 
-      const porcentagem = Math.round((preenchidos / totalObrigatorios) * 100);
+      let totalObrigatorios = 0;
+      let preenchidos = 0;
+
+      formacoes.forEach((valores) => {
+        const ehEnsinoBasico =
+          valores.nivel === "ensino_fundamental" ||
+          valores.nivel === "ensino_medio";
+
+        totalObrigatorios +=
+          (valores.status === "concluido" ? 6 : 5) - (ehEnsinoBasico ? 1 : 0);
+
+        if (valores.instituicao.trim().length > 0) preenchidos++;
+        if (!ehEnsinoBasico && valores.curso.trim().length > 0) preenchidos++;
+        if (valores.nivel.trim().length > 0) preenchidos++;
+        if (valores.dataInicio.trim().length > 0) preenchidos++;
+        if (valores.status.trim().length > 0) preenchidos++;
+        if (
+          valores.status === "concluido" &&
+          valores.dataFim.trim().length > 0
+        ) {
+          preenchidos++;
+        }
+      });
+
+      const temPos = formacoes.some(
+        (f) => f.nivel === "mestrado" || f.nivel === "doutorado",
+      );
+
+      if (temPos) {
+        totalObrigatorios += 1;
+        if (naoPossuiLattes || curriculoLattes.trim().length > 0) {
+          preenchidos++;
+        }
+      }
+
+      const porcentagem =
+        totalObrigatorios > 0
+          ? Math.round((preenchidos / totalObrigatorios) * 100)
+          : 100;
       aoAlterarProgresso(porcentagem);
     }
-  }, [valores, aoAlterarProgresso]);
+  }, [formacoes, curriculoLattes, naoPossuiLattes, aoAlterarProgresso]);
 
-  /** Atualiza um campo e remove apenas o feedback anterior desse campo. */
+  /** Atualiza um campo de uma formação específica e remove seu erro. */
   function atualizarCampo<Campo extends keyof ValoresFormacaoAcademica>(
+    indice: number,
     campo: Campo,
     valor: ValoresFormacaoAcademica[Campo],
   ): void {
-    setValores((atuais) => ({ ...atuais, [campo]: valor }));
-    setErros((atuais) => ({ ...atuais, [campo]: undefined }));
+    setFormacoes((atuais) => {
+      const atualizados = atuais.map((item, i) =>
+        i === indice ? { ...item, [campo]: valor } : item,
+      );
+      if (campo === "nivel") {
+        const aindaTemPos = atualizados.some(
+          (f) => f.nivel === "mestrado" || f.nivel === "doutorado",
+        );
+        if (!aindaTemPos) {
+          setErroLattes((erroAtual) =>
+            erroAtual?.includes("ou marque que não possui")
+              ? undefined
+              : erroAtual,
+          );
+        }
+      }
+      return atualizados;
+    });
+    setErros((atuais) => {
+      const errosItem = { ...atuais[indice] };
+      delete errosItem[campo];
+      const novoMapa = { ...atuais };
+      if (Object.keys(errosItem).length === 0) {
+        delete novoMapa[indice];
+      } else {
+        novoMapa[indice] = errosItem;
+      }
+      return novoMapa;
+    });
     setMensagem(null);
   }
 
-  /** Valida os dados e solicita o cadastro sem apagar valores em caso de falha. */
+  /** Adiciona um novo bloco de formação acadêmica no final da lista. */
+  function adicionarFormacao(): void {
+    setFormacoes((atuais) => [...atuais, criarValoresIniciaisFormacao()]);
+  }
+
+  /** Remove um bloco de formação acadêmica pela sua posição na lista. */
+  function removerFormacao(indice: number): void {
+    if (formacoes.length <= 1) return;
+    setFormacoes((atuais) => atuais.filter((_, i) => i !== indice));
+    setErros((atuais) => {
+      const novoMapa: Record<number, ErrosFormacaoAcademica> = {};
+      Object.entries(atuais).forEach(([chave, valor]) => {
+        const idx = Number(chave);
+        if (idx < indice) {
+          novoMapa[idx] = valor;
+        } else if (idx > indice) {
+          novoMapa[idx - 1] = valor;
+        }
+      });
+      return novoMapa;
+    });
+    setMensagem(null);
+  }
+
+  /** Valida todas as formações e envia para cadastro. */
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     evento.preventDefault();
-    const novosErros = validarFormacaoAcademica(valores);
+    const novosErros = validarListaFormacoes(formacoes);
+    const erroDoLattes = validarCurriculoLattes(
+      curriculoLattes,
+      naoPossuiLattes,
+      algumMestradoOuDoutorado,
+    );
 
-    if (Object.keys(novosErros).length > 0) {
+    if (erroDoLattes) {
+      setErroLattes(erroDoLattes);
+    } else {
+      setErroLattes(undefined);
+    }
+
+    if (Object.keys(novosErros).length > 0 || erroDoLattes) {
       setErros(novosErros);
       setMensagem("Revise os campos destacados antes de continuar.");
       return;
@@ -108,8 +245,21 @@ export function FormularioFormacaoAcademica({
     setMensagem(null);
 
     try {
-      await cliente.cadastrar(criarEntradaFormacaoAcademica(valores));
+      const lattesFinal = naoPossuiLattes
+        ? undefined
+        : curriculoLattes.trim() || undefined;
+
+      for (const formacao of formacoes) {
+        await cliente.cadastrar(
+          criarEntradaFormacaoAcademica({
+            ...formacao,
+            curriculoLattes: lattesFinal,
+            naoPossuiLattes,
+          }),
+        );
+      }
       setMensagem("Formação acadêmica enviada para registro.");
+      aoAvancar?.();
     } catch (erro: unknown) {
       setMensagem(
         traduzirFalhaFormacaoAcademica(
@@ -128,67 +278,171 @@ export function FormularioFormacaoAcademica({
       noValidate
       onSubmit={enviarFormulario}
     >
-      <CampoTexto
-        erro={erros.instituicao}
-        id="instituicao-formacao"
-        label="Instituição"
-        onChange={(valor) => atualizarCampo("instituicao", valor)}
-        placeholder="Ex: USP, FATEC, PUC..."
-        required
-        value={valores.instituicao}
-      />
-      <CampoTexto
-        erro={erros.curso}
-        id="curso-formacao"
-        label="Curso"
-        onChange={(valor) => atualizarCampo("curso", valor)}
-        placeholder="Ex: Análise e Desenvolvimento de Sistemas..."
-        required
-        value={valores.curso}
-      />
-      <CampoSelecao
-        erro={erros.nivel}
-        id="nivel-formacao"
-        label="Nível de formação"
-        onChange={(valor) =>
-          atualizarCampo("nivel", valor as NivelFormacaoAcademica)
-        }
-        opcoes={niveis}
-        required
-        value={valores.nivel}
-      />
-      <CampoData
-        erro={erros.dataInicio}
-        id="data-inicio-formacao"
-        label="Data de início"
-        onChange={(valor) => atualizarCampo("dataInicio", valor)}
-        required
-        value={valores.dataInicio}
-      />
-      <CampoSelecao
-        erro={erros.status}
-        id="status-formacao"
-        label="Situação"
-        onChange={(valor) =>
-          atualizarCampo("status", valor as StatusFormacaoAcademica)
-        }
-        opcoes={situacoes}
-        required
-        value={valores.status}
-      />
-      <CampoData
-        ajuda="Para formação em andamento, informe a previsão de conclusão se ela estiver disponível."
-        erro={erros.dataFim}
-        id="data-fim-formacao"
-        label={
-          valores.status === "concluido"
-            ? "Data de conclusão"
-            : "Data final ou previsão de conclusão"
-        }
-        onChange={(valor) => atualizarCampo("dataFim", valor)}
-        required={valores.status === "concluido"}
-        value={valores.dataFim}
-      />
+      {formacoes.map((valores, indice) => {
+        const prefixo = `formacao-${indice}`;
+        const errosItem = erros[indice] ?? {};
+        const ehEnsinoBasico =
+          valores.nivel === "ensino_fundamental" ||
+          valores.nivel === "ensino_medio";
+
+        return (
+          <fieldset
+            aria-label={`Formação acadêmica ${indice + 1}`}
+            key={`formacao-${indice}`}
+          >
+            <legend className="sr-only">Formação acadêmica {indice + 1}</legend>
+            {formacoes.length > 1 && (
+              <div className="item-sublista__topo">
+                <span className="label-subtitulo">
+                  Formação acadêmica {indice + 1}
+                </span>
+                <button
+                  type="button"
+                  className="btn-remover-item"
+                  onClick={() => removerFormacao(indice)}
+                  aria-label={`Remover Formação acadêmica ${indice + 1}`}
+                >
+                  Remover
+                </button>
+              </div>
+            )}
+
+            <CampoTexto
+              erro={errosItem.instituicao}
+              id={`${prefixo}-instituicao`}
+              label="Instituição"
+              onChange={(valor) => atualizarCampo(indice, "instituicao", valor)}
+              placeholder="Ex: USP, FATEC, PUC..."
+              required
+              value={valores.instituicao}
+            />
+            <CampoTexto
+              ajuda={
+                ehEnsinoBasico
+                  ? "Opcional. Preencha apenas se houver habilitação específica (ex.: Regular, Técnico integrado)."
+                  : undefined
+              }
+              erro={errosItem.curso}
+              id={`${prefixo}-curso`}
+              label="Curso"
+              onChange={(valor) => atualizarCampo(indice, "curso", valor)}
+              placeholder={
+                ehEnsinoBasico
+                  ? "Opcional (ex.: Regular, Técnico integrado)..."
+                  : "Ex: Análise e Desenvolvimento de Sistemas..."
+              }
+              required={!ehEnsinoBasico}
+              value={valores.curso}
+            />
+            <CampoSelecao
+              erro={errosItem.nivel}
+              id={`${prefixo}-nivel`}
+              label="Nível de formação"
+              onChange={(valor) =>
+                atualizarCampo(indice, "nivel", valor as NivelFormacaoAcademica)
+              }
+              opcoes={niveis}
+              required
+              value={valores.nivel}
+            />
+            <CampoData
+              erro={errosItem.dataInicio}
+              id={`${prefixo}-data-inicio`}
+              label="Data de início"
+              onChange={(valor) => atualizarCampo(indice, "dataInicio", valor)}
+              required
+              value={valores.dataInicio}
+            />
+            <CampoSelecao
+              erro={errosItem.status}
+              id={`${prefixo}-status`}
+              label="Situação"
+              onChange={(valor) =>
+                atualizarCampo(
+                  indice,
+                  "status",
+                  valor as StatusFormacaoAcademica,
+                )
+              }
+              opcoes={situacoes}
+              required
+              value={valores.status}
+            />
+            <CampoData
+              ajuda="Para formação em andamento, informe a previsão de conclusão se ela estiver disponível."
+              erro={errosItem.dataFim}
+              id={`${prefixo}-data-fim`}
+              label={
+                valores.status === "concluido"
+                  ? "Data de conclusão"
+                  : "Data final ou previsão de conclusão"
+              }
+              onChange={(valor) => atualizarCampo(indice, "dataFim", valor)}
+              required={valores.status === "concluido"}
+              value={valores.dataFim}
+            />
+          </fieldset>
+        );
+      })}
+
+      <button
+        type="button"
+        className="btn-adicionar-item"
+        onClick={adicionarFormacao}
+      >
+        + Adicionar formação acadêmica
+      </button>
+
+      <div className="secao-lattes">
+        <CampoTexto
+          ajuda={
+            algumMestradoOuDoutorado
+              ? naoPossuiLattes
+                ? "Opção de dispensa selecionada para pós-graduação acadêmica."
+                : "Obrigatório para pós-graduação acadêmica (Mestrado e Doutorado)."
+              : "Opcional. Informe caso possua cadastro na Plataforma Lattes."
+          }
+          disabled={naoPossuiLattes}
+          erro={erroLattes}
+          id="curriculo-lattes"
+          label="Currículo Lattes"
+          onChange={(valor) => {
+            setCurriculoLattes(valor);
+            setErroLattes(undefined);
+            setMensagem(null);
+          }}
+          placeholder={
+            naoPossuiLattes
+              ? "Não possuo Currículo Lattes"
+              : "http://lattes.cnpq.br/..."
+          }
+          required={algumMestradoOuDoutorado && !naoPossuiLattes}
+          type="url"
+          value={naoPossuiLattes ? "" : curriculoLattes}
+        />
+        {algumMestradoOuDoutorado && (
+          <div className="campo-dispensa-lattes">
+            <label className="checkbox-lattes-label" htmlFor="dispensa-lattes">
+              <input
+                checked={naoPossuiLattes}
+                id="dispensa-lattes"
+                onChange={(evento) => {
+                  const marcado = evento.target.checked;
+                  setNaoPossuiLattes(marcado);
+                  if (marcado) {
+                    setCurriculoLattes("");
+                    setErroLattes(undefined);
+                  }
+                  setMensagem(null);
+                }}
+                type="checkbox"
+              />
+              <span>Não possuo Currículo Lattes</span>
+            </label>
+          </div>
+        )}
+      </div>
+
       {mensagem !== null && (
         <p
           className="form-message"
@@ -197,14 +451,26 @@ export function FormularioFormacaoAcademica({
           {mensagem}
         </p>
       )}
-      <button
-        aria-label={enviando ? "Enviando..." : "Cadastrar formação"}
-        className="btn-proximo"
-        disabled={enviando}
-        type="submit"
-      >
-        {enviando ? "Enviando..." : "Próximo"}
-      </button>
+      <div className="botoes-navegacao">
+        {onVoltar && (
+          <button
+            type="button"
+            className="btn-voltar"
+            onClick={onVoltar}
+            aria-label="Voltar para a etapa anterior"
+          >
+            Voltar
+          </button>
+        )}
+        <button
+          aria-label={enviando ? "Enviando..." : "Cadastrar formação"}
+          className="btn-proximo"
+          disabled={enviando}
+          type="submit"
+        >
+          {enviando ? "Enviando..." : "Próximo"}
+        </button>
+      </div>
     </form>
   );
 }
@@ -212,6 +478,7 @@ export function FormularioFormacaoAcademica({
 /** Define os dados comuns de um campo textual ou de data obrigatório. */
 interface CampoBaseProps {
   ajuda?: string;
+  disabled?: boolean;
   erro?: string;
   id: string;
   label: string;
@@ -220,34 +487,51 @@ interface CampoBaseProps {
   value: string;
 }
 
-/** Renderiza um campo textual com rótulo e erro associado. */
+/** Renderiza um campo textual com rótulo, ajuda opcional e erro associado. */
 function CampoTexto({
+  ajuda,
+  disabled = false,
   erro,
   id,
   label,
   onChange,
   placeholder,
   required = true,
+  type = "text",
   value,
-}: CampoBaseProps & { onChange: (valor: string) => void }) {
+}: CampoBaseProps & { onChange: (valor: string) => void; type?: string }) {
   const idErro = `${id}-erro`;
+  const idAjuda = `${id}-ajuda`;
   return (
-    <div className="field">
+    <div className={`field ${disabled ? "field--disabled" : ""}`}>
       <label
         htmlFor={id}
         className={`titulo-campo ${required ? "titulo-campo--obrigatorio" : ""}`}
       >
         {label}
       </label>
+      {ajuda !== undefined && (
+        <p className="field__ajuda" id={idAjuda}>
+          {ajuda}
+        </p>
+      )}
       <input
-        aria-describedby={erro === undefined ? undefined : idErro}
+        aria-describedby={
+          [
+            ajuda === undefined ? undefined : idAjuda,
+            erro === undefined ? undefined : idErro,
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
         aria-invalid={erro === undefined ? undefined : true}
+        disabled={disabled}
         id={id}
         maxLength={200}
         onChange={(evento) => onChange(evento.target.value)}
         placeholder={placeholder}
         required={required}
-        type="text"
+        type={type}
         value={value}
       />
       {erro !== undefined && (

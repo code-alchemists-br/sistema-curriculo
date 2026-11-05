@@ -59,9 +59,9 @@ export interface ClienteAcessoEstudante {
  * Cria o cliente HTTP dos contratos atuais de cadastro e confirmação de acesso.
  *
  * A fábrica monta URLs a partir de VITE_API_URL, envia somente os DTOs aceitos
- * pelo backend e converte status e JSON em tipos locais. Ela existe para isolar
- * o transporte dos componentes visuais e tornar a ausência atual do backend
- * substituível por doubles nos testes unitários.
+ * pelo backend e inclui as credenciais do navegador para que o cookie de sessão
+ * seja armazenado. Ela existe para isolar o transporte dos componentes visuais
+ * e tornar a comunicação com o backend substituível por doubles nos testes.
  */
 export function criarClienteAcessoEstudante(
   urlDaApi = import.meta.env.VITE_API_URL,
@@ -104,8 +104,9 @@ function normalizarUrlDaApi(urlDaApi: string | undefined): string {
 /**
  * Envia um DTO JSON e converte indisponibilidade de rede em uma falha estável.
  *
- * A função centraliza método, cabeçalhos e serialização sem interpretar regras
- * do formulário. Ela existe para evitar chamadas HTTP em componentes visuais.
+ * A função centraliza método, cabeçalhos, serialização e o envio de credenciais
+ * do navegador, sem interpretar regras do formulário. Ela existe para evitar
+ * chamadas HTTP em componentes visuais e permitir a persistência da sessão.
  */
 async function enviarRequisicao(
   url: string,
@@ -116,6 +117,7 @@ async function enviarRequisicao(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corpo),
+      credentials: "include",
     });
   } catch {
     throw new FalhaAcessoEstudante("rede");

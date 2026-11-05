@@ -1,0 +1,81 @@
+/* Estilos da Página de Oportunidades e Vagas — Identidade Visual LIMINAL */
+
+.pagina-vagas {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #050505;
+  color: #f3f3f3;
+  box-sizing: border-box;
+}
+
+/* Fundo fixo no viewport com a iluminação difusa do LIMINAL */
+.pagina-vagas__fundo-fixo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: #050505;
+  background-image: url("../../../shared/assets/images/gradiente_vagas.webp");
+  background-position: center top;
+  background-size: cover;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.pagina-vagas__shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(1, 1, 5, 0.6) 25%,
+    rgba(3, 3, 11, 0.4) 37.5%,
+    rgba(8, 8, 30, 0.2) 50%,
+    rgba(3, 3, 11, 0.4) 62.5%,
+    rgba(1, 1, 5, 0.6) 75%,
+    #000 100%
+  );
+  pointer-events: none;
+}
+
+.pagina-vagas .app-shell {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 0 4.5rem;
+  box-sizing: border-box;
+}
+
+.pagina-vagas .app-shell__content {
+  width: 100%;
+  max-width: 1400px;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #f3f3f3;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1440px) {
+  .pagina-vagas .app-shell {
+    padding: 0 1.5rem 3.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .pagina-vagas .app-shell {
+    padding: 0 1.25rem 2.5rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .pagina-vagas .app-shell {
+    padding: 0 1rem 2rem;
+  }
+}

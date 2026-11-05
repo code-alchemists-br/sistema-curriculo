@@ -38,7 +38,7 @@ describe("FormularioAcesso", () => {
     expect(screen.getByLabelText("Senha")).toHaveValue("segredo123");
   });
 
-  it("limpa a senha e não afirma que uma sessão foi criada após 204 simulado", async () => {
+  it("limpa a senha e confirma a sessão iniciada após 204 simulado", async () => {
     const usuario = userEvent.setup();
     const cliente: ClienteAcessoEstudante = {
       cadastrar: vi.fn(),
@@ -56,7 +56,7 @@ describe("FormularioAcesso", () => {
     await usuario.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "Uma sessão ainda não foi criada.",
+      "Sua sessão foi iniciada.",
     );
     expect(screen.getByLabelText("Senha")).toHaveValue("");
   });

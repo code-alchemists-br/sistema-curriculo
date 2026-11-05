@@ -48,11 +48,21 @@
   flex-direction: column;
 }
 
+.formulario-dados-pessoais .item-telefone + .item-telefone {
+  margin-top: 2rem;
+}
+
 .formulario-dados-pessoais .item-telefone__topo {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.45rem;
+}
+
+.formulario-dados-pessoais .lista-telefones--multipla .item-telefone__topo {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .formulario-dados-pessoais .label-subtitulo {
@@ -143,6 +153,15 @@
   line-height: 1.35;
 }
 
+.formulario-dados-pessoais .field__help {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  color: #a3a3a3;
+  margin-top: 0.1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
 .formulario-dados-pessoais .btn-adicionar-telefone {
   align-self: flex-start;
   background: transparent;
@@ -153,13 +172,34 @@
   font-weight: 500;
   cursor: pointer;
   padding: 0.25rem 0;
-  margin-top: 0.75rem;
+  margin-top: 1.25rem;
   transition: color 0.2s;
 }
 
 .formulario-dados-pessoais .btn-adicionar-telefone:hover {
   color: #ff8533;
   text-decoration: underline;
+}
+
+.formulario-dados-pessoais .btn-adicionar-telefone:active {
+  color: #ff944d;
+}
+
+.formulario-dados-pessoais .lista-telefones .field:not(:only-child):last-child {
+  animation: surgimento-item 0.4s ease-out;
+}
+
+@keyframes surgimento-item {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: none;
+  }
 }
 
 .formulario-dados-pessoais .form-message {

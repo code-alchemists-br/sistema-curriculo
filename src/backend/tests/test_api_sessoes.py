@@ -1,8 +1,9 @@
 """Verifica o encerramento HTTP da sessão atual."""
 
 import unittest
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from backend.api.factory import create_app
 from backend.api.sessoes import COOKIE_SESSAO, criar_router
@@ -46,6 +47,37 @@ def _handler(revogador_sessao: RevogadorSessaoStub | None):
     raise AssertionError("Rota DELETE /sessao/atual não encontrada.")
 
 
+def _requisicao(token: str | None = None, usuario_id: UUID | None = None) -> Request:
+    """Monta uma requisição ASGI com cookie e identidade opcionais.
+
+    O helper constrói a fronteira mínima em memória e instala a identidade que
+    o middleware normalmente adicionaria. Ele existe para testar os handlers
+    de sessão sem iniciar servidor ou persistência externa.
+    """
+    cabecalhos = []
+    if token is not None:
+        cabecalhos.append((b"cookie", f"{COOKIE_SESSAO}={token}".encode("ascii")))
+    requisicao = Request(
+        {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "https",
+            "path": "/sessao/atual",
+            "raw_path": b"/sessao/atual",
+            "query_string": b"",
+            "root_path": "",
+            "headers": cabecalhos,
+            "server": ("testserver", 443),
+            "client": ("testclient", 1234),
+        }
+    )
+    if usuario_id is not None:
+        requisicao.state.usuario_id = usuario_id
+    return requisicao
+
+
 class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege a revogação do token do cookie e a limpeza da sessão no cliente."""
 
@@ -60,7 +92,7 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
         revogador = RevogadorSessaoStub()
         resposta = Response()
 
-        resultado = await _handler(revogador)(resposta, "token-atual")
+        resultado = await _handler(revogador)(resposta, _requisicao("token-atual"))
 
         cookie = resposta.headers["set-cookie"]
         self.assertIsNone(resultado)
@@ -81,7 +113,7 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
         revogador = RevogadorSessaoStub()
         resposta = Response()
 
-        await _handler(revogador)(resposta, None)
+        await _handler(revogador)(resposta, _requisicao())
 
         self.assertEqual(revogador.tokens, [])
         self.assertIn("Max-Age=0", resposta.headers["set-cookie"])
@@ -97,10 +129,29 @@ class SessaoAtualRotaTestCase(unittest.IsolatedAsyncioTestCase):
         resposta = Response()
 
         with self.assertRaises(HTTPException) as contexto:
-            await _handler(None)(resposta, "token-atual")
+            await _handler(None)(resposta, _requisicao("token-atual"))
 
         self.assertEqual(contexto.exception.status_code, 503)
         self.assertNotIn("set-cookie", resposta.headers)
+
+    async def test_consulta_sessao_devolve_identidade_do_middleware(self) -> None:
+        """Expõe o UUID associado à sessão já validada pelo middleware.
+
+        O cenário encontra a rota GET e simula o estado instalado após validar
+        o cookie. Ele existe para permitir que clientes restaurem a sessão sem
+        receber o token em claro.
+        """
+        usuario_id = UUID("00000000-0000-0000-0000-000000000001")
+        router = criar_router(RevogadorSessaoStub())
+        handler = next(
+            rota.endpoint
+            for rota in router.routes
+            if rota.path == "/sessao/atual" and "GET" in rota.methods
+        )
+
+        resposta = await handler(_requisicao(usuario_id=usuario_id))
+
+        self.assertEqual(resposta.usuario_id, usuario_id)
 
     async def test_fabrica_registra_rota_de_logout(self) -> None:
         """Confirma que a composição expõe o método de logout no OpenAPI.

@@ -16,6 +16,13 @@ from backend.api.adequacao_semantica import (
 from backend.api.adequacao_semantica import (
     criar_router as criar_router_adequacao_semantica,
 )
+# Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+from backend.api.associacoes_curriculo_vaga import (
+    ListagemAssociacoesCurriculoVagaExecutor,
+)
+from backend.api.associacoes_curriculo_vaga import (
+    criar_router as criar_router_associacoes_curriculo_vaga,
+)
 from backend.api.cadastro_acesso import (
     AcessoEstudanteExecutor,
     CadastroEstudanteExecutor,
@@ -36,6 +43,7 @@ from backend.api.certificacao import (
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
 from backend.api.competencia import CadastroCompetenciaExecutor
 from backend.api.competencia import criar_router as criar_router_competencia
+from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 from backend.api.curso import CadastroCursoExecutor
@@ -59,6 +67,8 @@ from backend.api.documentacao_openapi import (
     DESCRICAO_API,
     METADADOS_TAGS,
     TAG_ADEQUACAO_SEMANTICA,
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    TAG_ASSOCIACOES_CURRICULO_VAGA,
     TAG_CADASTRO_ACESSO,
     TAG_CERTIFICACOES,
     TAG_COMPETENCIAS,
@@ -291,15 +301,19 @@ def create_app(
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
+    configuracao_cookie: ConfiguracaoCookieSessao = ConfiguracaoCookieSessao(),
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    listar_associacoes_curriculo_vaga: ListagemAssociacoesCurriculoVagaExecutor
+    | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
     dados completos de perfil, contato, projetos acadêmicos, competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
-    formações acadêmicas, versões de currículo, seleção de itens, listagem,
-    exclusão de versão, revisão de campos obrigatórios, decisão sobre recomendações,
-    adequação semântica revisável,
+    formações acadêmicas, versões de currículo, seleção de itens, listagem de
+    associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
+    decisão sobre recomendações e adequação semântica revisável,
     experiências profissionais (cadastro, edição e exclusão), prévia, exportação do
     currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
@@ -324,14 +338,20 @@ def create_app(
     )
     if autenticador_sessao is not None:
         app.add_middleware(
-            MiddlewareAutenticacaoSessao, autenticador=autenticador_sessao
+            MiddlewareAutenticacaoSessao,
+            autenticador=autenticador_sessao,
+            nome_cookie=configuracao_cookie.nome,
         )
     configurar_documentacao(
         app, ROTAS_PUBLICAS if autenticador_sessao is not None else None
     )
     app.include_router(
         criar_router_cadastro_acesso(
-            cadastrar_estudante, acessar_estudante, derivador_senha, criador_sessao
+            cadastrar_estudante,
+            acessar_estudante,
+            derivador_senha,
+            criador_sessao,
+            configuracao_cookie,
         ),
         tags=[TAG_CADASTRO_ACESSO],
     )
@@ -398,6 +418,11 @@ def create_app(
         criar_router_listagem_versoes_curriculo(listar_versoes_curriculo),
         tags=[TAG_VERSOES_CURRICULO],
     )
+    # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
+    app.include_router(
+        criar_router_associacoes_curriculo_vaga(listar_associacoes_curriculo_vaga),
+        tags=[TAG_ASSOCIACOES_CURRICULO_VAGA],
+    )
     app.include_router(
         criar_router_experiencia_profissional(
             cadastrar_experiencia_profissional,
@@ -420,7 +445,9 @@ def create_app(
         tags=[TAG_PREVIA_VERSAO_CURRICULO],
     )
     app.include_router(
-        criar_router_exportacao_curriculo(exportar_curriculo_docx, exportar_curriculo_pdf),
+        criar_router_exportacao_curriculo(
+            exportar_curriculo_docx, exportar_curriculo_pdf
+        ),
         tags=[TAG_EXPORTACAO_CURRICULO],
     )
     app.include_router(
@@ -445,7 +472,9 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])
-    app.include_router(criar_router_sessoes(revogador_sessao), tags=[TAG_SESSOES])
+    app.include_router(
+        criar_router_sessoes(revogador_sessao, configuracao_cookie), tags=[TAG_SESSOES]
+    )
     app.include_router(
         criar_router_saude(verificadores_saude, verificador_persistencia),
         tags=[TAG_SAUDE],

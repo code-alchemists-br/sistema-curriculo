@@ -8,7 +8,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from backend.api.sessoes import COOKIE_SESSAO
+from backend.api.configuracao_cookie_sessao import COOKIE_SESSAO_SEGURA
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.configuracao_logging import pseudonimizar_identificador_ator
 
@@ -63,7 +63,9 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
     e localizar seus logs sem gravar o identificador original.
     """
 
-    def __init__(self, app, autenticador: AutenticadorSessao) -> None:
+    def __init__(
+        self, app, autenticador: AutenticadorSessao, nome_cookie: str = COOKIE_SESSAO_SEGURA
+    ) -> None:
         """Recebe a aplicação ASGI e o serviço de validação de sessão.
 
         A dependência interna impede acesso direto ao ORM na borda HTTP. Ela
@@ -71,6 +73,7 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
         """
         super().__init__(app)
         self._autenticador = autenticador
+        self._nome_cookie = nome_cookie
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
@@ -88,7 +91,7 @@ class MiddlewareAutenticacaoSessao(BaseHTTPMiddleware):
         ):
             return await call_next(request)
 
-        token = request.cookies.get(COOKIE_SESSAO)
+        token = request.cookies.get(self._nome_cookie)
         if token is None:
             return _resposta_nao_autenticada()
 

@@ -38,4 +38,25 @@ describe("PaginaInicio", () => {
     await user.click(screen.getByRole("button", { name: "Fazer login" }));
     expect(onLogin).toHaveBeenCalledTimes(1);
   });
+
+  it("expõe os documentos públicos quando as navegações são disponibilizadas", async () => {
+    const usuario = userEvent.setup();
+    const onNavegarTermosDeUso = vi.fn();
+    const onNavegarPoliticaDePrivacidade = vi.fn();
+
+    render(
+      <PaginaInicio
+        onNavegarPoliticaDePrivacidade={onNavegarPoliticaDePrivacidade}
+        onNavegarTermosDeUso={onNavegarTermosDeUso}
+      />,
+    );
+
+    await usuario.click(screen.getByRole("button", { name: "Termos de Uso" }));
+    await usuario.click(
+      screen.getByRole("button", { name: "Política de Privacidade" }),
+    );
+
+    expect(onNavegarTermosDeUso).toHaveBeenCalledTimes(1);
+    expect(onNavegarPoliticaDePrivacidade).toHaveBeenCalledTimes(1);
+  });
 });

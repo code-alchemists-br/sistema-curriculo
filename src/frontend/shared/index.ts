@@ -9,6 +9,8 @@ export { CampoFormulario } from "./ui/CampoFormulario";
 export type { CampoFormularioProps } from "./ui/CampoFormulario";
 export { Dialogo } from "./ui/Dialogo";
 export type { DialogoProps } from "./ui/Dialogo";
+export { BotaoHero } from "./ui/BotaoHero";
+export type { BotaoHeroProps } from "./ui/BotaoHero";
 export {
   TOKENS_COR,
   TOKENS_ESPACO,

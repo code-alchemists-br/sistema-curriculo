@@ -14,16 +14,24 @@ import "./FormularioCertificacao.css";
  * Propriedades para configuração do formulário acessível de certificação.
  */
 export interface FormularioCertificacaoProps {
-  /** Valores iniciais opcionais para os campos do formulário. */
+  /** Valores iniciais opcionais para uma certificação única. */
   valoresIniciais?: ValoresCertificacao;
+  /** Lista inicial de certificações para edição múltipla. */
+  certificacoesIniciais?: ValoresCertificacao[];
   /** Callback acionado ao submeter dados válidos. Suporta retorno síncrono ou Promise. */
-  onSalvar?: (valores: ValoresCertificacao) => void | Promise<void>;
+  onSalvar?: (
+    valores: ValoresCertificacao | ValoresCertificacao[],
+  ) => void | Promise<void>;
   /** Título apresentado no cabeçalho do formulário. Padrão: 'Certificações'. */
   titulo?: string;
   /** Prefixo para os identificadores dos campos no DOM. Padrão: 'certificacao'. */
   prefixoId?: string;
   /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Notifica alterações nas certificações para preservação de estado. */
+  aoAlterarCertificacoes?: (certificacoes: ValoresCertificacao[]) => void;
+  /** Controla a visibilidade do botão interno de salvar (padrão: true para retrocompatibilidade). */
+  exibirBotaoSalvar?: boolean;
 }
 
 interface MensagemFeedback {
@@ -34,67 +42,117 @@ interface MensagemFeedback {
 /**
  * Renderiza e gerencia o formulário acessível para cadastro de certificações.
  *
- * **O que faz:** Controla a entrada de dados, validação síncrona, vínculo de erros ARIA e submissão de certificações.
- * **Como faz:** Utiliza estado React local, associa rótulos e mensagens de erro via `CampoFormulario`, previne o comportamento nativo de submit e controla o ciclo de envio com feedback acessível (`role="status"` ou `role="alert"`).
- * **Qual finalidade atende:** Atende aos requisitos da issue #207 (F4.17), assegurando uma experiência acessível e aderente a WCAG 2.1 AA sem acoplamento a bibliotecas externas.
+ * Controla entrada dinâmica de múltiplas certificações, validação síncrona,
+ * placeholders contextualizados e vínculos ARIA de acessibilidade.
  */
 export function FormularioCertificacao({
-  valoresIniciais = criarCertificacaoVazia(),
+  valoresIniciais,
+  certificacoesIniciais,
   onSalvar,
   titulo = "Certificações",
   prefixoId = "certificacao",
   aoAlterarProgresso,
+  aoAlterarCertificacoes,
+  exibirBotaoSalvar = true,
 }: FormularioCertificacaoProps) {
-  const [valores, setValores] = useState<ValoresCertificacao>(valoresIniciais);
-  const [erros, setErros] = useState<ErrosCertificacao>({});
+  const [certificacoes, setCertificacoes] = useState<ValoresCertificacao[]>(
+    () => {
+      if (certificacoesIniciais && certificacoesIniciais.length > 0) {
+        return certificacoesIniciais;
+      }
+      if (valoresIniciais) {
+        return [valoresIniciais];
+      }
+      return [criarCertificacaoVazia()];
+    },
+  );
+
+  const [erros, setErros] = useState<Record<number, ErrosCertificacao>>({});
   const [mensagem, setMensagem] = useState<MensagemFeedback | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    aoAlterarCertificacoes?.(certificacoes);
+  }, [certificacoes, aoAlterarCertificacoes]);
+
+  useEffect(() => {
     if (!aoAlterarProgresso) return;
+    if (certificacoes.length === 0) {
+      aoAlterarProgresso(0);
+      return;
+    }
     let preenchidos = 0;
-    const total = 2;
-    if (valores.nome.trim().length > 0) preenchidos++;
-    if (valores.organizacaoEmissora.trim().length > 0) preenchidos++;
+    const total = certificacoes.length * 2;
 
-    aoAlterarProgresso(Math.round((preenchidos / total) * 100));
-  }, [valores, aoAlterarProgresso]);
+    certificacoes.forEach((cert) => {
+      if (cert.nome.trim().length > 0) preenchidos++;
+      if (cert.organizacaoEmissora.trim().length > 0) preenchidos++;
+    });
 
-  /**
-   * Atualiza o valor de um campo e limpa o erro e feedback ativo correspondente.
-   *
-   * **O que faz:** Sincroniza o estado do campo com a digitação do usuário.
-   * **Como faz:** Atualiza a chave correspondente em `valores` e remove a mensagem de erro do campo em `erros`.
-   * **Qual finalidade atende:** Proporciona resposta interativa imediata ao usuário sem manter erros obsoletos na tela.
-   */
+    aoAlterarProgresso(total > 0 ? Math.round((preenchidos / total) * 100) : 0);
+  }, [certificacoes, aoAlterarProgresso]);
+
   function atualizarCampo(
+    indice: number,
     campo: keyof ValoresCertificacao,
     novoValor: string,
   ): void {
-    setValores((atuais) => ({ ...atuais, [campo]: novoValor }));
+    setCertificacoes((atuais) =>
+      atuais.map((cert, i) =>
+        i === indice ? { ...cert, [campo]: novoValor } : cert,
+      ),
+    );
+
     setErros((atuais) => {
-      if (atuais[campo] === undefined) return atuais;
+      if (!atuais[indice] || atuais[indice][campo] === undefined) return atuais;
+      const errosCert = { ...atuais[indice] };
+      delete errosCert[campo];
       const novosErros = { ...atuais };
-      delete novosErros[campo];
+      if (Object.keys(errosCert).length === 0) {
+        delete novosErros[indice];
+      } else {
+        novosErros[indice] = errosCert;
+      }
       return novosErros;
     });
     setMensagem(null);
   }
 
-  /**
-   * Processa o envio controlado do formulário de certificação.
-   *
-   * **O que faz:** Intercepta a submissão, executa validação e despacha os dados higienizados para persistência.
-   * **Como faz:** Cancela o submit padrão do navegador, valida os campos com `validarCertificacao`, gerencia a flag `enviando` e notifica o resultado com papéis semânticos ARIA.
-   * **Qual finalidade atende:** Evita recargas de página, bloqueia envios com dados inválidos ou múltiplos cliques concorrentes.
-   */
+  function adicionarCertificacao(): void {
+    setCertificacoes((atuais) => [...atuais, criarCertificacaoVazia()]);
+  }
+
+  function removerCertificacao(indice: number): void {
+    setCertificacoes((atuais) => atuais.filter((_, i) => i !== indice));
+    setErros((atuais) => {
+      const novosErros: Record<number, ErrosCertificacao> = {};
+      Object.entries(atuais).forEach(([chave, valor]) => {
+        const idxOriginal = Number(chave);
+        if (idxOriginal < indice) {
+          novosErros[idxOriginal] = valor;
+        } else if (idxOriginal > indice) {
+          novosErros[idxOriginal - 1] = valor;
+        }
+      });
+      return novosErros;
+    });
+    setMensagem(null);
+  }
+
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     evento.preventDefault();
     if (enviando) return;
 
-    const novosErros = validarCertificacao(valores);
+    const novosErros: Record<number, ErrosCertificacao> = {};
+    certificacoes.forEach((cert, idx) => {
+      const errosCert = validarCertificacao(cert);
+      if (Object.keys(errosCert).length > 0) {
+        novosErros[idx] = errosCert;
+      }
+    });
+
     if (Object.keys(novosErros).length > 0) {
       setErros(novosErros);
       setMensagem({
@@ -109,13 +167,21 @@ export function FormularioCertificacao({
     setMensagem(null);
 
     try {
-      const valoresNormalizados = normalizarCertificacao(valores);
-      await onSalvar?.(valoresNormalizados);
-      setValores(criarCertificacaoVazia());
+      const valoresNormalizados = certificacoes.map(normalizarCertificacao);
+      if (onSalvar) {
+        if (certificacoes.length === 1) {
+          await onSalvar(valoresNormalizados[0]);
+        } else {
+          await onSalvar(valoresNormalizados);
+        }
+      }
       setMensagem({
         tipo: "sucesso",
         texto: "Certificação salva com sucesso.",
       });
+      if (certificacoes.length === 1 && exibirBotaoSalvar) {
+        setCertificacoes([criarCertificacaoVazia()]);
+      }
     } catch {
       setMensagem({
         tipo: "erro",
@@ -126,9 +192,6 @@ export function FormularioCertificacao({
     }
   }
 
-  const idNome = `${prefixoId}-nome`;
-  const idEmissor = `${prefixoId}-emissor`;
-
   return (
     <form
       aria-labelledby={`${prefixoId}-titulo`}
@@ -138,25 +201,72 @@ export function FormularioCertificacao({
     >
       <h2 id={`${prefixoId}-titulo`}>{titulo}</h2>
 
-      <div className="formulario-certificacao__grupo">
-        <CampoFormulario
-          desabilitado={enviando}
-          erro={erros.nome}
-          id={idNome}
-          onChange={(valor) => atualizarCampo("nome", valor)}
-          rotulo="Nome da certificação"
-          valor={valores.nome}
-        />
+      {certificacoes.map((cert, indice) => {
+        const idNome =
+          indice === 0 ? `${prefixoId}-nome` : `${prefixoId}-${indice}-nome`;
+        const idEmissor =
+          indice === 0
+            ? `${prefixoId}-emissor`
+            : `${prefixoId}-${indice}-emissor`;
+        const errosCert = erros[indice];
 
-        <CampoFormulario
-          desabilitado={enviando}
-          erro={erros.organizacaoEmissora}
-          id={idEmissor}
-          onChange={(valor) => atualizarCampo("organizacaoEmissora", valor)}
-          rotulo="Organização emissora"
-          valor={valores.organizacaoEmissora}
-        />
-      </div>
+        return (
+          <fieldset
+            aria-label={`Certificação ${indice + 1}`}
+            key={`cert-${indice}`}
+          >
+            <legend className="sr-only">Certificação {indice + 1}</legend>
+
+            {certificacoes.length > 1 && (
+              <div className="item-sublista__topo">
+                <span className="label-subtitulo">
+                  Certificação {indice + 1}
+                </span>
+                <button
+                  aria-label={`Remover certificação ${indice + 1}`}
+                  className="btn-remover-item"
+                  onClick={() => removerCertificacao(indice)}
+                  type="button"
+                >
+                  Remover
+                </button>
+              </div>
+            )}
+
+            <div className="formulario-certificacao__grupo">
+              <CampoFormulario
+                desabilitado={enviando}
+                erro={errosCert?.nome}
+                id={idNome}
+                onChange={(valor) => atualizarCampo(indice, "nome", valor)}
+                placeholder="Ex.: AWS Certified Solutions Architect, Scrum Master..."
+                rotulo="Nome da certificação"
+                valor={cert.nome}
+              />
+
+              <CampoFormulario
+                desabilitado={enviando}
+                erro={errosCert?.organizacaoEmissora}
+                id={idEmissor}
+                onChange={(valor) =>
+                  atualizarCampo(indice, "organizacaoEmissora", valor)
+                }
+                placeholder="Ex.: Amazon Web Services, Scrum.org..."
+                rotulo="Organização emissora"
+                valor={cert.organizacaoEmissora}
+              />
+            </div>
+          </fieldset>
+        );
+      })}
+
+      <button
+        className="btn-adicionar-item"
+        onClick={adicionarCertificacao}
+        type="button"
+      >
+        + Adicionar certificação
+      </button>
 
       {mensagem !== null && (
         <p
@@ -167,11 +277,13 @@ export function FormularioCertificacao({
         </p>
       )}
 
-      <div className="formulario-certificacao__acoes">
-        <button disabled={enviando} type="submit">
-          {enviando ? "Salvando certificação..." : "Salvar certificação"}
-        </button>
-      </div>
+      {exibirBotaoSalvar && (
+        <div className="formulario-certificacao__acoes">
+          <button disabled={enviando} type="submit">
+            {enviando ? "Salvando certificação..." : "Salvar certificação"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

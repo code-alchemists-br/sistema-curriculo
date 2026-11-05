@@ -47,8 +47,8 @@ jobs:
       - name: Instalar o Nix
         uses: cachix/install-nix-action@v31
 
-      - name: Executar teste de integração do repositório de associações
-        run: nix develop .#tests --command env PYTHONPATH=src python -m unittest backend.tests.integracao_repositorio_associacao_curriculo_vaga
+      - name: Executar testes de integração com PostgreSQL temporário
+        run: nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh python -m unittest backend.tests.test_integracao_postgresql_nix backend.tests.integracao_repositorio_associacao_curriculo_vaga
 
   frontend-quality:
     name: Frontend quality

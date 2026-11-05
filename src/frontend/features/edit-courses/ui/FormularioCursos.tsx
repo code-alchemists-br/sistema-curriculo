@@ -15,6 +15,10 @@ export interface FormularioCursosProps {
   onSalvar?: (cursos: Curso[]) => void;
   /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
   aoAlterarProgresso?: (progresso: number) => void;
+  /** Notifica alterações nos cursos para preservação de estado. */
+  aoAlterarCursos?: (cursos: Curso[]) => void;
+  /** Controla a exibição do botão interno de salvar (padrão: true). */
+  exibirBotaoSalvar?: boolean;
 }
 
 /**
@@ -29,10 +33,16 @@ export function FormularioCursos({
   cursosIniciais = [criarCursoVazio()],
   onSalvar,
   aoAlterarProgresso,
+  aoAlterarCursos,
+  exibirBotaoSalvar = true,
 }: FormularioCursosProps) {
   const [cursos, setCursos] = useState<Curso[]>(cursosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosCurso>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  useEffect(() => {
+    aoAlterarCursos?.(cursos);
+  }, [cursos, aoAlterarCursos]);
 
   useEffect(() => {
     if (!aoAlterarProgresso) return;
@@ -126,7 +136,7 @@ export function FormularioCursos({
 
   return (
     <form className="formulario-cursos" noValidate onSubmit={enviarFormulario}>
-      <h2 className="secao-titulo">Cursos e Certificações</h2>
+      <h2 className="secao-titulo">Cursos</h2>
 
       {cursos.map((curso, indice) => {
         const errosCurso = erros[indice];
@@ -251,9 +261,11 @@ export function FormularioCursos({
         </p>
       )}
 
-      <button className="btn-salvar-secao" type="submit">
-        Salvar cursos
-      </button>
+      {exibirBotaoSalvar && (
+        <button className="btn-salvar-secao" type="submit">
+          Salvar cursos
+        </button>
+      )}
     </form>
   );
 }
