@@ -127,12 +127,28 @@ export function FormularioCompetencias({
   }
 
   /**
-   * Encaminha as competências atuais ao consumidor da feature.
+   * Encaminha as competências atuais ao consumidor da feature,
+   * incluindo automaticamente qualquer competência digitada pendente nos inputs.
    */
   function salvar(): void {
+    let novasHard = hardSkills;
+    if (inputHardSkill.trim().length > 0) {
+      novasHard = adicionarHabilidade(novasHard, inputHardSkill.trim());
+      setInputHardSkill("");
+    }
+
+    let novasSoft = softSkills;
+    if (inputSoftSkill.trim().length > 0) {
+      novasSoft = adicionarHabilidade(novasSoft, inputSoftSkill.trim());
+      setInputSoftSkill("");
+    }
+
+    setHardSkills(novasHard);
+    setSoftSkills(novasSoft);
+
     onSalvar?.({
-      hardSkills,
-      softSkills,
+      hardSkills: novasHard,
+      softSkills: novasSoft,
     });
     aoAvancar?.();
   }
@@ -158,15 +174,30 @@ export function FormularioCompetencias({
           >
             Adicionar competência técnica
           </label>
-          <input
-            id="hard-skill-input"
-            name="hardSkill"
-            type="text"
-            value={inputHardSkill}
-            onChange={(evento) => setInputHardSkill(evento.target.value)}
-            onKeyDown={(evento) => lidarComTecla(evento, "hard")}
-            placeholder="Digite uma competência e pressione Enter"
-          />
+          <div className="campo-com-botao">
+            <input
+              id="hard-skill-input"
+              name="hardSkill"
+              type="text"
+              value={inputHardSkill}
+              onChange={(evento) => setInputHardSkill(evento.target.value)}
+              onKeyDown={(evento) => lidarComTecla(evento, "hard")}
+              placeholder="Digite uma competência e pressione Enter"
+            />
+            <button
+              type="button"
+              className="btn-adicionar-inline"
+              onClick={() => {
+                if (inputHardSkill.trim()) {
+                  adicionarSkill("hard", inputHardSkill);
+                }
+              }}
+              disabled={!inputHardSkill.trim()}
+              aria-label="Adicionar competência técnica digitada"
+            >
+              + Adicionar
+            </button>
+          </div>
         </div>
 
         <div aria-label="Hard Skills selecionadas" className="skills-chips">
@@ -212,15 +243,30 @@ export function FormularioCompetencias({
           <label className="titulo-campo" htmlFor="soft-skill-input">
             Adicionar competência comportamental
           </label>
-          <input
-            id="soft-skill-input"
-            name="softSkill"
-            type="text"
-            value={inputSoftSkill}
-            onChange={(evento) => setInputSoftSkill(evento.target.value)}
-            onKeyDown={(evento) => lidarComTecla(evento, "soft")}
-            placeholder="Digite uma competência e pressione Enter"
-          />
+          <div className="campo-com-botao">
+            <input
+              id="soft-skill-input"
+              name="softSkill"
+              type="text"
+              value={inputSoftSkill}
+              onChange={(evento) => setInputSoftSkill(evento.target.value)}
+              onKeyDown={(evento) => lidarComTecla(evento, "soft")}
+              placeholder="Digite uma competência e pressione Enter"
+            />
+            <button
+              type="button"
+              className="btn-adicionar-inline"
+              onClick={() => {
+                if (inputSoftSkill.trim()) {
+                  adicionarSkill("soft", inputSoftSkill);
+                }
+              }}
+              disabled={!inputSoftSkill.trim()}
+              aria-label="Adicionar competência comportamental digitada"
+            >
+              + Adicionar
+            </button>
+          </div>
         </div>
 
         <div aria-label="Soft Skills selecionadas" className="skills-chips">

@@ -81,6 +81,36 @@
   color: #ffffff;
 }
 
+.alternador-modelo-curriculo__cabecalho-opcao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alternador-modelo-curriculo__badge-recomendado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(255, 106, 0, 0.4);
+}
+
+.alternador-modelo-curriculo__opcao--recomendada {
+  border-color: rgba(255, 106, 0, 0.4);
+}
+
 /* Pseudo-elemento do label cobre todo o card, tornando qualquer clique no card capaz de selecionar o modelo */
 .alternador-modelo-curriculo__opcao label::after {
   content: "";

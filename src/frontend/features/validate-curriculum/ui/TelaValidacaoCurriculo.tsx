@@ -1,6 +1,7 @@
 import {
   validarCurriculo,
   type CurriculoParaValidacao,
+  type IdSecaoCurriculo,
 } from "../model/validacao-curriculo";
 import "./TelaValidacaoCurriculo.css";
 
@@ -11,6 +12,7 @@ export interface TelaValidacaoCurriculoProps {
   onExportarPdf?: () => void;
   onConfirmarCurriculo?: () => void;
   onVoltar?: () => void;
+  onCorrigirSecao?: (secaoId: IdSecaoCurriculo) => void;
 }
 
 /**
@@ -25,8 +27,12 @@ export function TelaValidacaoCurriculo({
   onExportarPdf,
   onConfirmarCurriculo,
   onVoltar,
+  onCorrigirSecao,
 }: TelaValidacaoCurriculoProps) {
   const resultado = validarCurriculo(dados);
+  const modoLegadoConfirmacao = Boolean(
+    onConfirmarCurriculo || !onVisualizarPreview,
+  );
 
   return (
     <div className="tela-validacao-curriculo">
@@ -77,9 +83,21 @@ export function TelaValidacaoCurriculo({
               <span>
                 <strong>{secao.titulo}</strong>:
               </span>
-              <span className={`status-badge status-badge--${secao.status}`}>
-                {textoStatus(secao.status)}
-              </span>
+              <div className="tela-validacao-curriculo__secao-status-grupo">
+                <span className={`status-badge status-badge--${secao.status}`}>
+                  {textoStatus(secao.status)}
+                </span>
+                {secao.status !== "valida" && onCorrigirSecao && (
+                  <button
+                    type="button"
+                    className="tela-validacao-curriculo__btn-corrigir"
+                    onClick={() => onCorrigirSecao(secao.id)}
+                    aria-label={`Corrigir ${secao.titulo}`}
+                  >
+                    Corrigir →
+                  </button>
+                )}
+              </div>
             </div>
             {secao.mensagens.length > 0 && (
               <ul className="tela-validacao-curriculo__mensagens-erro">
@@ -93,45 +111,97 @@ export function TelaValidacaoCurriculo({
       </ul>
 
       <div className="tela-validacao-curriculo__acoes">
-        <div className="botoes-navegacao">
-          {onVoltar && (
+        {modoLegadoConfirmacao ? (
+          <>
+            <div className="botoes-navegacao">
+              {onVoltar && (
+                <button
+                  aria-label="Voltar para a etapa anterior"
+                  className="btn-voltar"
+                  onClick={onVoltar}
+                  type="button"
+                >
+                  Voltar
+                </button>
+              )}
+              <button
+                className="btn-proximo"
+                disabled={!resultado.podeExportarPdf}
+                onClick={onConfirmarCurriculo}
+                type="button"
+              >
+                Confirmar currículo
+              </button>
+            </div>
+
+            <div className="tela-validacao-curriculo__acoes-secundarias">
+              <button
+                className="btn-secundario"
+                disabled={!resultado.podeVisualizarPreview}
+                onClick={onVisualizarPreview}
+                type="button"
+              >
+                Visualizar prévia
+              </button>
+              <button
+                className="btn-secundario"
+                disabled={!resultado.podeExportarPdf}
+                onClick={onExportarPdf}
+                type="button"
+              >
+                Exportar PDF
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="tela-validacao-curriculo__barra-acoes">
+            <div className="tela-validacao-curriculo__acoes-secundarias-grupo">
+              {onVoltar && (
+                <button
+                  aria-label="Voltar para a etapa anterior"
+                  className="btn-voltar tela-validacao-curriculo__btn-voltar"
+                  onClick={onVoltar}
+                  type="button"
+                >
+                  Voltar
+                </button>
+              )}
+              <button
+                className="btn-secundario tela-validacao-curriculo__btn-exportar"
+                disabled={!resultado.podeExportarPdf}
+                onClick={onExportarPdf}
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  className="tela-validacao-curriculo__icone-exportar"
+                  fill="none"
+                  height="16"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  width="16"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" x2="12" y1="15" y2="3" />
+                </svg>
+                <span>Exportar PDF</span>
+              </button>
+            </div>
             <button
-              aria-label="Voltar para a etapa anterior"
-              className="btn-voltar"
-              onClick={onVoltar}
+              aria-label="Visualizar prévia"
+              className="btn-proximo tela-validacao-curriculo__btn-proximo"
+              disabled={!resultado.podeVisualizarPreview}
+              onClick={onVisualizarPreview}
               type="button"
             >
-              Voltar
+              Visualizar prévia →
             </button>
-          )}
-          <button
-            className="btn-proximo"
-            disabled={!resultado.podeExportarPdf}
-            onClick={onConfirmarCurriculo}
-            type="button"
-          >
-            Confirmar currículo
-          </button>
-        </div>
-
-        <div className="tela-validacao-curriculo__acoes-secundarias">
-          <button
-            className="btn-secundario"
-            disabled={!resultado.podeVisualizarPreview}
-            onClick={onVisualizarPreview}
-            type="button"
-          >
-            Visualizar prévia
-          </button>
-          <button
-            className="btn-secundario"
-            disabled={!resultado.podeExportarPdf}
-            onClick={onExportarPdf}
-            type="button"
-          >
-            Exportar PDF
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

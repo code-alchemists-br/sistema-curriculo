@@ -99,6 +99,39 @@
   color: #f3f3f3;
 }
 
+.tela-validacao-curriculo__secao-status-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tela-validacao-curriculo__btn-corrigir {
+  background: none;
+  background-color: transparent;
+  border: none;
+  color: #ff8533;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  text-decoration: underline;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.tela-validacao-curriculo__btn-corrigir:hover {
+  color: #ffa366;
+  transform: translateX(2px);
+}
+
+.tela-validacao-curriculo__btn-corrigir:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
 .status-badge {
   font-family: "Poppins", sans-serif;
   font-size: 0.8rem;
@@ -170,7 +203,7 @@
 }
 
 .tela-validacao-curriculo__acoes .btn-secundario {
-  height: 48px;
+  height: 52px;
   background-color: #262626;
   color: #f3f3f3;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -193,8 +226,169 @@
   cursor: not-allowed;
 }
 
+/* Barra unificada moderna de ações */
+.tela-validacao-curriculo__barra-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: 1.5rem;
+  box-sizing: border-box;
+}
+
+.tela-validacao-curriculo__acoes-secundarias-grupo {
+  display: contents;
+}
+
+.tela-validacao-curriculo__barra-acoes .btn-voltar {
+  flex: 0 0 auto;
+  min-width: 120px;
+  height: 52px;
+  padding: 0 1.5rem;
+  background-color: #171717;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.tela-validacao-curriculo__barra-acoes .btn-voltar:hover:not(:disabled) {
+  background-color: #242424;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tela-validacao-curriculo__barra-acoes .btn-voltar:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__barra-acoes .tela-validacao-curriculo__btn-exportar {
+  flex: 1;
+  height: 52px;
+  padding: 0 1.25rem;
+  background-color: #222222;
+  color: #f3f3f3;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+  box-sizing: border-box;
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-exportar:hover:not(:disabled) {
+  background-color: #2e2e2e;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-exportar:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-exportar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tela-validacao-curriculo__icone-exportar {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tela-validacao-curriculo__barra-acoes .tela-validacao-curriculo__btn-proximo {
+  flex: 1.25;
+  height: 52px;
+  padding: 0 1.5rem;
+  background-color: #e5e5e5;
+  color: #000000;
+  border: none;
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.1s ease;
+  box-sizing: border-box;
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-proximo:hover:not(:disabled) {
+  background-color: #ffffff;
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-proximo:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__barra-acoes
+  .tela-validacao-curriculo__btn-proximo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 40rem) {
   .tela-validacao-curriculo__acoes-secundarias {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 38rem) {
+  .tela-validacao-curriculo__barra-acoes {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .tela-validacao-curriculo__barra-acoes
+    .tela-validacao-curriculo__btn-proximo {
+    width: 100%;
+    order: 1;
+  }
+
+  .tela-validacao-curriculo__acoes-secundarias-grupo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    width: 100%;
+    order: 2;
+  }
+
+  .tela-validacao-curriculo__acoes-secundarias-grupo .btn-voltar,
+  .tela-validacao-curriculo__acoes-secundarias-grupo
+    .tela-validacao-curriculo__btn-exportar {
+    width: 100%;
+    min-width: 0;
   }
 }

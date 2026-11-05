@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LayoutCadastroCurriculo } from "./LayoutCadastroCurriculo";
 
@@ -23,6 +23,25 @@ describe("LayoutCadastroCurriculo", () => {
     expect(
       screen.getByRole("progressbar", { name: "Etapa 2 de 9" }),
     ).toBeInTheDocument();
+  });
+
+  it("aciona onVoltarInicio ao clicar no botão de voltar ao início", () => {
+    const onVoltarInicio = vi.fn();
+    render(
+      <LayoutCadastroCurriculo
+        etapaAtual={9}
+        onVoltarInicio={onVoltarInicio}
+        subtitulo="Validação e Revisão"
+      >
+        <div>Etapa Final</div>
+      </LayoutCadastroCurriculo>,
+    );
+
+    const btnVoltarInicio = screen.getByRole("button", {
+      name: "Voltar para a página inicial",
+    });
+    fireEvent.click(btnVoltarInicio);
+    expect(onVoltarInicio).toHaveBeenCalledTimes(1);
   });
 
   it("redefine o scroll do contêiner de conteúdo ao alterar de etapa", () => {

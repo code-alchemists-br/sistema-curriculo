@@ -14,6 +14,7 @@ export interface PaginaCadastroProjetosAcademicosProps {
   cliente?: ClienteProjetosAcademicos;
   onAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   projetosIniciais?: ValoresProjetoAcademico[];
   aoAlterarProjetos?: (projetos: ValoresProjetoAcademico[]) => void;
 }
@@ -28,6 +29,7 @@ export function PaginaCadastroProjetosAcademicos({
   cliente = criarClienteProjetosAcademicosEmMemoria(),
   onAvancar,
   onVoltar,
+  onVoltarInicio,
   projetosIniciais,
   aoAlterarProjetos,
 }: PaginaCadastroProjetosAcademicosProps) {
@@ -59,6 +61,7 @@ export function PaginaCadastroProjetosAcademicos({
       etapaAtual={7}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-pagina-projetos"

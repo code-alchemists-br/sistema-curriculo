@@ -210,10 +210,21 @@ describe("FormularioCertificacao", () => {
       screen.getByRole("button", { name: "Remover certificação 2" }),
     ).toBeInTheDocument();
 
+    await usuario.type(
+      screen.getAllByLabelText("Nome da certificação")[1],
+      "AWS SAA",
+    );
+
     await usuario.click(
       screen.getByRole("button", { name: "Remover certificação 2" }),
     );
 
     expect(screen.getAllByLabelText("Nome da certificação")).toHaveLength(1);
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    expect(screen.getAllByLabelText("Nome da certificação")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Nome da certificação")[1]).toHaveValue(
+      "AWS SAA",
+    );
   });
 });

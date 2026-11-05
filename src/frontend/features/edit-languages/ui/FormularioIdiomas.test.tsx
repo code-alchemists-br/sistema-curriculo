@@ -40,6 +40,11 @@ describe("FormularioIdiomas", () => {
     const campos = screen.getAllByLabelText("Idioma");
     expect(campos).toHaveLength(1);
     expect(campos[0]).toHaveValue("Espanhol");
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    const camposAposDesfazer = screen.getAllByLabelText("Idioma");
+    expect(camposAposDesfazer).toHaveLength(2);
+    expect(camposAposDesfazer[0]).toHaveValue("Inglês");
   });
 
   it("exibe erros de validação quando campos obrigatórios estão vazios", async () => {
