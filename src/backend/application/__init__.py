@@ -13,6 +13,16 @@ from backend.application.acesso_estudante import (
     CredenciaisInvalidas,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261020-163820-adequacao-semantica-gpt-nano-v001.md#v001
+from backend.application.adequacao_semantica import (
+    ContextoAdequacaoCurriculoVaga,
+    GeracaoPropostaAdequacaoIndisponivel,
+    GeradorPropostaAdequacao,
+    ItemAdequacaoNaoEncontrado,
+    SolicitarAdequacaoCurriculoVaga,
+    SolicitarAdequacaoCurriculoVagaEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261018-133100-contrato-assistente-descricao-projeto-v001.md#v001
 from backend.application.assistente_descricao_projeto import (
     AssistenteDescricaoProjeto,
@@ -255,6 +265,12 @@ from backend.application.previa_versao_curriculo import (
     PreviaVersaoCurriculo,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+from backend.application.recomendacao_modelo_curriculo import (
+    RecomendarModeloCurriculo,
+    RecomendarModeloCurriculoEntrada,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.application.revisao_versao_curriculo import (
     RevisarVersaoCurriculo,
@@ -283,6 +299,16 @@ from backend.application.versao_curriculo import (
 )
 
 __all__ = [
+    # Proveniência: decision-analysis prompts/backend/20261020-163820-adequacao-semantica-gpt-nano-v001.md#v001
+    "ContextoAdequacaoCurriculoVaga",
+    "GeracaoPropostaAdequacaoIndisponivel",
+    "GeradorPropostaAdequacao",
+    "ItemAdequacaoNaoEncontrado",
+    "SolicitarAdequacaoCurriculoVaga",
+    "SolicitarAdequacaoCurriculoVagaEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+    "RecomendarModeloCurriculo",
+    "RecomendarModeloCurriculoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
     "AssociacaoCurriculoVagaJaExiste",
     "AssociacaoCurriculoVagaNaoEncontrada",

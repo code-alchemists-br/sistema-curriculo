@@ -10,6 +10,12 @@ from typing import AsyncContextManager
 
 from fastapi import FastAPI
 
+from backend.api.adequacao_semantica import (
+    SolicitarAdequacaoCurriculoVagaExecutor,
+)
+from backend.api.adequacao_semantica import (
+    criar_router as criar_router_adequacao_semantica,
+)
 from backend.api.cadastro_acesso import (
     AcessoEstudanteExecutor,
     CadastroEstudanteExecutor,
@@ -52,6 +58,7 @@ from backend.api.decisao_recomendacao import (
 from backend.api.documentacao_openapi import (
     DESCRICAO_API,
     METADADOS_TAGS,
+    TAG_ADEQUACAO_SEMANTICA,
     TAG_CADASTRO_ACESSO,
     TAG_CERTIFICACOES,
     TAG_COMPETENCIAS,
@@ -279,6 +286,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261025-140000-expor-decisao-recomendacao-v001.md#v001
     registrar_decisao_recomendacao: RegistroDecisaoRecomendacaoExecutor | None = None,
     consultar_decisoes_recomendacao: ConsultaDecisoesRecomendacaoExecutor | None = None,
+    solicitar_adequacao_curriculo_vaga: SolicitarAdequacaoCurriculoVagaExecutor
+    | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -290,6 +299,7 @@ def create_app(
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem,
     exclusão de versão, revisão de campos obrigatórios, decisão sobre recomendações,
+    adequação semântica revisável,
     experiências profissionais (cadastro, edição e exclusão), prévia, exportação do
     currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
@@ -428,6 +438,10 @@ def create_app(
             registrar_decisao_recomendacao, consultar_decisoes_recomendacao
         ),
         tags=[TAG_VERSOES_CURRICULO],
+    )
+    app.include_router(
+        criar_router_adequacao_semantica(solicitar_adequacao_curriculo_vaga),
+        tags=[TAG_ADEQUACAO_SEMANTICA],
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])

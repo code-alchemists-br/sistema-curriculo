@@ -31,6 +31,7 @@ TAG_VERSOES_CURRICULO = "Versões de currículo"
 TAG_ITENS_VERSAO_CURRICULO = "Itens da versão de currículo"
 TAG_PREVIA_VERSAO_CURRICULO = "Prévia da versão de currículo"
 TAG_EXPORTACAO_CURRICULO = "Exportação de currículo"
+TAG_ADEQUACAO_SEMANTICA = "Adequação semântica"
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
 TAG_VAGAS = "Vagas"
 TAG_SAUDE = "Saúde"
@@ -95,6 +96,10 @@ METADADOS_TAGS: list[dict[str, str]] = [
     {
         "name": TAG_EXPORTACAO_CURRICULO,
         "description": "Download de uma versão de currículo em DOCX.",
+    },
+    {
+        "name": TAG_ADEQUACAO_SEMANTICA,
+        "description": "Propostas revisáveis de adequação de currículo a uma vaga.",
     },
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     {
