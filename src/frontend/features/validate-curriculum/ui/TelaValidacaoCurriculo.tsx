@@ -156,18 +156,8 @@ export function TelaValidacaoCurriculo({
             </div>
           </>
         ) : (
-          <div className="tela-validacao-curriculo__barra-acoes">
-            <div className="tela-validacao-curriculo__acoes-secundarias-grupo">
-              {onVoltar && (
-                <button
-                  aria-label="Voltar para a etapa anterior"
-                  className="btn-voltar tela-validacao-curriculo__btn-voltar"
-                  onClick={onVoltar}
-                  type="button"
-                >
-                  Voltar
-                </button>
-              )}
+          <div className="tela-validacao-curriculo__acoes-wrapper">
+            <div className="tela-validacao-curriculo__exportacao-botoes">
               <button
                 className="btn-secundario tela-validacao-curriculo__btn-exportar"
                 disabled={!resultado.podeExportarPdf}
@@ -178,13 +168,13 @@ export function TelaValidacaoCurriculo({
                   aria-hidden="true"
                   className="tela-validacao-curriculo__icone-exportar"
                   fill="none"
-                  height="16"
+                  height="18"
                   stroke="currentColor"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
                   viewBox="0 0 24 24"
-                  width="16"
+                  width="18"
                 >
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
@@ -199,19 +189,50 @@ export function TelaValidacaoCurriculo({
                   onClick={onExportarDocx}
                   type="button"
                 >
+                  <svg
+                    aria-hidden="true"
+                    className="tela-validacao-curriculo__icone-exportar"
+                    fill="none"
+                    height="18"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    width="18"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" x2="8" y1="13" />
+                    <line x1="16" x2="8" y1="17" />
+                    <line x1="10" x2="8" y1="9" />
+                  </svg>
                   <span>Exportar Word (DOCX)</span>
                 </button>
               )}
             </div>
-            <button
-              aria-label="Visualizar prévia"
-              className="btn-proximo tela-validacao-curriculo__btn-proximo"
-              disabled={!resultado.podeVisualizarPreview}
-              onClick={onVisualizarPreview}
-              type="button"
-            >
-              Visualizar prévia →
-            </button>
+
+            <div className="botoes-navegacao tela-validacao-curriculo__barra-navegacao">
+              {onVoltar && (
+                <button
+                  aria-label="Voltar para a etapa anterior"
+                  className="btn-voltar tela-validacao-curriculo__btn-voltar"
+                  onClick={onVoltar}
+                  type="button"
+                >
+                  Voltar
+                </button>
+              )}
+              <button
+                aria-label="Visualizar prévia"
+                className="btn-proximo tela-validacao-curriculo__btn-proximo"
+                disabled={!resultado.podeVisualizarPreview}
+                onClick={onVisualizarPreview}
+                type="button"
+              >
+                Visualizar prévia →
+              </button>
+            </div>
           </div>
         )}
       </div>
