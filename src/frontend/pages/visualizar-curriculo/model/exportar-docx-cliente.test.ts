@@ -80,14 +80,16 @@ describe("exportarPreviaParaDocx", () => {
     const originalCreateElement = document.createElement.bind(document);
     let capturedLink: HTMLAnchorElement | null = null;
 
-    vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
-      const el = originalCreateElement(tagName);
-      if (tagName.toLowerCase() === "a") {
-        capturedLink = el as HTMLAnchorElement;
-        capturedLink.click = clickSpy;
-      }
-      return el;
-    });
+    vi.spyOn(document, "createElement").mockImplementation(
+      (tagName: string) => {
+        const el = originalCreateElement(tagName);
+        if (tagName.toLowerCase() === "a") {
+          capturedLink = el as HTMLAnchorElement;
+          capturedLink.click = clickSpy;
+        }
+        return el;
+      },
+    );
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild");
     const removeChildSpy = vi.spyOn(document.body, "removeChild");
@@ -109,4 +111,3 @@ describe("exportarPreviaParaDocx", () => {
     revokeObjectURLSpy.mockRestore();
   });
 });
-

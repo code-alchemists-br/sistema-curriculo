@@ -43,7 +43,9 @@ export function exportarPreviaParaDocx({
   if (previa.formacoes && previa.formacoes.length > 0) {
     const itensFormacao = previa.formacoes
       .map((f) => {
-        const periodo = [f.inicio, f.fim || "Atual"].filter(Boolean).join(" - ");
+        const periodo = [f.inicio, f.fim || "Atual"]
+          .filter(Boolean)
+          .join(" - ");
         return `
           <div class="item">
             <p><strong>${escaparHtml(f.curso)}</strong> — ${escaparHtml(f.instituicao)}</p>
@@ -63,7 +65,9 @@ export function exportarPreviaParaDocx({
   if (previa.experiencias && previa.experiencias.length > 0) {
     const itensExperiencia = previa.experiencias
       .map((e) => {
-        const periodo = [e.inicio, e.fim || "Atual"].filter(Boolean).join(" - ");
+        const periodo = [e.inicio, e.fim || "Atual"]
+          .filter(Boolean)
+          .join(" - ");
         return `
           <div class="item">
             <p><strong>${escaparHtml(e.cargo)}</strong> — ${escaparHtml(e.empresa)} <span class="detalhes">(${escaparHtml(periodo)})</span></p>
@@ -233,4 +237,3 @@ export function exportarPreviaParaDocx({
     URL.revokeObjectURL(url);
   }
 }
-
