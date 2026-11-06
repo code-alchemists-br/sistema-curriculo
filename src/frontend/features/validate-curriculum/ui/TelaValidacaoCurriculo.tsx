@@ -10,6 +10,7 @@ export interface TelaValidacaoCurriculoProps {
   dados: CurriculoParaValidacao;
   onVisualizarPreview?: () => void;
   onExportarPdf?: () => void;
+  onExportarDocx?: () => void;
   onConfirmarCurriculo?: () => void;
   onVoltar?: () => void;
   onCorrigirSecao?: (secaoId: IdSecaoCurriculo) => void;
@@ -25,6 +26,7 @@ export function TelaValidacaoCurriculo({
   dados,
   onVisualizarPreview,
   onExportarPdf,
+  onExportarDocx,
   onConfirmarCurriculo,
   onVoltar,
   onCorrigirSecao,
@@ -190,6 +192,16 @@ export function TelaValidacaoCurriculo({
                 </svg>
                 <span>Exportar PDF</span>
               </button>
+              {onExportarDocx && (
+                <button
+                  className="btn-secundario tela-validacao-curriculo__btn-exportar"
+                  disabled={!resultado.podeExportarPdf}
+                  onClick={onExportarDocx}
+                  type="button"
+                >
+                  <span>Exportar Word (DOCX)</span>
+                </button>
+              )}
             </div>
             <button
               aria-label="Visualizar prévia"

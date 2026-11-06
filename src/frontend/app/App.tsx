@@ -27,11 +27,13 @@ import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 import {
   PaginaVisualizacaoCurriculo,
   montarPreviaCurriculo,
+  exportarPreviaParaDocx,
 } from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
 import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
 import {
   criarClienteVagasDemonstracao,
+  criarClienteVagasHttp,
   criarClienteDecisoesDemonstracao,
 } from "../features/listar-vagas";
 import {
@@ -50,6 +52,9 @@ import "../shared/styles/animations.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL;
 const clienteVagasDemo = criarClienteVagasDemonstracao();
+const clienteVagasHttp = apiBaseUrl
+  ? criarClienteVagasHttp(apiBaseUrl)
+  : clienteVagasDemo;
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
 const clienteAcessoDemo = criarClienteAcessoDemonstracao();
 const clienteAcessoHttp = apiBaseUrl
@@ -672,6 +677,25 @@ export function App() {
           setAutoBaixarPdf(true);
           navegar("visualizar-curriculo");
         }}
+        onExportarDocx={() => {
+          const previaCalculada = montarPreviaCurriculo({
+            dadosPessoais,
+            formacoes,
+            experiencias,
+            cursos,
+            certificacoes,
+            idiomas,
+            competencias,
+            projetos,
+            modelo,
+          });
+          const nomeEstudante =
+            dadosPessoais?.nomeCompleto?.trim() || "Estudante";
+          exportarPreviaParaDocx({
+            previa: previaCalculada,
+            nomeArquivo: `Curriculo - ${nomeEstudante}`,
+          });
+        }}
         onVisualizarPreview={() => navegar("visualizar-curriculo")}
         onVoltar={() => navegar("selecionar-modelo")}
         onVoltarInicio={voltarAoInicio}
@@ -792,7 +816,7 @@ export function App() {
   if (rotaAtiva === "vagas") {
     return (
       <PaginaVagasGrupo2
-        cliente={clienteVagasDemo}
+        cliente={clienteVagasHttp}
         clienteDecisoes={clienteDecisoesDemo}
         onVoltar={() => navegar("inicio")}
       />
