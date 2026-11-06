@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 
+vi.mock("../pages/visualizar-curriculo/model/exportar-pdf-cliente", () => ({
+  exportarElementoParaPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
 afterEach(() => {
   cleanup();
   window.history.replaceState({}, "", "/");
@@ -224,5 +228,111 @@ describe("App", () => {
       screen.getByRole("heading", { level: 1, name: "Termos de Uso" }),
     ).toBeInTheDocument();
     expect(scrollToMock).toHaveBeenCalledWith(0, 0);
+  });
+
+  it("permite visualizar o curriculo renderizado no modelo ativo e baixar PDF", async () => {
+    window.history.replaceState({}, "", "/?etapa=visualizar-curriculo");
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Visualização do currículo",
+      }),
+    ).toBeInTheDocument();
+
+    const btnBaixar = screen.getByRole("button", {
+      name: "Baixar PDF",
+    });
+    await user.click(btnBaixar);
+
+    const btnVoltar = screen.getByRole("button", {
+      name: "← Voltar para validação",
+    });
+    await user.click(btnVoltar);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Valide os dados do currículo",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("permite navegar diretamente para corrigir uma etapa pendente a partir da tela de validação", async () => {
+    window.history.replaceState({}, "", "/?etapa=validacao-curriculo");
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Valide os dados do currículo",
+      }),
+    ).toBeInTheDocument();
+
+    const btnCorrigir = screen.getByRole("button", {
+      name: "Corrigir Dados pessoais",
+    });
+    await user.click(btnCorrigir);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Conte um pouco sobre você",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("permite retornar diretamente à página inicial a partir do topo do layout de cadastro", async () => {
+    window.history.replaceState({}, "", "/?etapa=validacao-curriculo");
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Valide os dados do currículo",
+      }),
+    ).toBeInTheDocument();
+
+    const btnVoltarInicio = screen.getByRole("button", {
+      name: "Voltar para a página inicial",
+    });
+    await user.click(btnVoltarInicio);
+
+    expect(
+      await screen.findByRole("button", {
+        name: /CRIAR CURRÍCULO/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "O currículo que abre portas",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("restaura rascunho persistido em sessionStorage ao inicializar", async () => {
+    sessionStorage.setItem(
+      "liminal_curriculo_rascunho",
+      JSON.stringify({
+        dadosPessoais: {
+          nomeCompleto: "Carlos Drummond",
+          enderecoCompleto: "Rua Minas, 123",
+          telefones: ["(31) 98765-4321"],
+          email: "carlos@example.com",
+        },
+      }),
+    );
+    window.history.replaceState({}, "", "/?etapa=dados-pessoais");
+
+    render(<App />);
+
+    expect(
+      await screen.findByDisplayValue("Carlos Drummond"),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("carlos@example.com")).toBeInTheDocument();
+
+    sessionStorage.removeItem("liminal_curriculo_rascunho");
   });
 });

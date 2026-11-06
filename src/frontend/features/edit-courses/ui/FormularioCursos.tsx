@@ -39,6 +39,19 @@ export function FormularioCursos({
   const [cursos, setCursos] = useState<Curso[]>(cursosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosCurso>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [cursoRemovido, setCursoRemovido] = useState<{
+    item: Curso;
+    indice: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (cursoRemovido) {
+      const timer = setTimeout(() => {
+        setCursoRemovido(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [cursoRemovido]);
 
   useEffect(() => {
     aoAlterarCursos?.(cursos);
@@ -98,8 +111,18 @@ export function FormularioCursos({
     setCursos((atuais) => [...atuais, criarCursoVazio()]);
   }
 
-  /** Remove um curso pela sua posição no array. */
+  /** Remove um curso pela sua posição no array com suporte a desfazer. */
   function removerCurso(indice: number): void {
+    const item = cursos[indice];
+    if (
+      item &&
+      (item.nome.trim() || item.instituicao.trim() || item.cargaHoraria.trim())
+    ) {
+      setCursoRemovido({ item, indice });
+    } else {
+      setCursoRemovido(null);
+    }
+
     setCursos((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novoMapa: Record<number, ErrosCurso> = {};
@@ -116,6 +139,17 @@ export function FormularioCursos({
       return novoMapa;
     });
     setMensagem(null);
+  }
+
+  /** Restaura o último curso removido na mesma posição. */
+  function desfazerRemocaoCurso(): void {
+    if (!cursoRemovido) return;
+    setCursos((atuais) => {
+      const copia = [...atuais];
+      copia.splice(cursoRemovido.indice, 0, cursoRemovido.item);
+      return copia;
+    });
+    setCursoRemovido(null);
   }
 
   /** Valida todos os cursos e chama o callback se não houver erros. */
@@ -246,6 +280,24 @@ export function FormularioCursos({
           </fieldset>
         );
       })}
+
+      {cursoRemovido && (
+        <div className="alerta-desfazer" role="status">
+          <span>
+            Curso{" "}
+            {cursoRemovido.item.nome ? `"${cursoRemovido.item.nome}"` : ""}{" "}
+            removido.
+          </span>
+          <button
+            aria-label="Desfazer remoção do curso"
+            className="btn-desfazer"
+            onClick={desfazerRemocaoCurso}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <button
         className="btn-adicionar-item"

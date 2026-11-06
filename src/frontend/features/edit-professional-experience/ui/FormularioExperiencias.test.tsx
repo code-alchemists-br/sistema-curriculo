@@ -50,6 +50,11 @@ describe("FormularioExperiencias", () => {
     const campos = screen.getAllByLabelText("Nome da empresa");
     expect(campos).toHaveLength(1);
     expect(campos[0]).toHaveValue("Outra Empresa");
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    const camposAposDesfazer = screen.getAllByLabelText("Nome da empresa");
+    expect(camposAposDesfazer).toHaveLength(2);
+    expect(camposAposDesfazer[0]).toHaveValue(experienciaCompleta.empresa);
   });
 
   it("desabilita o campo Fim quando Emprego atual é marcado", async () => {
@@ -142,5 +147,34 @@ describe("FormularioExperiencias", () => {
     );
 
     expect(onSalvar).not.toHaveBeenCalled();
+  });
+
+  it("permite desfazer a limpeza em massa ao clicar em Não possuo experiência profissional", async () => {
+    const usuario = userEvent.setup();
+    render(
+      <FormularioExperiencias experienciasIniciais={[experienciaCompleta]} />,
+    );
+
+    expect(screen.getByLabelText("Nome da empresa")).toHaveValue(
+      experienciaCompleta.empresa,
+    );
+
+    await usuario.click(
+      screen.getByRole("button", {
+        name: "Não possuo experiência profissional",
+      }),
+    );
+
+    expect(screen.queryByLabelText("Nome da empresa")).not.toBeInTheDocument();
+
+    await usuario.click(
+      screen.getByRole("button", {
+        name: "Desfazer remoção de todas as experiências",
+      }),
+    );
+
+    expect(screen.getByLabelText("Nome da empresa")).toHaveValue(
+      experienciaCompleta.empresa,
+    );
   });
 });

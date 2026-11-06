@@ -88,6 +88,19 @@ export function FormularioFormacaoAcademica({
   );
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [formacaoRemovida, setFormacaoRemovida] = useState<{
+    item: ValoresFormacaoAcademica;
+    indice: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (formacaoRemovida) {
+      const timer = setTimeout(() => {
+        setFormacaoRemovida(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [formacaoRemovida]);
 
   useEffect(() => {
     const lattesFinal = naoPossuiLattes
@@ -198,9 +211,19 @@ export function FormularioFormacaoAcademica({
     setFormacoes((atuais) => [...atuais, criarValoresIniciaisFormacao()]);
   }
 
-  /** Remove um bloco de formação acadêmica pela sua posição na lista. */
+  /** Remove um bloco de formação acadêmica pela sua posição na lista com suporte a desfazer. */
   function removerFormacao(indice: number): void {
     if (formacoes.length <= 1) return;
+    const item = formacoes[indice];
+    if (
+      item &&
+      (item.instituicao.trim() || item.curso.trim() || item.nivel.trim())
+    ) {
+      setFormacaoRemovida({ item, indice });
+    } else {
+      setFormacaoRemovida(null);
+    }
+
     setFormacoes((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novoMapa: Record<number, ErrosFormacaoAcademica> = {};
@@ -215,6 +238,17 @@ export function FormularioFormacaoAcademica({
       return novoMapa;
     });
     setMensagem(null);
+  }
+
+  /** Restaura a última formação acadêmica removida na mesma posição. */
+  function desfazerRemocaoFormacao(): void {
+    if (!formacaoRemovida) return;
+    setFormacoes((atuais) => {
+      const copia = [...atuais];
+      copia.splice(formacaoRemovida.indice, 0, formacaoRemovida.item);
+      return copia;
+    });
+    setFormacaoRemovida(null);
   }
 
   /** Valida todas as formações e envia para cadastro. */
@@ -384,6 +418,26 @@ export function FormularioFormacaoAcademica({
           </fieldset>
         );
       })}
+
+      {formacaoRemovida && (
+        <div className="alerta-desfazer" role="status">
+          <span>
+            Formação acadêmica{" "}
+            {formacaoRemovida.item.curso
+              ? `em "${formacaoRemovida.item.curso}"`
+              : ""}{" "}
+            removida.
+          </span>
+          <button
+            aria-label="Desfazer remoção da formação acadêmica"
+            className="btn-desfazer"
+            onClick={desfazerRemocaoFormacao}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <button
         type="button"

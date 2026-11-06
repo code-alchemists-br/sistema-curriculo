@@ -43,6 +43,19 @@ export function FormularioIdiomas({
   const [idiomas, setIdiomas] = useState<Idioma[]>(idiomasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosIdioma>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [idiomaRemovido, setIdiomaRemovido] = useState<{
+    item: Idioma;
+    indice: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (idiomaRemovido) {
+      const timer = setTimeout(() => {
+        setIdiomaRemovido(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [idiomaRemovido]);
 
   useEffect(() => {
     aoAlterarDados?.(idiomas);
@@ -108,8 +121,15 @@ export function FormularioIdiomas({
     setIdiomas((atuais) => [...atuais, criarIdiomaVazio()]);
   }
 
-  /** Remove um idioma pela sua posição no array. */
+  /** Remove um idioma pela sua posição no array com suporte a desfazer. */
   function removerIdioma(indice: number): void {
+    const item = idiomas[indice];
+    if (item && (item.nome.trim() || item.nivel)) {
+      setIdiomaRemovido({ item, indice });
+    } else {
+      setIdiomaRemovido(null);
+    }
+
     setIdiomas((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novoMapa: Record<number, ErrosIdioma> = {};
@@ -126,6 +146,17 @@ export function FormularioIdiomas({
       return novoMapa;
     });
     setMensagem(null);
+  }
+
+  /** Restaura o último idioma removido na mesma posição. */
+  function desfazerRemocaoIdioma(): void {
+    if (!idiomaRemovido) return;
+    setIdiomas((atuais) => {
+      const copia = [...atuais];
+      copia.splice(idiomaRemovido.indice, 0, idiomaRemovido.item);
+      return copia;
+    });
+    setIdiomaRemovido(null);
   }
 
   /** Valida todos os idiomas e chama o callback se não houver erros. */
@@ -244,6 +275,24 @@ export function FormularioIdiomas({
           </fieldset>
         );
       })}
+
+      {idiomaRemovido && (
+        <div className="alerta-desfazer" role="status">
+          <span>
+            Idioma{" "}
+            {idiomaRemovido.item.nome ? `"${idiomaRemovido.item.nome}"` : ""}{" "}
+            removido.
+          </span>
+          <button
+            aria-label="Desfazer remoção do idioma"
+            className="btn-desfazer"
+            onClick={desfazerRemocaoIdioma}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <button
         className="btn-adicionar-item"

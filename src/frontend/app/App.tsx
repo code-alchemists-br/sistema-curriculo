@@ -24,6 +24,10 @@ import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
 import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
+import {
+  PaginaVisualizacaoCurriculo,
+  montarPreviaCurriculo,
+} from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
 import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
 import {
@@ -52,6 +56,7 @@ type RotaAtiva =
   | "termos-de-uso"
   | "politica-de-privacidade"
   | "validacao-curriculo"
+  | "visualizar-curriculo"
   | "vagas"
   | "configuracoes-perfil";
 
@@ -86,11 +91,53 @@ function resetarScroll(): void {
     }
 
     const conteineres = document.querySelectorAll<HTMLElement>(
-      ".layout-cadastro__conteudo, .pagina-documento-publico, .pagina-vagas, main, [data-scroll-container]",
+      ".layout-cadastro__conteudo, .pagina-documento-publico, .pagina-vagas, .pagina-visualizacao-curriculo, main, [data-scroll-container]",
     );
     conteineres.forEach((el) => {
       el.scrollTop = 0;
     });
+  }
+}
+
+interface RascunhoCurriculo {
+  dadosPessoais?: ValoresDadosPessoais;
+  formacoes?: ValoresFormacaoAcademica[];
+  experiencias?: Experiencia[];
+  cursos?: Curso[];
+  certificacoes?: ValoresCertificacao[];
+  idiomas?: Idioma[];
+  competencias?: Habilidades;
+  projetos?: ValoresProjetoAcademico[];
+  modelo?: ModeloApresentacaoCurriculo;
+}
+
+const CHAVE_RASCUNHO_CURRICULO = "liminal_curriculo_rascunho";
+
+function carregarRascunho(): RascunhoCurriculo | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
+    return raw ? (JSON.parse(raw) as RascunhoCurriculo) : null;
+  } catch {
+    return null;
+  }
+}
+
+function salvarRascunho(rascunho: RascunhoCurriculo): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CHAVE_RASCUNHO_CURRICULO, JSON.stringify(rascunho));
+  } catch {
+    // Ignora restrições de sessionStorage
+  }
+}
+
+function limparRascunho(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(CHAVE_RASCUNHO_CURRICULO);
+  } catch {
+    // Ignora restrições
   }
 }
 
@@ -119,6 +166,8 @@ export function App() {
       if (etapa === "termos-de-uso") return "termos-de-uso";
       if (etapa === "politica-de-privacidade") return "politica-de-privacidade";
       if (etapa === "validacao-curriculo") return "validacao-curriculo";
+      if (etapa === "visualizar-curriculo" || etapa === "previa")
+        return "visualizar-curriculo";
       if (etapa === "vagas") return "vagas";
       if (etapa === "configuracoes-perfil" || etapa === "perfil")
         return "configuracoes-perfil";
@@ -243,6 +292,16 @@ export function App() {
 
   function aoFazerLogout(): void {
     setUsuarioLogado(null);
+    limparRascunho();
+    setDadosPessoais(undefined);
+    setFormacoes(undefined);
+    setExperiencias(undefined);
+    setCursos(undefined);
+    setCertificacoes(undefined);
+    setIdiomas(undefined);
+    setCompetencias(undefined);
+    setProjetos(undefined);
+    setModelo("classico");
     if (typeof window !== "undefined") {
       try {
         sessionStorage.removeItem("liminal_usuario_sessao");
@@ -261,16 +320,59 @@ export function App() {
     }
   }
 
-  // Estados persistidos em memória de cada etapa do cadastro
-  const [dadosPessoais, setDadosPessoais] = useState<ValoresDadosPessoais>();
-  const [formacoes, setFormacoes] = useState<ValoresFormacaoAcademica[]>();
-  const [experiencias, setExperiencias] = useState<Experiencia[]>();
-  const [cursos, setCursos] = useState<Curso[]>();
-  const [certificacoes, setCertificacoes] = useState<ValoresCertificacao[]>();
-  const [idiomas, setIdiomas] = useState<Idioma[]>();
-  const [competencias, setCompetencias] = useState<Habilidades>();
-  const [projetos, setProjetos] = useState<ValoresProjetoAcademico[]>();
-  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo>("classico");
+  // Estados persistidos de cada etapa do cadastro com suporte a rascunho em sessionStorage
+  const [dadosPessoais, setDadosPessoais] = useState<
+    ValoresDadosPessoais | undefined
+  >(() => carregarRascunho()?.dadosPessoais);
+  const [formacoes, setFormacoes] = useState<
+    ValoresFormacaoAcademica[] | undefined
+  >(() => carregarRascunho()?.formacoes);
+  const [experiencias, setExperiencias] = useState<Experiencia[] | undefined>(
+    () => carregarRascunho()?.experiencias,
+  );
+  const [cursos, setCursos] = useState<Curso[] | undefined>(
+    () => carregarRascunho()?.cursos,
+  );
+  const [certificacoes, setCertificacoes] = useState<
+    ValoresCertificacao[] | undefined
+  >(() => carregarRascunho()?.certificacoes);
+  const [idiomas, setIdiomas] = useState<Idioma[] | undefined>(
+    () => carregarRascunho()?.idiomas,
+  );
+  const [competencias, setCompetencias] = useState<Habilidades | undefined>(
+    () => carregarRascunho()?.competencias,
+  );
+  const [projetos, setProjetos] = useState<
+    ValoresProjetoAcademico[] | undefined
+  >(() => carregarRascunho()?.projetos);
+  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo>(
+    () => carregarRascunho()?.modelo ?? "classico",
+  );
+  const [autoBaixarPdf, setAutoBaixarPdf] = useState(false);
+
+  useEffect(() => {
+    salvarRascunho({
+      dadosPessoais,
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+      modelo,
+    });
+  }, [
+    dadosPessoais,
+    formacoes,
+    experiencias,
+    cursos,
+    certificacoes,
+    idiomas,
+    competencias,
+    projetos,
+    modelo,
+  ]);
 
   /**
    * Navega para uma etapa interna e mantém a URL correspondente sincronizada.
@@ -363,6 +465,7 @@ export function App() {
         aoAvancar={() => navegar("formacao-academica")}
         aoAlterarValores={setDadosPessoais}
         onVoltar={() => navegar("inicio")}
+        onVoltarInicio={voltarAoInicio}
         valoresIniciais={dadosPessoais}
       />
     );
@@ -375,6 +478,7 @@ export function App() {
         formacoesIniciais={formacoes}
         onAvancar={() => navegar("experiencias-profissionais")}
         onVoltar={() => navegar("dados-pessoais")}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -386,6 +490,7 @@ export function App() {
         experienciasIniciais={experiencias}
         onSalvar={() => navegar("cursos-certificacoes")}
         onVoltar={() => navegar("formacao-academica")}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -399,6 +504,7 @@ export function App() {
         cursosIniciais={cursos}
         onAvancar={() => navegar("idiomas")}
         onVoltar={() => navegar("experiencias-profissionais")}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -410,6 +516,7 @@ export function App() {
         onAvancar={() => navegar("competencias")}
         onSalvar={setIdiomas}
         onVoltar={() => navegar("cursos-certificacoes")}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -421,6 +528,7 @@ export function App() {
         onAvancar={() => navegar("projetos-academicos")}
         onSalvar={setCompetencias}
         onVoltar={() => navegar("idiomas")}
+        onVoltarInicio={voltarAoInicio}
       />
     );
   }
@@ -431,6 +539,7 @@ export function App() {
         aoAlterarProjetos={setProjetos}
         onAvancar={() => navegar("selecionar-modelo")}
         onVoltar={() => navegar("competencias")}
+        onVoltarInicio={voltarAoInicio}
         projetosIniciais={projetos}
       />
     );
@@ -445,6 +554,13 @@ export function App() {
         }}
         modeloInicial={modelo}
         onVoltar={() => navegar("projetos-academicos")}
+        onVoltarInicio={voltarAoInicio}
+        perfilEstudante={{
+          experiencias,
+          formacoes,
+          projetos,
+          competencias,
+        }}
       />
     );
   }
@@ -453,7 +569,48 @@ export function App() {
     return (
       <PaginaValidacaoCurriculo
         dados={dadosValidacao}
+        onCorrigirSecao={(secaoId) => navegar(secaoId)}
+        onExportarPdf={() => {
+          setAutoBaixarPdf(true);
+          navegar("visualizar-curriculo");
+        }}
+        onVisualizarPreview={() => navegar("visualizar-curriculo")}
         onVoltar={() => navegar("selecionar-modelo")}
+        onVoltarInicio={voltarAoInicio}
+      />
+    );
+  }
+
+  if (rotaAtiva === "visualizar-curriculo") {
+    const previaCalculada = montarPreviaCurriculo({
+      dadosPessoais,
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+      modelo,
+    });
+
+    return (
+      <PaginaVisualizacaoCurriculo
+        aoAlterarModelo={() => navegar("selecionar-modelo")}
+        autoBaixar={autoBaixarPdf}
+        modelo={modelo}
+        onExportarPdf={() => {
+          setAutoBaixarPdf(false);
+        }}
+        onVoltar={() => {
+          setAutoBaixarPdf(false);
+          navegar("validacao-curriculo");
+        }}
+        onVoltarInicio={() => {
+          setAutoBaixarPdf(false);
+          voltarAoInicio();
+        }}
+        previa={previaCalculada}
       />
     );
   }

@@ -276,6 +276,8 @@ describe("FormularioFormacaoAcademica", () => {
       screen.getByRole("group", { name: "Formação acadêmica 2" }),
     ).toBeInTheDocument();
 
+    await usuario.type(screen.getAllByLabelText("Instituição")[1], "USP");
+
     await usuario.click(
       screen.getByRole("button", { name: "Remover Formação acadêmica 2" }),
     );
@@ -283,6 +285,12 @@ describe("FormularioFormacaoAcademica", () => {
     expect(
       screen.queryByRole("group", { name: "Formação acadêmica 2" }),
     ).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    expect(
+      screen.getByRole("group", { name: "Formação acadêmica 2" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Instituição")[1]).toHaveValue("USP");
   });
 
   it("envia todas as formações cadastradas chamando o cliente para cada item", async () => {

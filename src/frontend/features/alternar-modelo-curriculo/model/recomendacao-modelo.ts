@@ -108,3 +108,65 @@ export function obterRecomendacaoModelo(objetivo: ObjetivoCurriculo): string {
       return "Recomendamos o modelo Moderno por equilibrar competências, projetos e experiência de forma harmônica.";
   }
 }
+
+/** Define a estrutura mínima de perfil para inferir o objetivo profissional no cliente. */
+export interface PerfilParaRecomendacao {
+  experiencias?: ReadonlyArray<{
+    empresa?: string;
+    cargo?: string;
+    descricao?: string;
+  }>;
+  formacoes?: ReadonlyArray<{
+    nivel?: string;
+    curriculoLattes?: string;
+  }>;
+  projetos?: ReadonlyArray<{
+    titulo?: string;
+    tecnologias?: string;
+  }>;
+  competencias?: {
+    hardSkills?: ReadonlyArray<string>;
+    softSkills?: ReadonlyArray<string>;
+  };
+}
+
+/**
+ * Infere o objetivo profissional mais adequado a partir do preenchimento das etapas anteriores.
+ * Permite que o sistema pré-selecione o modelo ideal automaticamente no frontend.
+ */
+export function inferirObjetivoDoPerfil(
+  perfil: PerfilParaRecomendacao,
+): ObjetivoCurriculo {
+  const temMestradoOuDoutorado = perfil.formacoes?.some(
+    (f) => f.nivel === "mestrado" || f.nivel === "doutorado",
+  );
+  const temLattes = perfil.formacoes?.some((f) =>
+    Boolean(f.curriculoLattes && f.curriculoLattes.trim().length > 0),
+  );
+  if (temMestradoOuDoutorado || temLattes) {
+    return "academico-pesquisador";
+  }
+
+  const experienciasValidas =
+    perfil.experiencias?.filter(
+      (e) =>
+        Boolean(e.empresa?.trim()) ||
+        Boolean(e.cargo?.trim()) ||
+        Boolean(e.descricao?.trim()),
+    ) ?? [];
+
+  if (experienciasValidas.length === 0) {
+    return "primeiro-emprego";
+  }
+
+  const temProjetosValidos = perfil.projetos?.some(
+    (p) => Boolean(p.titulo?.trim()) || Boolean(p.tecnologias?.trim()),
+  );
+  const temMuitasSkills = (perfil.competencias?.hardSkills?.length ?? 0) >= 3;
+
+  if (temProjetosValidos || temMuitasSkills) {
+    return "tecnologia";
+  }
+
+  return "administrativo-corporativo";
+}
