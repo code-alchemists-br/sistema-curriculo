@@ -1,0 +1,251 @@
+.painel-curriculos-perfil {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.painel-curriculos-perfil__cabecalho {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.painel-curriculos-perfil__sobretitulo,
+.painel-curriculos-perfil__modelo {
+  margin: 0;
+  color: #ff8a3d;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.painel-curriculos-perfil h2,
+.painel-curriculos-perfil h3,
+.painel-curriculos-perfil p {
+  font-family: "Poppins", sans-serif;
+}
+
+.painel-curriculos-perfil h2 {
+  margin: 0.35rem 0 0;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.2;
+}
+
+.painel-curriculos-perfil__cabecalho > div > p:last-child {
+  max-width: 43rem;
+  margin: 0.65rem 0 0;
+  color: #a3a3a3;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.painel-curriculos-perfil__criar,
+.painel-curriculos-perfil__editar,
+.painel-curriculos-perfil__acoes-edicao button {
+  min-height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.7rem 1rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.painel-curriculos-perfil__criar,
+.painel-curriculos-perfil__acoes-edicao button[type="submit"] {
+  background: #f3f3f3;
+  color: #111111;
+}
+
+.painel-curriculos-perfil__criar:hover,
+.painel-curriculos-perfil__acoes-edicao button[type="submit"]:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.painel-curriculos-perfil__lista {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painel-curriculos-perfil__item {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.9rem;
+  background: #171717;
+}
+
+.painel-curriculos-perfil__cartao {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.painel-curriculos-perfil__dados-versao {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+
+.painel-curriculos-perfil__dados-versao h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.painel-curriculos-perfil__dados-versao dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+}
+
+.painel-curriculos-perfil__dados-versao dl div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.painel-curriculos-perfil__dados-versao dt {
+  color: #a3a3a3;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.78rem;
+}
+
+.painel-curriculos-perfil__dados-versao dd {
+  margin: 0;
+  color: #ededed;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.88rem;
+}
+
+.painel-curriculos-perfil__editar {
+  justify-self: start;
+  background: transparent;
+  border-color: rgb(255 255 255 / 20%);
+  color: #ffffff;
+}
+
+.painel-curriculos-perfil__editar:hover {
+  border-color: #ff6a00;
+  color: #ffb27a;
+}
+
+.painel-curriculos-perfil__frame-modelo {
+  align-self: start;
+  overflow: hidden;
+  border-radius: 0.35rem;
+}
+
+/* A tela reutiliza a mesma miniatura da seleção de modelos. */
+.painel-curriculos-perfil__frame-modelo .miniatura-modelo {
+  min-height: 9rem;
+}
+
+.painel-curriculos-perfil__formulario {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.painel-curriculos-perfil__campo {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.painel-curriculos-perfil__campo label {
+  color: #ededed;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+}
+
+.painel-curriculos-perfil__campo input,
+.painel-curriculos-perfil__campo select {
+  width: 100%;
+  min-height: 2.9rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: #0f0f0f;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+.painel-curriculos-perfil__campo input:focus,
+.painel-curriculos-perfil__campo select:focus {
+  border-color: #ff6a00;
+  outline: 2px solid rgb(255 106 0 / 30%);
+  outline-offset: 1px;
+}
+
+.painel-curriculos-perfil__acoes-edicao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.painel-curriculos-perfil__acoes-edicao button[type="button"] {
+  background: transparent;
+  border-color: rgb(255 255 255 / 20%);
+  color: #ffffff;
+}
+
+.painel-curriculos-perfil__mensagem,
+.painel-curriculos-perfil__estado,
+.painel-curriculos-perfil__vazio {
+  margin: 0;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  color: #d4d4d4;
+  font-family: "Poppins", sans-serif;
+}
+
+.painel-curriculos-perfil__mensagem[role="status"] {
+  border-color: rgb(74 222 128 / 40%);
+  background: rgb(34 197 94 / 12%);
+  color: #86efac;
+}
+
+.painel-curriculos-perfil__mensagem[role="alert"],
+.painel-curriculos-perfil__estado[role="alert"] {
+  border-color: rgb(248 113 113 / 40%);
+  background: rgb(239 68 68 / 12%);
+  color: #fca5a5;
+}
+
+.painel-curriculos-perfil__vazio h3,
+.painel-curriculos-perfil__vazio p {
+  margin: 0;
+}
+
+.painel-curriculos-perfil__vazio p {
+  margin-top: 0.4rem;
+  color: #a3a3a3;
+}
+
+@media (max-width: 40rem) {
+  .painel-curriculos-perfil__cabecalho,
+  .painel-curriculos-perfil__cartao {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-curriculos-perfil__cabecalho {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .painel-curriculos-perfil__criar,
+  .painel-curriculos-perfil__editar {
+    width: 100%;
+  }
+
+  .painel-curriculos-perfil__frame-modelo .miniatura-modelo {
+    min-height: 7rem;
+  }
+}

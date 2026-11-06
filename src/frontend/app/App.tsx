@@ -20,6 +20,7 @@ import type { Idioma } from "../features/edit-languages";
 import type { ValoresDadosPessoais } from "../features/edit-personal-data";
 import type { Experiencia } from "../features/edit-professional-experience";
 import type { Habilidades } from "../features/edit-skills";
+import type { Student } from "../entities/student";
 import {
   validarCurriculo,
   type CurriculoParaValidacao,
@@ -58,6 +59,11 @@ import {
   criarClienteAcessoEstudante,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
+import {
+  FalhaPerfilEstudante,
+  type ClientePerfilEstudante,
+} from "../features/edit-profile";
+import { criarClienteVersoesCurriculoDemonstracao } from "../features/gerenciar-curriculos-perfil";
 import { criarClienteVagasResiliente } from "./servicos-resilientes";
 import {
   criarClienteCurriculoNoBanco,
@@ -112,6 +118,25 @@ const ESTILO_AVISO_FALHA: CSSProperties = {
   color: "#fecaca",
   fontFamily: "Poppins, sans-serif",
   boxShadow: "0 1rem 2.5rem rgb(0 0 0 / 45%)",
+};
+
+const clienteVersoesCurriculoDemo = criarClienteVersoesCurriculoDemonstracao();
+
+/**
+ * Mantém o salvamento do perfil na sessão enquanto não há identidade autenticada
+ * suficiente para acionar o endpoint real de perfil.
+ *
+ * A atualização é confirmada pela própria composição do App após o formulário
+ * validar os dados. A exclusão continua indisponível para não simular uma ação
+ * irreversível que não pode ser persistida nesta camada.
+ */
+const clientePerfilDaSessao: ClientePerfilEstudante = {
+  async atualizar() {
+    return undefined;
+  },
+  async excluir() {
+    throw new FalhaPerfilEstudante("indisponivel");
+  },
 };
 
 type RotaAtiva =
@@ -779,6 +804,43 @@ export function App() {
   ]);
 
   /**
+   * Atualiza os dados de perfil preservados na sessão de criação do currículo.
+   *
+   * A função recebe uma entidade já validada pelo formulário, converte os links
+   * opcionais para os campos controlados da etapa inicial e mantém o cabeçalho
+   * autenticado coerente com nome e e-mail que acabaram de ser salvos.
+   */
+  function sincronizarPerfilAtualizado(perfil: Student): void {
+    setDadosPessoais({
+      nomeCompleto: perfil.nomeCompleto,
+      enderecoCompleto: perfil.enderecoCompleto,
+      telefones: [...perfil.telefones],
+      email: perfil.email,
+      linkedIn: perfil.linkedIn ?? "",
+      curriculoLattes: perfil.curriculoLattes ?? "",
+    });
+
+    if (usuarioLogado !== null) {
+      const usuarioAtualizado: UsuarioAutenticado = {
+        nome: perfil.nomeCompleto,
+        email: perfil.email,
+      };
+      setUsuarioLogado(usuarioAtualizado);
+
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(
+            "liminal_usuario_sessao",
+            JSON.stringify(usuarioAtualizado),
+          );
+        } catch {
+          // Ignora erro em ambientes sem suporte a sessionStorage.
+        }
+      }
+    }
+  }
+
+  /**
    * Navega para uma etapa interna e mantém a URL correspondente sincronizada.
    *
    * Como faz: atualiza o parâmetro `etapa` no histórico local e, em seguida,
@@ -1282,7 +1344,24 @@ export function App() {
   }
 
   if (rotaAtiva === "configuracoes-perfil") {
-    return <PaginaConfiguracoesPerfil onVoltar={() => navegar("inicio")} />;
+    return (
+      <PaginaConfiguracoesPerfil
+        cliente={clientePerfilDaSessao}
+        clienteCurriculos={clienteVersoesCurriculoDemo}
+        onCriarNovaVersao={() => navegar("dados-pessoais")}
+        onPerfilAtualizado={sincronizarPerfilAtualizado}
+        onVoltar={() => navegar("meu-perfil")}
+        valoresIniciais={{
+          nomeCompleto:
+            dadosPessoais?.nomeCompleto || usuarioLogado?.nome || "Estudante",
+          enderecoCompleto: dadosPessoais?.enderecoCompleto || "",
+          telefones: dadosPessoais?.telefones || [""],
+          email: dadosPessoais?.email || usuarioLogado?.email || "",
+          linkedIn: dadosPessoais?.linkedIn || "",
+          curriculoLattes: dadosPessoais?.curriculoLattes || "",
+        }}
+      />
+    );
   }
 
   if (rotaAtiva === "meu-perfil") {
@@ -1320,7 +1399,7 @@ export function App() {
         onEditarCurriculo={() =>
           navegar(possuiCurriculo ? "validacao-curriculo" : "dados-pessoais")
         }
-        onEditarPerfil={() => navegar("dados-pessoais")}
+        onEditarPerfil={() => navegar("configuracoes-perfil")}
         aoBaixarCurriculo={(formato) =>
           formato === "pdf"
             ? exportarElementoParaPdf({ previa: previaDoPerfil, nomeArquivo })
