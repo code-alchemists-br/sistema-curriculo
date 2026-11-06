@@ -3,6 +3,7 @@ export {
   criarClienteFormacaoAcademicaIndisponivel,
   FalhaFormacaoAcademica,
 } from "./api/cliente-formacao-academica";
+export { criarClienteFormacaoAcademicaHttp } from "./api/cliente-formacao-academica-http";
 export type {
   CadastroFormacaoAcademicaEntrada,
   ClienteFormacaoAcademica,
