@@ -1,0 +1,138 @@
+.formulario-edicao-perfil {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.formulario-edicao-perfil .field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.formulario-edicao-perfil .field > label,
+.formulario-edicao-perfil__titulo-campo,
+.formulario-edicao-perfil__item-telefone label {
+  color: #f3f3f3;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.formulario-edicao-perfil input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  background: #0f0f0f;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+.formulario-edicao-perfil input:hover:not(:focus) {
+  border-color: rgb(255 255 255 / 30%);
+  background: #171717;
+}
+
+.formulario-edicao-perfil input:focus {
+  border-color: #ff6a00;
+  outline: 2px solid rgb(255 106 0 / 30%);
+  outline-offset: 1px;
+}
+
+.formulario-edicao-perfil input[aria-invalid="true"] {
+  border-color: #f87171;
+}
+
+.formulario-edicao-perfil__lista-telefones {
+  display: grid;
+  gap: 1rem;
+}
+
+.formulario-edicao-perfil__item-telefone {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.formulario-edicao-perfil__item-telefone + .formulario-edicao-perfil__item-telefone {
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.formulario-edicao-perfil .field__error {
+  margin: 0;
+  color: #fca5a5;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+}
+
+.formulario-edicao-perfil__adicionar-telefone {
+  justify-self: start;
+  min-height: auto;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: #ff9b5c;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.formulario-edicao-perfil__adicionar-telefone:hover {
+  color: #ffc29b;
+  text-decoration: underline;
+}
+
+.formulario-edicao-perfil .form-message {
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  padding: 0.85rem 1rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+}
+
+.formulario-edicao-perfil .form-message[role="status"] {
+  border-color: rgb(74 222 128 / 40%);
+  background: rgb(34 197 94 / 12%);
+  color: #86efac;
+}
+
+.formulario-edicao-perfil .form-message[role="alert"] {
+  border-color: rgb(248 113 113 / 40%);
+  background: rgb(239 68 68 / 12%);
+  color: #fca5a5;
+}
+
+.formulario-edicao-perfil__salvar {
+  min-height: 3rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: #f3f3f3;
+  color: #111111;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formulario-edicao-perfil__salvar:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.formulario-edicao-perfil__excluir {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 1rem;
+  border: 1px solid rgb(248 113 113 / 55%);
+  border-radius: 0.65rem;
+  background: transparent;
+  color: #fca5a5;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.formulario-edicao-perfil__excluir:hover:not(:disabled) {
+  border-color: #f87171;
+  background: rgb(239 68 68 / 12%);
+}

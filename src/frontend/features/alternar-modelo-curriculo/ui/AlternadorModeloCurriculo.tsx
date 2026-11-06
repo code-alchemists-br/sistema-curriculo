@@ -18,6 +18,11 @@ interface AlternadorModeloCurriculoProps {
   modeloRecomendado?: ModeloApresentacaoCurriculo;
 }
 
+/** Define o modelo cuja miniatura estrutural deve ser exibida. */
+export interface MiniaturaModeloCurriculoProps {
+  modelo: ModeloApresentacaoCurriculo;
+}
+
 const opcoes: ReadonlyArray<{
   valor: ModeloApresentacaoCurriculo;
   rotulo: string;
@@ -125,7 +130,7 @@ export function AlternadorModeloCurriculo({
                   </span>
                 )}
               </div>
-              <MiniaturaModelo modelo={opcao.valor} />
+              <MiniaturaModeloCurriculo modelo={opcao.valor} />
               <p id={descricaoId}>{opcao.descricao}</p>
             </div>
           );
@@ -142,11 +147,9 @@ export function AlternadorModeloCurriculo({
  * - Como faz: Seleciona uma composição estática por modelo e oculta a decoração dos leitores de tela.
  * - Qual finalidade atende: Permite comparar modelos por mouse, toque ou teclado sem depender de uma descrição apenas visual.
  */
-function MiniaturaModelo({
+export function MiniaturaModeloCurriculo({
   modelo,
-}: {
-  modelo: ModeloApresentacaoCurriculo;
-}): ReactNode {
+}: MiniaturaModeloCurriculoProps): ReactNode {
   switch (modelo) {
     case "ats-simples":
       return <MiniaturaAtsSimples />;

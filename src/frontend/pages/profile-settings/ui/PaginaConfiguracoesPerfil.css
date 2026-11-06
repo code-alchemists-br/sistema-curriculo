@@ -1,0 +1,114 @@
+.pagina-configuracoes-perfil {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 4rem;
+  background: #050505;
+  color: #ffffff;
+}
+
+.pagina-configuracoes-perfil__conteudo {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+}
+
+.pagina-configuracoes-perfil__voltar {
+  min-height: auto;
+  margin: 0 0 2rem;
+  border: 0;
+  padding: 0.25rem 0;
+  background: transparent;
+  color: #bdbdbd;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pagina-configuracoes-perfil__voltar:hover {
+  color: #ffffff;
+}
+
+.pagina-configuracoes-perfil__cabecalho {
+  max-width: 48rem;
+  margin-bottom: 2.5rem;
+}
+
+.pagina-configuracoes-perfil__cabecalho p,
+.pagina-configuracoes-perfil__cabecalho-painel p {
+  margin: 0;
+  color: #ff8a3d;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pagina-configuracoes-perfil__cabecalho h1 {
+  margin: 0.45rem 0 0;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.pagina-configuracoes-perfil__cabecalho > span,
+.pagina-configuracoes-perfil__cabecalho-painel > span {
+  display: block;
+  margin-top: 0.85rem;
+  color: #a3a3a3;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.pagina-configuracoes-perfil__grade {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 1.5rem;
+}
+
+.pagina-configuracoes-perfil__painel {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: #121212;
+}
+
+.pagina-configuracoes-perfil__cabecalho-painel {
+  margin-bottom: 1.75rem;
+}
+
+.pagina-configuracoes-perfil__cabecalho-painel h2 {
+  margin: 0.4rem 0 0;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.pagina-configuracoes-perfil__painel--versoes {
+  min-width: 0;
+}
+
+@media (max-width: 58rem) {
+  .pagina-configuracoes-perfil__grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .pagina-configuracoes-perfil {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .pagina-configuracoes-perfil__voltar {
+    margin-bottom: 1.5rem;
+  }
+
+  .pagina-configuracoes-perfil__cabecalho {
+    margin-bottom: 1.75rem;
+  }
+}

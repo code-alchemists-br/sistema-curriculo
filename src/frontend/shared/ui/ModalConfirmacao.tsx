@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+import "./ModalConfirmacao.css";
+
 /** Define as propriedades do modal genérico de confirmação. */
 export interface ModalConfirmacaoProps {
   aberto: boolean;
@@ -7,6 +9,8 @@ export interface ModalConfirmacaoProps {
   descricao: string;
   textoBotaoConfirmar?: string;
   textoBotaoCancelar?: string;
+  /** Define se a confirmação representa uma ação destrutiva. */
+  tomConfirmacao?: "padrao" | "perigoso";
   onConfirmar: () => void;
   onCancelar: () => void;
   /** Elemento opcional que disparou a abertura; se omitido, captura o activeElement. */
@@ -28,6 +32,7 @@ export function ModalConfirmacao({
   descricao,
   textoBotaoConfirmar = "Confirmar",
   textoBotaoCancelar = "Cancelar",
+  tomConfirmacao = "padrao",
   onConfirmar,
   onCancelar,
   elementoDisparador,
@@ -99,18 +104,31 @@ export function ModalConfirmacao({
       aria-describedby="modal-descricao"
       aria-labelledby="modal-titulo"
       aria-modal="true"
+      className="modal-confirmacao__fundo"
       role="dialog"
     >
-      <h2 id="modal-titulo">{titulo}</h2>
-      <p id="modal-descricao">{descricao}</p>
-      <div>
-        <button onClick={onCancelar} ref={refBotaoCancelar} type="button">
-          {textoBotaoCancelar}
-        </button>
-        <button onClick={onConfirmar} ref={refBotaoConfirmar} type="button">
-          {textoBotaoConfirmar}
-        </button>
-      </div>
+      <section className="modal-confirmacao__conteudo">
+        <h2 id="modal-titulo">{titulo}</h2>
+        <p id="modal-descricao">{descricao}</p>
+        <div className="modal-confirmacao__acoes">
+          <button
+            className="modal-confirmacao__botao modal-confirmacao__botao--cancelar"
+            onClick={onCancelar}
+            ref={refBotaoCancelar}
+            type="button"
+          >
+            {textoBotaoCancelar}
+          </button>
+          <button
+            className={`modal-confirmacao__botao modal-confirmacao__botao--${tomConfirmacao}`}
+            onClick={onConfirmar}
+            ref={refBotaoConfirmar}
+            type="button"
+          >
+            {textoBotaoConfirmar}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

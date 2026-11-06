@@ -14,11 +14,13 @@ import {
   type ValoresPerfilEstudante,
 } from "../model/formulario-perfil";
 import type { Student } from "../../../entities/student";
+import "./FormularioEdicaoPerfil.css";
 
 /** Define o cliente e os dados iniciais usados pela tela de configurações. */
 export interface FormularioEdicaoPerfilProps {
   cliente: ClientePerfilEstudante;
   valoresIniciais: Student;
+  onPerfilAtualizado?: (perfil: Student) => void;
 }
 
 /**
@@ -31,6 +33,7 @@ export interface FormularioEdicaoPerfilProps {
 export function FormularioEdicaoPerfil({
   cliente,
   valoresIniciais,
+  onPerfilAtualizado,
 }: FormularioEdicaoPerfilProps) {
   const [valores, setValores] = useState<ValoresPerfilEstudante>(() =>
     criarValoresDeStudent(valoresIniciais),
@@ -104,7 +107,9 @@ export function FormularioEdicaoPerfil({
     setMensagem(null);
 
     try {
-      await cliente.atualizar(criarStudentDeValoresPerfil(valores));
+      const perfilAtualizado = criarStudentDeValoresPerfil(valores);
+      await cliente.atualizar(perfilAtualizado);
+      onPerfilAtualizado?.(perfilAtualizado);
       setMensagem("Perfil atualizado com sucesso.");
     } catch (erro: unknown) {
       const codigo =
@@ -145,7 +150,11 @@ export function FormularioEdicaoPerfil({
 
   return (
     <>
-      <form noValidate onSubmit={enviarFormulario}>
+      <form
+        className="formulario-edicao-perfil"
+        noValidate
+        onSubmit={enviarFormulario}
+      >
         <CampoTexto
           erro={erros.nomeCompleto}
           id="perfil-nome-completo"
@@ -162,37 +171,48 @@ export function FormularioEdicaoPerfil({
           required
           value={valores.enderecoCompleto}
         />
-        <div className="field">
-          <span>Telefones</span>
-          {valores.telefones.map((telefone, indice) => {
-            const id = `perfil-telefone-${indice}`;
-            const erro = erros.telefones?.[indice];
-            const idErro = `${id}-erro`;
+        <div className="formulario-edicao-perfil__telefones field">
+          <span className="formulario-edicao-perfil__titulo-campo">
+            Telefones
+          </span>
+          <div className="formulario-edicao-perfil__lista-telefones">
+            {valores.telefones.map((telefone, indice) => {
+              const id = `perfil-telefone-${indice}`;
+              const erro = erros.telefones?.[indice];
+              const idErro = `${id}-erro`;
 
-            return (
-              <div key={id}>
-                <label htmlFor={id}>Telefone {indice + 1}</label>
-                <input
-                  aria-describedby={erro === undefined ? undefined : idErro}
-                  aria-invalid={erro === undefined ? undefined : true}
-                  autoComplete="tel"
-                  id={id}
-                  onChange={(evento) =>
-                    atualizarTelefone(indice, evento.target.value)
-                  }
-                  required
-                  type="tel"
-                  value={telefone}
-                />
-                {erro !== undefined && (
-                  <p className="field__error" id={idErro}>
-                    {erro}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-          <button onClick={adicionarTelefone} type="button">
+              return (
+                <div
+                  className="formulario-edicao-perfil__item-telefone"
+                  key={id}
+                >
+                  <label htmlFor={id}>Telefone {indice + 1}</label>
+                  <input
+                    aria-describedby={erro === undefined ? undefined : idErro}
+                    aria-invalid={erro === undefined ? undefined : true}
+                    autoComplete="tel"
+                    id={id}
+                    onChange={(evento) =>
+                      atualizarTelefone(indice, evento.target.value)
+                    }
+                    required
+                    type="tel"
+                    value={telefone}
+                  />
+                  {erro !== undefined && (
+                    <p className="field__error" id={idErro}>
+                      {erro}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            className="formulario-edicao-perfil__adicionar-telefone"
+            onClick={adicionarTelefone}
+            type="button"
+          >
             + Adicionar telefone
           </button>
         </div>
@@ -215,10 +235,10 @@ export function FormularioEdicaoPerfil({
           value={valores.linkedIn}
         />
         <CampoTexto
-          ajuda="Informe o link público na Plataforma Lattes do CNPq (obrigatório para formação acadêmica, pesquisa, mestrado e doutorado)."
+          ajuda="Informe o link público na Plataforma Lattes do CNPq, se possuir um."
           erro={erros.curriculoLattes}
           id="perfil-curriculo-lattes"
-          label="Currículo Lattes"
+          label="Currículo Lattes (opcional)"
           onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
           type="url"
           value={valores.curriculoLattes}
@@ -231,11 +251,16 @@ export function FormularioEdicaoPerfil({
             {mensagem}
           </p>
         )}
-        <button disabled={enviando || excluindo} type="submit">
+        <button
+          className="formulario-edicao-perfil__salvar"
+          disabled={enviando || excluindo}
+          type="submit"
+        >
           {enviando ? "Salvando alterações..." : "Salvar alterações"}
         </button>
       </form>
       <button
+        className="formulario-edicao-perfil__excluir"
         disabled={enviando || excluindo}
         onClick={() => setModalAberto(true)}
         type="button"
@@ -249,6 +274,7 @@ export function FormularioEdicaoPerfil({
         onConfirmar={confirmarExclusao}
         textoBotaoCancelar="Cancelar"
         textoBotaoConfirmar="Excluir minha conta"
+        tomConfirmacao="perigoso"
         titulo="Tem certeza que deseja excluir sua conta?"
       />
     </>

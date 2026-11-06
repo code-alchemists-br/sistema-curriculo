@@ -1,7 +1,9 @@
 export {
   AlternadorModeloCurriculo,
+  MiniaturaModeloCurriculo,
   type ModeloApresentacaoCurriculo,
 } from "./ui/AlternadorModeloCurriculo";
+export type { MiniaturaModeloCurriculoProps } from "./ui/AlternadorModeloCurriculo";
 export {
   obterModeloRecomendadoPorObjetivo,
   obterRecomendacaoModelo,
