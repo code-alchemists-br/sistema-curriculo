@@ -5,10 +5,16 @@ from unittest.mock import patch
 from uuid import UUID
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
-from backend.domain import CompetenciaId, CurriculoId, ProjetoAcademicoId
+from backend.domain import (
+    CompetenciaId,
+    CurriculoId,
+    FormacaoAcademicaId,
+    ProjetoAcademicoId,
+)
 from backend.infrastructure.identificadores.geradores import (
     GeradorCompetenciaIdUuid4,
     GeradorCurriculoIdUuid4,
+    GeradorFormacaoAcademicaIdUuid4,
     GeradorProjetoAcademicoIdUuid4,
 )
 
@@ -97,4 +103,26 @@ class GeradorProjetoAcademicoIdUuid4TestCase(unittest.TestCase):
             identificador = GeradorProjetoAcademicoIdUuid4().gerar()
 
         self.assertEqual(identificador, ProjetoAcademicoId(PRIMEIRO))
+        uuid4_mock.assert_called_once_with()
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class GeradorFormacaoAcademicaIdUuid4TestCase(unittest.TestCase):
+    """Verifica a adaptação de UUID4 à identidade de formação acadêmica.
+
+    O teste substitui a fonte aleatória por um UUID conhecido e confere o value
+    object devolvido. Ele existe para proteger a implementação da porta de ID de
+    formação.
+    """
+
+    def test_devolve_formacao_academica_id_com_o_uuid_gerado(self) -> None:
+        """Embrulha o UUID fornecido pela infraestrutura em ``FormacaoAcademicaId``.
+
+        Fixa a saída do UUID4 e compara o value object retornado. Ele existe para
+        manter o gerador previsível nos testes do caso de uso de cadastro.
+        """
+        with patch(f"{GERADOR}.uuid4", return_value=PRIMEIRO) as uuid4_mock:
+            identificador = GeradorFormacaoAcademicaIdUuid4().gerar()
+
+        self.assertEqual(identificador, FormacaoAcademicaId(PRIMEIRO))
         uuid4_mock.assert_called_once_with()

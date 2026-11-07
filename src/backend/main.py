@@ -23,11 +23,19 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.perfil_estudante import (
+    CadastrarFormacaoAcademica,
+    EditarFormacaoAcademica,
+    ExcluirFormacaoAcademica,
+)
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
 from backend.application.saude import VerificadorPersistencia
 from backend.application.sessoes import CriadorSessao
 from backend.configuracao_logging import configurar_logging
-from backend.infrastructure.identificadores.geradores import GeradorUsuarioIdUuid4
+from backend.infrastructure.identificadores.geradores import (
+    GeradorFormacaoAcademicaIdUuid4,
+    GeradorUsuarioIdUuid4,
+)
 from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
     AutenticadorSessaoSqlAlchemy,
@@ -36,14 +44,24 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
 from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
     CadastroEstudanteSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.executor_transacional import (
+    criar_executor_transacional,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_vaga import (
     ListarAssociacoesCurriculoVagaSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.repositorio_formacao_academica import (
+    RepositorioFormacaoAcademicaSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
+    RepositorioUsuarioSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
 )
+from backend.infrastructure.relogio import RelogioSistema
 from backend.infrastructure.security.autenticador_sessao_indisponivel import (
     AutenticadorSessaoIndisponivel,
 )
@@ -210,6 +228,30 @@ _listar_associacoes_curriculo_vaga = (
     if _sessoes_persistencia is not None
     else None
 )
+# Formação acadêmica: cada executor monta o caso de uso com a sessão da
+# requisição; sem banco configurado, o executor é None e a rota responde 503.
+_gerador_formacao_id = GeradorFormacaoAcademicaIdUuid4()
+_relogio = RelogioSistema()
+_cadastrar_formacao_academica = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: CadastrarFormacaoAcademica(
+        RepositorioUsuarioSqlAlchemy(sessao),
+        RepositorioFormacaoAcademicaSqlAlchemy(sessao),
+        _gerador_formacao_id,
+    ),
+)
+_editar_formacao_academica = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: EditarFormacaoAcademica(
+        RepositorioFormacaoAcademicaSqlAlchemy(sessao)
+    ),
+)
+_excluir_formacao_academica = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ExcluirFormacaoAcademica(
+        RepositorioFormacaoAcademicaSqlAlchemy(sessao), _relogio
+    ),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -247,6 +289,9 @@ app = create_app(
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
     listar_associacoes_curriculo_vaga=_listar_associacoes_curriculo_vaga,
     verificador_persistencia=_verificador_persistencia,
+    cadastrar_formacao_academica=_cadastrar_formacao_academica,
+    editar_formacao_academica=_editar_formacao_academica,
+    excluir_formacao_academica=_excluir_formacao_academica,
     lifespan=_ciclo_vida_aplicacao,
     configuracao_cookie=_configuracao_cookie_sessao,
 )

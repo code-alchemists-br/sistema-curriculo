@@ -16,6 +16,8 @@ from backend.application.ports import (
     GeradorCursoId,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     GeradorDocumentoId,
+    # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+    GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -33,6 +35,8 @@ from backend.domain.value_objects import (
     CursoId,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     DocumentoId,
+    # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+    FormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -212,3 +216,23 @@ class GeradorDocumentoIdUuid4(GeradorDocumentoId):
         concreta, substituível e sem estado de identificadores.
         """
         return DocumentoId(uuid4())
+
+
+# Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
+class GeradorFormacaoAcademicaIdUuid4(GeradorFormacaoAcademicaId):
+    """Gera identidades de formação acadêmica com UUID versão 4.
+
+    A implementação cria um UUID aleatório a cada chamada e o encapsula em
+    ``FormacaoAcademicaId``. Ela existe para fornecer a identidade exigida pelo
+    cadastro de formação sem fazer a Application depender da biblioteca de
+    aleatoriedade.
+    """
+
+    def gerar(self) -> FormacaoAcademicaId:
+        """Devolve uma identidade nova e tipada para uma formação acadêmica.
+
+        O método delega a aleatoriedade ao UUID4 e converte o resultado para o
+        value object aceito pelo caso de uso. Ele existe para manter a geração
+        de IDs concreta na infraestrutura e substituível nos testes.
+        """
+        return FormacaoAcademicaId(uuid4())
