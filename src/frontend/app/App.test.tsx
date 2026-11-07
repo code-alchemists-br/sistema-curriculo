@@ -335,4 +335,33 @@ describe("App", () => {
 
     sessionStorage.removeItem("liminal_curriculo_rascunho");
   });
+
+  it("permite navegar para a tela de recuperação de senha a partir do login e retornar", async () => {
+    window.history.replaceState({}, "", "/?etapa=acesso");
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
+    ).toBeInTheDocument();
+
+    const btnEsqueceuSenha = screen.getByRole("button", {
+      name: "Esqueceu sua senha?",
+    });
+    await user.click(btnEsqueceuSenha);
+
+    expect(
+      await screen.findByRole("heading", { name: "Recupere sua senha" }),
+    ).toBeInTheDocument();
+
+    const btnVoltarLogin = screen.getByRole("button", {
+      name: "← Voltar para o login",
+    });
+    await user.click(btnVoltarLogin);
+
+    expect(
+      await screen.findByRole("heading", { name: "Conecte-se na LIMINAL" }),
+    ).toBeInTheDocument();
+  });
 });
