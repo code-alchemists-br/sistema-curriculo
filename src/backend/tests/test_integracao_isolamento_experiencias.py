@@ -64,17 +64,18 @@ class AutenticadorEstudanteA(AutenticadorSessao):
 
 
 class RelogioFixo:
-    """Fornece sempre o mesmo instante com fuso para a exclusão lógica.
+    """Fornece sempre o mesmo instante com fuso para edição e exclusão lógica.
 
     O double implementa a porta de relógio sem acessar o tempo do sistema. Ele
-    existe para tornar determinístico o ``deleted_at`` gravado pelo caso de uso.
+    existe para tornar determinísticos a validação das datas na edição e o
+    ``deleted_at`` gravado na exclusão.
     """
 
     def agora(self) -> datetime:
         """Devolve o instante fixo do cenário.
 
         O método não tem efeitos colaterais. Ele existe para satisfazer a porta
-        usada pelo caso de uso real de exclusão.
+        usada pelos casos de uso reais de edição e exclusão.
         """
         return INSTANTE_EXCLUSAO
 
@@ -219,10 +220,11 @@ def _criar_app(repo: RepositorioExperienciaEmMemoriaComEstado, autenticador: Aut
     relógio fixo e o autenticador de teste. Ela existe para exercitar as rotas
     protegidas de experiência de ponta a ponta sem banco.
     """
+    relogio = RelogioFixo()
     return create_app(
         autenticador_sessao=autenticador,
-        editar_experiencia_profissional=EditarExperienciaProfissional(repo),
-        excluir_experiencia_profissional=ExcluirExperienciaProfissional(repo, RelogioFixo()),
+        editar_experiencia_profissional=EditarExperienciaProfissional(repo, relogio),
+        excluir_experiencia_profissional=ExcluirExperienciaProfissional(repo, relogio),
     )
 
 
