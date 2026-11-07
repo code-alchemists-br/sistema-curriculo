@@ -19,6 +19,7 @@ export interface FormularioAcessoProps {
   emailInicial: string;
   aoAcessar?: (email?: string) => void;
   aoAlterarEmail?: (email: string) => void;
+  aoSolicitarRecuperacaoSenha?: () => void;
 }
 
 /**
@@ -34,6 +35,7 @@ export function FormularioAcesso({
   emailInicial,
   aoAcessar,
   aoAlterarEmail,
+  aoSolicitarRecuperacaoSenha,
 }: FormularioAcessoProps) {
   const [email, setEmail] = useState(emailInicial);
   const [senha, setSenha] = useState("");
@@ -190,6 +192,17 @@ export function FormularioAcesso({
           </p>
         )}
       </div>
+      {aoSolicitarRecuperacaoSenha && (
+        <div className="formulario-acesso__acoes-auxiliares">
+          <button
+            className="formulario-acesso__link-esqueceu-senha"
+            onClick={aoSolicitarRecuperacaoSenha}
+            type="button"
+          >
+            Esqueceu sua senha?
+          </button>
+        </div>
+      )}
       {mensagem !== null && (
         <p
           className={`form-message ${

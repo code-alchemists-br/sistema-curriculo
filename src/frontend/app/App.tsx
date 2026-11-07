@@ -21,6 +21,7 @@ import { PaginaConfiguracoesPerfil } from "../pages/profile-settings";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
+import { PaginaRecuperacaoSenha } from "../pages/recuperar-senha";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
 import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
@@ -53,7 +54,8 @@ type RotaAtiva =
   | "politica-de-privacidade"
   | "validacao-curriculo"
   | "vagas"
-  | "configuracoes-perfil";
+  | "configuracoes-perfil"
+  | "recuperar-senha";
 
 /**
  * Redefine a posição de rolagem da janela e de contêineres internos para o topo.
@@ -122,6 +124,8 @@ export function App() {
       if (etapa === "vagas") return "vagas";
       if (etapa === "configuracoes-perfil" || etapa === "perfil")
         return "configuracoes-perfil";
+      if (etapa === "recuperar-senha" || etapa === "recuperacao-senha")
+        return "recuperar-senha";
       if (etapa === "acesso") return "acesso";
     }
     return "inicio";
@@ -529,7 +533,17 @@ export function App() {
             voltarAoInicio();
           }
         }}
+        onNavegarRecuperarSenha={() => navegar("recuperar-senha")}
         onVoltarInicio={voltarAoInicio}
+      />
+    );
+  }
+
+  if (rotaAtiva === "recuperar-senha") {
+    return (
+      <PaginaRecuperacaoSenha
+        onVoltarInicio={voltarAoInicio}
+        onVoltarLogin={() => abrirAcesso("acesso", "login")}
       />
     );
   }

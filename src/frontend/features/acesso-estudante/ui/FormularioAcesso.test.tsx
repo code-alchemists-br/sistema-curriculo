@@ -60,4 +60,27 @@ describe("FormularioAcesso", () => {
     );
     expect(screen.getByLabelText("Senha")).toHaveValue("");
   });
+
+  it("aciona callback ao clicar em Esqueceu sua senha", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteAcessoEstudante = {
+      cadastrar: vi.fn(),
+      acessar: vi.fn(),
+    };
+    const aoSolicitar = vi.fn();
+
+    render(
+      <FormularioAcesso
+        aoSolicitarRecuperacaoSenha={aoSolicitar}
+        cliente={cliente}
+        emailInicial="aluna@fatec.sp.gov.br"
+      />,
+    );
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Esqueceu sua senha?" }),
+    );
+
+    expect(aoSolicitar).toHaveBeenCalledTimes(1);
+  });
 });
