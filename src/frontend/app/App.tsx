@@ -116,17 +116,34 @@ const CHAVE_RASCUNHO_CURRICULO = "liminal_curriculo_rascunho";
 function carregarRascunho(): RascunhoCurriculo | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
-    return raw ? (JSON.parse(raw) as RascunhoCurriculo) : null;
+    const rawLocal = localStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
+    if (rawLocal) {
+      return JSON.parse(rawLocal) as RascunhoCurriculo;
+    }
   } catch {
-    return null;
+    // Continua para fallback em sessionStorage caso localStorage esteja inacessível
   }
+  try {
+    const rawSession = sessionStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
+    if (rawSession) {
+      return JSON.parse(rawSession) as RascunhoCurriculo;
+    }
+  } catch {
+    // Ignora erro
+  }
+  return null;
 }
 
 function salvarRascunho(rascunho: RascunhoCurriculo): void {
   if (typeof window === "undefined") return;
+  const serializado = JSON.stringify(rascunho);
   try {
-    sessionStorage.setItem(CHAVE_RASCUNHO_CURRICULO, JSON.stringify(rascunho));
+    localStorage.setItem(CHAVE_RASCUNHO_CURRICULO, serializado);
+  } catch {
+    // Ignora restrições de localStorage
+  }
+  try {
+    sessionStorage.setItem(CHAVE_RASCUNHO_CURRICULO, serializado);
   } catch {
     // Ignora restrições de sessionStorage
   }
@@ -134,6 +151,11 @@ function salvarRascunho(rascunho: RascunhoCurriculo): void {
 
 function limparRascunho(): void {
   if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(CHAVE_RASCUNHO_CURRICULO);
+  } catch {
+    // Ignora restrições
+  }
   try {
     sessionStorage.removeItem(CHAVE_RASCUNHO_CURRICULO);
   } catch {

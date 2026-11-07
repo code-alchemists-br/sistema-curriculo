@@ -350,3 +350,11 @@
   margin: 0;
   line-height: 1.5;
 }
+
+.formulario-experiencias .formulario-experiencias__contador-caracteres {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.8rem;
+  color: #8a8a8a;
+  text-align: right;
+  margin-top: 0.35rem;
+}

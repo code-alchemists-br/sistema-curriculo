@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LIMITES_EXPERIENCIA,
   criarExperienciaVazia,
+  obterDataAtualIso,
   ordenarPorDataDecrescente,
   validarExperiencia,
   validarListaExperiencias,
@@ -62,6 +64,82 @@ describe("validarExperiencia", () => {
     });
     expect(erros.fim).toBe(
       "A data de término deve ser posterior à data de início.",
+    );
+  });
+
+  it("reporta data de início posterior à data atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2025-02-01",
+        fim: "",
+        empregoAtual: true,
+      },
+      dataLimite,
+    );
+    expect(erros.inicio).toBe(
+      "A data de início não pode ser posterior à data atual.",
+    );
+  });
+
+  it("reporta data de término posterior à data atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2024-01-01",
+        fim: "2025-02-01",
+        empregoAtual: false,
+      },
+      dataLimite,
+    );
+    expect(erros.fim).toBe(
+      "A data de término não pode ser posterior à data atual.",
+    );
+  });
+
+  it("ignora data de término posterior à data atual se for emprego atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2024-01-01",
+        fim: "2025-02-01",
+        empregoAtual: true,
+      },
+      dataLimite,
+    );
+    expect(erros.fim).toBeUndefined();
+  });
+
+  it("reporta empresa excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      empresa: "A".repeat(LIMITES_EXPERIENCIA.empresaMax + 1),
+    });
+    expect(erros.empresa).toBe(
+      `O nome da empresa deve ter no máximo ${LIMITES_EXPERIENCIA.empresaMax} caracteres.`,
+    );
+  });
+
+  it("reporta cargo excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      cargo: "B".repeat(LIMITES_EXPERIENCIA.cargoMax + 1),
+    });
+    expect(erros.cargo).toBe(
+      `O cargo deve ter no máximo ${LIMITES_EXPERIENCIA.cargoMax} caracteres.`,
+    );
+  });
+
+  it("reporta descrição excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      descricao: "C".repeat(LIMITES_EXPERIENCIA.descricaoMax + 1),
+    });
+    expect(erros.descricao).toBe(
+      `A descrição deve ter no máximo ${LIMITES_EXPERIENCIA.descricaoMax} caracteres.`,
     );
   });
 
