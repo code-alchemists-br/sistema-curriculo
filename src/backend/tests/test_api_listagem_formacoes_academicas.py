@@ -141,14 +141,15 @@ class ListagemFormacoesHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ordem do domínio", rota.description)
         self.assertIn("sem corpo, parâmetros ou paginação", rota.description)
 
-    def test_factory_adiciona_parametro_no_fim_e_encaminha_executor(self):
+    def test_factory_preserva_posicao_dos_parametros_e_encaminha_executor(self):
         """Confere binding substituindo FastAPI e o router para evitar contexto.
 
-        Inspeciona assinatura e chamada do router para proteger consumidores
-        posicionais da factory e a passagem do executor de leitura ao GET.
+        Inspeciona posições estáveis na assinatura e chamada do router para
+        proteger consumidores posicionais da factory e a passagem do executor
+        de leitura ao GET, permitindo acrescentar parâmetros ao final.
         """
         # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
-        self.assertEqual(list(inspect.signature(create_app).parameters)[-2:], [
+        self.assertEqual(list(inspect.signature(create_app).parameters)[46:48], [
             "listar_formacoes_academicas", "listar_experiencias_profissionais"
         ])
         executor = Mock()

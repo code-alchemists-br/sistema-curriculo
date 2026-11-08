@@ -2,7 +2,7 @@
 
 O módulo cria uma engine assíncrona quando `DATABASE_URL` está configurada,
 compõe os executores persistidos, incluindo cadastro, leitura, edição e exclusão de
-formações acadêmicas e experiências profissionais, injeta a readiness e encerra
+formações acadêmicas, projetos acadêmicos e experiências profissionais, injeta a readiness e encerra
 a engine no shutdown. Sem
 essa variável, os fluxos persistidos ficam indisponíveis. Ele existe para
 concentrar a composição de infraestrutura fora das camadas internas.
@@ -32,6 +32,8 @@ from backend.configuracao_logging import configurar_logging
 from backend.infrastructure.identificadores.geradores import (
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    GeradorProjetoAcademicoIdUuid4,
     GeradorUsuarioIdUuid4,
 )
 from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
@@ -66,6 +68,14 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_formacao_academica 
     # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
     ListarFormacoesAcademicasSqlAlchemy,
     RelogioUtc,
+)
+
+# Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico import (
+    CadastroProjetoAcademicoSqlAlchemy,
+    ConsultaProjetoAcademicoSqlAlchemy,
+    EdicaoProjetoAcademicoSqlAlchemy,
+    ExclusaoProjetoAcademicoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
@@ -265,6 +275,23 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
 
 # Proveniência: decision-analysis prompts/backend/20260913-fundamentos-fastapi-v001.md#v001
 app = create_app(
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    cadastrar_projeto_academico=(
+        CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
+        if _sessoes_persistencia is not None else None
+    ),
+    consultar_projeto_academico=(
+        ConsultaProjetoAcademicoSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None else None
+    ),
+    editar_projeto_academico=(
+        EdicaoProjetoAcademicoSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None else None
+    ),
+    excluir_projeto_academico=(
+        ExclusaoProjetoAcademicoSqlAlchemy(_sessoes_persistencia, RelogioUtc())
+        if _sessoes_persistencia is not None else None
+    ),
     editar_experiencia_profissional=(
         # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
         EdicaoExperienciaProfissionalSqlAlchemy(_sessoes_persistencia, RelogioUtc())

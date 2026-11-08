@@ -484,7 +484,8 @@ class ProjetoAcademico:
     A entidade agrupa identidade, proprietário e três textos livres, normaliza
     esses textos e limita seus tamanhos sem impor vocabulário às tecnologias.
     Ela existe para permitir que projetos válidos sejam reutilizados em
-    diferentes versões de currículo.
+    diferentes versões de currículo, com edição imutável e exclusão lógica que
+    preservam identidade, proprietário e referências já selecionadas.
     """
 
     id: ProjetoAcademicoId
@@ -492,6 +493,8 @@ class ProjetoAcademico:
     titulo: str
     descricao: str
     tecnologias: str
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    deleted_at: datetime | None = None
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
@@ -520,6 +523,45 @@ class ProjetoAcademico:
         ):
             normalizado = _normalizar_texto_projeto(valor, campo, tamanho_maximo)
             object.__setattr__(self, atributo, normalizado)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    def editar(self, titulo: str, descricao: str, tecnologias: str) -> ProjetoAcademico:
+        """Substitui os três textos por uma nova entidade validada.
+
+        Reconstrói o projeto pelo construtor, preservando ID, proprietário e
+        marcador de exclusão, para reaplicar invariantes sem mutar o original.
+        """
+        return replace(self, titulo=titulo, descricao=descricao, tecnologias=tecnologias)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    @property
+    def excluido(self) -> bool:
+        """Informa a exclusão lógica pela presença de deleted_at.
+
+        Deriva o estado sem consultar relógio ou armazenamento para orientar
+        a transição idempotente e a leitura do projeto no perfil.
+        """
+        return self.deleted_at is not None
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    def excluir(self, instante: datetime) -> ProjetoAcademico:
+        """Marca a exclusão lógica preservando o primeiro instante.
+
+        Retorna a própria entidade se já excluída; caso contrário exige
+        datetime com fuso e cria uma cópia, para remover o projeto do perfil
+        sem apagar suas referências em currículos.
+        """
+        if self.excluido:
+            return self
+        if (
+            not isinstance(instante, datetime)
+            or instante.tzinfo is None
+            or instante.utcoffset() is None
+        ):
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=instante)
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001

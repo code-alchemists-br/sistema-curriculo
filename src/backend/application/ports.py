@@ -626,11 +626,13 @@ class GeradorCertificacaoId(Protocol):
 
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 class RepositorioProjetoAcademico(Protocol):
-    """Define a persistência necessária ao cadastro de um projeto acadêmico.
+    """Define consulta e persistência de projetos próprios por IDs tipados.
 
     A porta recebe a entidade já validada e delega o armazenamento a uma
     implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
-    para manter o caso de uso independente da tecnologia de persistência.
+    para manter os casos de uso independentes da tecnologia de persistência.
+    Leituras ativas e mutações confundem ausente, alheio e excluído; somente
+    a leitura incluindo excluídos distingue o tombstone próprio para repetição.
     """
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
@@ -640,6 +642,45 @@ class RepositorioProjetoAcademico(Protocol):
         A implementação concreta persiste a entidade depois da criação pelo
         caso de uso, preservando o contrato assíncrono. O método existe para
         registrar o projeto sem acoplar a Application ao armazenamento.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def obter_por_id_e_usuario(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId
+    ) -> ProjetoAcademico | None:
+        """Obtém somente projeto próprio ativo por ID e proprietário.
+
+        Filtra ambos os IDs e ausência de exclusão, retornando None igualmente
+        para ausente, alheio ou excluído, para não revelar dados de terceiros.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId
+    ) -> ProjetoAcademico | None:
+        """Obtém projeto próprio inclusive excluído para DELETE idempotente.
+
+        Filtra ID e proprietário, retornando None para ausente ou alheio,
+        para distinguir repetição própria sem revelar registros de outro dono.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def atualizar(self, projeto: ProjetoAcademico) -> bool:
+        """Atualiza somente projeto próprio ainda ativo e informa o resultado.
+
+        Condiciona a escrita ao ID, dono e ausência de exclusão; retorna False
+        para ausente, alheio ou excluído, para não ressuscitar item concorrente.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def marcar_excluida(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId, deleted_at: datetime
+    ) -> bool:
+        """Marca somente projeto próprio ativo, sem apagar seleções de currículo.
+
+        Condiciona a escrita aos IDs e marcador ausente, preserva o primeiro
+        instante e retorna False para ausente, alheio ou excluído, para permitir
+        releitura idempotente após disputa concorrente sem purga física.
         """
 
 
