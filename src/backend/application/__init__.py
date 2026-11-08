@@ -192,6 +192,12 @@ from backend.application.perfil_estudante import (
     ExcluirPerfilEntrada,
     # Proveniência: decision-analysis prompts/backend/20261014-210357-expor-edicao-formacao-academica-v001.md#v001
     FormacaoAcademicaNaoEncontrada,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    ListarExperienciasProfissionais,
+    ListarExperienciasProfissionaisEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    ListarFormacoesAcademicas,
+    ListarFormacoesAcademicasEntrada,
     PerfilExcluido,
     PerfilNaoEncontrado,
 )
@@ -425,6 +431,12 @@ __all__ = [
     # Proveniência: decision-analysis prompts/backend/20261019-182907-consulta-paginada-associacoes-estudante-v001.md#v001
     "ListarAssociacoesCurriculoVaga",
     "ListarAssociacoesCurriculoVagaEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    "ListarExperienciasProfissionais",
+    "ListarExperienciasProfissionaisEntrada",
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    "ListarFormacoesAcademicas",
+    "ListarFormacoesAcademicasEntrada",
     # Proveniência: decision-analysis prompts/backend/20261009-192604-listagem-versoes-curriculo-v001.md#v001
     "ListarVersoesCurriculo",
     "ListarVersoesCurriculoEntrada",

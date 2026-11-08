@@ -3,6 +3,7 @@ export {
   criarClienteDadosPessoaisIndisponivel,
   FalhaDadosPessoais,
 } from "./api/cliente-dados-pessoais";
+export { criarClienteDadosPessoaisHttp } from "./api/cliente-dados-pessoais-http";
 export type {
   ClienteDadosPessoais,
   CodigoFalhaDadosPessoais,

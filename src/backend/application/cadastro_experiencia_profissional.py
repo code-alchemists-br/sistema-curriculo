@@ -9,8 +9,12 @@ autenticadas da aplicação.
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
 from dataclasses import dataclass
 
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from backend.application.data_gravacao_experiencia import obter_hoje_experiencia
 from backend.application.ports import (
     GeradorExperienciaProfissionalId,
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+    Relogio,
     RepositorioExperienciaProfissional,
 )
 from backend.domain.itens_perfil import ExperienciaProfissional
@@ -45,12 +49,14 @@ class CadastrarExperienciaProfissional:
     """
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
     def __init__(
         self,
         repositorio: RepositorioExperienciaProfissional,
         gerador_id: GeradorExperienciaProfissionalId,
+        relogio: Relogio,
     ) -> None:
-        """Recebe as portas necessárias para gerar e salvar a experiência.
+        """Recebe portas para gerar identidade, resolver hoje e salvar a experiência.
 
         O construtor armazena abstrações injetadas para que a execução dependa
         apenas de contratos internos e possa ser isolada em testes. Ele existe
@@ -58,24 +64,28 @@ class CadastrarExperienciaProfissional:
         """
         self._repositorio = repositorio
         self._gerador_id = gerador_id
+        self._relogio = relogio
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
     async def executar(
         self, entrada: CadastrarExperienciaProfissionalEntrada
     ) -> ExperienciaProfissional:
         """Cria uma experiência validada e solicita seu armazenamento.
 
-        O método gera o identificador tipado, delega as regras dos textos à
-        entidade e só chama o repositório após a construção bem-sucedida. Ele
-        existe para assegurar que apenas experiências válidas sejam persistidas.
+        O método resolve hoje uma vez em São Paulo, gera a identidade e usa a
+        fábrica validada antes de salvar para impedir datas futuras e textos
+        fora dos limites sem consultar relógio no domínio.
         """
-        experiencia = ExperienciaProfissional(
+        hoje = obter_hoje_experiencia(self._relogio)
+        experiencia = ExperienciaProfissional.criar_para_gravacao(
             id=self._gerador_id.gerar(),
             usuario_id=entrada.usuario_id,
             empresa=entrada.empresa,
             cargo=entrada.cargo,
             descricao=entrada.descricao,
             periodo=entrada.periodo,
+            hoje=hoje,
         )
         await self._repositorio.salvar(experiencia)
         return experiencia

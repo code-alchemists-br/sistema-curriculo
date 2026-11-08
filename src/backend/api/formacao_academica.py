@@ -1,4 +1,4 @@
-"""Expõe cadastro, edição e exclusão autenticados de formações acadêmicas.
+"""Expõe cadastro, leitura, edição e exclusão de formações acadêmicas.
 
 O módulo traduz DTOs e identidades da sessão para os casos de uso, e apresenta
 um DTO público explícito para operações com resposta. Ele existe para expor
@@ -20,6 +20,8 @@ from backend.application.perfil_estudante import (
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     ExcluirFormacaoAcademicaEntrada,
     FormacaoAcademicaNaoEncontrada,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    ListarFormacoesAcademicasEntrada,
 )
 from backend.domain import (
     TAMANHO_MAXIMO_TEXTO_FORMACAO,
@@ -98,8 +100,9 @@ class EdicaoFormacaoAcademicaRequisicao(CadastroFormacaoAcademicaRequisicao):
 
 
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
 class FormacaoAcademicaResposta(BaseModel):
-    """Define os campos públicos devolvidos após cadastrar uma formação.
+    """Define os campos públicos de cadastro, edição e leitura de uma formação.
 
     O DTO expõe valores primitivos e enums sem serializar a entidade; `data_fim`
     é previsão em andamento e data efetiva nos demais status. Ele existe para
@@ -176,6 +179,35 @@ class ExclusaoFormacaoAcademicaExecutor(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+class ListagemFormacoesAcademicasResposta(BaseModel):
+    """Apresenta a coleção própria usando o DTO público existente por item.
+
+    Agrupa os itens em formacoes, inclusive quando vazia, para transportar a
+    sequência recebida sem expor entidades ou marcadores internos de exclusão.
+    """
+
+    formacoes: list[FormacaoAcademicaResposta]
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+class ListagemFormacoesAcademicasExecutor(Protocol):
+    """Define a consulta tipada consumida pelo handler de listagem.
+
+    Recebe o dono resolvido pela fronteira e retorna entidades já ordenadas,
+    permitindo substituir o executor sem acoplar o transporte à persistência.
+    """
+
+    async def executar(
+        self, entrada: ListarFormacoesAcademicasEntrada
+    ) -> tuple[FormacaoAcademica, ...]:
+        """Consulta as ativas do dono e entrega a sequência pronta para exibição.
+
+        A implementação delega a leitura e a ordem à Application para que o
+        handler se limite à conversão explícita para a resposta pública.
+        """
+
+
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 def criar_router(
     cadastrar_formacao: CadastroFormacaoAcademicaExecutor | None,
@@ -183,14 +215,72 @@ def criar_router(
     editar_formacao: EdicaoFormacaoAcademicaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     excluir_formacao: ExclusaoFormacaoAcademicaExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    listar_formacoes: ListagemFormacoesAcademicasExecutor | None = None,
 ) -> APIRouter:
     """Cria as rotas protegidas de formação acadêmica.
 
     Os handlers obtêm o proprietário do estado autenticado, traduzem as
     entradas e convertem falhas conhecidas em respostas HTTP. A função existe
-    para expor cadastro, edição e exclusão com contratos públicos explícitos.
+    para expor cadastro, leitura, edição e exclusão com contratos explícitos.
     """
     router = APIRouter()
+
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    @router.get(
+        "/formacoes-academicas",
+        response_model=ListagemFormacoesAcademicasResposta,
+        status_code=status.HTTP_200_OK,
+        summary="Listar formações acadêmicas do estudante autenticado",
+        description=(
+            "Requer cookie de sessão válido e lista somente formações ativas "
+            "do estudante autenticado, sem corpo, parâmetros ou paginação. "
+            "Preserva a ordem do domínio: em andamento, concluídas e "
+            "interrompidas, com datas decrescentes e desempate por início e ID. "
+            "Coleção vazia retorna 200 com formacoes vazia."
+        ),
+        responses={
+            200: {"description": "Coleção própria ordenada, inclusive vazia."},
+            401: {"description": "Sessão ausente ou inválida."},
+            503: {"description": "Listagem indisponível."},
+        },
+    )
+    async def listar(request: Request) -> ListagemFormacoesAcademicasResposta:
+        """Apresenta a coleção ativa do dono obtido exclusivamente do estado.
+
+        Verifica executor e identidade como os handlers existentes, monta a
+        entrada interna e converte a sequência recebida sem reordenar, para
+        expor a consulta própria sem aceitar proprietário enviado pelo cliente.
+        """
+        if listar_formacoes is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Listagem indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        formacoes = await listar_formacoes.executar(
+            ListarFormacoesAcademicasEntrada(usuario_id=UsuarioId(usuario_id))
+        )
+        return ListagemFormacoesAcademicasResposta(
+            formacoes=[
+                FormacaoAcademicaResposta(
+                    id=formacao.id.valor,
+                    usuario_id=formacao.usuario_id.valor,
+                    instituicao=formacao.instituicao,
+                    curso=formacao.curso,
+                    nivel=formacao.nivel,
+                    data_inicio=formacao.periodo.inicio,
+                    data_fim=formacao.periodo.fim,
+                    status=formacao.status,
+                )
+                for formacao in formacoes
+            ]
+        )
 
     @router.post(
         "/formacoes-academicas",

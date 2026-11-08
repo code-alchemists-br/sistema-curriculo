@@ -4,3 +4,5 @@ export { montarPreviaCurriculo } from "./model/montar-previa";
 export type { DadosParaMontagemPrevia } from "./model/montar-previa";
 export { exportarElementoParaPdf } from "./model/exportar-pdf-cliente";
 export type { OpcoesExportacaoPdf } from "./model/exportar-pdf-cliente";
+export { exportarPreviaParaDocx } from "./model/exportar-docx-cliente";
+export type { OpcoesExportacaoDocx } from "./model/exportar-docx-cliente";

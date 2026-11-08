@@ -9,3 +9,11 @@ export {
   validarListaExperiencias,
 } from "./model/experiencias";
 export type { ErrosExperiencia, Experiencia } from "./model/experiencias";
+export {
+  criarClienteExperienciasHttp,
+  FalhaExperiencia,
+} from "./api/cliente-experiencias-http";
+export type {
+  ClienteExperienciaProfissional,
+  CodigoFalhaExperiencia,
+} from "./api/cliente-experiencias-http";

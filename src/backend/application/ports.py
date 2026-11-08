@@ -6,6 +6,8 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
@@ -131,6 +133,18 @@ class RepositorioFormacaoAcademica(Protocol):
     editem formações sem acoplar a Application à infraestrutura.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> Sequence[FormacaoAcademica]:
+        """Lista somente as formações ativas pertencentes ao usuário informado.
+
+        A implementação restringe a consulta ao proprietário e ignora todas as
+        formações excluídas, sem garantir ordem de apresentação. A porta existe
+        para permitir a leitura da coleção própria, deixando sua ordenação ao
+        domínio e mantendo a Application independente da persistência.
+        """
+
     async def salvar(self, formacao: FormacaoAcademica) -> None:
         """Solicita a persistência assíncrona de uma formação acadêmica válida.
 
@@ -191,20 +205,22 @@ class RepositorioFormacaoAcademica(Protocol):
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
 class Relogio(Protocol):
     """Define a obtenção substituível do instante corrente para casos de uso.
 
-    A porta entrega um ``datetime`` sem escolher relógio do sistema ou fuso na
-    Application e pode ser substituída por stub. Ela existe para tornar a data
-    de exclusão determinística em testes e externa ao domínio.
+    A porta entrega um datetime com fuso, substituível por stub. A Application
+    converte o instante ao dia civil necessário para gravações; exclusões usam
+    o próprio instante. Ela existe para manter tempo externo ao domínio e
+    tornar validação temporal e exclusão determinísticas em testes.
     """
 
     def agora(self) -> datetime:
-        """Obtém o instante controlado que será aplicado à exclusão lógica.
+        """Obtém instante com fuso para validar gravações ou registrar exclusão.
 
         Implementações consultam sua fonte de tempo e retornam o valor sem
-        alterar agregados. O método existe para separar a passagem do tempo da
-        transição pura executada por ``Usuario``.
+        alterar agregados. O método existe para separar a passagem do tempo das
+        políticas puras de domínio e das transições de exclusão lógica.
         """
 
 
@@ -271,6 +287,18 @@ class RepositorioExperienciaProfissional(Protocol):
     sem conhecer banco ou ORM. Ela existe para que os casos de uso cadastrem,
     editem e excluam experiências independentes da tecnologia de persistência.
     """
+
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> Sequence[ExperienciaProfissional]:
+        """Lista somente experiências ativas pertencentes ao usuário informado.
+
+        A implementação restringe a consulta ao dono e ignora experiências
+        excluídas, sem garantir ordem de apresentação. A porta existe para
+        permitir a leitura da coleção própria mantendo a persistência externa
+        e a ordenação sob responsabilidade do domínio.
+        """
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     async def salvar(self, experiencia: ExperienciaProfissional) -> None:
