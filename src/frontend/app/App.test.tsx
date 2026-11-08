@@ -12,6 +12,7 @@ afterEach(() => {
   cleanup();
   window.history.replaceState({}, "", "/");
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 describe("App", () => {
@@ -334,5 +335,42 @@ describe("App", () => {
     expect(screen.getByDisplayValue("carlos@example.com")).toBeInTheDocument();
 
     sessionStorage.removeItem("liminal_curriculo_rascunho");
+  });
+
+  it("restaura rascunho persistido em localStorage ao inicializar (persistência contra F5)", async () => {
+    localStorage.setItem(
+      "liminal_curriculo_rascunho",
+      JSON.stringify({
+        dadosPessoais: {
+          nomeCompleto: "Clarice Lispector",
+          enderecoCompleto: "Rua do Catete, 456",
+          telefones: ["(21) 99876-5432"],
+          email: "clarice@example.com",
+        },
+        experiencias: [
+          {
+            empresa: "Editora Rocco",
+            cargo: "Escritora",
+            inicio: "2020-01",
+            fim: "2022-01",
+            empregoAtual: false,
+            descricao: "Produção de crônicas e contos literários.",
+          },
+        ],
+      }),
+    );
+    window.history.replaceState({}, "", "/?etapa=experiencias-profissionais");
+
+    render(<App />);
+
+    expect(
+      await screen.findByDisplayValue("Editora Rocco"),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Escritora")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("Produção de crônicas e contos literários."),
+    ).toBeInTheDocument();
+
+    localStorage.removeItem("liminal_curriculo_rascunho");
   });
 });

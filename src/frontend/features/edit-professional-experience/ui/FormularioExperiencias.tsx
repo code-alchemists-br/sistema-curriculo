@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import {
+  LIMITES_EXPERIENCIA,
   criarExperienciaVazia,
+  obterDataAtualIso,
   ordenarPorDataDecrescente,
   validarListaExperiencias,
   type ErrosExperiencia,
@@ -34,6 +36,7 @@ export function FormularioExperiencias({
   onVoltar,
   aoAlterarExperiencias,
 }: FormularioExperienciasProps) {
+  const dataMaximaHoje = obterDataAtualIso();
   const [experiencias, setExperiencias] =
     useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
@@ -312,6 +315,7 @@ export function FormularioExperiencias({
                   errosExp?.empresa !== undefined ? true : undefined
                 }
                 id={`${prefixo}-empresa`}
+                maxLength={LIMITES_EXPERIENCIA.empresaMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "empresa", e.target.value)
                 }
@@ -342,6 +346,7 @@ export function FormularioExperiencias({
                 }
                 aria-invalid={errosExp?.cargo !== undefined ? true : undefined}
                 id={`${prefixo}-cargo`}
+                maxLength={LIMITES_EXPERIENCIA.cargoMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "cargo", e.target.value)
                 }
@@ -372,6 +377,7 @@ export function FormularioExperiencias({
                 }
                 aria-invalid={errosExp?.inicio !== undefined ? true : undefined}
                 id={`${prefixo}-inicio`}
+                max={dataMaximaHoje}
                 onChange={(e) =>
                   atualizarCampo(indice, "inicio", e.target.value)
                 }
@@ -402,6 +408,8 @@ export function FormularioExperiencias({
                 aria-invalid={errosExp?.fim !== undefined ? true : undefined}
                 disabled={exp.empregoAtual}
                 id={`${prefixo}-fim`}
+                max={dataMaximaHoje}
+                min={exp.inicio || undefined}
                 onChange={(e) => atualizarCampo(indice, "fim", e.target.value)}
                 required={!exp.empregoAtual}
                 type="date"
@@ -446,6 +454,7 @@ export function FormularioExperiencias({
                   errosExp?.descricao !== undefined ? true : undefined
                 }
                 id={`${prefixo}-descricao`}
+                maxLength={LIMITES_EXPERIENCIA.descricaoMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "descricao", e.target.value)
                 }
@@ -454,6 +463,14 @@ export function FormularioExperiencias({
                 rows={4}
                 value={exp.descricao}
               />
+              <div
+                aria-live="polite"
+                className="formulario-experiencias__contador-caracteres"
+                id={`${prefixo}-descricao-contador`}
+              >
+                {exp.descricao.length}/{LIMITES_EXPERIENCIA.descricaoMax}{" "}
+                caracteres
+              </div>
               {errosExp?.descricao !== undefined && (
                 <p className="field__error" id={`${prefixo}-descricao-erro`}>
                   {errosExp.descricao}
