@@ -136,13 +136,13 @@ class ListagemExperienciasHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ordem do domínio", rota.description)
         self.assertIn("sem corpo, parâmetros ou paginação", rota.description)
 
-    def test_factory_e_router_adicionam_leitura_no_fim_e_encaminham_executor(self):
+    def test_factory_e_router_preservam_posicao_da_leitura_e_encaminham_executor(self):
         """Inspeciona assinaturas e binding com FastAPI e router substituídos.
 
-        Verifica a posição dos novos parâmetros e a chamada do router para
+        Verifica a posição estável dos parâmetros e a chamada do router para
         proteger consumidores posicionais sem criar contexto de aplicação.
         """
-        self.assertEqual(list(inspect.signature(create_app).parameters)[-1], "listar_experiencias_profissionais")
+        self.assertEqual(list(inspect.signature(create_app).parameters)[47], "listar_experiencias_profissionais")
         self.assertEqual(list(inspect.signature(criar_router).parameters)[-1], "listar_experiencias")
         executor = Mock()
         with (
