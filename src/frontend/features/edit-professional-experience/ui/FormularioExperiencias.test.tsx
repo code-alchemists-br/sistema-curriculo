@@ -3,7 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FormularioExperiencias } from "./FormularioExperiencias";
-import type { Experiencia } from "../model/experiencias";
+import {
+  LIMITES_EXPERIENCIA,
+  obterDataAtualIso,
+  type Experiencia,
+} from "../model/experiencias";
 
 afterEach(cleanup);
 
@@ -81,6 +85,55 @@ describe("FormularioExperiencias", () => {
     await usuario.click(checkbox);
 
     expect(screen.getByLabelText("Fim")).not.toBeDisabled();
+  });
+
+  it("aplica atributos max e min nos campos de data para impedir datas futuras", () => {
+    const hoje = obterDataAtualIso();
+    render(
+      <FormularioExperiencias
+        experienciasIniciais={[
+          {
+            ...experienciaCompleta,
+            inicio: "2024-01-01",
+            fim: "2024-06-01",
+          },
+        ]}
+      />,
+    );
+
+    const campoInicio = screen.getByLabelText("Início");
+    const campoFim = screen.getByLabelText("Fim");
+
+    expect(campoInicio).toHaveAttribute("max", hoje);
+    expect(campoFim).toHaveAttribute("max", hoje);
+    expect(campoFim).toHaveAttribute("min", "2024-01-01");
+  });
+
+  it("aplica atributos maxLength e exibe contador de caracteres da descrição", async () => {
+    const usuario = userEvent.setup();
+    render(<FormularioExperiencias />);
+
+    const campoEmpresa = screen.getByLabelText("Nome da empresa");
+    const campoCargo = screen.getByLabelText("Cargo");
+    const campoDescricao = screen.getByLabelText("Descrição das atividades");
+
+    expect(campoEmpresa).toHaveAttribute(
+      "maxLength",
+      String(LIMITES_EXPERIENCIA.empresaMax),
+    );
+    expect(campoCargo).toHaveAttribute(
+      "maxLength",
+      String(LIMITES_EXPERIENCIA.cargoMax),
+    );
+    expect(campoDescricao).toHaveAttribute(
+      "maxLength",
+      String(LIMITES_EXPERIENCIA.descricaoMax),
+    );
+
+    expect(screen.getByText("0/1500 caracteres")).toBeInTheDocument();
+
+    await usuario.type(campoDescricao, "React");
+    expect(screen.getByText("5/1500 caracteres")).toBeInTheDocument();
   });
 
   it("exibe erros de validação quando campos obrigatórios estão vazios", async () => {

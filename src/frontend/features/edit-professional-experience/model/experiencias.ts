@@ -17,6 +17,22 @@ export interface ErrosExperiencia {
   descricao?: string;
 }
 
+/** Limites de caracteres para os campos de experiência profissional. */
+export const LIMITES_EXPERIENCIA = {
+  empresaMax: 100,
+  cargoMax: 100,
+  descricaoMax: 1500,
+} as const;
+
+/** Retorna a data atual local no formato YYYY-MM-DD. */
+export function obterDataAtualIso(): string {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
 /** Cria uma entrada de experiência vazia para adição dinâmica. */
 export function criarExperienciaVazia(): Experiencia {
   return {
@@ -33,39 +49,58 @@ export function criarExperienciaVazia(): Experiencia {
  * Valida os campos de uma única experiência profissional.
  *
  * A função verifica presença dos campos obrigatórios (empresa, cargo, início,
- * descrição e fim se não for emprego atual). Ela existe para oferecer
- * feedback imediato sem substituir as regras definitivas do backend.
+ * descrição e fim se não for emprego atual), limites de caracteres e se as
+ * datas de início e término não ultrapassam o dia atual nem apresentam ordem invertida.
  */
-export function validarExperiencia(experiencia: Experiencia): ErrosExperiencia {
+export function validarExperiencia(
+  experiencia: Experiencia,
+  dataReferencia?: string,
+): ErrosExperiencia {
   const erros: ErrosExperiencia = {};
+  const dataHoje = dataReferencia ?? obterDataAtualIso();
+
+  const obterLimite = (valorData: string) =>
+    valorData.length === 7 ? dataHoje.slice(0, 7) : dataHoje;
 
   if (experiencia.empresa.trim() === "") {
     erros.empresa = "Informe o nome da empresa.";
+  } else if (experiencia.empresa.length > LIMITES_EXPERIENCIA.empresaMax) {
+    erros.empresa = `O nome da empresa deve ter no máximo ${LIMITES_EXPERIENCIA.empresaMax} caracteres.`;
   }
 
   if (experiencia.cargo.trim() === "") {
     erros.cargo = "Informe o cargo exercido.";
+  } else if (experiencia.cargo.length > LIMITES_EXPERIENCIA.cargoMax) {
+    erros.cargo = `O cargo deve ter no máximo ${LIMITES_EXPERIENCIA.cargoMax} caracteres.`;
   }
 
   if (experiencia.inicio === "") {
     erros.inicio = "Informe a data de início.";
+  } else if (experiencia.inicio > obterLimite(experiencia.inicio)) {
+    erros.inicio = "A data de início não pode ser posterior à data atual.";
   }
 
   if (experiencia.descricao.trim() === "") {
     erros.descricao = "Informe a descrição das atividades.";
+  } else if (experiencia.descricao.length > LIMITES_EXPERIENCIA.descricaoMax) {
+    erros.descricao = `A descrição deve ter no máximo ${LIMITES_EXPERIENCIA.descricaoMax} caracteres.`;
   }
 
   if (!experiencia.empregoAtual && experiencia.fim === "") {
     erros.fim = "Informe a data de término ou marque como emprego atual.";
-  }
-
-  if (
+  } else if (
     !experiencia.empregoAtual &&
     experiencia.inicio !== "" &&
     experiencia.fim !== "" &&
     experiencia.fim < experiencia.inicio
   ) {
     erros.fim = "A data de término deve ser posterior à data de início.";
+  } else if (
+    !experiencia.empregoAtual &&
+    experiencia.fim !== "" &&
+    experiencia.fim > obterLimite(experiencia.fim)
+  ) {
+    erros.fim = "A data de término não pode ser posterior à data atual.";
   }
 
   return erros;
@@ -79,11 +114,12 @@ export function validarExperiencia(experiencia: Experiencia): ErrosExperiencia {
  */
 export function validarListaExperiencias(
   experiencias: Experiencia[],
+  dataReferencia?: string,
 ): Record<number, ErrosExperiencia> {
   const erros: Record<number, ErrosExperiencia> = {};
 
   experiencias.forEach((experiencia, indice) => {
-    const errosExperiencia = validarExperiencia(experiencia);
+    const errosExperiencia = validarExperiencia(experiencia, dataReferencia);
     if (Object.keys(errosExperiencia).length > 0) {
       erros[indice] = errosExperiencia;
     }
