@@ -18,6 +18,7 @@ import {
   ModeloPrimeiroEmprego,
 } from "../../../features/visualizar-curriculo";
 import { exportarElementoParaPdf } from "../model/exportar-pdf-cliente";
+import { exportarPreviaParaDocx } from "../model/exportar-docx-cliente";
 import "./PaginaVisualizacaoCurriculo.css";
 
 /** Define os dados de composição para a tela de visualização do currículo. */
@@ -114,6 +115,27 @@ export function PaginaVisualizacaoCurriculo({
     }
   }, [baixando, onExportarPdf, previa.estudante]);
 
+  const handleBaixarDocx = useCallback((): void => {
+    try {
+      setErroDownload(null);
+      const nomeEstudante = previa.estudante?.nome?.trim() || "Estudante";
+      const nomeArquivo = `Curriculo - ${nomeEstudante}`;
+      exportarPreviaParaDocx({ previa, nomeArquivo });
+      setSucessoDownload(true);
+      setTimeout(() => {
+        setSucessoDownload(false);
+      }, 4000);
+    } catch (erro) {
+      console.error("Falha ao exportar Word (DOCX):", erro);
+      setErroDownload(
+        "Não foi possível gerar o arquivo Word. Tente novamente em instantes.",
+      );
+      setTimeout(() => {
+        setErroDownload(null);
+      }, 6000);
+    }
+  }, [previa]);
+
   useEffect(() => {
     if (autoBaixar) {
       const timer = setTimeout(() => {
@@ -169,6 +191,13 @@ export function PaginaVisualizacaoCurriculo({
                 Alterar modelo
               </button>
             )}
+            <button
+              className="pagina-visualizacao-curriculo__btn-secundario"
+              onClick={handleBaixarDocx}
+              type="button"
+            >
+              Baixar Word (DOCX)
+            </button>
             <button
               className="pagina-visualizacao-curriculo__btn-primario"
               onClick={() => void handleBaixarPdf()}

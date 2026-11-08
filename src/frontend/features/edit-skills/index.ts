@@ -12,3 +12,12 @@ export {
 export type { Habilidades, TipoHabilidade } from "./model/habilidades";
 
 export type { FormularioCompetenciasProps } from "./ui/FormularioCompetencias";
+
+export {
+  criarClienteCompetenciasHttp,
+  FalhaCompetencias,
+} from "./api/cliente-competencias-http";
+export type {
+  ClienteCompetencias,
+  CodigoFalhaCompetencias,
+} from "./api/cliente-competencias-http";

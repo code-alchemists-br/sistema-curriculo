@@ -4,6 +4,7 @@ export {
   criarClienteProjetosAcademicosIndisponivel,
   FalhaCadastroProjeto,
 } from "./api/cliente-projetos-academicos";
+export { criarClienteProjetosAcademicosHttp } from "./api/cliente-projetos-academicos-http";
 export type {
   ClienteProjetosAcademicos,
   ProjetoAcademicoEntrada,

@@ -11,6 +11,7 @@ export interface PaginaValidacaoCurriculoProps {
   dados?: CurriculoParaValidacao;
   onVisualizarPreview?: () => void;
   onExportarPdf?: () => void;
+  onExportarDocx?: () => void;
   onConfirmarCurriculo?: () => void;
   onVoltar?: () => void;
   onVoltarInicio?: () => void;
@@ -50,6 +51,7 @@ export function PaginaValidacaoCurriculo({
   dados = DADOS_VALIDACAO_PADRAO,
   onVisualizarPreview,
   onExportarPdf,
+  onExportarDocx,
   onConfirmarCurriculo,
   onVoltar,
   onVoltarInicio,
@@ -75,6 +77,7 @@ export function PaginaValidacaoCurriculo({
           dados={dados}
           onVisualizarPreview={onVisualizarPreview}
           onExportarPdf={onExportarPdf}
+          onExportarDocx={onExportarDocx}
           onConfirmarCurriculo={onConfirmarCurriculo}
           onVoltar={onVoltar}
           onCorrigirSecao={onCorrigirSecao}
