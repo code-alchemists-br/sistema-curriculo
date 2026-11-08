@@ -49,24 +49,46 @@ import { criarClienteCertificacoesHttp } from "../features/cadastro-certificacoe
 import { criarClienteIdiomasHttp } from "../features/edit-languages";
 import { criarClienteCompetenciasHttp } from "../features/edit-skills";
 import { criarClienteProjetosAcademicosHttp } from "../features/cadastro-projeto-academico";
+import {
+  criarClienteAcessoResiliente,
+  criarClienteDadosPessoaisResiliente,
+  criarClienteFormacaoAcademicaResiliente,
+  criarClienteVagasResiliente,
+} from "./servicos-resilientes";
 import "../shared/styles/animations.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL;
 const clienteVagasDemo = criarClienteVagasDemonstracao();
-const clienteVagasHttp = apiBaseUrl
+const clienteVagasBase = apiBaseUrl
   ? criarClienteVagasHttp(apiBaseUrl)
   : clienteVagasDemo;
+const clienteVagasHttp = apiBaseUrl
+  ? criarClienteVagasResiliente(clienteVagasBase, clienteVagasDemo)
+  : clienteVagasDemo;
+
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
 const clienteAcessoDemo = criarClienteAcessoDemonstracao();
-const clienteAcessoHttp = apiBaseUrl
+const clienteAcessoBase = apiBaseUrl
   ? criarClienteAcessoEstudante(apiBaseUrl)
   : clienteAcessoDemo;
-const clienteDadosPessoaisHttp = apiBaseUrl
+const clienteAcessoHttp = apiBaseUrl
+  ? criarClienteAcessoResiliente(clienteAcessoBase, clienteAcessoDemo)
+  : clienteAcessoDemo;
+
+const clienteDadosPessoaisBase = apiBaseUrl
   ? criarClienteDadosPessoaisHttp(apiBaseUrl)
   : undefined;
-const clienteFormacaoAcademicaHttp = apiBaseUrl
+const clienteDadosPessoaisHttp = clienteDadosPessoaisBase
+  ? criarClienteDadosPessoaisResiliente(clienteDadosPessoaisBase)
+  : undefined;
+
+const clienteFormacaoAcademicaBase = apiBaseUrl
   ? criarClienteFormacaoAcademicaHttp(apiBaseUrl)
   : undefined;
+const clienteFormacaoAcademicaHttp = clienteFormacaoAcademicaBase
+  ? criarClienteFormacaoAcademicaResiliente(clienteFormacaoAcademicaBase)
+  : undefined;
+
 const clienteExperienciasHttp = apiBaseUrl
   ? criarClienteExperienciasHttp(apiBaseUrl)
   : undefined;

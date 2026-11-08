@@ -394,4 +394,29 @@ describe("FormularioFormacaoAcademica", () => {
       }),
     );
   });
+
+  it("aplica limite de 100 caracteres em instituição e curso", () => {
+    render(<FormularioFormacaoAcademica cliente={{ cadastrar: vi.fn() }} />);
+
+    expect(screen.getByLabelText("Instituição")).toHaveAttribute(
+      "maxLength",
+      "100",
+    );
+    expect(screen.getByLabelText("Curso")).toHaveAttribute("maxLength", "100");
+  });
+
+  it("define atributos min e max coerentes nos campos de data para prevenir erros", async () => {
+    const usuario = userEvent.setup();
+    render(<FormularioFormacaoAcademica cliente={{ cadastrar: vi.fn() }} />);
+
+    const campoInicio = screen.getByLabelText("Data de início");
+    const campoFim = screen.getByLabelText(
+      "Data final ou previsão de conclusão",
+    );
+
+    expect(campoInicio).toHaveAttribute("max");
+
+    await usuario.type(campoInicio, "2023-01-15");
+    expect(campoFim).toHaveAttribute("min", "2023-01-15");
+  });
 });

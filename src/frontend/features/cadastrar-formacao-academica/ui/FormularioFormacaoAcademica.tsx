@@ -9,8 +9,11 @@ import {
   type StatusFormacaoAcademica,
 } from "../api/cliente-formacao-academica";
 import {
+  LIMITES_FORMACAO_ACADEMICA,
   criarEntradaFormacaoAcademica,
   criarValoresIniciaisFormacao,
+  obterDataAtualIso,
+  restringirAno4Digitos,
   traduzirFalhaFormacaoAcademica,
   validarCurriculoLattes,
   validarFormacaoAcademica,
@@ -168,15 +171,23 @@ export function FormularioFormacaoAcademica({
     }
   }, [formacoes, curriculoLattes, naoPossuiLattes, aoAlterarProgresso]);
 
+  const dataMaximaHoje = obterDataAtualIso();
+
   /** Atualiza um campo de uma formação específica e remove seu erro. */
   function atualizarCampo<Campo extends keyof ValoresFormacaoAcademica>(
     indice: number,
     campo: Campo,
     valor: ValoresFormacaoAcademica[Campo],
   ): void {
+    const valorTratado =
+      (campo === "dataInicio" || campo === "dataFim") &&
+      typeof valor === "string"
+        ? (restringirAno4Digitos(valor) as ValoresFormacaoAcademica[Campo])
+        : valor;
+
     setFormacoes((atuais) => {
       const atualizados = atuais.map((item, i) =>
-        i === indice ? { ...item, [campo]: valor } : item,
+        i === indice ? { ...item, [campo]: valorTratado } : item,
       );
       if (campo === "nivel") {
         const aindaTemPos = atualizados.some(
@@ -345,6 +356,7 @@ export function FormularioFormacaoAcademica({
               erro={errosItem.instituicao}
               id={`${prefixo}-instituicao`}
               label="Instituição"
+              maxLength={LIMITES_FORMACAO_ACADEMICA.instituicaoMax}
               onChange={(valor) => atualizarCampo(indice, "instituicao", valor)}
               placeholder="Ex: USP, FATEC, PUC..."
               required
@@ -359,6 +371,7 @@ export function FormularioFormacaoAcademica({
               erro={errosItem.curso}
               id={`${prefixo}-curso`}
               label="Curso"
+              maxLength={LIMITES_FORMACAO_ACADEMICA.cursoMax}
               onChange={(valor) => atualizarCampo(indice, "curso", valor)}
               placeholder={
                 ehEnsinoBasico
@@ -383,6 +396,7 @@ export function FormularioFormacaoAcademica({
               erro={errosItem.dataInicio}
               id={`${prefixo}-data-inicio`}
               label="Data de início"
+              max={dataMaximaHoje}
               onChange={(valor) => atualizarCampo(indice, "dataInicio", valor)}
               required
               value={valores.dataInicio}
@@ -411,6 +425,8 @@ export function FormularioFormacaoAcademica({
                   ? "Data de conclusão"
                   : "Data final ou previsão de conclusão"
               }
+              max={valores.status === "concluido" ? dataMaximaHoje : undefined}
+              min={valores.dataInicio || undefined}
               onChange={(valor) => atualizarCampo(indice, "dataFim", valor)}
               required={valores.status === "concluido"}
               value={valores.dataFim}
@@ -548,12 +564,18 @@ function CampoTexto({
   erro,
   id,
   label,
+  maxLength = 100,
   onChange,
   placeholder,
   required = true,
   type = "text",
   value,
-}: CampoBaseProps & { onChange: (valor: string) => void; type?: string }) {
+}: CampoBaseProps & {
+  disabled?: boolean;
+  maxLength?: number;
+  onChange: (valor: string) => void;
+  type?: string;
+}) {
   const idErro = `${id}-erro`;
   const idAjuda = `${id}-ajuda`;
   return (
@@ -581,7 +603,7 @@ function CampoTexto({
         aria-invalid={erro === undefined ? undefined : true}
         disabled={disabled}
         id={id}
-        maxLength={200}
+        maxLength={maxLength}
         onChange={(evento) => onChange(evento.target.value)}
         placeholder={placeholder}
         required={required}
@@ -649,10 +671,16 @@ function CampoData({
   erro,
   id,
   label,
+  max,
+  min,
   onChange,
   required = false,
   value,
-}: CampoBaseProps & { onChange: (valor: string) => void }) {
+}: CampoBaseProps & {
+  max?: string;
+  min?: string;
+  onChange: (valor: string) => void;
+}) {
   const idErro = `${id}-erro`;
   const idAjuda = `${id}-ajuda`;
   return (
@@ -679,6 +707,8 @@ function CampoData({
         }
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
+        max={max}
+        min={min}
         onChange={(evento) => onChange(evento.target.value)}
         required={required}
         type="date"

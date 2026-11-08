@@ -5,6 +5,7 @@ import {
   criarExperienciaVazia,
   obterDataAtualIso,
   ordenarPorDataDecrescente,
+  restringirAno4Digitos,
   validarListaExperiencias,
   type ErrosExperiencia,
   type Experiencia,
@@ -109,8 +110,14 @@ export function FormularioExperiencias({
     campo: keyof Omit<Experiencia, "empregoAtual">,
     valor: string,
   ): void {
+    const valorTratado =
+      campo === "inicio" || campo === "fim"
+        ? restringirAno4Digitos(valor)
+        : valor;
     setExperiencias((atuais) =>
-      atuais.map((exp, i) => (i === indice ? { ...exp, [campo]: valor } : exp)),
+      atuais.map((exp, i) =>
+        i === indice ? { ...exp, [campo]: valorTratado } : exp,
+      ),
     );
     limparErroDoCampo(indice, campo as keyof ErrosExperiencia);
   }
@@ -463,14 +470,26 @@ export function FormularioExperiencias({
                 rows={4}
                 value={exp.descricao}
               />
-              <div
-                aria-live="polite"
-                className="formulario-experiencias__contador-caracteres"
-                id={`${prefixo}-descricao-contador`}
-              >
-                {exp.descricao.length}/{LIMITES_EXPERIENCIA.descricaoMax}{" "}
-                caracteres
-              </div>
+              {(() => {
+                const totalDescricao = exp.descricao.length;
+                const limite = LIMITES_EXPERIENCIA.descricaoMax;
+                const classeModificadora =
+                  totalDescricao >= limite
+                    ? "formulario-experiencias__contador-caracteres--limite"
+                    : totalDescricao >= limite * 0.8
+                      ? "formulario-experiencias__contador-caracteres--alerta"
+                      : "";
+
+                return (
+                  <div
+                    aria-live="polite"
+                    className={`formulario-experiencias__contador-caracteres ${classeModificadora}`.trim()}
+                    id={`${prefixo}-descricao-contador`}
+                  >
+                    {totalDescricao}/{limite} caracteres
+                  </div>
+                );
+              })()}
               {errosExp?.descricao !== undefined && (
                 <p className="field__error" id={`${prefixo}-descricao-erro`}>
                   {errosExp.descricao}

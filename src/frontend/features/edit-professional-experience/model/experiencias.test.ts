@@ -5,6 +5,7 @@ import {
   criarExperienciaVazia,
   obterDataAtualIso,
   ordenarPorDataDecrescente,
+  restringirAno4Digitos,
   validarExperiencia,
   validarListaExperiencias,
   type Experiencia,
@@ -209,5 +210,39 @@ describe("criarExperienciaVazia", () => {
     expect(exp.fim).toBe("");
     expect(exp.empregoAtual).toBe(false);
     expect(exp.descricao).toBe("");
+  });
+});
+
+describe("restringirAno4Digitos", () => {
+  it("trunca anos com mais de 4 dígitos para exatamente 4 dígitos", () => {
+    expect(restringirAno4Digitos("20261-05-10")).toBe("2026-05-10");
+    expect(restringirAno4Digitos("199999-12")).toBe("1999-12");
+  });
+
+  it("preserva datas com ano de 4 dígitos", () => {
+    expect(restringirAno4Digitos("2024-05-10")).toBe("2024-05-10");
+    expect(restringirAno4Digitos("2023-01")).toBe("2023-01");
+  });
+
+  it("lida com string vazia sem erros", () => {
+    expect(restringirAno4Digitos("")).toBe("");
+  });
+});
+
+describe("validarExperiencia — restrição de 4 dígitos no ano", () => {
+  it("rejeita ano de início com mais de 4 dígitos", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      inicio: "20261-01",
+    });
+    expect(erros.inicio).toBe("O ano de início deve ter no máximo 4 dígitos.");
+  });
+
+  it("rejeita ano de término com mais de 4 dígitos", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      fim: "20261-05",
+    });
+    expect(erros.fim).toBe("O ano de término deve ter no máximo 4 dígitos.");
   });
 });
