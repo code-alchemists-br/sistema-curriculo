@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -229,5 +229,33 @@ describe("FormularioExperiencias", () => {
     expect(screen.getByLabelText("Nome da empresa")).toHaveValue(
       experienciaCompleta.empresa,
     );
+  });
+
+  it("aplica classes de alerta progressivo no contador de caracteres da descrição", () => {
+    render(<FormularioExperiencias />);
+
+    const campoDescricao = screen.getByLabelText("Descrição das atividades");
+    const contador = screen.getByText(/0\/1500 caracteres/i);
+
+    expect(contador).not.toHaveClass(
+      "formulario-experiencias__contador-caracteres--alerta",
+    );
+    expect(contador).not.toHaveClass(
+      "formulario-experiencias__contador-caracteres--limite",
+    );
+
+    // 80% de 1500 = 1200 -> alerta
+    fireEvent.change(campoDescricao, { target: { value: "a".repeat(1250) } });
+    expect(contador).toHaveClass(
+      "formulario-experiencias__contador-caracteres--alerta",
+    );
+    expect(screen.getByText("1250/1500 caracteres")).toBeInTheDocument();
+
+    // 100% de 1500 = 1500 -> limite
+    fireEvent.change(campoDescricao, { target: { value: "b".repeat(1500) } });
+    expect(contador).toHaveClass(
+      "formulario-experiencias__contador-caracteres--limite",
+    );
+    expect(screen.getByText("1500/1500 caracteres")).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ export {
   criarExperienciaVazia,
   obterDataAtualIso,
   ordenarPorDataDecrescente,
+  restringirAno4Digitos,
   validarExperiencia,
   validarListaExperiencias,
 } from "./model/experiencias";

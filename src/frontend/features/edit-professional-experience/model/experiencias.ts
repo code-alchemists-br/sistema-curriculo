@@ -33,6 +33,19 @@ export function obterDataAtualIso(): string {
   return `${ano}-${mes}-${dia}`;
 }
 
+/**
+ * Restringe o ano de uma data no formato ISO para conter no máximo 4 dígitos.
+ */
+export function restringirAno4Digitos(valorData: string): string {
+  if (!valorData) return valorData;
+  const partes = valorData.split("-");
+  if (partes[0] && partes[0].length > 4) {
+    partes[0] = partes[0].slice(0, 4);
+    return partes.join("-");
+  }
+  return valorData;
+}
+
 /** Cria uma entrada de experiência vazia para adição dinâmica. */
 export function criarExperienciaVazia(): Experiencia {
   return {
@@ -76,8 +89,13 @@ export function validarExperiencia(
 
   if (experiencia.inicio === "") {
     erros.inicio = "Informe a data de início.";
-  } else if (experiencia.inicio > obterLimite(experiencia.inicio)) {
-    erros.inicio = "A data de início não pode ser posterior à data atual.";
+  } else {
+    const anoInicio = experiencia.inicio.split("-")[0] ?? "";
+    if (anoInicio.length > 4 || Number(anoInicio) > 9999) {
+      erros.inicio = "O ano de início deve ter no máximo 4 dígitos.";
+    } else if (experiencia.inicio > obterLimite(experiencia.inicio)) {
+      erros.inicio = "A data de início não pode ser posterior à data atual.";
+    }
   }
 
   if (experiencia.descricao.trim() === "") {
@@ -88,19 +106,18 @@ export function validarExperiencia(
 
   if (!experiencia.empregoAtual && experiencia.fim === "") {
     erros.fim = "Informe a data de término ou marque como emprego atual.";
-  } else if (
-    !experiencia.empregoAtual &&
-    experiencia.inicio !== "" &&
-    experiencia.fim !== "" &&
-    experiencia.fim < experiencia.inicio
-  ) {
-    erros.fim = "A data de término deve ser posterior à data de início.";
-  } else if (
-    !experiencia.empregoAtual &&
-    experiencia.fim !== "" &&
-    experiencia.fim > obterLimite(experiencia.fim)
-  ) {
-    erros.fim = "A data de término não pode ser posterior à data atual.";
+  } else if (!experiencia.empregoAtual && experiencia.fim !== "") {
+    const anoFim = experiencia.fim.split("-")[0] ?? "";
+    if (anoFim.length > 4 || Number(anoFim) > 9999) {
+      erros.fim = "O ano de término deve ter no máximo 4 dígitos.";
+    } else if (
+      experiencia.inicio !== "" &&
+      experiencia.fim < experiencia.inicio
+    ) {
+      erros.fim = "A data de término deve ser posterior à data de início.";
+    } else if (experiencia.fim > obterLimite(experiencia.fim)) {
+      erros.fim = "A data de término não pode ser posterior à data atual.";
+    }
   }
 
   return erros;

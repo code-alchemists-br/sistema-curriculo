@@ -357,4 +357,17 @@
   color: #8a8a8a;
   text-align: right;
   margin-top: 0.35rem;
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
+}
+
+.formulario-experiencias .formulario-experiencias__contador-caracteres--alerta {
+  color: #ffaa00;
+  font-weight: 500;
+}
+
+.formulario-experiencias .formulario-experiencias__contador-caracteres--limite {
+  color: #ff6a00;
+  font-weight: 600;
 }
