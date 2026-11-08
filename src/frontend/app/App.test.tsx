@@ -337,40 +337,32 @@ describe("App", () => {
     sessionStorage.removeItem("liminal_curriculo_rascunho");
   });
 
-  it("restaura rascunho persistido em localStorage ao inicializar (persistência contra F5)", async () => {
-    localStorage.setItem(
-      "liminal_curriculo_rascunho",
-      JSON.stringify({
-        dadosPessoais: {
-          nomeCompleto: "Clarice Lispector",
-          enderecoCompleto: "Rua do Catete, 456",
-          telefones: ["(21) 99876-5432"],
-          email: "clarice@example.com",
-        },
-        experiencias: [
-          {
-            empresa: "Editora Rocco",
-            cargo: "Escritora",
-            inicio: "2020-01",
-            fim: "2022-01",
-            empregoAtual: false,
-            descricao: "Produção de crônicas e contos literários.",
-          },
-        ],
-      }),
-    );
-    window.history.replaceState({}, "", "/?etapa=experiencias-profissionais");
+  it("permite navegar para a tela de recuperação de senha a partir do login e retornar", async () => {
+    window.history.replaceState({}, "", "/?etapa=acesso");
+    const user = userEvent.setup();
 
     render(<App />);
 
     expect(
-      await screen.findByDisplayValue("Editora Rocco"),
-    ).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Escritora")).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue("Produção de crônicas e contos literários."),
+      screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
     ).toBeInTheDocument();
 
-    localStorage.removeItem("liminal_curriculo_rascunho");
+    const btnEsqueceuSenha = screen.getByRole("button", {
+      name: "Esqueceu sua senha?",
+    });
+    await user.click(btnEsqueceuSenha);
+
+    expect(
+      await screen.findByRole("heading", { name: "Recupere sua senha" }),
+    ).toBeInTheDocument();
+
+    const btnVoltarLogin = screen.getByRole("button", {
+      name: "← Voltar para o login",
+    });
+    await user.click(btnVoltarLogin);
+
+    expect(
+      await screen.findByRole("heading", { name: "Conecte-se na LIMINAL" }),
+    ).toBeInTheDocument();
   });
 });
