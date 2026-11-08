@@ -16,6 +16,8 @@ from backend.application.ports import (
     GeradorCursoId,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     GeradorDocumentoId,
+    GeradorExperienciaProfissionalId,
+    GeradorFormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     GeradorIdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -33,6 +35,8 @@ from backend.domain.value_objects import (
     CursoId,
     # Proveniência: decision-analysis prompts/backend/20261016-074803-armazenamento-documento-complementar-v001.md#v001
     DocumentoId,
+    ExperienciaProfissionalId,
+    FormacaoAcademicaId,
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     IdiomaId,
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
@@ -43,6 +47,33 @@ from backend.domain.value_objects import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261006-183934-criacao-versao-curriculo-v001.md#v001
+
+
+class GeradorExperienciaProfissionalIdUuid4(GeradorExperienciaProfissionalId):
+    """Gera identidades de experiência com UUID4 para atender novos cadastros.
+
+    Encapsula a aleatoriedade na infraestrutura e devolve o tipo do domínio,
+    mantendo o caso de uso independente da estratégia concreta de identidade.
+    """
+
+    def gerar(self) -> ExperienciaProfissionalId:
+        """Cria um UUID4 tipado para identificar uma nova experiência persistida.
+
+        Usa o gerador aleatório padrão e encapsula seu resultado no value
+        object para satisfazer a porta de identidade do cadastro.
+        """
+        return ExperienciaProfissionalId(uuid4())
+
+
+class GeradorFormacaoAcademicaIdUuid4(GeradorFormacaoAcademicaId):
+    """Fornece identidades de formação usando UUID4 para permitir novos cadastros.
+
+    Encapsula a aleatoriedade na infraestrutura e devolve o tipo do domínio.
+    """
+
+    def gerar(self) -> FormacaoAcademicaId:
+        """Cria um UUID4 tipado para identificar uma nova formação persistida."""
+        return FormacaoAcademicaId(uuid4())
 
 
 class GeradorUsuarioIdUuid4(GeradorUsuarioId):

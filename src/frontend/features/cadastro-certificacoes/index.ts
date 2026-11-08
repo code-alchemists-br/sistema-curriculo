@@ -12,3 +12,12 @@ export type {
   ErrosCertificacao,
   ValoresCertificacao,
 } from "./model/certificacao";
+
+export {
+  criarClienteCertificacoesHttp,
+  FalhaCertificacao,
+} from "./api/cliente-certificacoes-http";
+export type {
+  ClienteCertificacoes,
+  CodigoFalhaCertificacao,
+} from "./api/cliente-certificacoes-http";

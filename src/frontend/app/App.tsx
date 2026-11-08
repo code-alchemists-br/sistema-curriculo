@@ -28,19 +28,63 @@ import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 import {
   PaginaVisualizacaoCurriculo,
   montarPreviaCurriculo,
+  exportarPreviaParaDocx,
 } from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
 import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
 import {
   criarClienteVagasDemonstracao,
+  criarClienteVagasHttp,
   criarClienteDecisoesDemonstracao,
 } from "../features/listar-vagas";
-import { criarClienteAcessoDemonstracao } from "../features/acesso-estudante";
+import {
+  criarClienteAcessoDemonstracao,
+  criarClienteAcessoEstudante,
+} from "../features/acesso-estudante";
+import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
+import { criarClienteFormacaoAcademicaHttp } from "../features/cadastrar-formacao-academica";
+import { criarClienteExperienciasHttp } from "../features/edit-professional-experience";
+import { criarClienteCursosHttp } from "../features/edit-courses";
+import { criarClienteCertificacoesHttp } from "../features/cadastro-certificacoes";
+import { criarClienteIdiomasHttp } from "../features/edit-languages";
+import { criarClienteCompetenciasHttp } from "../features/edit-skills";
+import { criarClienteProjetosAcademicosHttp } from "../features/cadastro-projeto-academico";
 import "../shared/styles/animations.css";
 
+const apiBaseUrl = import.meta.env.VITE_API_URL;
 const clienteVagasDemo = criarClienteVagasDemonstracao();
+const clienteVagasHttp = apiBaseUrl
+  ? criarClienteVagasHttp(apiBaseUrl)
+  : clienteVagasDemo;
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
 const clienteAcessoDemo = criarClienteAcessoDemonstracao();
+const clienteAcessoHttp = apiBaseUrl
+  ? criarClienteAcessoEstudante(apiBaseUrl)
+  : clienteAcessoDemo;
+const clienteDadosPessoaisHttp = apiBaseUrl
+  ? criarClienteDadosPessoaisHttp(apiBaseUrl)
+  : undefined;
+const clienteFormacaoAcademicaHttp = apiBaseUrl
+  ? criarClienteFormacaoAcademicaHttp(apiBaseUrl)
+  : undefined;
+const clienteExperienciasHttp = apiBaseUrl
+  ? criarClienteExperienciasHttp(apiBaseUrl)
+  : undefined;
+const clienteCursosHttp = apiBaseUrl
+  ? criarClienteCursosHttp(apiBaseUrl)
+  : undefined;
+const clienteCertificacoesHttp = apiBaseUrl
+  ? criarClienteCertificacoesHttp(apiBaseUrl)
+  : undefined;
+const clienteIdiomasHttp = apiBaseUrl
+  ? criarClienteIdiomasHttp(apiBaseUrl)
+  : undefined;
+const clienteCompetenciasHttp = apiBaseUrl
+  ? criarClienteCompetenciasHttp(apiBaseUrl)
+  : undefined;
+const clienteProjetosAcademicosHttp = apiBaseUrl
+  ? criarClienteProjetosAcademicosHttp(apiBaseUrl)
+  : undefined;
 
 type RotaAtiva =
   | "inicio"
@@ -118,17 +162,34 @@ const CHAVE_RASCUNHO_CURRICULO = "liminal_curriculo_rascunho";
 function carregarRascunho(): RascunhoCurriculo | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
-    return raw ? (JSON.parse(raw) as RascunhoCurriculo) : null;
+    const rawLocal = localStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
+    if (rawLocal) {
+      return JSON.parse(rawLocal) as RascunhoCurriculo;
+    }
   } catch {
-    return null;
+    // Continua para fallback em sessionStorage caso localStorage esteja inacessível
   }
+  try {
+    const rawSession = sessionStorage.getItem(CHAVE_RASCUNHO_CURRICULO);
+    if (rawSession) {
+      return JSON.parse(rawSession) as RascunhoCurriculo;
+    }
+  } catch {
+    // Ignora erro
+  }
+  return null;
 }
 
 function salvarRascunho(rascunho: RascunhoCurriculo): void {
   if (typeof window === "undefined") return;
+  const serializado = JSON.stringify(rascunho);
   try {
-    sessionStorage.setItem(CHAVE_RASCUNHO_CURRICULO, JSON.stringify(rascunho));
+    localStorage.setItem(CHAVE_RASCUNHO_CURRICULO, serializado);
+  } catch {
+    // Ignora restrições de localStorage
+  }
+  try {
+    sessionStorage.setItem(CHAVE_RASCUNHO_CURRICULO, serializado);
   } catch {
     // Ignora restrições de sessionStorage
   }
@@ -136,6 +197,11 @@ function salvarRascunho(rascunho: RascunhoCurriculo): void {
 
 function limparRascunho(): void {
   if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(CHAVE_RASCUNHO_CURRICULO);
+  } catch {
+    // Ignora restrições
+  }
   try {
     sessionStorage.removeItem(CHAVE_RASCUNHO_CURRICULO);
   } catch {
@@ -468,6 +534,7 @@ export function App() {
       <PaginaDadosPessoais
         aoAvancar={() => navegar("formacao-academica")}
         aoAlterarValores={setDadosPessoais}
+        cliente={clienteDadosPessoaisHttp}
         onVoltar={() => navegar("inicio")}
         onVoltarInicio={voltarAoInicio}
         valoresIniciais={dadosPessoais}
@@ -479,6 +546,7 @@ export function App() {
     return (
       <PaginaFormacaoAcademica
         aoAlterarFormacoes={setFormacoes}
+        cliente={clienteFormacaoAcademicaHttp}
         formacoesIniciais={formacoes}
         onAvancar={() => navegar("experiencias-profissionais")}
         onVoltar={() => navegar("dados-pessoais")}
@@ -492,7 +560,17 @@ export function App() {
       <PaginaExperienciasProfissionais
         aoAlterarExperiencias={setExperiencias}
         experienciasIniciais={experiencias}
-        onSalvar={() => navegar("cursos-certificacoes")}
+        onSalvar={async (listaExperiencias) => {
+          setExperiencias(listaExperiencias);
+          if (clienteExperienciasHttp) {
+            try {
+              await clienteExperienciasHttp.salvar(listaExperiencias);
+            } catch {
+              // Em caso de indisponibilidade, mantém os dados no estado e no rascunho
+            }
+          }
+          navegar("cursos-certificacoes");
+        }}
         onVoltar={() => navegar("formacao-academica")}
         onVoltarInicio={voltarAoInicio}
       />
@@ -506,7 +584,23 @@ export function App() {
         aoAlterarCursos={setCursos}
         certificacoesIniciais={certificacoes}
         cursosIniciais={cursos}
-        onAvancar={() => navegar("idiomas")}
+        onAvancar={async () => {
+          if (clienteCursosHttp && cursos) {
+            try {
+              await clienteCursosHttp.salvar(cursos);
+            } catch {
+              // Preservado no rascunho
+            }
+          }
+          if (clienteCertificacoesHttp && certificacoes) {
+            try {
+              await clienteCertificacoesHttp.salvar(certificacoes);
+            } catch {
+              // Preservado no rascunho
+            }
+          }
+          navegar("idiomas");
+        }}
         onVoltar={() => navegar("experiencias-profissionais")}
         onVoltarInicio={voltarAoInicio}
       />
@@ -517,7 +611,16 @@ export function App() {
     return (
       <PaginaIdiomas
         idiomasIniciais={idiomas}
-        onAvancar={() => navegar("competencias")}
+        onAvancar={async () => {
+          if (clienteIdiomasHttp && idiomas) {
+            try {
+              await clienteIdiomasHttp.salvar(idiomas);
+            } catch {
+              // Preservado no rascunho
+            }
+          }
+          navegar("competencias");
+        }}
         onSalvar={setIdiomas}
         onVoltar={() => navegar("cursos-certificacoes")}
         onVoltarInicio={voltarAoInicio}
@@ -529,7 +632,16 @@ export function App() {
     return (
       <PaginaCompetencias
         competenciasIniciais={competencias}
-        onAvancar={() => navegar("projetos-academicos")}
+        onAvancar={async () => {
+          if (clienteCompetenciasHttp && competencias) {
+            try {
+              await clienteCompetenciasHttp.salvar(competencias);
+            } catch {
+              // Preservado no rascunho
+            }
+          }
+          navegar("projetos-academicos");
+        }}
         onSalvar={setCompetencias}
         onVoltar={() => navegar("idiomas")}
         onVoltarInicio={voltarAoInicio}
@@ -541,7 +653,20 @@ export function App() {
     return (
       <PaginaCadastroProjetosAcademicos
         aoAlterarProjetos={setProjetos}
-        onAvancar={() => navegar("selecionar-modelo")}
+        onAvancar={async () => {
+          if (clienteProjetosAcademicosHttp && projetos) {
+            for (const p of projetos) {
+              if (p.titulo.trim() || p.descricao.trim()) {
+                try {
+                  await clienteProjetosAcademicosHttp.cadastrar(p);
+                } catch {
+                  // Preservado no rascunho
+                }
+              }
+            }
+          }
+          navegar("selecionar-modelo");
+        }}
         onVoltar={() => navegar("competencias")}
         onVoltarInicio={voltarAoInicio}
         projetosIniciais={projetos}
@@ -577,6 +702,25 @@ export function App() {
         onExportarPdf={() => {
           setAutoBaixarPdf(true);
           navegar("visualizar-curriculo");
+        }}
+        onExportarDocx={() => {
+          const previaCalculada = montarPreviaCurriculo({
+            dadosPessoais,
+            formacoes,
+            experiencias,
+            cursos,
+            certificacoes,
+            idiomas,
+            competencias,
+            projetos,
+            modelo,
+          });
+          const nomeEstudante =
+            dadosPessoais?.nomeCompleto?.trim() || "Estudante";
+          exportarPreviaParaDocx({
+            previa: previaCalculada,
+            nomeArquivo: `Curriculo - ${nomeEstudante}`,
+          });
         }}
         onVisualizarPreview={() => navegar("visualizar-curriculo")}
         onVoltar={() => navegar("selecionar-modelo")}
@@ -647,7 +791,7 @@ export function App() {
     return (
       <PaginaAcessoEstudante
         abaInicial={abaAcesso}
-        cliente={clienteAcessoDemo}
+        cliente={clienteAcessoHttp}
         onSucessoAcesso={(dados) => {
           const nomeResolvido = dados?.nome?.trim() || "";
           const emailResolvido = dados?.email?.trim() || "";
@@ -708,7 +852,7 @@ export function App() {
   if (rotaAtiva === "vagas") {
     return (
       <PaginaVagasGrupo2
-        cliente={clienteVagasDemo}
+        cliente={clienteVagasHttp}
         clienteDecisoes={clienteDecisoesDemo}
         onVoltar={() => navegar("inicio")}
       />

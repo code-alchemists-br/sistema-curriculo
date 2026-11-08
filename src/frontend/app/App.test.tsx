@@ -12,6 +12,7 @@ afterEach(() => {
   cleanup();
   window.history.replaceState({}, "", "/");
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 describe("App", () => {

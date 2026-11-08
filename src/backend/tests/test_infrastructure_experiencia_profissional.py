@@ -96,6 +96,50 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
     classe existe para proteger a implementação da porta externa.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    async def test_lista_ativas_por_dono_sem_ordem_de_apresentacao_ou_escrita(self):
+        """Inspeciona SELECT e mapeamento com sessão double sem executar SQL.
+
+        Retorna registros em sequência arbitrária e confere os predicados no
+        mesmo WHERE, delegação ao mapper e ausência de mutações para proteger
+        a implementação da porta de leitura sem envolver banco real.
+        """
+        from dataclasses import replace
+        from unittest.mock import call, patch
+
+        from sqlalchemy.dialects import postgresql
+
+        experiencias = (
+            criar_experiencia(),
+            replace(criar_experiencia(), id=ExperienciaProfissionalId(UUID(int=2))),
+        )
+        for itens in (experiencias, ()):
+            with self.subTest(quantidade=len(itens)):
+                session = MagicMock(spec=AsyncSession)
+                registros = [para_registro(item) for item in itens]
+                session.scalars.return_value = registros
+                with patch(
+                    "backend.infrastructure.persistence.sqlalchemy.repositorio_experiencia_profissional.para_experiencia",
+                    wraps=para_experiencia,
+                ) as mapper:
+                    resultado = await RepositorioExperienciaProfissionalSqlAlchemy(session).listar_ativas_por_usuario(
+                        UsuarioId(ID_USUARIO)
+                    )
+                    self.assertEqual(mapper.call_args_list, [call(registro) for registro in registros])
+                self.assertEqual(resultado, itens)
+                session.scalars.assert_awaited_once()
+                consulta = session.scalars.call_args.args[0]
+                compilada = consulta.compile(dialect=postgresql.dialect())
+                where = str(compilada).split("WHERE", 1)[1]
+                self.assertIn("experiencias_profissionais.usuario_id =", where)
+                self.assertIn("AND experiencias_profissionais.deleted_at IS NULL", where)
+                self.assertIn(ID_USUARIO, compilada.params.values())
+                self.assertNotIn("ORDER BY", str(compilada))
+                session.add.assert_not_called()
+                session.flush.assert_not_called()
+                session.commit.assert_not_called()
+                self.assertEqual(len(session.mock_calls), 1)
+
     async def test_adiciona_registro_e_aguarda_flush_sem_commit(self) -> None:
         """Confirma que salvar mapeia e envia registro sem commit próprio.
 
@@ -178,6 +222,8 @@ class RepositorioExperienciaProfissionalSqlAlchemyTestCase(unittest.IsolatedAsyn
         altere identidade nem dono e que só atinja a experiência do usuário.
         """
         editada = criar_experiencia().editar(
+            # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+            hoje=date(2026, 11, 7),
             empresa="Nova Empresa",
             cargo="Analista",
             descricao="Mantém APIs em produção.",
