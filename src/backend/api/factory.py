@@ -183,6 +183,10 @@ from backend.api.previa_versao_curriculo import (
 )
 from backend.api.projeto_academico import (
     CadastroProjetoAcademicoExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    ConsultaProjetoAcademicoExecutor,
+    EdicaoProjetoAcademicoExecutor,
+    ExclusaoProjetoAcademicoExecutor,
 )
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
@@ -305,11 +309,16 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
     listar_experiencias_profissionais: ListagemExperienciasProfissionaisExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    consultar_projeto_academico: ConsultaProjetoAcademicoExecutor | None = None,
+    editar_projeto_academico: EdicaoProjetoAcademicoExecutor | None = None,
+    excluir_projeto_academico: ExclusaoProjetoAcademicoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
-    dados completos de perfil, contato, projetos acadêmicos, competências,
+    dados completos de perfil, contato, projetos acadêmicos (cadastro, detalhe,
+    edição e exclusão), competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem de
     associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
@@ -373,6 +382,10 @@ def create_app(
             assistente_descricao_projeto
             if assistente_descricao_projeto is not None
             else AssistenteDescricaoProjetoDeterministico(),
+            # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+            consultar_projeto_academico=consultar_projeto_academico,
+            editar_projeto_academico=editar_projeto_academico,
+            excluir_projeto_academico=excluir_projeto_academico,
         ),
         tags=[TAG_PROJETOS_ACADEMICOS],
     )

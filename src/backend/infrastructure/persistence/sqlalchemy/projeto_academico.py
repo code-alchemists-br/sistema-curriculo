@@ -1,13 +1,15 @@
 """Mapeia projetos acadêmicos entre entidade e registro SQLAlchemy.
 
 O modelo persiste identidade, proprietário e três textos limitados por checks
-relacionais. As conversões preservam o domínio fora do ORM e existem para
+relacionais e o instante anulável de exclusão lógica. As conversões preservam o domínio fora do ORM e existem para
 armazenar projetos sem acoplar as camadas internas ao SQLAlchemy.
 """
 
+# Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, Text, Uuid
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
@@ -28,7 +30,8 @@ class ProjetoAcademicoRegistro(Base):
     """Representa um projeto acadêmico em colunas relacionais.
 
     A tabela declara UUIDs, textos obrigatórios, FK para o usuário e checks de
-    comprimento compatíveis com os bancos usados. Ela existe para persistir o
+    comprimento compatíveis com os bancos usados e marcador temporal anulável.
+    Ela existe para persistir o
     projeto sem instrumentar sua entidade de domínio.
     """
 
@@ -66,6 +69,8 @@ class ProjetoAcademicoRegistro(Base):
     tecnologias: Mapped[str] = mapped_column(
         String(TAMANHO_MAXIMO_TECNOLOGIAS_PROJETO), nullable=False
     )
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
@@ -81,6 +86,8 @@ def para_registro(projeto: ProjetoAcademico) -> ProjetoAcademicoRegistro:
         titulo=projeto.titulo,
         descricao=projeto.descricao,
         tecnologias=projeto.tecnologias,
+        # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+        deleted_at=projeto.deleted_at,
     )
 
 
@@ -100,4 +107,6 @@ def para_projeto_academico(
         titulo=registro.titulo,
         descricao=registro.descricao,
         tecnologias=registro.tecnologias,
+        # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+        deleted_at=registro.deleted_at,
     )

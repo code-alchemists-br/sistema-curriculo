@@ -1,21 +1,26 @@
-"""Expõe o cadastro e a sugestão de descrição de projetos acadêmicos por HTTP.
+"""Expõe cadastro, sugestão, detalhe, edição e exclusão de projetos por HTTP.
 
 O módulo valida o JSON por DTO, obtém o proprietário da sessão e converte a
 entidade em resposta explícita; também oferece a sugestão de descrição do
 assistente, traduzindo sua indisponibilidade em falha controlada. Ele existe
 para oferecer o cadastro e a orientação do RF04 sem expor o domínio nem aceitar
-a identidade do proprietário pelo cliente.
+a identidade do proprietário pelo cliente. As operações por ID delegam aos
+casos existentes, com tradução de ausência uniforme e exclusão sem conteúdo.
 """
+
+# Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+from __future__ import annotations
 
 from json import JSONDecodeError
 from typing import Protocol
 from unicodedata import category
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     ValidationError,
     ValidationInfo,
     field_validator,
@@ -27,6 +32,11 @@ from backend.application import (
     AssistenteDescricaoProjetoEntrada,
     AssistenteDescricaoProjetoIndisponivel,
     CadastrarProjetoAcademicoEntrada,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    ConsultarProjetoAcademicoEntrada,
+    EditarProjetoAcademicoEntrada,
+    ExcluirProjetoAcademicoEntrada,
+    ProjetoAcademicoNaoEncontrado,
 )
 from backend.domain import (
     TAMANHO_MAXIMO_DESCRICAO_PROJETO,
@@ -34,6 +44,7 @@ from backend.domain import (
     TAMANHO_MAXIMO_TITULO_PROJETO,
     TAMANHO_MINIMO_TEXTO_PROJETO,
     ProjetoAcademico,
+    ProjetoAcademicoId,
     RegraDeDominioViolada,
     UsuarioId,
 )
@@ -165,8 +176,12 @@ class SugestaoDescricaoProjetoResposta(BaseModel):
 def criar_router(
     cadastrar_projeto_academico: CadastroProjetoAcademicoExecutor | None,
     assistente_descricao: AssistenteDescricaoProjeto | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    consultar_projeto_academico: ConsultaProjetoAcademicoExecutor | None = None,
+    editar_projeto_academico: EdicaoProjetoAcademicoExecutor | None = None,
+    excluir_projeto_academico: ExclusaoProjetoAcademicoExecutor | None = None,
 ) -> APIRouter:
-    """Registra os endpoints de cadastro e de sugestão de descrição de projeto.
+    """Registra cadastro, sugestão, detalhe, edição e exclusão de projeto.
 
     Os handlers leem JSON sem deixar erros de validação refletirem valores
     recebidos, exigem o principal de ``request.state`` e traduzem falhas para
@@ -309,4 +324,192 @@ def criar_router(
             tecnologias=projeto.tecnologias,
         )
 
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    @router.get(
+        "/projetos-academicos/{projeto_id}", response_model=ProjetoAcademicoResposta,
+        summary="Consultar projeto acadêmico",
+        description="Obtém o detalhe de um projeto próprio ativo pelo ID, usando o dono da sessão.",
+        responses=_respostas_operacao("Consulta"),
+    )
+    async def consultar(projeto_id: str, request: Request) -> ProjetoAcademicoResposta:
+        """Traduz a consulta HTTP em entrada interna com dono da sessão.
+
+        Valida sessão, disponibilidade e UUID, delega ao executor e converte
+        entidade ou ausência uniforme para oferecer detalhe sem expor domínio.
+        """
+        identidade, usuario = _identificar_operacao(
+            projeto_id, request, consultar_projeto_academico, "Consulta"
+        )
+        try:
+            projeto = await consultar_projeto_academico.executar(
+                ConsultarProjetoAcademicoEntrada(usuario_id=usuario, projeto_id=identidade)
+            )
+        except ProjetoAcademicoNaoEncontrado as erro:
+            raise HTTPException(404, "Projeto acadêmico não encontrado.") from erro
+        return _para_resposta(projeto)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    @router.put(
+        "/projetos-academicos/{projeto_id}", response_model=ProjetoAcademicoResposta,
+        summary="Atualizar projeto acadêmico",
+        description=(
+            "Substitui título, descrição e tecnologias de projeto próprio ativo. "
+            "ID e dono não mudam. Limites de 200, 2000 e 300 pontos de código Unicode "
+            "após strip, não bytes nem grafemas; espaços externos não contam."
+        ),
+        responses=_respostas_operacao("Edição"),
+        openapi_extra={"requestBody": {"required": True, "content": {
+            "application/json": {"schema": EdicaoProjetoAcademicoRequisicao.model_json_schema()}
+        }}},
+    )
+    async def editar(projeto_id: str, request: Request) -> ProjetoAcademicoResposta:
+        """Substitui textos recebidos sem aceitar ID ou dono pelo corpo.
+
+        Valida JSON pelo DTO pós-strip, delega ao executor e traduz falhas sem
+        ecoar a entrada, para atualizar projeto próprio com contrato estável.
+        """
+        identidade, usuario = _identificar_operacao(
+            projeto_id, request, editar_projeto_academico, "Edição"
+        )
+        try:
+            dados = EdicaoProjetoAcademicoRequisicao.model_validate(await request.json())
+        except (JSONDecodeError, UnicodeDecodeError, ValidationError) as erro:
+            raise HTTPException(422, "Dados do projeto acadêmico inválidos.") from erro
+        try:
+            projeto = await editar_projeto_academico.executar(EditarProjetoAcademicoEntrada(
+                usuario_id=usuario, projeto_id=identidade, titulo=dados.titulo,
+                descricao=dados.descricao, tecnologias=dados.tecnologias,
+            ))
+        except ProjetoAcademicoNaoEncontrado as erro:
+            raise HTTPException(404, "Projeto acadêmico não encontrado.") from erro
+        except RegraDeDominioViolada as erro:
+            raise HTTPException(422, "Dados do projeto acadêmico inválidos.") from erro
+        return _para_resposta(projeto)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    @router.delete(
+        "/projetos-academicos/{projeto_id}", status_code=204, response_class=Response,
+        summary="Excluir projeto acadêmico",
+        description=("Exclui logicamente projeto próprio. Repetições do dono retornam 204; "
+                     "seleções de currículo permanecem e nenhuma leitura de currículo muda."),
+        responses=_respostas_operacao("Exclusão"),
+    )
+    async def excluir(projeto_id: str, request: Request) -> Response:
+        """Delega exclusão lógica e responde sem corpo, inclusive na repetição.
+
+        Obtém dono da sessão e UUID validado e traduz ausência em 404 uniforme
+        para expor a operação idempotente sem aceitar propriedade do cliente.
+        """
+        identidade, usuario = _identificar_operacao(
+            projeto_id, request, excluir_projeto_academico, "Exclusão"
+        )
+        try:
+            await excluir_projeto_academico.executar(ExcluirProjetoAcademicoEntrada(
+                usuario_id=usuario, projeto_id=identidade,
+            ))
+        except ProjetoAcademicoNaoEncontrado as erro:
+            raise HTTPException(404, "Projeto acadêmico não encontrado.") from erro
+        return Response(status_code=204)
+
     return router
+
+
+# Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+class ConsultaProjetoAcademicoExecutor(Protocol):
+    """Define a execução de consulta de detalhe sem dependência concreta.
+
+    Recebe entrada interna e devolve entidade para permitir que HTTP delegue
+    a leitura pela capacidade existente, independente de persistência.
+    """
+
+    async def executar(self, entrada: ConsultarProjetoAcademicoEntrada) -> ProjetoAcademico:
+        """Consulta pelo contrato interno e devolve o projeto ativo.
+
+        Delega ID e dono ao caso existente para separar tradução HTTP da leitura.
+        """
+
+
+class EdicaoProjetoAcademicoExecutor(Protocol):
+    """Define a capacidade de edição completa consumida pela borda HTTP.
+
+    Recebe entrada tipada com três textos e devolve entidade para manter
+    o handler independente do executor transacional concreto.
+    """
+
+    async def executar(self, entrada: EditarProjetoAcademicoEntrada) -> ProjetoAcademico:
+        """Edita pelo contrato interno e devolve o projeto validado.
+
+        Encaminha a entrada ao caso existente para separar HTTP das invariantes.
+        """
+
+
+class ExclusaoProjetoAcademicoExecutor(Protocol):
+    """Define exclusão lógica por entrada interna sem detalhes de armazenamento.
+
+    Recebe IDs e devolve o estado excluído para conectar o handler ao caso
+    idempotente existente sem expor repositório ou relógio.
+    """
+
+    async def executar(self, entrada: ExcluirProjetoAcademicoEntrada) -> ProjetoAcademico:
+        """Exclui pelo contrato interno ou devolve o tombstone próprio.
+
+        Delega a transição ao caso existente para manter HTTP sem regras de exclusão.
+        """
+
+
+class EdicaoProjetoAcademicoRequisicao(CadastroProjetoAcademicoRequisicao):
+    """Descreve os três textos obrigatórios da substituição completa.
+
+    Reutiliza o validator pós-strip e adiciona somente metadados de schema,
+    para documentar limites sem impor comprimento bruto à validação runtime.
+    """
+
+    titulo: str = Field(json_schema_extra={"minLength": 1, "maxLength": 200})
+    descricao: str = Field(json_schema_extra={"minLength": 1, "maxLength": 2000})
+    tecnologias: str = Field(json_schema_extra={"minLength": 1, "maxLength": 300})
+
+
+def _identificar_operacao(
+    projeto_id: str, request: Request, executor: object | None, operacao: str
+) -> tuple[ProjetoAcademicoId, UsuarioId]:
+    """Obtém sessão e UUID sem refletir entradas inválidas na resposta.
+
+    Confere principal, disponibilidade e conversão do caminho nessa ordem,
+    para fornecer identidades tipadas aos novos handlers com erros seguros.
+    """
+    usuario_id = getattr(request.state, "usuario_id", None)
+    if not isinstance(usuario_id, UUID):
+        raise HTTPException(401, "Autenticação necessária.")
+    if executor is None:
+        raise HTTPException(503, f"{operacao} indisponível.")
+    try:
+        identidade = UUID(str(projeto_id))
+    except ValueError as erro:
+        raise HTTPException(422, "Identificador de projeto acadêmico inválido.") from erro
+    return ProjetoAcademicoId(identidade), UsuarioId(usuario_id)
+
+
+def _para_resposta(projeto: ProjetoAcademico) -> ProjetoAcademicoResposta:
+    """Converte explicitamente identidade, dono e textos em DTO público.
+
+    Extrai somente os cinco campos públicos para ocultar a entidade e marcador
+    interno sem alterar o contrato já utilizado pelo cadastro.
+    """
+    return ProjetoAcademicoResposta(
+        id=projeto.id.valor, usuario_id=projeto.usuario_id.valor, titulo=projeto.titulo,
+        descricao=projeto.descricao, tecnologias=projeto.tecnologias,
+    )
+
+
+def _respostas_operacao(operacao: str) -> dict[int, dict[str, str]]:
+    """Documenta falhas comuns e indisponibilidade específica de operação.
+
+    Monta descrições estáveis para os novos decoradores, para que o Swagger
+    informe autenticação, ausência uniforme, entrada inválida e executor ausente.
+    """
+    return {
+        401: {"description": "Autenticação necessária."},
+        404: {"description": "Projeto acadêmico não encontrado (ausente, alheio ou excluído)."},
+        422: {"description": "Identificador ou dados do projeto acadêmico inválidos."},
+        503: {"description": f"{operacao} indisponível."},
+    }

@@ -261,6 +261,17 @@ from backend.application.previa_versao_curriculo import (
     PreviaVersaoCurriculo,
 )
 
+# Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+from backend.application.projeto_academico import (
+    ConsultarProjetoAcademico,
+    ConsultarProjetoAcademicoEntrada,
+    EditarProjetoAcademico,
+    EditarProjetoAcademicoEntrada,
+    ExcluirProjetoAcademico,
+    ExcluirProjetoAcademicoEntrada,
+    ProjetoAcademicoNaoEncontrado,
+)
+
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.application.revisao_versao_curriculo import (
     RevisarVersaoCurriculo,
@@ -289,6 +300,14 @@ from backend.application.versao_curriculo import (
 )
 
 __all__ = [
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    "ConsultarProjetoAcademico",
+    "ConsultarProjetoAcademicoEntrada",
+    "EditarProjetoAcademico",
+    "EditarProjetoAcademicoEntrada",
+    "ExcluirProjetoAcademico",
+    "ExcluirProjetoAcademicoEntrada",
+    "ProjetoAcademicoNaoEncontrado",
     # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
     "AssociacaoCurriculoVagaJaExiste",
     "AssociacaoCurriculoVagaNaoEncontrada",
