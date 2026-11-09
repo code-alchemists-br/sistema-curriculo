@@ -38,8 +38,9 @@ _listar_versoes_curriculo = criar_executor_transacional(
 - Casos de uso que precisam de uma sessão por operação diferente da transação
   única por chamada não se encaixam sem adaptação.
 
-## Pendência de segurança relacionada
+## Autorização por proprietário
 
-As rotas de versão do currículo usam o `usuario_id` da URL, não o da sessão.
-Com a persistência ligada, uma pessoa autenticada poderia acessar o currículo de
-outra. Corrigir antes de qualquer uso fora de ambiente de desenvolvimento.
+As rotas de versão do currículo recebem o `usuario_id` na URL, mas o
+`MiddlewareAutenticacaoSessao` compara esse valor com o da sessão e responde 403
+quando diferem, antes de o executor ser chamado. O executor transacional não
+participa dessa decisão.

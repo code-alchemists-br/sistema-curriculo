@@ -28,6 +28,8 @@ from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
 from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
+from backend.application.previa_versao_curriculo import GerarPreviaVersaoCurriculo
+from backend.application.revisao_versao_curriculo import RevisarVersaoCurriculo
 from backend.application.saude import VerificadorPersistencia
 from backend.application.selecao_itens_versao_curriculo import (
     DesselecionarItemVersaoCurriculo,
@@ -58,6 +60,9 @@ from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
 )
 from backend.infrastructure.persistence.sqlalchemy.cadastro_experiencia_profissional import (
     CadastroExperienciaProfissionalSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.consulta_item_perfil import (
+    ConsultaItemPerfilSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.consulta_proprietario_item import (
     ConsultaProprietarioItemSqlAlchemy,
@@ -99,6 +104,9 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico i
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
+    RepositorioUsuarioSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
@@ -308,6 +316,29 @@ _desselecionar_item_versao_curriculo = criar_executor_transacional(
         RepositorioCurriculoSqlAlchemy(sessao)
     ),
 )
+def _montar_previa_versao_curriculo(sessao: AsyncSession) -> GerarPreviaVersaoCurriculo:
+    """Monta a prévia da versão ligando repositórios e leitura de itens à sessão.
+
+    A função reúne o repositório de currículo, o de usuário e a leitura de itens
+    por tipo na mesma sessão. Ela existe para que prévia e revisão compartilhem a
+    montagem, já que a revisão reaproveita a prévia.
+    """
+    return GerarPreviaVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        RepositorioUsuarioSqlAlchemy(sessao),
+        ConsultaItemPerfilSqlAlchemy(sessao),
+    )
+
+
+_gerar_previa_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia, _montar_previa_versao_curriculo
+)
+_revisar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: RevisarVersaoCurriculo(
+        _montar_previa_versao_curriculo(sessao), RelogioUtc()
+    ),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -344,6 +375,8 @@ app = create_app(
     atualizar_ordem_secoes_curriculo=_atualizar_ordem_secoes_curriculo,
     selecionar_item_versao_curriculo=_selecionar_item_versao_curriculo,
     desselecionar_item_versao_curriculo=_desselecionar_item_versao_curriculo,
+    gerar_previa_versao_curriculo=_gerar_previa_versao_curriculo,
+    revisar_versao_curriculo=_revisar_versao_curriculo,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     cadastrar_projeto_academico=(
         CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
