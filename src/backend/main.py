@@ -29,8 +29,13 @@ from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
 from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
 from backend.application.saude import VerificadorPersistencia
+from backend.application.selecao_itens_versao_curriculo import (
+    DesselecionarItemVersaoCurriculo,
+    SelecionarItemVersaoCurriculo,
+)
 from backend.application.sessoes import CriadorSessao
 from backend.application.versao_curriculo import (
+    AtualizarOrdemSecoesCurriculo,
     CriarVersaoCurriculo,
     EditarVersaoCurriculo,
 )
@@ -53,6 +58,9 @@ from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
 )
 from backend.infrastructure.persistence.sqlalchemy.cadastro_experiencia_profissional import (
     CadastroExperienciaProfissionalSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.consulta_proprietario_item import (
+    ConsultaProprietarioItemSqlAlchemy,
 )
 
 # Proveniência: docs/decisao-executor-transacional.md
@@ -283,6 +291,23 @@ _excluir_versao_curriculo = criar_executor_transacional(
     _sessoes_persistencia,
     lambda sessao: ExcluirVersaoCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
 )
+_atualizar_ordem_secoes_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: AtualizarOrdemSecoesCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_selecionar_item_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: SelecionarItemVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        ConsultaProprietarioItemSqlAlchemy(sessao),
+    ),
+)
+_desselecionar_item_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: DesselecionarItemVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao)
+    ),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -316,6 +341,9 @@ app = create_app(
     editar_versao_curriculo=_editar_versao_curriculo,
     listar_versoes_curriculo=_listar_versoes_curriculo,
     excluir_versao_curriculo=_excluir_versao_curriculo,
+    atualizar_ordem_secoes_curriculo=_atualizar_ordem_secoes_curriculo,
+    selecionar_item_versao_curriculo=_selecionar_item_versao_curriculo,
+    desselecionar_item_versao_curriculo=_desselecionar_item_versao_curriculo,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     cadastrar_projeto_academico=(
         CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
