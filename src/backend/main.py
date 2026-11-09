@@ -25,11 +25,18 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
+from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
 from backend.application.saude import VerificadorPersistencia
 from backend.application.sessoes import CriadorSessao
+from backend.application.versao_curriculo import (
+    CriarVersaoCurriculo,
+    EditarVersaoCurriculo,
+)
 from backend.configuracao_logging import configurar_logging
 from backend.infrastructure.identificadores.geradores import (
+    GeradorCurriculoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
@@ -46,6 +53,11 @@ from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
 )
 from backend.infrastructure.persistence.sqlalchemy.cadastro_experiencia_profissional import (
     CadastroExperienciaProfissionalSqlAlchemy,
+)
+
+# Proveniência: docs/decisao-executor-transacional.md
+from backend.infrastructure.persistence.sqlalchemy.executor_transacional import (
+    criar_executor_transacional,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
@@ -76,6 +88,9 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico i
     ConsultaProjetoAcademicoSqlAlchemy,
     EdicaoProjetoAcademicoSqlAlchemy,
     ExclusaoProjetoAcademicoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
+    RepositorioCurriculoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
@@ -246,6 +261,28 @@ _listar_associacoes_curriculo_vaga = (
     if _sessoes_persistencia is not None
     else None
 )
+# Proveniência: docs/decisao-executor-transacional.md
+# Versões do currículo (onde o modelo escolhido, `layout`, é gravado). Cada
+# executor abre uma transação por chamada; sem banco, ficam None e a rota
+# responde 503.
+_criar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: CriarVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao), GeradorCurriculoIdUuid4()
+    ),
+)
+_editar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: EditarVersaoCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_listar_versoes_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ListarVersoesCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_excluir_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ExcluirVersaoCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -275,6 +312,10 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
 
 # Proveniência: decision-analysis prompts/backend/20260913-fundamentos-fastapi-v001.md#v001
 app = create_app(
+    criar_versao_curriculo=_criar_versao_curriculo,
+    editar_versao_curriculo=_editar_versao_curriculo,
+    listar_versoes_curriculo=_listar_versoes_curriculo,
+    excluir_versao_curriculo=_excluir_versao_curriculo,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     cadastrar_projeto_academico=(
         CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
