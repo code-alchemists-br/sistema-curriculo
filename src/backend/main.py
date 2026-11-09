@@ -25,6 +25,10 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.decisao_recomendacao import (
+    ConsultarDecisoesRecomendacao,
+    RegistrarDecisaoRecomendacao,
+)
 from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
 from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
@@ -104,6 +108,9 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico i
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_decisao_recomendacao import (
+    RepositorioDecisaoRecomendacaoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
@@ -339,6 +346,21 @@ _revisar_versao_curriculo = criar_executor_transacional(
         _montar_previa_versao_curriculo(sessao), RelogioUtc()
     ),
 )
+_registrar_decisao_recomendacao = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: RegistrarDecisaoRecomendacao(
+        RevisarVersaoCurriculo(_montar_previa_versao_curriculo(sessao), RelogioUtc()),
+        RepositorioDecisaoRecomendacaoSqlAlchemy(sessao),
+        RelogioUtc(),
+    ),
+)
+_consultar_decisoes_recomendacao = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ConsultarDecisoesRecomendacao(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        RepositorioDecisaoRecomendacaoSqlAlchemy(sessao),
+    ),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -377,6 +399,8 @@ app = create_app(
     desselecionar_item_versao_curriculo=_desselecionar_item_versao_curriculo,
     gerar_previa_versao_curriculo=_gerar_previa_versao_curriculo,
     revisar_versao_curriculo=_revisar_versao_curriculo,
+    registrar_decisao_recomendacao=_registrar_decisao_recomendacao,
+    consultar_decisoes_recomendacao=_consultar_decisoes_recomendacao,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     cadastrar_projeto_academico=(
         CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
