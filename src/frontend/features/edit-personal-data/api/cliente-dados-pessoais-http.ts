@@ -5,30 +5,6 @@ import {
 } from "./cliente-dados-pessoais";
 
 /**
- * Divide o texto livre de endereço para extrair endereço e cidade quando possível.
- */
-function extrairEnderecoECidade(enderecoCompleto: string): {
-  endereco: string;
-  cidade: string;
-} {
-  const limpo = enderecoCompleto.trim();
-  if (!limpo) {
-    return { endereco: "Não informado", cidade: "Não informada" };
-  }
-  const partes = limpo
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (partes.length >= 2) {
-    return {
-      endereco: partes.slice(0, -1).join(", "),
-      cidade: partes[partes.length - 1],
-    };
-  }
-  return { endereco: limpo, cidade: limpo };
-}
-
-/**
  * Cria o cliente HTTP para persistência dos dados pessoais no backend.
  *
  * Utiliza fetch com credentials: "include" para enviar cookies de sessão,
@@ -44,9 +20,6 @@ export function criarClienteDadosPessoaisHttp(
         throw new FalhaDadosPessoais("indisponivel");
       }
 
-      const { endereco, cidade } = extrairEnderecoECidade(
-        dados.enderecoCompleto,
-      );
       const telefonesLimpos = dados.telefones
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
@@ -54,8 +27,8 @@ export function criarClienteDadosPessoaisHttp(
       const payload = {
         nome: dados.nomeCompleto.trim(),
         email: dados.email.trim(),
-        endereco,
-        cidade,
+        endereco: dados.enderecoCompleto.trim(),
+        cidade: dados.cidade.trim(),
         telefones:
           telefonesLimpos.length > 0 ? telefonesLimpos : ["Não informado"],
         linkedin: dados.linkedIn?.trim() || null,

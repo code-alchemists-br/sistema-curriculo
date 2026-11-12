@@ -320,6 +320,7 @@ describe("App", () => {
         dadosPessoais: {
           nomeCompleto: "Carlos Drummond",
           enderecoCompleto: "Rua Minas, 123",
+          cidade: "Belo Horizonte",
           telefones: ["(31) 98765-4321"],
           email: "carlos@example.com",
         },
@@ -333,6 +334,7 @@ describe("App", () => {
       await screen.findByDisplayValue("Carlos Drummond"),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue("carlos@example.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Belo Horizonte")).toBeInTheDocument();
 
     sessionStorage.removeItem("liminal_curriculo_rascunho");
   });

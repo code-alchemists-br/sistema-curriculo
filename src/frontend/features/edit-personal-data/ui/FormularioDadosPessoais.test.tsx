@@ -15,6 +15,7 @@ async function preencherCamposObrigatorios(
 ): Promise<void> {
   await usuario.type(screen.getByLabelText("Nome Completo"), "Ana Silva");
   await usuario.type(screen.getByLabelText("Endereço"), "Rua das Flores, 10");
+  await usuario.type(screen.getByLabelText("Cidade"), "São Paulo");
   await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
   await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
 }
@@ -43,6 +44,7 @@ describe("FormularioDadosPessoais", () => {
     expect(cliente.salvar).toHaveBeenCalledWith({
       nomeCompleto: "Ana Silva",
       enderecoCompleto: "Rua das Flores, 10",
+      cidade: "São Paulo",
       telefones: ["(11) 99999-0000", "(11) 98888-0000"],
       email: "ana@exemplo.com",
     });
@@ -121,6 +123,32 @@ describe("FormularioDadosPessoais", () => {
     expect(cliente.salvar).toHaveBeenCalledTimes(2);
   });
 
+  it("exige cidade e associa o erro ao respectivo campo", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<FormularioDadosPessoais cliente={cliente} />);
+
+    await usuario.type(screen.getByLabelText("Nome Completo"), "Ana Silva");
+    await usuario.type(screen.getByLabelText("Endereço"), "Rua das Flores, 10");
+    await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
+    await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar dados pessoais" }),
+    );
+
+    const campoCidade = screen.getByLabelText("Cidade");
+    expect(await screen.findByText("Informe sua cidade.")).toHaveAttribute(
+      "id",
+      "cidade-erro",
+    );
+    expect(campoCidade).toHaveAttribute("aria-invalid", "true");
+    expect(campoCidade).toHaveAttribute("aria-describedby", "cidade-erro");
+    expect(cliente.salvar).not.toHaveBeenCalled();
+  });
+
   it("permite remover um telefone adicional adicionado previamente", async () => {
     const usuario = userEvent.setup();
     const cliente: ClienteDadosPessoais = {
@@ -165,9 +193,35 @@ describe("FormularioDadosPessoais", () => {
     expect(cliente.salvar).toHaveBeenCalledWith({
       nomeCompleto: "Ana Silva",
       enderecoCompleto: "Rua das Flores, 10",
+      cidade: "São Paulo",
       telefones: ["(11) 99999-0000"],
       email: "ana@exemplo.com",
       linkedIn: "https://linkedin.com/in/anasilva",
     });
+  });
+
+  it("limita a inclusão a cinco telefones", async () => {
+    const usuario = userEvent.setup();
+    const cliente: ClienteDadosPessoais = {
+      salvar: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<FormularioDadosPessoais cliente={cliente} />);
+
+    const botaoAdicionar = screen.getByRole("button", {
+      name: "+ Adicionar telefone",
+    });
+
+    for (let indice = 0; indice < 4; indice += 1) {
+      await usuario.click(botaoAdicionar);
+    }
+
+    expect(screen.getByLabelText("Telefone 5")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Telefone 6")).not.toBeInTheDocument();
+    expect(botaoAdicionar).toBeDisabled();
+    expect(botaoAdicionar).toHaveAttribute(
+      "aria-describedby",
+      "limite-telefones",
+    );
   });
 });

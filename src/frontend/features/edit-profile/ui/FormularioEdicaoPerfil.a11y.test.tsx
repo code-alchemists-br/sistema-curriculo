@@ -10,6 +10,7 @@ afterEach(cleanup);
 const valoresIniciais = {
   nomeCompleto: "Ana Souza",
   enderecoCompleto: "Rua Exemplo, 100",
+  cidade: "São Paulo",
   telefones: ["(11) 99999-0000"],
   email: "ana@exemplo.com",
 };

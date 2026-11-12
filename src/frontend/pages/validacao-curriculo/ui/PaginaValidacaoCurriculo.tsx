@@ -22,6 +22,7 @@ const DADOS_VALIDACAO_PADRAO: CurriculoParaValidacao = {
   dadosPessoais: {
     nomeCompleto: "Rafael Mendes",
     enderecoCompleto: "Avenida Paulista, 1000 - São Paulo, SP",
+    cidade: "São Paulo",
     telefones: ["(11) 98888-7777"],
     email: "rafael.mendes@fatec.sp.gov.br",
   },

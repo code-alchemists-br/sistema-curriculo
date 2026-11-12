@@ -1,10 +1,14 @@
-import type { Student } from "../../../entities/student";
+import {
+  LIMITE_TELEFONES_ESTUDANTE,
+  type Student,
+} from "../../../entities/student";
 import type { CodigoFalhaDadosPessoais } from "../api/cliente-dados-pessoais";
 
 /** Representa os valores controlados pelo formulário antes da normalização. */
 export interface ValoresDadosPessoais {
   nomeCompleto: string;
   enderecoCompleto: string;
+  cidade: string;
   telefones: string[];
   email: string;
   linkedIn: string;
@@ -15,6 +19,7 @@ export interface ValoresDadosPessoais {
 export interface ErrosDadosPessoais {
   nomeCompleto?: string;
   enderecoCompleto?: string;
+  cidade?: string;
   telefones?: Record<number, string>;
   email?: string;
 }
@@ -24,6 +29,7 @@ export function criarValoresIniciais(): ValoresDadosPessoais {
   return {
     nomeCompleto: "",
     enderecoCompleto: "",
+    cidade: "",
     telefones: [""],
     email: "",
     linkedIn: "",
@@ -35,8 +41,9 @@ export function criarValoresIniciais(): ValoresDadosPessoais {
  * Valida somente as informações mínimas necessárias para orientar o estudante.
  *
  * A função verifica presença dos campos obrigatórios, um formato básico de
- * e-mail e cada telefone existente. Ela existe para oferecer feedback imediato
- * sem substituir as regras definitivas que serão aplicadas pelo backend.
+ * e-mail, cada telefone existente e o limite máximo permitido. Ela existe para
+ * oferecer feedback imediato sem substituir as regras definitivas que serão
+ * aplicadas pelo backend.
  */
 export function validarDadosPessoais(
   valores: ValoresDadosPessoais,
@@ -45,6 +52,14 @@ export function validarDadosPessoais(
 
   if (valores.nomeCompleto.trim() === "") {
     erros.nomeCompleto = "Informe seu nome completo.";
+  }
+
+  if (valores.enderecoCompleto.trim() === "") {
+    erros.enderecoCompleto = "Informe seu endereço.";
+  }
+
+  if (valores.cidade.trim() === "") {
+    erros.cidade = "Informe sua cidade.";
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valores.email.trim())) {
@@ -57,6 +72,11 @@ export function validarDadosPessoais(
       errosDeTelefone[indice] = "Informe um telefone.";
     }
   });
+
+  if (valores.telefones.length > LIMITE_TELEFONES_ESTUDANTE) {
+    errosDeTelefone[LIMITE_TELEFONES_ESTUDANTE] =
+      `Informe no máximo ${LIMITE_TELEFONES_ESTUDANTE} telefones.`;
+  }
 
   if (Object.keys(errosDeTelefone).length > 0) {
     erros.telefones = errosDeTelefone;
@@ -79,6 +99,7 @@ export function criarStudent(valores: ValoresDadosPessoais): Student {
   return {
     nomeCompleto: valores.nomeCompleto.trim(),
     enderecoCompleto: valores.enderecoCompleto.trim(),
+    cidade: valores.cidade.trim(),
     telefones: valores.telefones.map((telefone) => telefone.trim()),
     email: valores.email.trim(),
     ...(linkedIn === "" ? {} : { linkedIn }),

@@ -13,6 +13,7 @@ afterEach(cleanup);
 const studentExistente = {
   nomeCompleto: "Ricardo Galdino",
   enderecoCompleto: "Av. Paulista, 1000",
+  cidade: "São Paulo",
   telefones: ["(11) 99999-0000"],
   email: "ricardo@exemplo.com",
 };
@@ -48,6 +49,7 @@ describe("FormularioEdicaoPerfil", () => {
       "Ricardo Galdino",
     );
     expect(screen.getByLabelText("E-mail")).toHaveValue("ricardo@exemplo.com");
+    expect(screen.getByLabelText("Cidade")).toHaveValue("São Paulo");
     expect(screen.getByLabelText("Telefone 1")).toHaveValue("(11) 99999-0000");
   });
 

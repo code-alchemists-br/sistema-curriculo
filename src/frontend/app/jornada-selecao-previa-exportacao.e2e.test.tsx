@@ -101,6 +101,7 @@ function JornadaCompletaHarness({
     dadosPessoais: {
       nomeCompleto: dados?.nomeCompleto ?? "",
       enderecoCompleto: dados?.enderecoCompleto ?? "",
+      cidade: dados?.cidade ?? "",
       telefones: dados?.telefones ?? [],
       email: dados?.email ?? "",
     },
@@ -219,6 +220,7 @@ async function criarDadosPessoais(
 ): Promise<void> {
   await usuario.type(screen.getByLabelText("Nome Completo"), nome);
   await usuario.type(screen.getByLabelText("Endereço"), "Rua das Flores, 10");
+  await usuario.type(screen.getByLabelText("Cidade"), "São Paulo");
   await usuario.type(screen.getByLabelText("Telefone 1"), "(11) 99999-0000");
   await usuario.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
   await usuario.click(

@@ -83,12 +83,14 @@ export function JornadaCurriculoHarness({
         ? {
             nomeCompleto: dadosSalvos.nomeCompleto,
             enderecoCompleto: dadosSalvos.enderecoCompleto,
+            cidade: dadosSalvos.cidade,
             telefones: dadosSalvos.telefones,
             email: dadosSalvos.email,
           }
         : {
             nomeCompleto: "",
             enderecoCompleto: "",
+            cidade: "",
             telefones: [],
             email: "",
           },
@@ -159,7 +161,7 @@ export function JornadaCurriculoHarness({
  * Preenche os campos interativos de dados pessoais durante o fluxo do teste E2E.
  *
  * **O que faz:** Digita as informações de identificação e contato nos campos acessíveis da interface.
- * **Como faz:** Utiliza os métodos do `userEvent` para digitar nome, endereço, telefone e e-mail via `getByLabelText`.
+ * **Como faz:** Utiliza os métodos do `userEvent` para digitar nome, endereço, cidade, telefone e e-mail via `getByLabelText`.
  * **Qual finalidade atende:** Automatiza a entrada de dados do estudante reproduzindo a digitação humana no formulário.
  */
 async function preencherCamposDadosPessoais(
@@ -167,6 +169,7 @@ async function preencherCamposDadosPessoais(
   dados: {
     nomeCompleto: string;
     enderecoCompleto: string;
+    cidade: string;
     telefone: string;
     email: string;
   },
@@ -176,6 +179,7 @@ async function preencherCamposDadosPessoais(
     dados.nomeCompleto,
   );
   await usuario.type(screen.getByLabelText("Endereço"), dados.enderecoCompleto);
+  await usuario.type(screen.getByLabelText("Cidade"), dados.cidade);
   await usuario.type(screen.getByLabelText("Telefone 1"), dados.telefone);
   await usuario.type(screen.getByLabelText("E-mail"), dados.email);
 }
@@ -218,6 +222,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Mariana Souza",
       enderecoCompleto: "Avenida Paulista, 1000 - Bela Vista, São Paulo - SP",
+      cidade: "São Paulo",
       telefone: "(11) 98765-4321",
       email: "mariana.souza@universidade.edu.br",
     });
@@ -239,6 +244,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     expect(clienteDadosPessoais.salvar).toHaveBeenCalledWith({
       nomeCompleto: "Mariana Souza",
       enderecoCompleto: "Avenida Paulista, 1000 - Bela Vista, São Paulo - SP",
+      cidade: "São Paulo",
       telefones: ["(11) 98765-4321", "(11) 91234-5678"],
       email: "mariana.souza@universidade.edu.br",
     });
@@ -325,6 +331,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Carlos Alberto",
       enderecoCompleto: "Rua das Amoreiras, 50 - Campinas - SP",
+      cidade: "Campinas",
       telefone: "(19) 99888-7766",
       email: "carlos.alberto@email.com",
     });
@@ -396,6 +403,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Juliana Mendes",
       enderecoCompleto: "Rua do Comércio, 120 - Santos - SP",
+      cidade: "Santos",
       telefone: "(13) 97777-6655",
       email: "juliana.mendes@email.com",
     });
@@ -447,6 +455,7 @@ describe("Jornada E2E de Preenchimento e Revisão de Currículo", () => {
     await preencherCamposDadosPessoais(usuario, {
       nomeCompleto: "Beatriz Lima",
       enderecoCompleto: "Rua Alvorada, 300 - Curitiba - PR",
+      cidade: "Curitiba",
       telefone: "(41) 98888-1111",
       email: "beatriz.lima@email.com",
     });

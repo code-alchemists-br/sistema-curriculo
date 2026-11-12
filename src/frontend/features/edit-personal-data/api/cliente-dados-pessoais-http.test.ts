@@ -17,7 +17,8 @@ describe("criarClienteDadosPessoaisHttp", () => {
     await cliente.salvar({
       nomeCompleto: "Ricardo Sampaio",
       email: "ricardo@fatec.sp.gov.br",
-      enderecoCompleto: "Rua das Flores 123, São Paulo",
+      enderecoCompleto: "Rua das Flores 123",
+      cidade: "São Paulo",
       telefones: ["(11) 99999-0000"],
       linkedIn: "https://linkedin.com/in/ricardo",
     });
@@ -51,7 +52,8 @@ describe("criarClienteDadosPessoaisHttp", () => {
       cliente.salvar({
         nomeCompleto: "Ricardo Sampaio",
         email: "ricardo@fatec.sp.gov.br",
-        enderecoCompleto: "São Paulo",
+        enderecoCompleto: "Rua das Flores 123",
+        cidade: "São Paulo",
         telefones: ["(11) 99999-0000"],
       }),
     ).rejects.toThrow(new FalhaDadosPessoais("indisponivel"));
@@ -67,7 +69,8 @@ describe("criarClienteDadosPessoaisHttp", () => {
       cliente.salvar({
         nomeCompleto: "Ricardo Sampaio",
         email: "ricardo@fatec.sp.gov.br",
-        enderecoCompleto: "São Paulo",
+        enderecoCompleto: "Rua das Flores 123",
+        cidade: "São Paulo",
         telefones: ["(11) 99999-0000"],
       }),
     ).rejects.toThrow(new FalhaDadosPessoais("resposta-invalida"));

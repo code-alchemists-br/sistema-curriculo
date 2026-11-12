@@ -1,5 +1,9 @@
 import { useState, type FormEvent } from "react";
 
+import {
+  LIMITE_TELEFONES_ESTUDANTE,
+  type Student,
+} from "../../../entities/student";
 import { ModalConfirmacao } from "../../../shared";
 import {
   FalhaPerfilEstudante,
@@ -13,7 +17,6 @@ import {
   type ErrosPerfilEstudante,
   type ValoresPerfilEstudante,
 } from "../model/formulario-perfil";
-import type { Student } from "../../../entities/student";
 
 /** Define o cliente e os dados iniciais usados pela tela de configurações. */
 export interface FormularioEdicaoPerfilProps {
@@ -74,8 +77,12 @@ export function FormularioEdicaoPerfil({
     setMensagem(null);
   }
 
-  /** Inclui um novo campo vazio para que o estudante informe outro telefone. */
+  /** Inclui um telefone somente enquanto o limite de integridade permitir. */
   function adicionarTelefone(): void {
+    if (valores.telefones.length >= LIMITE_TELEFONES_ESTUDANTE) {
+      return;
+    }
+
     setValores((atuais) => ({
       ...atuais,
       telefones: [...atuais.telefones, ""],
@@ -162,6 +169,14 @@ export function FormularioEdicaoPerfil({
           required
           value={valores.enderecoCompleto}
         />
+        <CampoTexto
+          erro={erros.cidade}
+          id="perfil-cidade"
+          label="Cidade"
+          onChange={(valor) => atualizarCampo("cidade", valor)}
+          required
+          value={valores.cidade}
+        />
         <div className="field">
           <span>Telefones</span>
           {valores.telefones.map((telefone, indice) => {
@@ -192,9 +207,17 @@ export function FormularioEdicaoPerfil({
               </div>
             );
           })}
-          <button onClick={adicionarTelefone} type="button">
+          <button
+            aria-describedby="perfil-limite-telefones"
+            disabled={valores.telefones.length >= LIMITE_TELEFONES_ESTUDANTE}
+            onClick={adicionarTelefone}
+            type="button"
+          >
             + Adicionar telefone
           </button>
+          <p id="perfil-limite-telefones">
+            Você pode informar até {LIMITE_TELEFONES_ESTUDANTE} telefones.
+          </p>
         </div>
         <CampoTexto
           erro={erros.email}

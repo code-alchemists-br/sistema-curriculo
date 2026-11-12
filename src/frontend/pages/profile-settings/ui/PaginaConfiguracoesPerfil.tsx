@@ -15,6 +15,7 @@ export interface PaginaConfiguracoesPerfilProps {
 const DADOS_FICTICIOS: Student = {
   nomeCompleto: "Estudante Exemplo",
   enderecoCompleto: "Rua Exemplo, 123",
+  cidade: "São Paulo",
   telefones: ["(11) 90000-0000"],
   email: "estudante@exemplo.com",
 };

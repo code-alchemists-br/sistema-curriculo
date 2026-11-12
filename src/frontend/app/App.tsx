@@ -529,6 +529,7 @@ export function App() {
     dadosPessoais: {
       nomeCompleto: dadosPessoais?.nomeCompleto || "Nome não informado",
       enderecoCompleto: dadosPessoais?.enderecoCompleto || "",
+      cidade: dadosPessoais?.cidade || "",
       telefones:
         dadosPessoais?.telefones?.filter((t) => t.trim().length > 0) || [],
       email: dadosPessoais?.email || "",
@@ -839,6 +840,7 @@ export function App() {
           if (nomeResolvido || emailResolvido) {
             setDadosPessoais((atuais) => ({
               enderecoCompleto: atuais?.enderecoCompleto || "",
+              cidade: atuais?.cidade || "",
               telefones: atuais?.telefones || [""],
               linkedIn: atuais?.linkedIn || "",
               curriculoLattes: atuais?.curriculoLattes || "",

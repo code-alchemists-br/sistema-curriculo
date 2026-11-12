@@ -10,6 +10,7 @@ import {
 const valoresValidos: ValoresPerfilEstudante = {
   nomeCompleto: "Ricardo Galdino",
   enderecoCompleto: "Av. Paulista, 1000",
+  cidade: "São Paulo",
   telefones: ["(11) 99999-0000"],
   email: "ricardo@exemplo.com",
   linkedIn: "https://linkedin.com/in/ricardo",
@@ -36,6 +37,14 @@ describe("validarPerfilEstudante", () => {
       enderecoCompleto: "",
     });
     expect(erros.enderecoCompleto).toBe("Informe seu endereço completo.");
+  });
+
+  it("reporta cidade ausente", () => {
+    const erros = validarPerfilEstudante({
+      ...valoresValidos,
+      cidade: "",
+    });
+    expect(erros.cidade).toBe("Informe sua cidade.");
   });
 
   it("reporta e-mail com formato inválido", () => {
@@ -122,6 +131,7 @@ describe("criarValoresDeStudent", () => {
     const valores = criarValoresDeStudent({
       nomeCompleto: "Ricardo Galdino",
       enderecoCompleto: "Av. Paulista, 1000",
+      cidade: "São Paulo",
       telefones: ["(11) 99999-0000"],
       email: "ricardo@exemplo.com",
     });
@@ -134,6 +144,7 @@ describe("criarValoresDeStudent", () => {
     const valores = criarValoresDeStudent({
       nomeCompleto: "Ricardo Galdino",
       enderecoCompleto: "Av. Paulista, 1000",
+      cidade: "São Paulo",
       telefones: [],
       email: "ricardo@exemplo.com",
     });

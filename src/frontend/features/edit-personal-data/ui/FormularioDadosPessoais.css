@@ -185,6 +185,20 @@
   color: #ff944d;
 }
 
+.formulario-dados-pessoais .btn-adicionar-telefone:disabled {
+  color: rgba(255, 255, 255, 0.35);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.formulario-dados-pessoais .telefone-ajuda {
+  margin: 0.5rem 0 0;
+  color: #a3a3a3;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
 .formulario-dados-pessoais .lista-telefones .field:not(:only-child):last-child {
   animation: surgimento-item 0.4s ease-out;
 }

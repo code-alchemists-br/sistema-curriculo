@@ -13,6 +13,7 @@ const dadosFicticios: CurriculoParaValidacao = {
   dadosPessoais: {
     nomeCompleto: "Rafael Mendes",
     enderecoCompleto: "Avenida Central, 45",
+    cidade: "São Paulo",
     telefones: ["11988887777"],
     email: "rafael.mendes@example.com",
   },

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { LIMITE_TELEFONES_ESTUDANTE } from "../../../entities/student";
 import {
   FalhaDadosPessoais,
   type ClienteDadosPessoais,
@@ -69,8 +70,10 @@ export function FormularioDadosPessoais({
   useEffect(() => {
     if (aoAlterarProgresso) {
       let preenchidos = 0;
-      const totalObrigatorios = 3;
+      const totalObrigatorios = 5;
       if (valores.nomeCompleto.trim().length > 0) preenchidos++;
+      if (valores.enderecoCompleto.trim().length > 0) preenchidos++;
+      if (valores.cidade.trim().length > 0) preenchidos++;
       if (valores.email.trim().length > 0) preenchidos++;
       if (valores.telefones.some((t) => t.trim().length > 0)) preenchidos++;
 
@@ -120,8 +123,12 @@ export function FormularioDadosPessoais({
     setMensagem(null);
   }
 
-  /** Inclui um novo telefone e sinaliza que ele deve receber foco. */
+  /** Inclui telefone até o limite permitido e sinaliza que ele deve receber foco. */
   function adicionarTelefone(): void {
+    if (valores.telefones.length >= LIMITE_TELEFONES_ESTUDANTE) {
+      return;
+    }
+
     focoNoNovoTelefone.current = true;
     setValores((atuais) => ({
       ...atuais,
@@ -285,12 +292,17 @@ export function FormularioDadosPessoais({
         </div>
 
         <button
+          aria-describedby="limite-telefones"
           className="btn-adicionar-telefone"
+          disabled={valores.telefones.length >= LIMITE_TELEFONES_ESTUDANTE}
           onClick={adicionarTelefone}
           type="button"
         >
           + Adicionar telefone
         </button>
+        <p className="telefone-ajuda" id="limite-telefones">
+          Você pode informar até {LIMITE_TELEFONES_ESTUDANTE} telefones.
+        </p>
       </div>
 
       {/* 4. Endereço */}
@@ -299,11 +311,23 @@ export function FormularioDadosPessoais({
         id="endereco-completo"
         label="Endereço"
         onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
-        placeholder="Cidade, Estado (ou endereço completo)..."
+        placeholder="Rua, número e complemento"
+        required
         value={valores.enderecoCompleto}
       />
 
-      {/* 5. Linkedin */}
+      {/* 5. Cidade */}
+      <CampoTexto
+        erro={erros.cidade}
+        id="cidade"
+        label="Cidade"
+        onChange={(valor) => atualizarCampo("cidade", valor)}
+        placeholder="Ex.: São Paulo"
+        required
+        value={valores.cidade}
+      />
+
+      {/* 6. Linkedin */}
       <CampoTexto
         id="linkedin"
         label="Linkedin"

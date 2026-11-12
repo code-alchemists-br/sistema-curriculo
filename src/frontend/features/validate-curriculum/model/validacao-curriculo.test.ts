@@ -9,6 +9,7 @@ const curriculoValido: CurriculoParaValidacao = {
   dadosPessoais: {
     nomeCompleto: "Marina Alves",
     enderecoCompleto: "Rua das Acácias, 120",
+    cidade: "São Paulo",
     telefones: ["11999990000"],
     email: "marina.alves@example.com",
   },
@@ -67,6 +68,7 @@ describe("validarCurriculo", () => {
       dadosPessoais: {
         nomeCompleto: "",
         enderecoCompleto: "",
+        cidade: "",
         telefones: [""],
         email: "email-invalido",
       },

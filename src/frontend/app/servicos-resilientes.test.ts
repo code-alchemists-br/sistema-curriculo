@@ -28,6 +28,7 @@ import {
 const estudanteExemplo: Student = {
   nomeCompleto: "Ana Silva",
   enderecoCompleto: "Av Paulista, 1000, São Paulo",
+  cidade: "São Paulo",
   telefones: ["(11) 98765-4321"],
   email: "ana@exemplo.com",
 };
