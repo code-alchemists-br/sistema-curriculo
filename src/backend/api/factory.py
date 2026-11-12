@@ -107,6 +107,8 @@ from backend.api.experiencia_profissional import (
     CadastroExperienciaProfissionalExecutor,
     EdicaoExperienciaProfissionalExecutor,
     ExclusaoExperienciaProfissionalExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    ListagemExperienciasProfissionaisExecutor,
 )
 from backend.api.experiencia_profissional import (
     criar_router as criar_router_experiencia_profissional,
@@ -123,6 +125,8 @@ from backend.api.formacao_academica import (
     EdicaoFormacaoAcademicaExecutor,
     # Proveniência: decision-analysis prompts/backend/20261015-205307-expor-exclusao-formacao-academica-v002.md#v002
     ExclusaoFormacaoAcademicaExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    ListagemFormacoesAcademicasExecutor,
 )
 from backend.api.formacao_academica import (
     criar_router as criar_router_formacao_academica,
@@ -179,6 +183,10 @@ from backend.api.previa_versao_curriculo import (
 )
 from backend.api.projeto_academico import (
     CadastroProjetoAcademicoExecutor,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    ConsultaProjetoAcademicoExecutor,
+    EdicaoProjetoAcademicoExecutor,
+    ExclusaoProjetoAcademicoExecutor,
 )
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
@@ -296,16 +304,26 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
     listar_associacoes_curriculo_vaga: ListagemAssociacoesCurriculoVagaExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    listar_formacoes_academicas: ListagemFormacoesAcademicasExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    listar_experiencias_profissionais: ListagemExperienciasProfissionaisExecutor
+    | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    consultar_projeto_academico: ConsultaProjetoAcademicoExecutor | None = None,
+    editar_projeto_academico: EdicaoProjetoAcademicoExecutor | None = None,
+    excluir_projeto_academico: ExclusaoProjetoAcademicoExecutor | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
     A função instancia FastAPI e inclui os routers de cadastro/acesso, perfil,
-    dados completos de perfil, contato, projetos acadêmicos, competências,
+    dados completos de perfil, contato, projetos acadêmicos (cadastro, detalhe,
+    edição e exclusão), competências,
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem de
     associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
     decisão sobre recomendações,
-    experiências profissionais (cadastro, edição e exclusão), prévia, exportação do
+    experiências profissionais (cadastro, leitura, edição e exclusão), prévia, exportação do
     currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A exceção é o assistente de descrição de projeto: sem assistente informado,
@@ -364,6 +382,10 @@ def create_app(
             assistente_descricao_projeto
             if assistente_descricao_projeto is not None
             else AssistenteDescricaoProjetoDeterministico(),
+            # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+            consultar_projeto_academico=consultar_projeto_academico,
+            editar_projeto_academico=editar_projeto_academico,
+            excluir_projeto_academico=excluir_projeto_academico,
         ),
         tags=[TAG_PROJETOS_ACADEMICOS],
     )
@@ -419,6 +441,8 @@ def create_app(
             cadastrar_experiencia_profissional,
             editar_experiencia_profissional,
             excluir_experiencia_profissional,
+            # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+            listar_experiencias=listar_experiencias_profissionais,
         ),
         tags=[TAG_EXPERIENCIAS_PROFISSIONAIS],
     )
@@ -428,6 +452,8 @@ def create_app(
             cadastrar_formacao_academica,
             editar_formacao_academica,
             excluir_formacao_academica,
+            # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+            listar_formacoes=listar_formacoes_academicas,
         ),
         tags=[TAG_FORMACOES_ACADEMICAS],
     )

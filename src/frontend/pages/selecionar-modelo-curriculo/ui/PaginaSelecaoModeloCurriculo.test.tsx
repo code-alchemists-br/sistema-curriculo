@@ -40,4 +40,21 @@ describe("PaginaSelecaoModeloCurriculo", () => {
 
     expect(screen.getByRole("radio", { name: "Compacto" })).toBeChecked();
   });
+
+  it("pré-seleciona automaticamente o modelo Primeiro emprego para perfil sem experiência prévia", () => {
+    render(
+      <PaginaSelecaoModeloCurriculo
+        aoConfirmar={vi.fn()}
+        perfilEstudante={{
+          experiencias: [],
+          formacoes: [{ nivel: "graduacao" }],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("radio", { name: "Primeiro emprego" }),
+    ).toBeChecked();
+    expect(screen.getByText("★ Recomendado")).toBeInTheDocument();
+  });
 });

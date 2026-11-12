@@ -1,12 +1,17 @@
-"""Expõe cadastro, edição e exclusão de experiências profissionais por HTTP autenticado."""
+"""Expõe cadastro, leitura, edição e exclusão de experiências por HTTP autenticado."""
 
 from datetime import date
 from typing import Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from backend.api.rota_gravacao_experiencia import (
+    ErroGravacaoExperienciaResposta,
+    RotaGravacaoExperiencia,
+)
 from backend.application.cadastro_experiencia_profissional import (
     CadastrarExperienciaProfissionalEntrada,
 )
@@ -17,25 +22,60 @@ from backend.application.edicao_experiencia_profissional import (
 from backend.application.exclusao_experiencia_profissional import (
     ExcluirExperienciaProfissionalEntrada,
 )
+
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+from backend.application.perfil_estudante import ListarExperienciasProfissionaisEntrada
 from backend.domain import ExperienciaProfissional, Periodo, RegraDeDominioViolada
+
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from backend.domain.itens_perfil import (
+    TAMANHO_MAXIMO_CARGO_EXPERIENCIA,
+    TAMANHO_MAXIMO_DESCRICAO_EXPERIENCIA,
+    TAMANHO_MAXIMO_EMPRESA_EXPERIENCIA,
+    TAMANHO_MINIMO_TEXTO_EXPERIENCIA,
+)
 from backend.domain.value_objects import ExperienciaProfissionalId, UsuarioId
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
 class CadastroExperienciaProfissionalRequisicao(BaseModel):
     """Representa os campos de transporte necessários para criar experiência.
 
-    Pydantic valida tipos e datas antes da conversão a value objects; o DTO não
-    aceita proprietário ou identificador. Ele existe para separar JSON do
-    contrato interno e impedir que o cliente escolha a conta de destino.
+    Pydantic exige strings estritas, normaliza com strip antes dos limites e
+    valida o formato das datas. A Application aplica a regra temporal com
+    relógio injetado. O DTO existe para separar JSON do contrato interno sem
+    permitir que o cliente escolha dono, hoje ou o fuso da validação.
     """
 
-    empresa: str
-    cargo: str
-    descricao: str
-    data_inicio: date
-    data_fim: date | None = None
+    empresa: str = Field(strict=True, min_length=TAMANHO_MINIMO_TEXTO_EXPERIENCIA,
+                         max_length=TAMANHO_MAXIMO_EMPRESA_EXPERIENCIA)
+    cargo: str = Field(strict=True, min_length=TAMANHO_MINIMO_TEXTO_EXPERIENCIA,
+                       max_length=TAMANHO_MAXIMO_CARGO_EXPERIENCIA)
+    descricao: str = Field(strict=True, min_length=TAMANHO_MINIMO_TEXTO_EXPERIENCIA,
+                           max_length=TAMANHO_MAXIMO_DESCRICAO_EXPERIENCIA)
+    data_inicio: date = Field(description=(
+        "Início da experiência, não posterior ao dia atual em America/Sao_Paulo. "
+        "A validação usa o relógio do servidor a cada gravação."
+    ))
+    data_fim: date | None = Field(default=None, description=(
+        "Término da experiência, não posterior ao dia atual em America/Sao_Paulo. "
+        "Null indica experiência em andamento; pode ser omitido no cadastro."
+    ))
+
+    @field_validator("empresa", "cargo", "descricao", mode="before")
+    @classmethod
+    def normalizar_texto(cls, valor: object) -> str:
+        """Exige texto e aplica strip antes da validação declarativa de tamanho.
+
+        Rejeita conversões de outros tipos e preserva Unicode, espaços e linhas
+        internas para medir os limites do domínio sem truncar o dado recebido.
+        """
+        if not isinstance(valor, str):
+            raise ValueError("O campo deve ser texto.")
+        return valor.strip()
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
 class EdicaoExperienciaProfissionalRequisicao(CadastroExperienciaProfissionalRequisicao):
     """Define o corpo completo aceito para editar uma experiência profissional.
 
@@ -46,13 +86,16 @@ class EdicaoExperienciaProfissionalRequisicao(CadastroExperienciaProfissionalReq
 
     data_fim: date | None = Field(
         description=(
-            "Data de término da experiência; envie null para experiência em andamento."
+            "Término não posterior ao dia atual em America/Sao_Paulo, validado "
+            "a cada gravação pelo relógio do servidor. Campo obrigatório na "
+            "edição; envie null para experiência em andamento."
         )
     )
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
 class ExperienciaProfissionalResposta(BaseModel):
-    """Representa dados públicos devolvidos após o cadastro da experiência.
+    """Representa dados públicos de cadastro, edição e leitura da experiência.
 
     O DTO extrai UUIDs, textos e datas sem serializar a entidade diretamente.
     Ele existe para manter o contrato HTTP desacoplado do modelo de domínio.
@@ -123,11 +166,41 @@ class ExclusaoExperienciaProfissionalExecutor(Protocol):
         """
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+class ListagemExperienciasProfissionaisResposta(BaseModel):
+    """Apresenta a coleção própria usando o DTO público existente por item.
+
+    Agrupa os itens em experiencias, inclusive vazia, para transportar a ordem
+    recebida sem expor entidades ou marcadores internos de exclusão.
+    """
+
+    experiencias: list[ExperienciaProfissionalResposta]
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+class ListagemExperienciasProfissionaisExecutor(Protocol):
+    """Define a consulta tipada de experiências consumida pela fronteira HTTP.
+
+    Recebe o dono resolvido pela fronteira e retorna a coleção já ordenada para
+    permitir injeção da leitura sem expor persistência ao handler.
+    """
+
+    async def executar(
+        self, entrada: ListarExperienciasProfissionaisEntrada
+    ) -> tuple[ExperienciaProfissional, ...]:
+        """Consulta as ativas do dono e devolve a ordem pronta para apresentação.
+
+        A implementação delega consulta e ordem à Application para permitir que
+        o handler apenas converta as entidades em respostas públicas.
+        """
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
 def _resposta(experiencia: ExperienciaProfissional) -> ExperienciaProfissionalResposta:
     """Projeta a entidade nos campos públicos da resposta HTTP.
 
     A função extrai UUIDs, textos e datas do período sem serializar a entidade.
-    Ela existe para que cadastro e edição devolvam exatamente o mesmo contrato.
+    Ela existe para que cadastro, edição e leitura usem o mesmo contrato.
     """
     return ExperienciaProfissionalResposta(
         id=experiencia.id.valor,
@@ -160,8 +233,10 @@ def criar_router(
     cadastrar_experiencia: CadastroExperienciaProfissionalExecutor | None,
     editar_experiencia: EdicaoExperienciaProfissionalExecutor | None = None,
     excluir_experiencia: ExclusaoExperienciaProfissionalExecutor | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    listar_experiencias: ListagemExperienciasProfissionaisExecutor | None = None,
 ) -> APIRouter:
-    """Cria as rotas POST, PUT e DELETE de experiência protegidas por sessão.
+    """Cria as rotas POST, GET, PUT e DELETE protegidas por sessão.
 
     As rotas recebem o principal que o middleware autenticador instalou em
     ``request.state``, convertem rota e corpo em entrada de Application e
@@ -170,12 +245,56 @@ def criar_router(
     com mensagem genérica. A função existe para impedir que o cliente escolha o
     dono da experiência, sem acoplar a API à persistência ou à sessão concreta.
     """
-    router = APIRouter()
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+    router = APIRouter(route_class=RotaGravacaoExperiencia)
+
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    @router.get(
+        "/experiencias-profissionais",
+        response_model=ListagemExperienciasProfissionaisResposta,
+        status_code=status.HTTP_200_OK,
+        summary="Listar experiências profissionais do estudante autenticado",
+        description=(
+            "Requer cookie de sessão válido e lista somente experiências ativas "
+            "do estudante autenticado, sem corpo, parâmetros ou paginação. "
+            "Preserva a ordem do domínio: início decrescente; no empate de "
+            "início, término nulo primeiro, depois término decrescente e ID. "
+            "data_fim nulo significa experiência em andamento. Coleção vazia "
+            "retorna 200 com experiencias vazia."
+        ),
+        responses={
+            200: {"description": "Coleção própria ordenada, inclusive vazia."},
+            401: {"description": "Sessão ausente ou inválida."},
+            503: {"description": "Listagem indisponível."},
+        },
+    )
+    async def listar(request: Request) -> ListagemExperienciasProfissionaisResposta:
+        """Apresenta a coleção ativa do dono obtido exclusivamente da sessão.
+
+        Reutiliza a resolução de identidade existente, monta a entrada interna
+        e projeta a sequência recebida por _resposta sem reordenar para expor
+        somente os campos públicos e impedir escolha do dono pelo cliente.
+        """
+        if listar_experiencias is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Listagem indisponível.",
+            )
+        usuario_id = _usuario_autenticado(request)
+        experiencias = await listar_experiencias.executar(
+            ListarExperienciasProfissionaisEntrada(usuario_id=UsuarioId(usuario_id))
+        )
+        return ListagemExperienciasProfissionaisResposta(
+            experiencias=[_resposta(experiencia) for experiencia in experiencias]
+        )
 
     @router.post(
         "/experiencias-profissionais",
         response_model=ExperienciaProfissionalResposta,
         status_code=status.HTTP_201_CREATED,
+        # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+        responses={422: {"model": ErroGravacaoExperienciaResposta,
+                         "description": "Dados inválidos; mensagem sem refletir o conteúdo recebido."}},
     )
     async def cadastrar(
         requisicao: CadastroExperienciaProfissionalRequisicao,
@@ -203,15 +322,20 @@ def criar_router(
                 periodo=Periodo(requisicao.data_inicio, requisicao.data_fim),
             )
             experiencia = await cadastrar_experiencia.executar(entrada)
-        except RegraDeDominioViolada as erro:
+        except RegraDeDominioViolada:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(erro)
-            ) from erro
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="A experiência informada viola as regras de cadastro.",
+            ) from None
         return _resposta(experiencia)
 
     @router.put(
         "/experiencias-profissionais/{experiencia_id}",
         response_model=ExperienciaProfissionalResposta,
+        # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+        responses={422: {"model": ErroGravacaoExperienciaResposta,
+                         "description": "Dados inválidos; mensagem sem refletir o conteúdo recebido."}},
     )
     async def editar(
         experiencia_id: UUID,
@@ -247,11 +371,12 @@ def criar_router(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Experiência profissional não encontrada.",
             ) from erro
-        except RegraDeDominioViolada as erro:
+        # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+        except RegraDeDominioViolada:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="A experiência informada viola as regras de edição.",
-            ) from erro
+            ) from None
         return _resposta(experiencia)
 
     @router.delete(

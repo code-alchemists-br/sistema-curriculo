@@ -6,6 +6,8 @@ orquestração permaneça testável com doubles e para que adapters futuros poss
 depender do núcleo da aplicação.
 """
 
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
@@ -131,6 +133,18 @@ class RepositorioFormacaoAcademica(Protocol):
     editem formações sem acoplar a Application à infraestrutura.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> Sequence[FormacaoAcademica]:
+        """Lista somente as formações ativas pertencentes ao usuário informado.
+
+        A implementação restringe a consulta ao proprietário e ignora todas as
+        formações excluídas, sem garantir ordem de apresentação. A porta existe
+        para permitir a leitura da coleção própria, deixando sua ordenação ao
+        domínio e mantendo a Application independente da persistência.
+        """
+
     async def salvar(self, formacao: FormacaoAcademica) -> None:
         """Solicita a persistência assíncrona de uma formação acadêmica válida.
 
@@ -191,20 +205,22 @@ class RepositorioFormacaoAcademica(Protocol):
 
 
 # Proveniência: decision-analysis prompts/backend/20260920-202606-edicao-exclusao-perfil-estudante-v001.md#v001
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
 class Relogio(Protocol):
     """Define a obtenção substituível do instante corrente para casos de uso.
 
-    A porta entrega um ``datetime`` sem escolher relógio do sistema ou fuso na
-    Application e pode ser substituída por stub. Ela existe para tornar a data
-    de exclusão determinística em testes e externa ao domínio.
+    A porta entrega um datetime com fuso, substituível por stub. A Application
+    converte o instante ao dia civil necessário para gravações; exclusões usam
+    o próprio instante. Ela existe para manter tempo externo ao domínio e
+    tornar validação temporal e exclusão determinísticas em testes.
     """
 
     def agora(self) -> datetime:
-        """Obtém o instante controlado que será aplicado à exclusão lógica.
+        """Obtém instante com fuso para validar gravações ou registrar exclusão.
 
         Implementações consultam sua fonte de tempo e retornam o valor sem
-        alterar agregados. O método existe para separar a passagem do tempo da
-        transição pura executada por ``Usuario``.
+        alterar agregados. O método existe para separar a passagem do tempo das
+        políticas puras de domínio e das transições de exclusão lógica.
         """
 
 
@@ -271,6 +287,18 @@ class RepositorioExperienciaProfissional(Protocol):
     sem conhecer banco ou ORM. Ela existe para que os casos de uso cadastrem,
     editem e excluam experiências independentes da tecnologia de persistência.
     """
+
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> Sequence[ExperienciaProfissional]:
+        """Lista somente experiências ativas pertencentes ao usuário informado.
+
+        A implementação restringe a consulta ao dono e ignora experiências
+        excluídas, sem garantir ordem de apresentação. A porta existe para
+        permitir a leitura da coleção própria mantendo a persistência externa
+        e a ordenação sob responsabilidade do domínio.
+        """
 
     # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
     async def salvar(self, experiencia: ExperienciaProfissional) -> None:
@@ -598,11 +626,13 @@ class GeradorCertificacaoId(Protocol):
 
 # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
 class RepositorioProjetoAcademico(Protocol):
-    """Define a persistência necessária ao cadastro de um projeto acadêmico.
+    """Define consulta e persistência de projetos próprios por IDs tipados.
 
     A porta recebe a entidade já validada e delega o armazenamento a uma
     implementação externa assíncrona, sem conhecer banco ou ORM. Ela existe
-    para manter o caso de uso independente da tecnologia de persistência.
+    para manter os casos de uso independentes da tecnologia de persistência.
+    Leituras ativas e mutações confundem ausente, alheio e excluído; somente
+    a leitura incluindo excluídos distingue o tombstone próprio para repetição.
     """
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
@@ -612,6 +642,45 @@ class RepositorioProjetoAcademico(Protocol):
         A implementação concreta persiste a entidade depois da criação pelo
         caso de uso, preservando o contrato assíncrono. O método existe para
         registrar o projeto sem acoplar a Application ao armazenamento.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def obter_por_id_e_usuario(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId
+    ) -> ProjetoAcademico | None:
+        """Obtém somente projeto próprio ativo por ID e proprietário.
+
+        Filtra ambos os IDs e ausência de exclusão, retornando None igualmente
+        para ausente, alheio ou excluído, para não revelar dados de terceiros.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def obter_por_id_e_usuario_incluindo_excluidas(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId
+    ) -> ProjetoAcademico | None:
+        """Obtém projeto próprio inclusive excluído para DELETE idempotente.
+
+        Filtra ID e proprietário, retornando None para ausente ou alheio,
+        para distinguir repetição própria sem revelar registros de outro dono.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def atualizar(self, projeto: ProjetoAcademico) -> bool:
+        """Atualiza somente projeto próprio ainda ativo e informa o resultado.
+
+        Condiciona a escrita ao ID, dono e ausência de exclusão; retorna False
+        para ausente, alheio ou excluído, para não ressuscitar item concorrente.
+        """
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    async def marcar_excluida(
+        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId, deleted_at: datetime
+    ) -> bool:
+        """Marca somente projeto próprio ativo, sem apagar seleções de currículo.
+
+        Condiciona a escrita aos IDs e marcador ausente, preserva o primeiro
+        instante e retorna False para ausente, alheio ou excluído, para permitir
+        releitura idempotente após disputa concorrente sem purga física.
         """
 
 

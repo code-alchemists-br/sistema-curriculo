@@ -1,6 +1,7 @@
 import {
   TelaValidacaoCurriculo,
   type CurriculoParaValidacao,
+  type IdSecaoCurriculo,
 } from "../../../features/validate-curriculum";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaValidacaoCurriculo.css";
@@ -10,8 +11,11 @@ export interface PaginaValidacaoCurriculoProps {
   dados?: CurriculoParaValidacao;
   onVisualizarPreview?: () => void;
   onExportarPdf?: () => void;
+  onExportarDocx?: () => void;
   onConfirmarCurriculo?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
+  onCorrigirSecao?: (secaoId: IdSecaoCurriculo) => void;
 }
 
 const DADOS_VALIDACAO_PADRAO: CurriculoParaValidacao = {
@@ -47,8 +51,11 @@ export function PaginaValidacaoCurriculo({
   dados = DADOS_VALIDACAO_PADRAO,
   onVisualizarPreview,
   onExportarPdf,
+  onExportarDocx,
   onConfirmarCurriculo,
   onVoltar,
+  onVoltarInicio,
+  onCorrigirSecao,
 }: PaginaValidacaoCurriculoProps) {
   return (
     <LayoutCadastroCurriculo
@@ -56,6 +63,7 @@ export function PaginaValidacaoCurriculo({
       etapaAtual={9}
       totalEtapas={9}
       progressoEtapaAtual={100}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-pagina-validacao"
@@ -69,8 +77,10 @@ export function PaginaValidacaoCurriculo({
           dados={dados}
           onVisualizarPreview={onVisualizarPreview}
           onExportarPdf={onExportarPdf}
+          onExportarDocx={onExportarDocx}
           onConfirmarCurriculo={onConfirmarCurriculo}
           onVoltar={onVoltar}
+          onCorrigirSecao={onCorrigirSecao}
         />
       </section>
     </LayoutCadastroCurriculo>

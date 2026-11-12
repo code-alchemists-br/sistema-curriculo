@@ -56,6 +56,19 @@ export function FormularioCadastroProjetoAcademico({
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [semProjetos, setSemProjetos] = useState(false);
+  const [projetoRemovido, setProjetoRemovido] = useState<{
+    item: ValoresProjetoAcademico;
+    indice: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (projetoRemovido) {
+      const timer = setTimeout(() => {
+        setProjetoRemovido(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [projetoRemovido]);
 
   useEffect(() => {
     aoAlterarProjetos?.(projetos);
@@ -110,9 +123,19 @@ export function FormularioCadastroProjetoAcademico({
     setProjetos((atuais) => [...atuais, { ...valoresIniciais }]);
   }
 
-  /** Remove um projeto acadêmico pela sua posição na lista. */
+  /** Remove um projeto acadêmico pela sua posição na lista com suporte a desfazer. */
   function removerProjeto(indice: number): void {
     if (projetos.length <= 1) return;
+    const item = projetos[indice];
+    if (
+      item &&
+      (item.titulo.trim() || item.descricao.trim() || item.tecnologias.trim())
+    ) {
+      setProjetoRemovido({ item, indice });
+    } else {
+      setProjetoRemovido(null);
+    }
+
     setProjetos((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novoMapa: Record<number, ErrosProjetoAcademico> = {};
@@ -127,6 +150,17 @@ export function FormularioCadastroProjetoAcademico({
       return novoMapa;
     });
     setMensagem(null);
+  }
+
+  /** Restaura o último projeto acadêmico removido na mesma posição. */
+  function desfazerRemocaoProjeto(): void {
+    if (!projetoRemovido) return;
+    setProjetos((atuais) => {
+      const copia = [...atuais];
+      copia.splice(projetoRemovido.indice, 0, projetoRemovido.item);
+      return copia;
+    });
+    setProjetoRemovido(null);
   }
 
   /**
@@ -285,6 +319,26 @@ export function FormularioCadastroProjetoAcademico({
               </fieldset>
             );
           })}
+
+          {projetoRemovido && (
+            <div className="alerta-desfazer" role="status">
+              <span>
+                Projeto acadêmico{" "}
+                {projetoRemovido.item.titulo
+                  ? `"${projetoRemovido.item.titulo}"`
+                  : ""}{" "}
+                removido.
+              </span>
+              <button
+                aria-label="Desfazer remoção do projeto acadêmico"
+                className="btn-desfazer"
+                onClick={desfazerRemocaoProjeto}
+                type="button"
+              >
+                Desfazer
+              </button>
+            </div>
+          )}
 
           <button
             type="button"

@@ -15,6 +15,7 @@ export interface PaginaDadosPessoaisProps {
   cliente?: ClienteDadosPessoais;
   aoAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   valoresIniciais?: ValoresDadosPessoais;
   aoSalvar?: (dados: Student) => void;
   aoAlterarValores?: (valores: ValoresDadosPessoais) => void;
@@ -30,6 +31,7 @@ export function PaginaDadosPessoais({
   cliente,
   aoAvancar,
   onVoltar,
+  onVoltarInicio,
   valoresIniciais,
   aoSalvar,
   aoAlterarValores,
@@ -58,6 +60,7 @@ export function PaginaDadosPessoais({
       etapaAtual={1}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-dados-pessoais"

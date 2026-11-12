@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LIMITES_EXPERIENCIA,
   criarExperienciaVazia,
+  obterDataAtualIso,
   ordenarPorDataDecrescente,
+  restringirAno4Digitos,
   validarExperiencia,
   validarListaExperiencias,
   type Experiencia,
@@ -62,6 +65,82 @@ describe("validarExperiencia", () => {
     });
     expect(erros.fim).toBe(
       "A data de término deve ser posterior à data de início.",
+    );
+  });
+
+  it("reporta data de início posterior à data atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2025-02-01",
+        fim: "",
+        empregoAtual: true,
+      },
+      dataLimite,
+    );
+    expect(erros.inicio).toBe(
+      "A data de início não pode ser posterior à data atual.",
+    );
+  });
+
+  it("reporta data de término posterior à data atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2024-01-01",
+        fim: "2025-02-01",
+        empregoAtual: false,
+      },
+      dataLimite,
+    );
+    expect(erros.fim).toBe(
+      "A data de término não pode ser posterior à data atual.",
+    );
+  });
+
+  it("ignora data de término posterior à data atual se for emprego atual", () => {
+    const dataLimite = "2025-01-01";
+    const erros = validarExperiencia(
+      {
+        ...experienciaValida,
+        inicio: "2024-01-01",
+        fim: "2025-02-01",
+        empregoAtual: true,
+      },
+      dataLimite,
+    );
+    expect(erros.fim).toBeUndefined();
+  });
+
+  it("reporta empresa excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      empresa: "A".repeat(LIMITES_EXPERIENCIA.empresaMax + 1),
+    });
+    expect(erros.empresa).toBe(
+      `O nome da empresa deve ter no máximo ${LIMITES_EXPERIENCIA.empresaMax} caracteres.`,
+    );
+  });
+
+  it("reporta cargo excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      cargo: "B".repeat(LIMITES_EXPERIENCIA.cargoMax + 1),
+    });
+    expect(erros.cargo).toBe(
+      `O cargo deve ter no máximo ${LIMITES_EXPERIENCIA.cargoMax} caracteres.`,
+    );
+  });
+
+  it("reporta descrição excedendo limite máximo de caracteres", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      descricao: "C".repeat(LIMITES_EXPERIENCIA.descricaoMax + 1),
+    });
+    expect(erros.descricao).toBe(
+      `A descrição deve ter no máximo ${LIMITES_EXPERIENCIA.descricaoMax} caracteres.`,
     );
   });
 
@@ -131,5 +210,39 @@ describe("criarExperienciaVazia", () => {
     expect(exp.fim).toBe("");
     expect(exp.empregoAtual).toBe(false);
     expect(exp.descricao).toBe("");
+  });
+});
+
+describe("restringirAno4Digitos", () => {
+  it("trunca anos com mais de 4 dígitos para exatamente 4 dígitos", () => {
+    expect(restringirAno4Digitos("20261-05-10")).toBe("2026-05-10");
+    expect(restringirAno4Digitos("199999-12")).toBe("1999-12");
+  });
+
+  it("preserva datas com ano de 4 dígitos", () => {
+    expect(restringirAno4Digitos("2024-05-10")).toBe("2024-05-10");
+    expect(restringirAno4Digitos("2023-01")).toBe("2023-01");
+  });
+
+  it("lida com string vazia sem erros", () => {
+    expect(restringirAno4Digitos("")).toBe("");
+  });
+});
+
+describe("validarExperiencia — restrição de 4 dígitos no ano", () => {
+  it("rejeita ano de início com mais de 4 dígitos", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      inicio: "20261-01",
+    });
+    expect(erros.inicio).toBe("O ano de início deve ter no máximo 4 dígitos.");
+  });
+
+  it("rejeita ano de término com mais de 4 dígitos", () => {
+    const erros = validarExperiencia({
+      ...experienciaValida,
+      fim: "20261-05",
+    });
+    expect(erros.fim).toBe("O ano de término deve ter no máximo 4 dígitos.");
   });
 });

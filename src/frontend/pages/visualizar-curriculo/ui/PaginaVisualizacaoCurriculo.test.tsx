@@ -3,7 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PreviaCurriculo } from "../../../entities/curriculo";
+import { exportarElementoParaPdf } from "../model/exportar-pdf-cliente";
 import { PaginaVisualizacaoCurriculo } from "./PaginaVisualizacaoCurriculo";
+
+vi.mock("../model/exportar-pdf-cliente", () => ({
+  exportarElementoParaPdf: vi.fn().mockResolvedValue(undefined),
+}));
 
 afterEach(cleanup);
 
@@ -57,5 +62,52 @@ describe("PaginaVisualizacaoCurriculo", () => {
     await usuario.click(screen.getByRole("button", { name: "Alterar modelo" }));
 
     expect(aoAlterarModelo).toHaveBeenCalledOnce();
+  });
+
+  it("permite retornar para validação, início e disparar exportação quando as ações são fornecidas", async () => {
+    const usuario = userEvent.setup();
+    const onVoltar = vi.fn();
+    const onVoltarInicio = vi.fn();
+    const onExportarPdf = vi.fn();
+
+    render(
+      <PaginaVisualizacaoCurriculo
+        modelo="classico"
+        onExportarPdf={onExportarPdf}
+        onVoltar={onVoltar}
+        onVoltarInicio={onVoltarInicio}
+        previa={previa}
+      />,
+    );
+
+    await usuario.click(
+      screen.getByRole("button", { name: "← Voltar para validação" }),
+    );
+    expect(onVoltar).toHaveBeenCalledOnce();
+
+    await usuario.click(screen.getByRole("button", { name: "Início" }));
+    expect(onVoltarInicio).toHaveBeenCalledOnce();
+
+    await usuario.click(screen.getByRole("button", { name: "Baixar PDF" }));
+    expect(onExportarPdf).toHaveBeenCalledOnce();
+    expect(
+      await screen.findByText(
+        "Currículo baixado com sucesso em seu dispositivo!",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("exibe mensagem de erro acessível quando a exportação falha", async () => {
+    vi.mocked(exportarElementoParaPdf).mockRejectedValueOnce(
+      new Error("Falha simulada de exportação"),
+    );
+    const usuario = userEvent.setup();
+
+    render(<PaginaVisualizacaoCurriculo modelo="classico" previa={previa} />);
+
+    await usuario.click(screen.getByRole("button", { name: "Baixar PDF" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Não foi possível gerar o arquivo PDF/i,
+    );
   });
 });

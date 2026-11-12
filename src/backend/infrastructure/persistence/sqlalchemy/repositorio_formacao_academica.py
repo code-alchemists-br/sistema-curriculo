@@ -43,6 +43,23 @@ class RepositorioFormacaoAcademicaSqlAlchemy(RepositorioFormacaoAcademica):
         """
         self._session = session
 
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> tuple[FormacaoAcademica, ...]:
+        """Lê as formações ativas do dono sem definir ordem de apresentação.
+
+        Filtra proprietário e ausência de exclusão na consulta e converte os
+        registros em entidades, sem escrita ou commit, para atender a porta de
+        listagem mantendo a ordenação sob responsabilidade da Application.
+        """
+        consulta = select(FormacaoAcademicaRegistro).where(
+            FormacaoAcademicaRegistro.usuario_id == usuario_id.valor,
+            FormacaoAcademicaRegistro.deleted_at.is_(None),
+        )
+        registros = await self._session.scalars(consulta)
+        return tuple(para_formacao_academica(registro) for registro in registros)
+
     async def salvar(self, formacao: FormacaoAcademica) -> None:
         """Adiciona a formação convertida e aguarda o envio das alterações.
 

@@ -276,6 +276,8 @@ describe("FormularioFormacaoAcademica", () => {
       screen.getByRole("group", { name: "Formação acadêmica 2" }),
     ).toBeInTheDocument();
 
+    await usuario.type(screen.getAllByLabelText("Instituição")[1], "USP");
+
     await usuario.click(
       screen.getByRole("button", { name: "Remover Formação acadêmica 2" }),
     );
@@ -283,6 +285,12 @@ describe("FormularioFormacaoAcademica", () => {
     expect(
       screen.queryByRole("group", { name: "Formação acadêmica 2" }),
     ).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    expect(
+      screen.getByRole("group", { name: "Formação acadêmica 2" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Instituição")[1]).toHaveValue("USP");
   });
 
   it("envia todas as formações cadastradas chamando o cliente para cada item", async () => {
@@ -385,5 +393,30 @@ describe("FormularioFormacaoAcademica", () => {
         curriculoLattes: "http://lattes.cnpq.br/9876543210987654",
       }),
     );
+  });
+
+  it("aplica limite de 100 caracteres em instituição e curso", () => {
+    render(<FormularioFormacaoAcademica cliente={{ cadastrar: vi.fn() }} />);
+
+    expect(screen.getByLabelText("Instituição")).toHaveAttribute(
+      "maxLength",
+      "100",
+    );
+    expect(screen.getByLabelText("Curso")).toHaveAttribute("maxLength", "100");
+  });
+
+  it("define atributos min e max coerentes nos campos de data para prevenir erros", async () => {
+    const usuario = userEvent.setup();
+    render(<FormularioFormacaoAcademica cliente={{ cadastrar: vi.fn() }} />);
+
+    const campoInicio = screen.getByLabelText("Data de início");
+    const campoFim = screen.getByLabelText(
+      "Data final ou previsão de conclusão",
+    );
+
+    expect(campoInicio).toHaveAttribute("max");
+
+    await usuario.type(campoInicio, "2023-01-15");
+    expect(campoFim).toHaveAttribute("min", "2023-01-15");
   });
 });

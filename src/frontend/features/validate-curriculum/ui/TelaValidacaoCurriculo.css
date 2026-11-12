@@ -99,6 +99,39 @@
   color: #f3f3f3;
 }
 
+.tela-validacao-curriculo__secao-status-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tela-validacao-curriculo__btn-corrigir {
+  background: none;
+  background-color: transparent;
+  border: none;
+  color: #ff8533;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  text-decoration: underline;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.tela-validacao-curriculo__btn-corrigir:hover {
+  color: #ffa366;
+  transform: translateX(2px);
+}
+
+.tela-validacao-curriculo__btn-corrigir:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
 .status-badge {
   font-family: "Poppins", sans-serif;
   font-size: 0.8rem;
@@ -170,7 +203,7 @@
 }
 
 .tela-validacao-curriculo__acoes .btn-secundario {
-  height: 48px;
+  height: 52px;
   background-color: #262626;
   color: #f3f3f3;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -193,8 +226,205 @@
   cursor: not-allowed;
 }
 
+/* Estrutura visual aprimorada de ações da tela de validação */
+.tela-validacao-curriculo__acoes-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 2rem;
+  box-sizing: border-box;
+}
+
+/* Bloco de botões de exportação direta */
+.tela-validacao-curriculo__exportacao-botoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.tela-validacao-curriculo__btn-exportar {
+  min-height: 48px;
+  padding: 0.65rem 1.25rem;
+  background-color: #171717;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.925rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.tela-validacao-curriculo__btn-exportar:hover:not(:disabled) {
+  background-color: #222222;
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.tela-validacao-curriculo__btn-exportar:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__btn-exportar:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
+.tela-validacao-curriculo__btn-exportar:disabled {
+  background-color: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.tela-validacao-curriculo__icone-exportar {
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.tela-validacao-curriculo__btn-exportar:hover:not(:disabled)
+  .tela-validacao-curriculo__icone-exportar {
+  opacity: 1;
+}
+
+.tela-validacao-curriculo__btn-exportar:disabled
+  .tela-validacao-curriculo__icone-exportar {
+  opacity: 0.3;
+}
+
+/* Barra de navegação principal (padrão consistente com as demais etapas) */
+.tela-validacao-curriculo__barra-navegacao {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0;
+  box-sizing: border-box;
+}
+
+.tela-validacao-curriculo__barra-navegacao .btn-voltar {
+  flex: 0 0 auto;
+  min-width: 130px;
+  height: 52px;
+  padding: 0 1.75rem;
+  background-color: #171717;
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.tela-validacao-curriculo__barra-navegacao .btn-voltar:hover:not(:disabled) {
+  background-color: #242424;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.tela-validacao-curriculo__barra-navegacao .btn-voltar:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__barra-navegacao .btn-voltar:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
+.tela-validacao-curriculo__barra-navegacao
+  .tela-validacao-curriculo__btn-proximo {
+  flex: 1;
+  height: 52px;
+  padding: 0 2rem;
+  background-color: #ffffff;
+  color: #050505;
+  border: none;
+  border-radius: 10px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.1s ease;
+  box-sizing: border-box;
+}
+
+.tela-validacao-curriculo__barra-navegacao
+  .tela-validacao-curriculo__btn-proximo:hover:not(:disabled) {
+  background-color: #f2f2f2;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.15);
+}
+
+.tela-validacao-curriculo__barra-navegacao
+  .tela-validacao-curriculo__btn-proximo:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.tela-validacao-curriculo__barra-navegacao
+  .tela-validacao-curriculo__btn-proximo:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
+.tela-validacao-curriculo__barra-navegacao
+  .tela-validacao-curriculo__btn-proximo:disabled {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 @media (max-width: 40rem) {
   .tela-validacao-curriculo__acoes-secundarias {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 36rem) {
+  .tela-validacao-curriculo__exportacao-botoes {
+    grid-template-columns: 1fr;
+  }
+
+  .tela-validacao-curriculo__barra-navegacao {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+
+  .tela-validacao-curriculo__barra-navegacao .btn-voltar,
+  .tela-validacao-curriculo__barra-navegacao
+    .tela-validacao-curriculo__btn-proximo {
+    width: 100%;
   }
 }

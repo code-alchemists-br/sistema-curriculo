@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
+
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from datetime import date, datetime
 from enum import Enum
 from types import MappingProxyType
 from unicodedata import category
@@ -46,6 +48,12 @@ CARGA_HORARIA_MAXIMA_CURSO = 10000
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 TAMANHO_MINIMO_TEXTO_FORMACAO = 1
 TAMANHO_MAXIMO_TEXTO_FORMACAO = 200
+
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+TAMANHO_MINIMO_TEXTO_EXPERIENCIA = 1
+TAMANHO_MAXIMO_EMPRESA_EXPERIENCIA = 200
+TAMANHO_MAXIMO_CARGO_EXPERIENCIA = 200
+TAMANHO_MAXIMO_DESCRICAO_EXPERIENCIA = 5000
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
 TAMANHO_MINIMO_TEXTO_PROJETO = 1
@@ -278,6 +286,36 @@ def ordenar_formacoes(
     return tuple(sorted(formacoes, key=_chave_ordenacao_formacao))
 
 
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+def validar_gravacao_experiencia(
+    empresa: str, cargo: str, descricao: str, periodo: Periodo, hoje: date
+) -> tuple[str, str, str]:
+    """Valida a gravação e devolve os três textos com espaços periféricos removidos.
+
+    Aplica strip e len com os limites específicos e compara ambas as datas com
+    hoje explícito, preservando espaços internos e linhas. A política pura é
+    compartilhada por criação e edição para impedir novas gravações inválidas
+    sem consultar relógio ou restringir a reconstrução de registros legados.
+    """
+    normalizados: list[str] = []
+    for campo, valor, maximo in (
+        ("empresa", empresa, TAMANHO_MAXIMO_EMPRESA_EXPERIENCIA),
+        ("cargo", cargo, TAMANHO_MAXIMO_CARGO_EXPERIENCIA),
+        ("descrição", descricao, TAMANHO_MAXIMO_DESCRICAO_EXPERIENCIA),
+    ):
+        if not isinstance(valor, str):
+            raise RegraDeDominioViolada(f"O campo {campo} deve ser texto.")
+        normalizado = valor.strip()
+        if not TAMANHO_MINIMO_TEXTO_EXPERIENCIA <= len(normalizado) <= maximo:
+            raise RegraDeDominioViolada(
+                f"O campo {campo} deve ter entre 1 e {maximo} caracteres."
+            )
+        normalizados.append(normalizado)
+    if periodo.inicio > hoje or (periodo.fim is not None and periodo.fim > hoje):
+        raise RegraDeDominioViolada("Experiências profissionais não admitem datas futuras.")
+    return normalizados[0], normalizados[1], normalizados[2]
+
+
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
 @dataclass(frozen=True, slots=True)
 class ExperienciaProfissional:
@@ -285,8 +323,9 @@ class ExperienciaProfissional:
 
     A entidade mantém identidade, proprietário, descrição profissional, um
     intervalo cronologicamente válido e o instante opcional de exclusão lógica.
-    Ela existe para preservar a experiência como item independente que
-    currículos distintos podem referenciar, sem purga física ao ser removida.
+    A construção estrutural preserva legados; criar_para_gravacao e editar
+    validam novas gravações com hoje explícito. Ela existe para manter o item
+    reutilizável entre currículos sem purga ou invalidação retroativa na leitura.
     """
 
     id: ExperienciaProfissionalId
@@ -316,22 +355,52 @@ class ExperienciaProfissional:
                     f"A experiência profissional exige {campo} preenchido."
                 )
 
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+    @classmethod
+    def criar_para_gravacao(
+        cls,
+        id: ExperienciaProfissionalId,
+        usuario_id: UsuarioId,
+        empresa: str,
+        cargo: str,
+        descricao: str,
+        periodo: Periodo,
+        hoje: date,
+    ) -> ExperienciaProfissional:
+        """Cria uma experiência para gravação usando a política pura compartilhada.
+
+        Normaliza e valida textos e datas contra hoje antes de construir a
+        entidade para impedir novos estados inválidos sem acoplar a construção
+        estrutural de legados à passagem do tempo ou aos novos limites.
+        """
+        empresa, cargo, descricao = validar_gravacao_experiencia(
+            empresa, cargo, descricao, periodo, hoje
+        )
+        return cls(
+            id=id, usuario_id=usuario_id, empresa=empresa, cargo=cargo,
+            descricao=descricao, periodo=periodo,
+        )
+
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
     def editar(
         self,
         empresa: str,
         cargo: str,
         descricao: str,
         periodo: Periodo,
+        *,
+        hoje: date,
     ) -> ExperienciaProfissional:
         """Devolve a experiência com o conjunto completo de dados editado.
 
         O método constrói uma nova entidade com a mesma identidade, o mesmo
-        proprietário e o mesmo estado de exclusão, reaplicando por
-        ``__post_init__`` a exigência de textos preenchidos; a cronologia já é
-        garantida pelo ``Periodo``. Ele existe para permitir alterações válidas
-        sem mutar a entidade imutável, sem trocar seu dono e sem duplicar as
-        regras de construção.
+        proprietário e estado de exclusão após aplicar a política compartilhada
+        de gravação com hoje explícito. Ele existe para permitir correção de
+        legados e alterações válidas sem mutação parcial ou regras duplicadas.
         """
+        empresa, cargo, descricao = validar_gravacao_experiencia(
+            empresa, cargo, descricao, periodo, hoje
+        )
         return ExperienciaProfissional(
             id=self.id,
             usuario_id=self.usuario_id,
@@ -415,7 +484,8 @@ class ProjetoAcademico:
     A entidade agrupa identidade, proprietário e três textos livres, normaliza
     esses textos e limita seus tamanhos sem impor vocabulário às tecnologias.
     Ela existe para permitir que projetos válidos sejam reutilizados em
-    diferentes versões de currículo.
+    diferentes versões de currículo, com edição imutável e exclusão lógica que
+    preservam identidade, proprietário e referências já selecionadas.
     """
 
     id: ProjetoAcademicoId
@@ -423,6 +493,8 @@ class ProjetoAcademico:
     titulo: str
     descricao: str
     tecnologias: str
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    deleted_at: datetime | None = None
 
     # Proveniência: decision-analysis prompts/backend/20260921-235140-cadastro-projetos-academicos-v001.md#v001
     # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
@@ -451,6 +523,45 @@ class ProjetoAcademico:
         ):
             normalizado = _normalizar_texto_projeto(valor, campo, tamanho_maximo)
             object.__setattr__(self, atributo, normalizado)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    def editar(self, titulo: str, descricao: str, tecnologias: str) -> ProjetoAcademico:
+        """Substitui os três textos por uma nova entidade validada.
+
+        Reconstrói o projeto pelo construtor, preservando ID, proprietário e
+        marcador de exclusão, para reaplicar invariantes sem mutar o original.
+        """
+        return replace(self, titulo=titulo, descricao=descricao, tecnologias=tecnologias)
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    @property
+    def excluido(self) -> bool:
+        """Informa a exclusão lógica pela presença de deleted_at.
+
+        Deriva o estado sem consultar relógio ou armazenamento para orientar
+        a transição idempotente e a leitura do projeto no perfil.
+        """
+        return self.deleted_at is not None
+
+    # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
+    def excluir(self, instante: datetime) -> ProjetoAcademico:
+        """Marca a exclusão lógica preservando o primeiro instante.
+
+        Retorna a própria entidade se já excluída; caso contrário exige
+        datetime com fuso e cria uma cópia, para remover o projeto do perfil
+        sem apagar suas referências em currículos.
+        """
+        if self.excluido:
+            return self
+        if (
+            not isinstance(instante, datetime)
+            or instante.tzinfo is None
+            or instante.utcoffset() is None
+        ):
+            raise RegraDeDominioViolada(
+                "O instante de exclusão deve informar um fuso horário."
+            )
+        return replace(self, deleted_at=instante)
 
 
 # Proveniência: decision-analysis prompts/backend/20261015-212205-expor-cadastro-projeto-academico-v001.md#v001
