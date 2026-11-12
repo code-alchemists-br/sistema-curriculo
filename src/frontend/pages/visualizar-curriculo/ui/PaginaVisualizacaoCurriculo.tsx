@@ -87,7 +87,12 @@ export function PaginaVisualizacaoCurriculo({
           )}
         </header>
 
-        <ModeloSelecionado previa={previa} />
+        <section
+          aria-label="Prévia do currículo no modelo selecionado"
+          className="pagina-visualizacao-curriculo__moldura-previa"
+        >
+          <ModeloSelecionado previa={previa} />
+        </section>
       </section>
     </main>
   );

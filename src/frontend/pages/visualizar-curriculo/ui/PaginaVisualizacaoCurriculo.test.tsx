@@ -40,6 +40,11 @@ describe("PaginaVisualizacaoCurriculo", () => {
     expect(
       screen.getByRole("heading", { name: "Ana Silva" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", {
+        name: "Prévia do currículo no modelo selecionado",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("permite retornar à seleção quando a ação é fornecida", async () => {
