@@ -46,9 +46,13 @@ from backend.application.versao_curriculo import (
     EditarVersaoCurriculo,
 )
 from backend.configuracao_logging import configurar_logging
+
+# Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
 from backend.infrastructure.identificadores.geradores import (
+    GeradorCertificacaoIdUuid4,
     GeradorCompetenciaIdUuid4,
     GeradorCurriculoIdUuid4,
+    GeradorCursoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
@@ -59,6 +63,14 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
     AutenticadorSessaoSqlAlchemy,
     CriadorSessaoSqlAlchemy,
+)
+
+# Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+from backend.infrastructure.persistence.sqlalchemy.cadastro_certificacao import (
+    CadastroCertificacaoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.cadastro_curso import (
+    CadastroCursoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
     CadastroEstudanteSqlAlchemy,
@@ -241,6 +253,40 @@ def _criar_sessoes_persistencia(
     return async_sessionmaker(engine, expire_on_commit=False)
 
 
+# Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+def _criar_cadastrar_curso(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> CadastroCursoSqlAlchemy | None:
+    """Compõe o cadastro de curso quando existe fábrica de persistência.
+
+    A função combina a fábrica existente com o gerador UUID, sem criar sessão,
+    e devolve None sem banco. Ela existe para conectar o POST real preservando
+    o tratamento de indisponibilidade já definido pela API.
+    """
+    return (
+        CadastroCursoSqlAlchemy(sessoes, GeradorCursoIdUuid4())
+        if sessoes is not None
+        else None
+    )
+
+
+# Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+def _criar_cadastrar_certificacao(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> CadastroCertificacaoSqlAlchemy | None:
+    """Compõe o cadastro de certificação quando existe persistência.
+
+    A função injeta a fábrica compartilhada e o gerador UUID no executor,
+    sem abrir sessão, ou mantém None sem banco. Ela existe para habilitar o
+    POST real sem modificar os contratos ou a configuração de autenticação.
+    """
+    return (
+        CadastroCertificacaoSqlAlchemy(sessoes, GeradorCertificacaoIdUuid4())
+        if sessoes is not None
+        else None
+    )
+
+
 def _criar_acessar_estudante(
     sessoes: async_sessionmaker[AsyncSession] | None,
     verificador_senha: VerificadorSenha,
@@ -290,6 +336,9 @@ _verificador_persistencia: VerificadorPersistencia | None = (
 )
 _cadastrar_estudante = _criar_cadastrar_estudante(_engine_persistencia)
 _sessoes_persistencia = _criar_sessoes_persistencia(_engine_persistencia)
+# Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+_cadastrar_curso = _criar_cadastrar_curso(_sessoes_persistencia)
+_cadastrar_certificacao = _criar_cadastrar_certificacao(_sessoes_persistencia)
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 _listar_associacoes_curriculo_vaga = (
     ListarAssociacoesCurriculoVagaSqlAlchemy(_sessoes_persistencia)
@@ -524,6 +573,9 @@ app = create_app(
         else None
     ),
     cadastrar_estudante=_cadastrar_estudante,
+    # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+    cadastrar_curso=_cadastrar_curso,
+    cadastrar_certificacao=_cadastrar_certificacao,
     acessar_estudante=_acessar_estudante,
     criador_sessao=_criador_sessao,
     derivador_senha=_derivador_senha,

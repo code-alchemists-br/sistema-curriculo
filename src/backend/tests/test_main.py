@@ -9,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.main import (
     _ciclo_vida_aplicacao,
     _configurar_cors,
+    # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+    _criar_cadastrar_certificacao,
+    _criar_cadastrar_curso,
     _criar_cadastrar_estudante,
     _criar_configuracao_cookie_sessao,
     _criar_engine_persistencia,
@@ -84,6 +87,54 @@ class ComposicaoAplicacaoTestCase(unittest.TestCase):
         criar_sessoes.assert_called_once_with(engine, expire_on_commit=False)
         criar_executor.assert_called_once_with(sessoes, gerador)
         self.assertIsNone(_criar_cadastrar_estudante(None))
+
+    # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+    def test_compoe_cursos_e_certificacoes_com_fabrica_existente(self) -> None:
+        """Conecta os dois cadastros à fábrica existente sem abrir sessões.
+
+        O teste substitui executores e geradores e confere a injeção em cada
+        construtor. Ele existe para habilitar os cadastros sem criar outra
+        engine ou compartilhar uma sessão na composição.
+        """
+        sessoes = Mock()
+        for compor, nome in (
+            (_criar_cadastrar_curso, "Curso"),
+            (_criar_cadastrar_certificacao, "Certificacao"),
+        ):
+            with self.subTest(recurso=nome):
+                with (
+                    patch(f"backend.main.Cadastro{nome}SqlAlchemy") as criar,
+                    patch(f"backend.main.Gerador{nome}IdUuid4") as gerar,
+                ):
+                    resultado = compor(sessoes)
+
+                self.assertIs(resultado, criar.return_value)
+                criar.assert_called_once_with(sessoes, gerar.return_value)
+                gerar.assert_called_once_with()
+        sessoes.assert_not_called()
+        sessoes.begin.assert_not_called()
+
+    # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
+    def test_mantem_cadastros_ausentes_sem_fabrica_de_persistencia(self) -> None:
+        """Preserva a ausência dos dois executores quando não há banco.
+
+        O teste injeta None e observa que nenhum adapter ou gerador é criado.
+        Ele existe para manter o caminho de indisponibilidade da API sem
+        fabricar persistência ou alterar a política de autenticação.
+        """
+        for compor, nome in (
+            (_criar_cadastrar_curso, "Curso"),
+            (_criar_cadastrar_certificacao, "Certificacao"),
+        ):
+            with self.subTest(recurso=nome):
+                with (
+                    patch(f"backend.main.Cadastro{nome}SqlAlchemy") as criar,
+                    patch(f"backend.main.Gerador{nome}IdUuid4") as gerar,
+                ):
+                    self.assertIsNone(compor(None))
+
+                criar.assert_not_called()
+                gerar.assert_not_called()
 
     def test_configura_cors_local_por_padrao_e_origens_explicitas_por_ambiente(
         self,
