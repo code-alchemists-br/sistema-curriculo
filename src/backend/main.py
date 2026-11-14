@@ -1,11 +1,11 @@
 """Compõe a aplicação ASGI, a readiness de persistência e o logging.
 
 O módulo cria uma engine assíncrona quando `DATABASE_URL` está configurada,
-compõe os executores persistidos, incluindo cadastro, leitura, edição e exclusão de
-formações acadêmicas, projetos acadêmicos e experiências profissionais, injeta a readiness e encerra
-a engine no shutdown. Sem
-essa variável, os fluxos persistidos ficam indisponíveis. Ele existe para
-concentrar a composição de infraestrutura fora das camadas internas.
+compõe os executores persistidos, incluindo perfil do estudante, cadastro, leitura,
+edição e exclusão de formações acadêmicas, projetos acadêmicos e experiências profissionais,
+injeta a readiness e encerra a engine no shutdown. Sem essa variável, os fluxos
+persistidos ficam indisponíveis. Ele existe para concentrar a composição de
+infraestrutura fora das camadas internas.
 """
 
 import os
@@ -25,13 +25,33 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.decisao_recomendacao import (
+    ConsultarDecisoesRecomendacao,
+    RegistrarDecisaoRecomendacao,
+)
+from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
+from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
+from backend.application.previa_versao_curriculo import GerarPreviaVersaoCurriculo
+from backend.application.revisao_versao_curriculo import RevisarVersaoCurriculo
 from backend.application.saude import VerificadorPersistencia
+from backend.application.selecao_itens_versao_curriculo import (
+    DesselecionarItemVersaoCurriculo,
+    SelecionarItemVersaoCurriculo,
+)
 from backend.application.sessoes import CriadorSessao
+from backend.application.versao_curriculo import (
+    AtualizarOrdemSecoesCurriculo,
+    CriarVersaoCurriculo,
+    EditarVersaoCurriculo,
+)
 from backend.configuracao_logging import configurar_logging
+
 # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
 from backend.infrastructure.identificadores.geradores import (
     GeradorCertificacaoIdUuid4,
+    GeradorCompetenciaIdUuid4,
+    GeradorCurriculoIdUuid4,
     GeradorCursoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
@@ -44,9 +64,7 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AutenticadorSessaoSqlAlchemy,
     CriadorSessaoSqlAlchemy,
 )
-from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
-    CadastroEstudanteSqlAlchemy,
-)
+
 # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
 from backend.infrastructure.persistence.sqlalchemy.cadastro_certificacao import (
     CadastroCertificacaoSqlAlchemy,
@@ -54,8 +72,22 @@ from backend.infrastructure.persistence.sqlalchemy.cadastro_certificacao import 
 from backend.infrastructure.persistence.sqlalchemy.cadastro_curso import (
     CadastroCursoSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.cadastro_estudante import (
+    CadastroEstudanteSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.cadastro_experiencia_profissional import (
     CadastroExperienciaProfissionalSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.consulta_item_perfil import (
+    ConsultaItemPerfilSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.consulta_proprietario_item import (
+    ConsultaProprietarioItemSqlAlchemy,
+)
+
+# Proveniência: docs/decisao-executor-transacional.md
+from backend.infrastructure.persistence.sqlalchemy.executor_transacional import (
+    criar_executor_transacional,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
@@ -66,6 +98,11 @@ from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_
 # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.listar_experiencias_profissionais import (
     ListarExperienciasProfissionaisSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.operacoes_competencia import (
+    CadastroCompetenciaSqlAlchemy,
+    ExclusaoCompetenciaSqlAlchemy,
+    ListarCompetenciasSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.operacoes_experiencia_profissional import (
     EdicaoExperienciaProfissionalSqlAlchemy,
@@ -79,6 +116,12 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_formacao_academica 
     ListarFormacoesAcademicasSqlAlchemy,
     RelogioUtc,
 )
+from backend.infrastructure.persistence.sqlalchemy.operacoes_perfil_estudante import (
+    AtualizarPerfilCompletoSqlAlchemy,
+    ConsultarPerfilSqlAlchemy,
+    EdicaoPerfilSqlAlchemy,
+    ExclusaoPerfilSqlAlchemy,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico import (
@@ -86,6 +129,15 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico i
     ConsultaProjetoAcademicoSqlAlchemy,
     EdicaoProjetoAcademicoSqlAlchemy,
     ExclusaoProjetoAcademicoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
+    RepositorioCurriculoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_decisao_recomendacao import (
+    RepositorioDecisaoRecomendacaoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
+    RepositorioUsuarioSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.verificador_persistencia import (
     VerificadorPersistenciaSqlalchemy,
@@ -293,6 +345,83 @@ _listar_associacoes_curriculo_vaga = (
     if _sessoes_persistencia is not None
     else None
 )
+# Proveniência: docs/decisao-executor-transacional.md
+# Versões do currículo (onde o modelo escolhido, `layout`, é gravado). Cada
+# executor abre uma transação por chamada; sem banco, ficam None e a rota
+# responde 503.
+_criar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: CriarVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao), GeradorCurriculoIdUuid4()
+    ),
+)
+_editar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: EditarVersaoCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_listar_versoes_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ListarVersoesCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_excluir_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ExcluirVersaoCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_atualizar_ordem_secoes_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: AtualizarOrdemSecoesCurriculo(RepositorioCurriculoSqlAlchemy(sessao)),
+)
+_selecionar_item_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: SelecionarItemVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        ConsultaProprietarioItemSqlAlchemy(sessao),
+    ),
+)
+_desselecionar_item_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: DesselecionarItemVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao)
+    ),
+)
+def _montar_previa_versao_curriculo(sessao: AsyncSession) -> GerarPreviaVersaoCurriculo:
+    """Monta a prévia da versão ligando repositórios e leitura de itens à sessão.
+
+    A função reúne o repositório de currículo, o de usuário e a leitura de itens
+    por tipo na mesma sessão. Ela existe para que prévia e revisão compartilhem a
+    montagem, já que a revisão reaproveita a prévia.
+    """
+    return GerarPreviaVersaoCurriculo(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        RepositorioUsuarioSqlAlchemy(sessao),
+        ConsultaItemPerfilSqlAlchemy(sessao),
+    )
+
+
+_gerar_previa_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia, _montar_previa_versao_curriculo
+)
+_revisar_versao_curriculo = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: RevisarVersaoCurriculo(
+        _montar_previa_versao_curriculo(sessao), RelogioUtc()
+    ),
+)
+_registrar_decisao_recomendacao = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: RegistrarDecisaoRecomendacao(
+        RevisarVersaoCurriculo(_montar_previa_versao_curriculo(sessao), RelogioUtc()),
+        RepositorioDecisaoRecomendacaoSqlAlchemy(sessao),
+        RelogioUtc(),
+    ),
+)
+_consultar_decisoes_recomendacao = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: ConsultarDecisoesRecomendacao(
+        RepositorioCurriculoSqlAlchemy(sessao),
+        RepositorioDecisaoRecomendacaoSqlAlchemy(sessao),
+    ),
+)
 _derivador_senha = DerivadorSenhaScrypt()
 _acessar_estudante = _criar_acessar_estudante(
     _sessoes_persistencia,
@@ -322,60 +451,126 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
 
 # Proveniência: decision-analysis prompts/backend/20260913-fundamentos-fastapi-v001.md#v001
 app = create_app(
+    criar_versao_curriculo=_criar_versao_curriculo,
+    editar_versao_curriculo=_editar_versao_curriculo,
+    listar_versoes_curriculo=_listar_versoes_curriculo,
+    excluir_versao_curriculo=_excluir_versao_curriculo,
+    atualizar_ordem_secoes_curriculo=_atualizar_ordem_secoes_curriculo,
+    selecionar_item_versao_curriculo=_selecionar_item_versao_curriculo,
+    desselecionar_item_versao_curriculo=_desselecionar_item_versao_curriculo,
+    gerar_previa_versao_curriculo=_gerar_previa_versao_curriculo,
+    revisar_versao_curriculo=_revisar_versao_curriculo,
+    registrar_decisao_recomendacao=_registrar_decisao_recomendacao,
+    consultar_decisoes_recomendacao=_consultar_decisoes_recomendacao,
+    atualizar_perfil_completo=(
+        AtualizarPerfilCompletoSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    consultar_perfil=(
+        ConsultarPerfilSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    editar_perfil=(
+        EdicaoPerfilSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    excluir_perfil=(
+        ExclusaoPerfilSqlAlchemy(_sessoes_persistencia, RelogioUtc())
+        if _sessoes_persistencia is not None
+        else None
+    ),
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     cadastrar_projeto_academico=(
-        CadastroProjetoAcademicoSqlAlchemy(_sessoes_persistencia, GeradorProjetoAcademicoIdUuid4())
-        if _sessoes_persistencia is not None else None
+        CadastroProjetoAcademicoSqlAlchemy(
+            _sessoes_persistencia, GeradorProjetoAcademicoIdUuid4()
+        )
+        if _sessoes_persistencia is not None
+        else None
     ),
     consultar_projeto_academico=(
         ConsultaProjetoAcademicoSqlAlchemy(_sessoes_persistencia)
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     editar_projeto_academico=(
         EdicaoProjetoAcademicoSqlAlchemy(_sessoes_persistencia)
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     excluir_projeto_academico=(
         ExclusaoProjetoAcademicoSqlAlchemy(_sessoes_persistencia, RelogioUtc())
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     editar_experiencia_profissional=(
         # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
         EdicaoExperienciaProfissionalSqlAlchemy(_sessoes_persistencia, RelogioUtc())
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     excluir_experiencia_profissional=(
         ExclusaoExperienciaProfissionalSqlAlchemy(_sessoes_persistencia, RelogioUtc())
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     cadastrar_experiencia_profissional=(
         CadastroExperienciaProfissionalSqlAlchemy(
             # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
-            _sessoes_persistencia, GeradorExperienciaProfissionalIdUuid4(), RelogioUtc()
-        ) if _sessoes_persistencia is not None else None
+            _sessoes_persistencia,
+            GeradorExperienciaProfissionalIdUuid4(),
+            RelogioUtc(),
+        )
+        if _sessoes_persistencia is not None
+        else None
     ),
     # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
     listar_experiencias_profissionais=(
         ListarExperienciasProfissionaisSqlAlchemy(_sessoes_persistencia)
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
     listar_formacoes_academicas=(
         ListarFormacoesAcademicasSqlAlchemy(_sessoes_persistencia)
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     cadastrar_formacao_academica=(
         CadastroFormacaoAcademicaSqlAlchemy(
             _sessoes_persistencia, GeradorFormacaoAcademicaIdUuid4()
-        ) if _sessoes_persistencia is not None else None
+        )
+        if _sessoes_persistencia is not None
+        else None
     ),
     editar_formacao_academica=(
         EdicaoFormacaoAcademicaSqlAlchemy(_sessoes_persistencia)
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
     ),
     excluir_formacao_academica=(
         ExclusaoFormacaoAcademicaSqlAlchemy(_sessoes_persistencia, RelogioUtc())
-        if _sessoes_persistencia is not None else None
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    cadastrar_competencia=(
+        CadastroCompetenciaSqlAlchemy(
+            _sessoes_persistencia, GeradorCompetenciaIdUuid4()
+        )
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    listar_competencias=(
+        ListarCompetenciasSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    excluir_competencia=(
+        ExclusaoCompetenciaSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
     ),
     cadastrar_estudante=_cadastrar_estudante,
     # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002

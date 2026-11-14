@@ -35,7 +35,11 @@ from backend.api.certificacao import (
 )
 
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
-from backend.api.competencia import CadastroCompetenciaExecutor
+from backend.api.competencia import (
+    CadastroCompetenciaExecutor,
+    ExclusaoCompetenciaExecutor,
+    ListagemCompetenciasExecutor,
+)
 from backend.api.competencia import criar_router as criar_router_competencia
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 
@@ -309,6 +313,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
     listar_experiencias_profissionais: ListagemExperienciasProfissionaisExecutor
     | None = None,
+    listar_competencias: ListagemCompetenciasExecutor | None = None,
+    excluir_competencia: ExclusaoCompetenciaExecutor | None = None,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     consultar_projeto_academico: ConsultaProjetoAcademicoExecutor | None = None,
     editar_projeto_academico: EdicaoProjetoAcademicoExecutor | None = None,
@@ -391,7 +397,12 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
     app.include_router(
-        criar_router_competencia(cadastrar_competencia), tags=[TAG_COMPETENCIAS]
+        criar_router_competencia(
+            cadastrar_competencia,
+            listar_competencias,
+            excluir_competencia,
+        ),
+        tags=[TAG_COMPETENCIAS],
     )
     # Proveniência: decision-analysis prompts/backend/20261015-094754-cadastro-idiomas-api-v001.md#v001
     app.include_router(criar_router_idioma(cadastrar_idioma), tags=[TAG_IDIOMAS])

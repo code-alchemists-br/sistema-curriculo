@@ -12,9 +12,9 @@ import asyncio
 import importlib
 import importlib.util
 import os
+import unittest
 from http.cookies import SimpleCookie
 from pathlib import Path
-import unittest
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
@@ -24,7 +24,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
-from backend.infrastructure.persistence.sqlalchemy.certificacao import CertificacaoRegistro
+from backend.infrastructure.persistence.sqlalchemy.certificacao import (
+    CertificacaoRegistro,
+)
 from backend.infrastructure.persistence.sqlalchemy.curso import CursoRegistro
 from backend.infrastructure.persistence.sqlalchemy.repositorio_certificacao import (
     RepositorioCertificacaoSqlAlchemy,
