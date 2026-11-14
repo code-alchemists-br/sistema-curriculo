@@ -47,8 +47,8 @@ from backend.application.versao_curriculo import (
 )
 from backend.configuracao_logging import configurar_logging
 from backend.infrastructure.identificadores.geradores import (
-    GeradorCurriculoIdUuid4,
     GeradorCompetenciaIdUuid4,
+    GeradorCurriculoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
