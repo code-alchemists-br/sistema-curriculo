@@ -248,3 +248,158 @@ class PostgreSqlNixIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(repetida.status, 409)
         self.assertEqual(acesso.status, 204)
         self.assertTrue(acesso.cabecalhos("set-cookie"))
+
+    async def test_main_versao_curriculo_modelo_selecao_previa_e_decisao_com_postgresql_real(
+        self,
+    ) -> None:
+        """Exercita escolha de modelo, seleção, prévia, revisão e decisão ponta a ponta.
+
+        Cria conta e sessão reais, uma formação e uma versão do currículo, troca o
+        modelo, seleciona e desseleciona o item, lê prévia e revisão, registra a
+        decisão e confere o banco por consulta independente, além de recusar outra
+        conta. Ele existe para impedir que as rotas de versão voltem a ficar sem
+        executor (503) ou a responder sucesso sem gravar, já que os demais testes
+        de currículo usam SQLite e dublês.
+        """
+        from uuid import UUID
+
+        from sqlalchemy import text
+
+        from backend.main import _engine_persistencia, app
+
+        dados_conta = {
+            "nome": "Bia Modelo",
+            "email": "bia.modelo@example.test",
+            "senha": "Senha-Integracao-123",
+        }
+        conta = await solicitar_asgi(app, "POST", "/estudantes", dados=dados_conta)
+        self.assertEqual(conta.status, 201)
+        usuario_id = conta.json()["id"]
+        acesso = await solicitar_asgi(
+            app, "POST", "/acessos",
+            dados={"email": dados_conta["email"], "senha": dados_conta["senha"]},
+        )
+        self.assertEqual(acesso.status, 204)
+        token = acesso.cookie_sessao().value
+
+        formacao = await solicitar_asgi(
+            app, "POST", "/formacoes-academicas", token=token,
+            dados={
+                "instituicao": "UFRJ", "curso": "Sistemas de Informação",
+                "nivel": "graduacao", "data_inicio": "2022-02-01",
+                "data_fim": None, "status": "em_andamento",
+            },
+        )
+        self.assertEqual(formacao.status, 201)
+        formacao_id = formacao.json()["id"]
+
+        base = f"/estudantes/{usuario_id}/curriculos"
+        criada = await solicitar_asgi(
+            app, "POST", base, token=token,
+            dados={"titulo_versao": "Versão TI", "layout": "moderno", "is_public": False},
+        )
+        self.assertEqual(criada.status, 201)
+        curriculo_id = criada.json()["id"]
+        self.assertEqual(criada.json()["layout"], "moderno")
+        caminho = f"{base}/{curriculo_id}"
+
+        editada = await solicitar_asgi(
+            app, "PUT", caminho, token=token,
+            dados={"titulo_versao": "Versão TI", "layout": "academico", "is_public": False},
+        )
+        self.assertEqual(editada.status, 200)
+        listada = await solicitar_asgi(app, "GET", base, token=token)
+        self.assertEqual(listada.status, 200)
+        self.assertEqual(
+            [(v["id"], v["layout"]) for v in listada.json()["versoes"]],
+            [(curriculo_id, "academico")],
+        )
+
+        item = {"tipo": "formacao_academica", "item_id": formacao_id}
+        selecionada = await solicitar_asgi(
+            app, "POST", f"{caminho}/itens", token=token, dados=item
+        )
+        self.assertEqual(selecionada.status, 201)
+        duplicada = await solicitar_asgi(
+            app, "POST", f"{caminho}/itens", token=token, dados=item
+        )
+        self.assertEqual(duplicada.status, 422)
+        inexistente = await solicitar_asgi(
+            app, "POST", f"{caminho}/itens", token=token,
+            dados={**item, "item_id": "00000000-0000-4000-8000-000000000999"},
+        )
+        self.assertEqual(inexistente.status, 404)
+        async with _engine_persistencia.connect() as conexao:
+            gravados = await conexao.scalar(
+                text("SELECT count(*) FROM curriculo_itens WHERE curriculo_id = :c"),
+                {"c": UUID(curriculo_id)},
+            )
+        self.assertEqual(gravados, 1)
+
+        ordem = [
+            "dados-pessoais", "formacao-academica", "experiencias-profissionais",
+            "projetos-academicos", "competencias", "idiomas",
+            "documentos-complementares",
+        ]
+        reordenada = await solicitar_asgi(
+            app, "PUT", f"{caminho}/ordem-secoes", token=token,
+            dados={"ordem_secoes": ordem},
+        )
+        self.assertEqual(reordenada.status, 204)
+
+        previa = await solicitar_asgi(app, "GET", f"{caminho}/previa", token=token)
+        self.assertEqual(previa.status, 200)
+        self.assertEqual(previa.json()["layout"], "academico")
+        self.assertEqual(
+            [f["id"] for f in previa.json()["formacoes"]], [formacao_id]
+        )
+
+        revisao = await solicitar_asgi(app, "GET", f"{caminho}/revisao", token=token)
+        self.assertEqual(revisao.status, 200)
+        self.assertFalse(revisao.json()["aprovado"])
+        codigos = {p["codigo"] for p in revisao.json()["pendencias"]}
+        self.assertIn("EXPERIENCIA_AUSENTE", codigos)
+
+        decidida = await solicitar_asgi(
+            app, "PUT", f"{caminho}/recomendacoes/PROJETO_AUSENTE", token=token,
+            dados={"decisao": "aceita"},
+        )
+        self.assertEqual(decidida.status, 200)
+        decisoes = await solicitar_asgi(
+            app, "GET", f"{caminho}/recomendacoes", token=token
+        )
+        self.assertEqual(decisoes.status, 200)
+        self.assertEqual(
+            [(d["codigo"], d["decisao"]) for d in decisoes.json()["decisoes"]],
+            [("PROJETO_AUSENTE", "aceita")],
+        )
+
+        outra_conta = {**dados_conta, "email": "outra.modelo@example.test"}
+        self.assertEqual(
+            (await solicitar_asgi(app, "POST", "/estudantes", dados=outra_conta)).status,
+            201,
+        )
+        outro_acesso = await solicitar_asgi(
+            app, "POST", "/acessos",
+            dados={"email": outra_conta["email"], "senha": outra_conta["senha"]},
+        )
+        outro_token = outro_acesso.cookie_sessao().value
+        alheia = await solicitar_asgi(app, "GET", base, token=outro_token)
+        self.assertEqual(alheia.status, 403)
+
+        desselecionada = await solicitar_asgi(
+            app, "DELETE", f"{caminho}/itens/formacao_academica/{formacao_id}",
+            token=token,
+        )
+        self.assertEqual(desselecionada.status, 204)
+        async with _engine_persistencia.connect() as conexao:
+            restantes = await conexao.scalar(
+                text("SELECT count(*) FROM curriculo_itens WHERE curriculo_id = :c"),
+                {"c": UUID(curriculo_id)},
+            )
+        self.assertEqual(restantes, 0)
+
+        excluida = await solicitar_asgi(app, "DELETE", caminho, token=token)
+        self.assertEqual(excluida.status, 204)
+        vazia = await solicitar_asgi(app, "GET", base, token=token)
+        self.assertEqual(vazia.json(), {"versoes": []})
