@@ -30,6 +30,7 @@ from backend.application.saude import VerificadorPersistencia
 from backend.application.sessoes import CriadorSessao
 from backend.configuracao_logging import configurar_logging
 from backend.infrastructure.identificadores.geradores import (
+    GeradorCompetenciaIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
@@ -56,6 +57,11 @@ from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_
 # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.listar_experiencias_profissionais import (
     ListarExperienciasProfissionaisSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.operacoes_competencia import (
+    CadastroCompetenciaSqlAlchemy,
+    ExclusaoCompetenciaSqlAlchemy,
+    ListarCompetenciasSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.operacoes_experiencia_profissional import (
     EdicaoExperienciaProfissionalSqlAlchemy,
@@ -371,6 +377,23 @@ app = create_app(
     ),
     excluir_formacao_academica=(
         ExclusaoFormacaoAcademicaSqlAlchemy(_sessoes_persistencia, RelogioUtc())
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    cadastrar_competencia=(
+        CadastroCompetenciaSqlAlchemy(
+            _sessoes_persistencia, GeradorCompetenciaIdUuid4()
+        )
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    listar_competencias=(
+        ListarCompetenciasSqlAlchemy(_sessoes_persistencia)
+        if _sessoes_persistencia is not None
+        else None
+    ),
+    excluir_competencia=(
+        ExclusaoCompetenciaSqlAlchemy(_sessoes_persistencia)
         if _sessoes_persistencia is not None
         else None
     ),

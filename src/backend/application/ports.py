@@ -407,6 +407,37 @@ class RepositorioCompetencia(Protocol):
         que futuramente reforçará a mesma chave por índice único.
         """
 
+    async def listar_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> tuple[Competencia, ...]:
+        """Recupera todas as competências cadastradas pelo estudante informado.
+
+        A implementação consulta as competências filtrando pelo proprietário e
+        converte os registros para entidades de domínio imutáveis. O método
+        existe para disponibilizar a listagem de competências à Application sem
+        acoplar as camadas internas ao ORM.
+        """
+
+    async def obter_por_id_e_usuario(
+        self, competencia_id: CompetenciaId, usuario_id: UsuarioId
+    ) -> Competencia | None:
+        """Obtém a competência por identidade garantindo que pertence ao usuário.
+
+        A implementação restringe a busca pelos dois identificadores de forma
+        atômica e devolve None quando inexistente ou de outro estudante. O
+        método existe para permitir validação segura de autoria e propriedade.
+        """
+
+    async def excluir(
+        self, competencia_id: CompetenciaId, usuario_id: UsuarioId
+    ) -> bool:
+        """Remove fisicamente a competência pertencente ao estudante informado.
+
+        A implementação deleta o registro condicionando ao identificador e ao
+        proprietário, retornando True quando houver remoção e False caso contrário.
+        O método existe para assegurar reversibilidade real sem apagar registros alheios.
+        """
+
 
 # Proveniência: decision-analysis prompts/backend/20261013-142942-cadastro-competencias-api-v002.md#v002
 class GeradorCompetenciaId(Protocol):
@@ -674,7 +705,10 @@ class RepositorioProjetoAcademico(Protocol):
 
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     async def marcar_excluida(
-        self, projeto_id: ProjetoAcademicoId, usuario_id: UsuarioId, deleted_at: datetime
+        self,
+        projeto_id: ProjetoAcademicoId,
+        usuario_id: UsuarioId,
+        deleted_at: datetime,
     ) -> bool:
         """Marca somente projeto próprio ativo, sem apagar seleções de currículo.
 
