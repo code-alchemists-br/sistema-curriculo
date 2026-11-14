@@ -403,6 +403,10 @@ class CenariosCadastroPostgreSql:
         self.assertEqual(len(await self.registros()), 1)
 
 
+@unittest.skipUnless(
+    os.environ.get("DATABASE_URL"),
+    "Requer o PostgreSQL efêmero do executor de integração.",
+)
 class CursosPostgreSqlTestCase(CenariosCadastroPostgreSql, unittest.IsolatedAsyncioTestCase):
     """Aplica os critérios ao POST de cursos e sua carga horária contratual.
 
@@ -469,6 +473,10 @@ class CursosPostgreSqlTestCase(CenariosCadastroPostgreSql, unittest.IsolatedAsyn
         self.assertEqual(linha["instituicao_normalizada"], "instituto a b")
 
 
+@unittest.skipUnless(
+    os.environ.get("DATABASE_URL"),
+    "Requer o PostgreSQL efêmero do executor de integração.",
+)
 class CertificacoesPostgreSqlTestCase(CenariosCadastroPostgreSql, unittest.IsolatedAsyncioTestCase):
     """Aplica os mesmos oráculos ao POST de certificações com emissor real.
 
