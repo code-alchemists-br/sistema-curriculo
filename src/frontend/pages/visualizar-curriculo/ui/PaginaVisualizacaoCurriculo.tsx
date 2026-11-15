@@ -81,7 +81,7 @@ export function PaginaVisualizacaoCurriculo({
   autoBaixar = false,
 }: PaginaVisualizacaoCurriculoProps) {
   const ModeloSelecionado = modelos[modelo] || ModeloClassico;
-  const folhaRef = useRef<HTMLDivElement | null>(null);
+  const folhaRef = useRef<HTMLElement | null>(null);
   const [baixando, setBaixando] = useState(false);
   const [sucessoDownload, setSucessoDownload] = useState(false);
   const [erroDownload, setErroDownload] = useState<string | null>(null);
@@ -209,27 +209,31 @@ export function PaginaVisualizacaoCurriculo({
           </div>
         </header>
 
-        {sucessoDownload && (
-          <div
-            role="status"
-            className="pagina-visualizacao-curriculo__feedback-sucesso"
-          >
-            Currículo baixado com sucesso em seu dispositivo!
-          </div>
-        )}
+        <section
+          aria-label="Prévia do currículo no modelo selecionado"
+          className="pagina-visualizacao-curriculo__moldura-previa"
+          ref={folhaRef}
+        >
+          {sucessoDownload && (
+            <div
+              role="status"
+              className="pagina-visualizacao-curriculo__feedback-sucesso"
+            >
+              Currículo baixado com sucesso em seu dispositivo!
+            </div>
+          )}
 
-        {erroDownload && (
-          <div
-            role="alert"
-            className="pagina-visualizacao-curriculo__feedback-erro"
-          >
-            {erroDownload}
-          </div>
-        )}
+          {erroDownload && (
+            <div
+              role="alert"
+              className="pagina-visualizacao-curriculo__feedback-erro"
+            >
+              {erroDownload}
+            </div>
+          )}
 
-        <div ref={folhaRef} className="pagina-visualizacao-curriculo__folha">
           <ModeloSelecionado previa={previa} />
-        </div>
+        </section>
       </section>
     </main>
   );
