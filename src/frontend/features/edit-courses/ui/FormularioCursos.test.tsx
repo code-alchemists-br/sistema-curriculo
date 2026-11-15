@@ -41,6 +41,11 @@ describe("FormularioCursos", () => {
     const campos = screen.getAllByLabelText("Nome do curso");
     expect(campos).toHaveLength(1);
     expect(campos[0]).toHaveValue("Node");
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    const camposAposDesfazer = screen.getAllByLabelText("Nome do curso");
+    expect(camposAposDesfazer).toHaveLength(2);
+    expect(camposAposDesfazer[0]).toHaveValue("React");
   });
 
   it("exibe erros de validação quando campos obrigatórios estão vazios", async () => {

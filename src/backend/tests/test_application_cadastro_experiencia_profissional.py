@@ -6,8 +6,10 @@ para verificar que somente entidades válidas são encaminhadas ao repositório.
 """
 
 # Proveniência: decision-analysis prompts/backend/20260921-162749-cadastro-experiencias-profissionais-v001.md#v001
-from datetime import date
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from datetime import date, datetime, timezone
 from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock
 from uuid import UUID
 
 from backend.application.cadastro_experiencia_profissional import (
@@ -106,6 +108,8 @@ class CadastrarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         )
         caso_de_uso = CadastrarExperienciaProfissional(
             repositorio=repositorio,
+            # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+            relogio=Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
             gerador_id=GeradorExperienciaProfissionalIdStub(identificador),
         )
         entrada = self._criar_entrada()
@@ -129,6 +133,8 @@ class CadastrarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         repositorio = RepositorioExperienciaSpy()
         caso_de_uso = CadastrarExperienciaProfissional(
             repositorio=repositorio,
+            # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+            relogio=Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
             gerador_id=GeradorExperienciaProfissionalIdStub(
                 ExperienciaProfissionalId(UUID("20000000-0000-0000-0000-000000000002"))
             ),

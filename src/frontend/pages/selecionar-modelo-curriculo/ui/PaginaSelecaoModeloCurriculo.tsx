@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AlternadorModeloCurriculo,
+  inferirObjetivoDoPerfil,
   obterModeloRecomendadoPorObjetivo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
   type ModeloApresentacaoCurriculo,
   type ObjetivoCurriculo,
+  type PerfilParaRecomendacao,
 } from "../../../features/alternar-modelo-curriculo";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaSelecaoModeloCurriculo.css";
@@ -19,6 +21,10 @@ export interface PaginaSelecaoModeloCurriculoProps {
   aoConfirmar: (modelo: ModeloApresentacaoCurriculo) => void;
   /** Ação para retornar à etapa anterior. */
   onVoltar?: () => void;
+  /** Ação opcional para retornar à página inicial / hero. */
+  onVoltarInicio?: () => void;
+  /** Dados estruturados do estudante preenchidos nas etapas anteriores para inferência inteligente. */
+  perfilEstudante?: PerfilParaRecomendacao;
 }
 
 /**
@@ -32,11 +38,32 @@ export function PaginaSelecaoModeloCurriculo({
   modeloInicial = "classico",
   aoConfirmar,
   onVoltar,
+  onVoltarInicio,
+  perfilEstudante,
 }: PaginaSelecaoModeloCurriculoProps) {
-  const [objetivo, setObjetivo] = useState<ObjetivoCurriculo>("outro");
+  const objetivoInferido = useMemo(
+    () =>
+      perfilEstudante ? inferirObjetivoDoPerfil(perfilEstudante) : "outro",
+    [perfilEstudante],
+  );
+  const modeloInferido = useMemo(
+    () => obterModeloRecomendadoPorObjetivo(objetivoInferido),
+    [objetivoInferido],
+  );
+
+  const [objetivo, setObjetivo] = useState<ObjetivoCurriculo>(() =>
+    perfilEstudante ? objetivoInferido : "outro",
+  );
   const [modeloSelecionado, setModeloSelecionado] =
-    useState<ModeloApresentacaoCurriculo>(modeloInicial);
+    useState<ModeloApresentacaoCurriculo>(() => {
+      if (modeloInicial && modeloInicial !== "classico") {
+        return modeloInicial;
+      }
+      return perfilEstudante ? modeloInferido : modeloInicial;
+    });
+
   const recomendacao = obterRecomendacaoModelo(objetivo);
+  const modeloRecomendado = obterModeloRecomendadoPorObjetivo(objetivo);
 
   function aoAlterarObjetivo(novoObjetivo: ObjetivoCurriculo): void {
     setObjetivo(novoObjetivo);
@@ -50,6 +77,7 @@ export function PaginaSelecaoModeloCurriculo({
       etapaAtual={8}
       totalEtapas={9}
       progressoEtapaAtual={modeloSelecionado ? 100 : 0}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-selecao-modelo"
@@ -91,6 +119,7 @@ export function PaginaSelecaoModeloCurriculo({
         </p>
 
         <AlternadorModeloCurriculo
+          modeloRecomendado={modeloRecomendado}
           modeloSelecionado={modeloSelecionado}
           onSelecionarModelo={setModeloSelecionado}
         />

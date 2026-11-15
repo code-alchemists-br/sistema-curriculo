@@ -15,6 +15,7 @@ export interface PaginaAcessoEstudanteProps {
   cliente?: ClienteAcessoEstudante;
   onVoltarInicio?: () => void;
   onSucessoAcesso?: (dados?: { email: string; nome?: string }) => void;
+  onNavegarRecuperarSenha?: () => void;
   abaInicial?: "acesso" | "cadastro";
 }
 
@@ -29,6 +30,7 @@ export function PaginaAcessoEstudante({
   cliente,
   onVoltarInicio,
   onSucessoAcesso,
+  onNavegarRecuperarSenha,
   abaInicial = "acesso",
 }: PaginaAcessoEstudanteProps) {
   const [abaAtiva, setAbaAtiva] = useState<"acesso" | "cadastro">(abaInicial);
@@ -96,6 +98,7 @@ export function PaginaAcessoEstudante({
                   })
                 }
                 aoAlterarEmail={setEmailDigitado}
+                aoSolicitarRecuperacaoSenha={onNavegarRecuperarSenha}
                 cliente={clienteDaPagina}
                 emailInicial={emailDigitado}
               />

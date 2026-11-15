@@ -74,4 +74,29 @@ describe("AlternadorModeloCurriculo", () => {
 
     expect(aoSelecionarModelo).toHaveBeenCalledWith("academico");
   });
+
+  it("exibe badge de recomendado quando a prop modeloRecomendado é informada", () => {
+    render(
+      <AlternadorModeloCurriculo
+        modeloSelecionado="primeiro-emprego"
+        modeloRecomendado="primeiro-emprego"
+        onSelecionarModelo={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("★ Recomendado")).toBeInTheDocument();
+  });
+
+  it("posiciona o modelo recomendado como a primeira opção exibida", () => {
+    render(
+      <AlternadorModeloCurriculo
+        modeloSelecionado="primeiro-emprego"
+        modeloRecomendado="primeiro-emprego"
+        onSelecionarModelo={vi.fn()}
+      />,
+    );
+
+    const radios = screen.getAllByRole("radio");
+    expect(radios[0]).toHaveAttribute("value", "primeiro-emprego");
+  });
 });

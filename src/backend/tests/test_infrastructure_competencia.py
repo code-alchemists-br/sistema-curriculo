@@ -141,3 +141,104 @@ class RepositorioCompetenciaSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase)
 
         with self.assertRaises(CompetenciaJaCadastrada):
             await repositorio.salvar(criar_competencia())
+
+    async def test_listar_por_usuario_converte_registros_encontrados(
+        self,
+    ) -> None:
+        """Verifica a consulta ordenada e conversão das competências do usuário.
+
+        Como faz: configura o double de sessão para retornar lista de registros
+        ORM pelo método scalars() e verifica o retorno tipado como tupla de Competencia.
+        Qual finalidade atende: protege a consulta de leitura de competências
+        contra erros de mapeamento ou vazamento de ORM.
+        """
+        session = MagicMock(spec=AsyncSession)
+        registro = para_registro(criar_competencia())
+        session.scalars.return_value = [registro]
+        repositorio = RepositorioCompetenciaSqlAlchemy(session)
+
+        resultado = await repositorio.listar_por_usuario(UsuarioId(ID_USUARIO))
+
+        self.assertEqual(len(resultado), 1)
+        self.assertEqual(resultado[0], criar_competencia())
+        session.scalars.assert_awaited_once()
+
+    async def test_obter_por_id_e_usuario_retorna_entidade_quando_existe(
+        self,
+    ) -> None:
+        """Verifica busca pontual por id e usuario_id retornando a entidade.
+
+        Como faz: configura session.scalar para retornar o registro ORM e
+        verifica que a entidade de domínio reconstruída é devolvida.
+        Qual finalidade atende: assegura recuperação correta para verificação de posse.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = para_registro(criar_competencia())
+        repositorio = RepositorioCompetenciaSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario(
+            CompetenciaId(ID_COMPETENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertEqual(resultado, criar_competencia())
+        session.scalar.assert_awaited_once()
+
+    async def test_obter_por_id_e_usuario_retorna_none_quando_ausente(
+        self,
+    ) -> None:
+        """Verifica que ausência de registro devolve None sem falhar.
+
+        Como faz: configura session.scalar para retornar None e verifica o resultado.
+        Qual finalidade atende: permite tratamento de ausência seguro na Application.
+        """
+        session = MagicMock(spec=AsyncSession)
+        session.scalar.return_value = None
+        repositorio = RepositorioCompetenciaSqlAlchemy(session)
+
+        resultado = await repositorio.obter_por_id_e_usuario(
+            CompetenciaId(ID_COMPETENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertIsNone(resultado)
+
+    async def test_excluir_retorna_true_quando_linha_e_removida(self) -> None:
+        """Verifica que exclusão com rowcount > 0 retorna True e chama flush.
+
+        Como faz: simula resultado de execute com rowcount = 1 e verifica chamada a flush.
+        Qual finalidade atende: confirma que o sinal de sucesso é emitido após exclusão física.
+        """
+        session = MagicMock(spec=AsyncSession)
+        resultado_exec = MagicMock()
+        resultado_exec.rowcount = 1
+        session.execute.return_value = resultado_exec
+        repositorio = RepositorioCompetenciaSqlAlchemy(session)
+
+        removido = await repositorio.excluir(
+            CompetenciaId(ID_COMPETENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertTrue(removido)
+        session.execute.assert_awaited_once()
+        session.flush.assert_awaited_once()
+
+    async def test_excluir_retorna_false_quando_nenhuma_linha_e_removida(
+        self,
+    ) -> None:
+        """Verifica que exclusão com rowcount == 0 retorna False.
+
+        Como faz: simula resultado de execute com rowcount = 0 e verifica retorno.
+        Qual finalidade atende: permite detectar que o ID era inexistente ou alheio.
+        """
+        session = MagicMock(spec=AsyncSession)
+        resultado_exec = MagicMock()
+        resultado_exec.rowcount = 0
+        session.execute.return_value = resultado_exec
+        repositorio = RepositorioCompetenciaSqlAlchemy(session)
+
+        removido = await repositorio.excluir(
+            CompetenciaId(ID_COMPETENCIA), UsuarioId(ID_USUARIO)
+        )
+
+        self.assertFalse(removido)
+        session.execute.assert_awaited_once()
+        session.flush.assert_awaited_once()

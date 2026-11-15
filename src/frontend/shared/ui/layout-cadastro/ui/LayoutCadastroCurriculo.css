@@ -96,12 +96,61 @@
   flex-direction: column;
 }
 
+/* Barra superior com navegação de saída e indicador da etapa */
+.layout-cadastro__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.layout-cadastro__btn-voltar-inicio {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  background-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: "Poppins", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.layout-cadastro__btn-voltar-inicio:hover {
+  color: #ff8533;
+  background: none;
+  background-color: transparent;
+  transform: translateX(-2px);
+}
+
+.layout-cadastro__btn-voltar-inicio:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.layout-cadastro__indicador-etapa {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.02em;
+}
+
 /* Barra de progresso horizontal segmentada */
 .layout-cadastro__progresso {
   display: flex;
   gap: 8px;
   width: 100%;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .layout-cadastro__progresso-trilha {
@@ -128,6 +177,10 @@
 .layout-cadastro__formulario {
   width: 100%;
   animation: animacaoEntradaFadeUp 0.85s var(--anim-curva-suave) both;
+}
+
+.layout-cadastro__formulario:focus {
+  outline: none;
 }
 
 /* Botões de navegação compartilhados entre as etapas (Voltar e Próximo) */
@@ -176,6 +229,54 @@
 .botoes-navegacao .pagina-idiomas__btn-proximo {
   flex: 1;
   margin-top: 0 !important;
+}
+
+/* Feedback acessível de desfazimento de remoção (Undo) */
+.alerta-desfazer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background-color: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.875rem;
+  color: #e5e5e5;
+  animation: animacaoEntradaFadeUp 0.25s ease both;
+}
+
+.alerta-desfazer strong {
+  color: #ffffff;
+}
+
+.btn-desfazer {
+  background: none;
+  background-color: transparent;
+  border: none;
+  color: #ff8533;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition:
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.btn-desfazer:hover {
+  color: #ffa366;
+}
+
+.btn-desfazer:focus-visible {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
 }
 
 /* Responsividade Mobile e Telas Menores */

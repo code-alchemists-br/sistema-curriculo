@@ -5,6 +5,8 @@ export {
 } from "./api/cliente-acesso-estudante";
 export { criarClienteAcessoDemonstracao } from "./api/cliente-acesso-demonstracao";
 export type {
+  AcessoEstudanteEntrada,
+  CadastroEstudanteEntrada,
   ClienteAcessoEstudante,
   CodigoFalhaAcessoEstudante,
   EstudanteCadastrado,

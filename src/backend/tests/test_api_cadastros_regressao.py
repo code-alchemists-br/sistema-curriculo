@@ -90,7 +90,8 @@ class CadastrosRegressaoTestCase(unittest.IsolatedAsyncioTestCase):
         executor.executar.return_value = entidade(
             id=identificador, usuario_id=UsuarioId(USUARIO), periodo=periodo, **textos
         )
-        rota = router(executor).routes[0]
+        # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+        rota = next(rota for rota in router(executor).routes if "POST" in rota.methods)
         request = Request(
             {"type": "http", "method": "POST", "path": rota.path, "headers": []}
         )
@@ -208,12 +209,10 @@ class CadastrosRegressaoTestCase(unittest.IsolatedAsyncioTestCase):
         ):
             with self.subTest(tipo=tipo):
                 _, _, request, dto, dados, *_ = self.preparar(tipo)
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                rota = next(rota for rota in router(None).routes if "POST" in rota.methods)
                 with self.assertRaises(HTTPException) as erro:
-                    await (
-                        router(None)
-                        .routes[0]
-                        .endpoint(dto.model_validate(dados), request)
-                    )
+                    await rota.endpoint(dto.model_validate(dados), request)
                 self.assertEqual(erro.exception.status_code, 503)
 
     def test_campos_ausentes_e_datas_invalidas_rejeitados_pelo_dto(self):

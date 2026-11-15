@@ -17,6 +17,32 @@ export interface ValoresFormacaoAcademica {
   naoPossuiLattes?: boolean;
 }
 
+/** Limites de caracteres para os campos de formação acadêmica. */
+export const LIMITES_FORMACAO_ACADEMICA = {
+  instituicaoMax: 100,
+  cursoMax: 100,
+} as const;
+
+/** Retorna a data atual local no formato YYYY-MM-DD. */
+export function obterDataAtualIso(): string {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+/** Restringe o ano de uma data no formato ISO para conter no máximo 4 dígitos. */
+export function restringirAno4Digitos(valorData: string): string {
+  if (!valorData) return valorData;
+  const partes = valorData.split("-");
+  if (partes[0] && partes[0].length > 4) {
+    partes[0] = partes[0].slice(0, 4);
+    return partes.join("-");
+  }
+  return valorData;
+}
+
 /** Agrupa mensagens de validação associadas a cada campo da formação. */
 export type ErrosFormacaoAcademica = Partial<
   Record<keyof ValoresFormacaoAcademica, string>
@@ -46,13 +72,20 @@ export function criarValoresIniciaisFormacao(): ValoresFormacaoAcademica {
 export function validarFormacaoAcademica(
   valores: ValoresFormacaoAcademica,
   validarLattes: boolean = true,
+  dataReferencia?: string,
 ): ErrosFormacaoAcademica {
   const erros: ErrosFormacaoAcademica = {};
+  const dataHoje = dataReferencia ?? obterDataAtualIso();
+  const obterLimite = (valorData: string) =>
+    valorData.length === 7 ? dataHoje.slice(0, 7) : dataHoje;
 
   if (valores.instituicao.trim() === "") {
     erros.instituicao = "Informe a instituição.";
-  } else if (valores.instituicao.trim().length > 200) {
-    erros.instituicao = "A instituição deve ter no máximo 200 caracteres.";
+  } else if (
+    valores.instituicao.trim().length >
+    LIMITES_FORMACAO_ACADEMICA.instituicaoMax
+  ) {
+    erros.instituicao = `A instituição deve ter no máximo ${LIMITES_FORMACAO_ACADEMICA.instituicaoMax} caracteres.`;
   }
 
   const ehEnsinoBasico =
@@ -61,27 +94,50 @@ export function validarFormacaoAcademica(
   if (!ehEnsinoBasico) {
     if (valores.curso.trim() === "") {
       erros.curso = "Informe o curso.";
-    } else if (valores.curso.trim().length > 200) {
-      erros.curso = "O curso deve ter no máximo 200 caracteres.";
+    } else if (
+      valores.curso.trim().length > LIMITES_FORMACAO_ACADEMICA.cursoMax
+    ) {
+      erros.curso = `O curso deve ter no máximo ${LIMITES_FORMACAO_ACADEMICA.cursoMax} caracteres.`;
     }
-  } else if (valores.curso.trim().length > 200) {
-    erros.curso = "O curso deve ter no máximo 200 caracteres.";
+  } else if (
+    valores.curso.trim().length > LIMITES_FORMACAO_ACADEMICA.cursoMax
+  ) {
+    erros.curso = `O curso deve ter no máximo ${LIMITES_FORMACAO_ACADEMICA.cursoMax} caracteres.`;
   }
 
   if (valores.nivel === "") erros.nivel = "Selecione o nível de formação.";
   if (valores.status === "") erros.status = "Selecione a situação da formação.";
-  if (valores.dataInicio === "") erros.dataInicio = "Informe a data de início.";
+
+  if (valores.dataInicio === "") {
+    erros.dataInicio = "Informe a data de início.";
+  } else {
+    const anoInicio = valores.dataInicio.split("-")[0] ?? "";
+    if (anoInicio.length > 4 || Number(anoInicio) > 9999) {
+      erros.dataInicio = "O ano de início deve ter no máximo 4 dígitos.";
+    } else if (valores.dataInicio > obterLimite(valores.dataInicio)) {
+      erros.dataInicio =
+        "A data de início não pode ser posterior à data atual.";
+    }
+  }
 
   if (valores.status === "concluido" && valores.dataFim === "") {
     erros.dataFim = "Informe a data de conclusão.";
-  }
-
-  if (
-    valores.dataInicio !== "" &&
-    valores.dataFim !== "" &&
-    valores.dataFim < valores.dataInicio
-  ) {
-    erros.dataFim = "A data final não pode ser anterior à data de início.";
+  } else if (valores.dataFim !== "") {
+    const anoFim = valores.dataFim.split("-")[0] ?? "";
+    if (anoFim.length > 4 || Number(anoFim) > 9999) {
+      erros.dataFim = "O ano deve ter no máximo 4 dígitos.";
+    } else if (
+      valores.dataInicio !== "" &&
+      valores.dataFim < valores.dataInicio
+    ) {
+      erros.dataFim = "A data final não pode ser anterior à data de início.";
+    } else if (
+      valores.status === "concluido" &&
+      valores.dataFim > obterLimite(valores.dataFim)
+    ) {
+      erros.dataFim =
+        "A data de conclusão não pode ser posterior à data atual.";
+    }
   }
 
   if (validarLattes) {
@@ -169,12 +225,13 @@ export function validarCurriculoLattes(
  */
 export function validarListaFormacoes(
   formacoes: ValoresFormacaoAcademica[],
+  dataReferencia?: string,
 ): Record<number, ErrosFormacaoAcademica> {
   const mapaErros: Record<number, ErrosFormacaoAcademica> = {};
 
   formacoes.forEach((formacao, indice) => {
     // Para formações em lista, o Lattes é gerenciado e validado no escopo global da etapa
-    const erros = validarFormacaoAcademica(formacao, false);
+    const erros = validarFormacaoAcademica(formacao, false, dataReferencia);
     if (Object.keys(erros).length > 0) {
       mapaErros[indice] = erros;
     }

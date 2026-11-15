@@ -31,3 +31,7 @@ pnpm-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
+
+# Temporários e Backups Locais
+.backup_modelos/
+__pycache__/

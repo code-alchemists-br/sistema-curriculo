@@ -65,16 +65,15 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 18px rgba(255, 106, 0, 0.35);
+  box-shadow: none;
   transition:
     background 0.2s ease,
-    transform 0.1s ease,
-    box-shadow 0.2s ease;
+    transform 0.1s ease;
 }
 
 .vagas-grupo2__botao-recuperar:hover {
   background: linear-gradient(135deg, #ff8f6b 0%, #ff6a00 100%);
-  box-shadow: 0 6px 24px rgba(255, 106, 0, 0.5);
+  box-shadow: none;
 }
 
 .vagas-grupo2__botao-recuperar:active {

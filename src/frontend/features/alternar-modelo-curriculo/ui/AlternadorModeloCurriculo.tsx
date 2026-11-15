@@ -15,6 +15,7 @@ export type ModeloApresentacaoCurriculo =
 interface AlternadorModeloCurriculoProps {
   modeloSelecionado: ModeloApresentacaoCurriculo;
   onSelecionarModelo: (modelo: ModeloApresentacaoCurriculo) => void;
+  modeloRecomendado?: ModeloApresentacaoCurriculo;
 }
 
 const opcoes: ReadonlyArray<{
@@ -71,7 +72,17 @@ const opcoes: ReadonlyArray<{
 export function AlternadorModeloCurriculo({
   modeloSelecionado,
   onSelecionarModelo,
+  modeloRecomendado,
 }: AlternadorModeloCurriculoProps): ReactNode {
+  // Posiciona o modelo recomendado como a primeira opção exibida para facilitar a descoberta
+  const opcoesOrdenadas = modeloRecomendado
+    ? [...opcoes].sort((a, b) => {
+        if (a.valor === modeloRecomendado) return -1;
+        if (b.valor === modeloRecomendado) return 1;
+        return 0;
+      })
+    : opcoes;
+
   return (
     <fieldset className="alternador-modelo-curriculo">
       <legend>Modelo de apresentação</legend>
@@ -80,9 +91,10 @@ export function AlternadorModeloCurriculo({
       </p>
 
       <div className="alternador-modelo-curriculo__opcoes">
-        {opcoes.map((opcao) => {
+        {opcoesOrdenadas.map((opcao) => {
           const id = `modelo-curriculo-${opcao.valor}`;
           const descricaoId = `${id}-descricao`;
+          const isRecomendado = modeloRecomendado === opcao.valor;
 
           return (
             <div
@@ -90,7 +102,7 @@ export function AlternadorModeloCurriculo({
                 modeloSelecionado === opcao.valor
                   ? "alternador-modelo-curriculo__opcao--selecionada"
                   : ""
-              }`}
+              } ${isRecomendado ? "alternador-modelo-curriculo__opcao--recomendada" : ""}`}
               key={opcao.valor}
             >
               <input
@@ -102,7 +114,17 @@ export function AlternadorModeloCurriculo({
                 type="radio"
                 value={opcao.valor}
               />
-              <label htmlFor={id}>{opcao.rotulo}</label>
+              <div className="alternador-modelo-curriculo__cabecalho-opcao">
+                <label htmlFor={id}>{opcao.rotulo}</label>
+                {isRecomendado && (
+                  <span
+                    className="alternador-modelo-curriculo__badge-recomendado"
+                    aria-label="Recomendado para o seu perfil"
+                  >
+                    ★ Recomendado
+                  </span>
+                )}
+              </div>
               <MiniaturaModelo modelo={opcao.valor} />
               <p id={descricaoId}>{opcao.descricao}</p>
             </div>

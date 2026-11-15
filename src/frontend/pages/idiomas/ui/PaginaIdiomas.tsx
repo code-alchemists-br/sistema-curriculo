@@ -11,6 +11,7 @@ import "./PaginaIdiomas.css";
 export interface PaginaIdiomasProps {
   onAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   idiomasIniciais?: Idioma[];
   onSalvar?: (idiomas: Idioma[]) => void;
 }
@@ -24,6 +25,7 @@ export interface PaginaIdiomasProps {
 export function PaginaIdiomas({
   onAvancar,
   onVoltar,
+  onVoltarInicio,
   idiomasIniciais,
   onSalvar,
 }: PaginaIdiomasProps = {}) {
@@ -55,6 +57,7 @@ export function PaginaIdiomas({
       etapaAtual={5}
       totalEtapas={9}
       progressoEtapaAtual={progressoIdiomas}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-idiomas"

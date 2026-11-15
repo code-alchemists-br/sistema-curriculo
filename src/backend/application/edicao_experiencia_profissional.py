@@ -8,7 +8,9 @@ suas experiências e para que dados alheios nunca sejam revelados.
 
 from dataclasses import dataclass
 
-from backend.application.ports import RepositorioExperienciaProfissional
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from backend.application.data_gravacao_experiencia import obter_hoje_experiencia
+from backend.application.ports import Relogio, RepositorioExperienciaProfissional
 from backend.domain.itens_perfil import ExperienciaProfissional
 from backend.domain.value_objects import ExperienciaProfissionalId, Periodo, UsuarioId
 
@@ -50,15 +52,18 @@ class EditarExperienciaProfissional:
     validação de proprietário sem acoplar a Application ao adapter.
     """
 
-    def __init__(self, repositorio: RepositorioExperienciaProfissional) -> None:
-        """Recebe a porta usada para localizar e atualizar experiências.
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+    def __init__(self, repositorio: RepositorioExperienciaProfissional, relogio: Relogio) -> None:
+        """Recebe repositório e relógio para localizar, validar e atualizar.
 
         O construtor armazena uma abstração substituível por double e não
         inicia I/O. Ele existe para manter a orquestração independente da
         implementação concreta do repositório.
         """
         self._repositorio = repositorio
+        self._relogio = relogio
 
+    # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
     async def executar(
         self, entrada: EditarExperienciaProfissionalEntrada
     ) -> ExperienciaProfissional:
@@ -66,7 +71,8 @@ class EditarExperienciaProfissional:
 
         O método consulta por ID e proprietário, traduz ausência em falha
         uniforme, delega a validação do novo estado à entidade e solicita a
-        atualização apenas após a edição válida; uma atualização sem efeito
+        atualização após resolver hoje uma vez em São Paulo e validar o estado
+        completo pela entidade; uma atualização sem efeito
         também é tratada como não encontrada. Ele existe para impedir alteração
         de experiência alheia e persistência de estado inválido.
         """
@@ -78,11 +84,13 @@ class EditarExperienciaProfissional:
                 "Experiência profissional não encontrada."
             )
 
+        hoje = obter_hoje_experiencia(self._relogio)
         experiencia_editada = experiencia.editar(
             empresa=entrada.empresa,
             cargo=entrada.cargo,
             descricao=entrada.descricao,
             periodo=entrada.periodo,
+            hoje=hoje,
         )
         atualizada = await self._repositorio.atualizar(experiencia_editada)
         if not atualizada:

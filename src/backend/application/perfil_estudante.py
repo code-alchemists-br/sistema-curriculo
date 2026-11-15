@@ -1,4 +1,4 @@
-"""Orquestra operações de perfil do estudante/candidato e suas formações.
+"""Orquestra operações de perfil, formações e consulta de experiências.
 
 O módulo coordena o agregado ``Usuario`` e entidades reutilizáveis de perfil
 com portas assíncronas, sem conhecer transporte ou persistência. Ele existe para
@@ -13,6 +13,8 @@ from backend.application.cadastro_estudante import EmailJaCadastrado
 from backend.application.ports import (
     GeradorFormacaoAcademicaId,
     Relogio,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    RepositorioExperienciaProfissional,
     RepositorioFormacaoAcademica,
     RepositorioUsuario,
 )
@@ -21,9 +23,15 @@ from backend.application.ports import (
 # Proveniência: decision-analysis prompts/backend/20260923-153647-cadastro-formacao-academica-v001.md#v001
 # Proveniência: decision-analysis prompts/backend/20261014-195233-expor-cadastro-formacao-academica-v003.md#v003
 from backend.domain.itens_perfil import (
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    ExperienciaProfissional,
     FormacaoAcademica,
     NivelFormacaoAcademica,
     StatusFormacaoAcademica,
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    ordenar_experiencias,
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    ordenar_formacoes,
 )
 
 # Proveniência: decision-analysis prompts/backend/20260920-210822-refatoracao-entidades-dominio-v001.md#v001
@@ -159,6 +167,92 @@ class ExcluirFormacaoAcademicaEntrada:
 
     usuario_id: UsuarioId
     formacao_id: FormacaoAcademicaId
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class ListarFormacoesAcademicasEntrada:
+    """Identifica o dono cuja coleção de formações será consultada.
+
+    Transporta somente o UsuarioId já resolvido pela fronteira, sem HTTP ou
+    filtros adicionais, para expressar a intenção de leitura da coleção própria.
+    """
+
+    usuario_id: UsuarioId
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+class ListarFormacoesAcademicas:
+    """Consulta a coleção ativa do dono e aplica a ordem definida no domínio.
+
+    Coordena uma leitura pela porta e delega a ordenação a ordenar_formacoes,
+    sem persistir mudanças, para apresentar formações de maneira consistente.
+    """
+
+    def __init__(self, repositorio_formacao: RepositorioFormacaoAcademica) -> None:
+        """Guarda a porta de consulta sem I/O para permitir leitura desacoplada.
+
+        Recebe somente a abstração interna, substituível por double, para manter
+        a orquestração independente de transporte e armazenamento concreto.
+        """
+        self._repositorio_formacao = repositorio_formacao
+
+    async def executar(
+        self, entrada: ListarFormacoesAcademicasEntrada
+    ) -> tuple[FormacaoAcademica, ...]:
+        """Devolve as formações ativas do dono na ordem de apresentação comum.
+
+        Consulta a porta uma vez com o UsuarioId da entrada e passa o resultado
+        a ordenar_formacoes, inclusive vazio, para reutilizar a regra do domínio
+        sem validar dados de escrita nem realizar mutações.
+        """
+        formacoes = await self._repositorio_formacao.listar_ativas_por_usuario(
+            entrada.usuario_id
+        )
+        return ordenar_formacoes(formacoes)
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+@dataclass(frozen=True, slots=True)
+class ListarExperienciasProfissionaisEntrada:
+    """Identifica o dono cuja coleção de experiências será consultada.
+
+    Transporta somente o UsuarioId já resolvido pela fronteira, sem HTTP ou
+    filtros adicionais, para expressar a intenção de leitura da coleção própria.
+    """
+
+    usuario_id: UsuarioId
+
+
+# Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+class ListarExperienciasProfissionais:
+    """Consulta a coleção ativa do dono e delega sua ordenação ao domínio.
+
+    Coordena uma leitura pela porta e aplica ordenar_experiencias sem persistir
+    mudanças, para apresentar a coleção com a regra comum de início e término.
+    """
+
+    def __init__(self, repositorio: RepositorioExperienciaProfissional) -> None:
+        """Guarda a porta de consulta sem I/O para permitir leitura desacoplada.
+
+        Recebe somente a abstração interna, substituível por double, para manter
+        a orquestração independente de transporte e armazenamento concreto.
+        """
+        self._repositorio = repositorio
+
+    async def executar(
+        self, entrada: ListarExperienciasProfissionaisEntrada
+    ) -> tuple[ExperienciaProfissional, ...]:
+        """Devolve as experiências ativas do dono na ordem definida no domínio.
+
+        Consulta a porta uma vez com o UsuarioId da entrada e passa o resultado
+        a ordenar_experiencias, inclusive vazio, para reutilizar a regra sem
+        validar dados de escrita nem realizar mutações.
+        """
+        experiencias = await self._repositorio.listar_ativas_por_usuario(
+            entrada.usuario_id
+        )
+        return ordenar_experiencias(experiencias)
 
 
 class EditarPerfil:

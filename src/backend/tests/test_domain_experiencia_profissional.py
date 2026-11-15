@@ -84,6 +84,8 @@ class ExperienciaProfissionalTestCase(TestCase):
         periodo = Periodo(inicio=date(2024, 3, 1))
 
         editada = original.editar(
+            # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+            hoje=date(2026, 11, 7),
             empresa="Nova Empresa",
             cargo="Analista",
             descricao="Mantém APIs em produção.",
@@ -118,7 +120,10 @@ class ExperienciaProfissionalTestCase(TestCase):
                 dados[campo] = "   "
 
                 with self.assertRaises(RegraDeDominioViolada):
-                    original.editar(**dados)
+                    original.editar(
+                        # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                        **dados, hoje=date(2026, 11, 7)
+                    )
 
     def test_experiencia_nova_nao_esta_excluida(self) -> None:
         """Cria experiências ativas por padrão.
@@ -183,6 +188,8 @@ class ExperienciaProfissionalTestCase(TestCase):
         excluida = self._criar_experiencia().excluir(instante)
 
         editada = excluida.editar(
+            # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+            hoje=date(2026, 11, 7),
             empresa="Nova Empresa",
             cargo="Analista",
             descricao="Mantém APIs em produção.",

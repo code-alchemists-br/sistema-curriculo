@@ -167,6 +167,41 @@ class RepositorioFormacaoAcademicaSqlAlchemyTestCase(unittest.IsolatedAsyncioTes
     transação real. A classe existe para verificar a implementação da porta.
     """
 
+    # Proveniência: decision-analysis prompts/backend/20261107-171028-listar-formacoes-academicas-v001.md#v001
+    async def test_lista_ativas_filtrando_dono_e_exclusao_sem_ordenar_ou_escrever(self):
+        """Inspeciona SELECT e conversão usando sessão substituída sem banco.
+
+        Compila os predicados e retorna registros em ordem arbitrária para
+        garantir filtro por dono e estado ativo, sem ordem de apresentação,
+        escrita, flush ou commit no adapter de leitura.
+        """
+        from dataclasses import replace
+
+        formacoes = (
+            criar_formacao(),
+            replace(criar_formacao(), id=FormacaoAcademicaId(UUID(int=2))),
+        )
+        for itens in (formacoes, ()):
+            with self.subTest(quantidade=len(itens)):
+                session = MagicMock(spec=AsyncSession)
+                session.scalars.return_value = [para_registro(item) for item in itens]
+                resultado = await RepositorioFormacaoAcademicaSqlAlchemy(session).listar_ativas_por_usuario(
+                    UsuarioId(ID_USUARIO)
+                )
+                self.assertEqual(resultado, itens)
+                session.scalars.assert_awaited_once()
+                consulta = session.scalars.call_args.args[0]
+                compilada = consulta.compile(dialect=postgresql.dialect())
+                sql = str(compilada)
+                self.assertIn("formacoes_academicas.usuario_id =", sql)
+                self.assertIn(ID_USUARIO, compilada.params.values())
+                self.assertIn("formacoes_academicas.deleted_at IS NULL", sql)
+                self.assertNotIn("ORDER BY", sql)
+                session.add.assert_not_called()
+                session.flush.assert_not_called()
+                session.commit.assert_not_called()
+                self.assertEqual(len(session.mock_calls), 1)
+
     async def test_adiciona_modelo_mapeado_e_aguarda_flush_sem_commit(self) -> None:
         """Adiciona a formação convertida e deixa commit com a composição.
 

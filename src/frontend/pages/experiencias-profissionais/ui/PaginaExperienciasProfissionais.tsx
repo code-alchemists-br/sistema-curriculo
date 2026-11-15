@@ -12,6 +12,7 @@ export interface PaginaExperienciasProfissionaisProps {
   experienciasIniciais?: Experiencia[];
   onSalvar?: (experiencias: Experiencia[]) => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
 }
 
@@ -25,6 +26,7 @@ export function PaginaExperienciasProfissionais({
   experienciasIniciais,
   onSalvar,
   onVoltar,
+  onVoltarInicio,
   aoAlterarExperiencias,
 }: PaginaExperienciasProfissionaisProps) {
   const [progresso, setProgresso] = useState(0);
@@ -35,6 +37,7 @@ export function PaginaExperienciasProfissionais({
       etapaAtual={3}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-experiencias"

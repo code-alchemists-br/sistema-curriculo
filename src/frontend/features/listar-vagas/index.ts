@@ -4,6 +4,7 @@ export {
   criarClienteVagasGrupo2Indisponivel,
   FalhaVagasGrupo2,
 } from "./api/cliente-vagas-grupo2";
+export { criarClienteVagasHttp } from "./api/cliente-vagas-http";
 export type {
   ClienteVagasGrupo2,
   CodigoFalhaVagasGrupo2,

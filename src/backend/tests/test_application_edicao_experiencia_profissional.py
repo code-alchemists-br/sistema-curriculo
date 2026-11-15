@@ -6,8 +6,10 @@ aplicação. Eles existem para verificar a validação de proprietário e que ap
 estados válidos são encaminhados à atualização.
 """
 
-from datetime import date
+# Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+from datetime import date, datetime, timezone
 from unittest import IsolatedAsyncioTestCase
+from unittest.mock import Mock
 from uuid import UUID
 
 from backend.application import (
@@ -140,7 +142,11 @@ class EditarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         """
         repositorio = RepositorioExperienciaEmMemoria([_experiencia()])
 
-        resultado = await EditarExperienciaProfissional(repositorio).executar(_entrada())
+        resultado = await EditarExperienciaProfissional(
+                repositorio,
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
+            ).executar(_entrada())
 
         self.assertEqual(repositorio.consultas, [(ID_EXPERIENCIA, DONO)])
         self.assertEqual(repositorio.atualizadas, [resultado])
@@ -163,7 +169,11 @@ class EditarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         repositorio = RepositorioExperienciaEmMemoria([_experiencia(OUTRO_USUARIO)])
 
         with self.assertRaises(ExperienciaProfissionalNaoEncontrada):
-            await EditarExperienciaProfissional(repositorio).executar(_entrada())
+            await EditarExperienciaProfissional(
+                repositorio,
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
+            ).executar(_entrada())
 
         self.assertEqual(repositorio.consultas, [(ID_EXPERIENCIA, DONO)])
         self.assertEqual(repositorio.atualizadas, [])
@@ -178,7 +188,11 @@ class EditarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         repositorio = RepositorioExperienciaEmMemoria()
 
         with self.assertRaises(ExperienciaProfissionalNaoEncontrada):
-            await EditarExperienciaProfissional(repositorio).executar(_entrada())
+            await EditarExperienciaProfissional(
+                repositorio,
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
+            ).executar(_entrada())
 
         self.assertEqual(repositorio.atualizadas, [])
 
@@ -194,7 +208,11 @@ class EditarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(ExperienciaProfissionalNaoEncontrada):
-            await EditarExperienciaProfissional(repositorio).executar(_entrada())
+            await EditarExperienciaProfissional(
+                repositorio,
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
+            ).executar(_entrada())
 
         self.assertEqual(len(repositorio.atualizadas), 1)
 
@@ -208,7 +226,11 @@ class EditarExperienciaProfissionalTestCase(IsolatedAsyncioTestCase):
         repositorio = RepositorioExperienciaEmMemoria([_experiencia()])
 
         with self.assertRaises(RegraDeDominioViolada):
-            await EditarExperienciaProfissional(repositorio).executar(
+            await EditarExperienciaProfissional(
+                repositorio,
+                # Proveniência: decision-analysis prompts/backend/20261107-175712-validar-datas-textos-experiencias-profissionais-v001.md#v001
+                Mock(agora=Mock(return_value=datetime(2026, 11, 7, 12, tzinfo=timezone.utc))),
+            ).executar(
                 _entrada(empresa="   ")
             )
 

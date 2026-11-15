@@ -78,4 +78,30 @@ describe("TelaValidacaoCurriculo", () => {
     expect(onExportarPdf).toHaveBeenCalledTimes(1);
     expect(onConfirmarCurriculo).toHaveBeenCalledTimes(1);
   });
+
+  it("exibe e dispara o atalho de correção quando a seção estiver pendente", async () => {
+    const user = userEvent.setup();
+    const onCorrigirSecao = vi.fn();
+
+    render(
+      <TelaValidacaoCurriculo
+        dados={{
+          ...dadosFicticios,
+          formacaoAcademica: {
+            status: "pulada",
+            mensagemErro: "A formação acadêmica ainda não foi preenchida.",
+          },
+        }}
+        onCorrigirSecao={onCorrigirSecao}
+      />,
+    );
+
+    const btnCorrigir = screen.getByRole("button", {
+      name: "Corrigir Formação acadêmica",
+    });
+    expect(btnCorrigir).toBeInTheDocument();
+
+    await user.click(btnCorrigir);
+    expect(onCorrigirSecao).toHaveBeenCalledWith("formacao-academica");
+  });
 });

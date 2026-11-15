@@ -196,6 +196,11 @@ describe("FormularioCadastroProjetoAcademico", () => {
       screen.getByRole("group", { name: "Projeto acadêmico 2" }),
     ).toBeInTheDocument();
 
+    await usuario.type(
+      screen.getAllByLabelText("Título do projeto")[1],
+      "Projeto 2",
+    );
+
     await usuario.click(
       screen.getByRole("button", { name: "Remover Projeto acadêmico 2" }),
     );
@@ -203,6 +208,14 @@ describe("FormularioCadastroProjetoAcademico", () => {
     expect(
       screen.queryByRole("group", { name: "Projeto acadêmico 2" }),
     ).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: /Desfazer/i }));
+    expect(
+      screen.getByRole("group", { name: "Projeto acadêmico 2" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Título do projeto")[1]).toHaveValue(
+      "Projeto 2",
+    );
   });
 
   it("envia múltiplos projetos chamando o cliente para cada item", async () => {

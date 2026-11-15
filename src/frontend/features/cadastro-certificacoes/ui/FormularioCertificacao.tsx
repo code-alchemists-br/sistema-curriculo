@@ -70,6 +70,19 @@ export function FormularioCertificacao({
   const [erros, setErros] = useState<Record<number, ErrosCertificacao>>({});
   const [mensagem, setMensagem] = useState<MensagemFeedback | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [certificacaoRemovida, setCertificacaoRemovida] = useState<{
+    item: ValoresCertificacao;
+    indice: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (certificacaoRemovida) {
+      const timer = setTimeout(() => {
+        setCertificacaoRemovida(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [certificacaoRemovida]);
 
   useEffect(() => {
     aoAlterarCertificacoes?.(certificacoes);
@@ -123,6 +136,13 @@ export function FormularioCertificacao({
   }
 
   function removerCertificacao(indice: number): void {
+    const item = certificacoes[indice];
+    if (item && (item.nome.trim() || item.organizacaoEmissora.trim())) {
+      setCertificacaoRemovida({ item, indice });
+    } else {
+      setCertificacaoRemovida(null);
+    }
+
     setCertificacoes((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novosErros: Record<number, ErrosCertificacao> = {};
@@ -137,6 +157,16 @@ export function FormularioCertificacao({
       return novosErros;
     });
     setMensagem(null);
+  }
+
+  function desfazerRemocaoCertificacao(): void {
+    if (!certificacaoRemovida) return;
+    setCertificacoes((atuais) => {
+      const copia = [...atuais];
+      copia.splice(certificacaoRemovida.indice, 0, certificacaoRemovida.item);
+      return copia;
+    });
+    setCertificacaoRemovida(null);
   }
 
   async function enviarFormulario(
@@ -259,6 +289,26 @@ export function FormularioCertificacao({
           </fieldset>
         );
       })}
+
+      {certificacaoRemovida && (
+        <div className="alerta-desfazer" role="status">
+          <span>
+            Certificação{" "}
+            {certificacaoRemovida.item.nome
+              ? `"${certificacaoRemovida.item.nome}"`
+              : ""}{" "}
+            removida.
+          </span>
+          <button
+            aria-label="Desfazer remoção da certificação"
+            className="btn-desfazer"
+            onClick={desfazerRemocaoCertificacao}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <button
         className="btn-adicionar-item"

@@ -12,6 +12,7 @@ import "./PaginaCursosCertificacoes.css";
 export interface PaginaCursosCertificacoesProps {
   onAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   cursosIniciais?: Curso[];
   certificacoesIniciais?: ValoresCertificacao[];
   aoAlterarCursos?: (cursos: Curso[]) => void;
@@ -27,6 +28,7 @@ export interface PaginaCursosCertificacoesProps {
 export function PaginaCursosCertificacoes({
   onAvancar,
   onVoltar,
+  onVoltarInicio,
   cursosIniciais,
   certificacoesIniciais,
   aoAlterarCursos,
@@ -66,6 +68,7 @@ export function PaginaCursosCertificacoes({
       etapaAtual={4}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-cursos-certificacoes"

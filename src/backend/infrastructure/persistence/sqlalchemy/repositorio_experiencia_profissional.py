@@ -39,6 +39,23 @@ class RepositorioExperienciaProfissionalSqlAlchemy(RepositorioExperienciaProfiss
         """
         self._session = session
 
+    # Proveniência: decision-analysis prompts/backend/20261107-172902-listar-experiencias-profissionais-v001.md#v001
+    async def listar_ativas_por_usuario(
+        self, usuario_id: UsuarioId
+    ) -> tuple[ExperienciaProfissional, ...]:
+        """Lê experiências ativas do dono sem definir ordem de apresentação.
+
+        Filtra proprietário e ausência de exclusão na mesma consulta e converte
+        os registros por para_experiencia, sem escrita, flush ou commit, para
+        atender à porta mantendo a ordenação sob controle da Application.
+        """
+        consulta = select(ExperienciaProfissionalRegistro).where(
+            ExperienciaProfissionalRegistro.usuario_id == usuario_id.valor,
+            ExperienciaProfissionalRegistro.deleted_at.is_(None),
+        )
+        registros = await self._session.scalars(consulta)
+        return tuple(para_experiencia(registro) for registro in registros)
+
     async def salvar(self, experiencia: ExperienciaProfissional) -> None:
         """Adiciona a experiência e aguarda o envio das alterações ao banco.
 

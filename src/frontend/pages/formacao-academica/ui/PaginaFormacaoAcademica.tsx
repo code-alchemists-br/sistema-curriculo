@@ -15,6 +15,7 @@ export interface PaginaFormacaoAcademicaProps {
   cliente?: ClienteFormacaoAcademica;
   onAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   formacoesIniciais?: ValoresFormacaoAcademica[];
   aoCadastrar?: (entrada: CadastroFormacaoAcademicaEntrada) => void;
   aoAlterarFormacoes?: (formacoes: ValoresFormacaoAcademica[]) => void;
@@ -30,6 +31,7 @@ export function PaginaFormacaoAcademica({
   cliente,
   onAvancar,
   onVoltar,
+  onVoltarInicio,
   formacoesIniciais,
   aoCadastrar,
   aoAlterarFormacoes,
@@ -68,6 +70,7 @@ export function PaginaFormacaoAcademica({
       etapaAtual={2}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-formacao"

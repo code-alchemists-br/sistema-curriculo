@@ -142,3 +142,37 @@
   margin-top: 0.75rem !important;
   width: 100% !important;
 }
+
+.pagina-acesso-estudante
+  .formulario-acesso
+  .formulario-acesso__acoes-auxiliares,
+.formulario-acesso .formulario-acesso__acoes-auxiliares {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: -0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.pagina-acesso-estudante
+  .formulario-acesso
+  .formulario-acesso__link-esqueceu-senha,
+.formulario-acesso .formulario-acesso__link-esqueceu-senha {
+  background: transparent !important;
+  border: none !important;
+  color: #a3a3a3 !important;
+  font-family: "Poppins", sans-serif !important;
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  transition: color 0.2s ease !important;
+}
+
+.pagina-acesso-estudante
+  .formulario-acesso
+  .formulario-acesso__link-esqueceu-senha:hover,
+.formulario-acesso .formulario-acesso__link-esqueceu-senha:hover {
+  color: #ff6a00 !important;
+}

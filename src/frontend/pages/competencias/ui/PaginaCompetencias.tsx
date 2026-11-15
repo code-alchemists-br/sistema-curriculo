@@ -11,6 +11,7 @@ import "./PaginaCompetencias.css";
 export interface PaginaCompetenciasProps {
   onAvancar?: () => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
   competenciasIniciais?: Habilidades;
   onSalvar?: (habilidades: Habilidades) => void;
 }
@@ -24,6 +25,7 @@ export interface PaginaCompetenciasProps {
 export function PaginaCompetencias({
   onAvancar,
   onVoltar,
+  onVoltarInicio,
   competenciasIniciais,
   onSalvar,
 }: PaginaCompetenciasProps = {}) {
@@ -55,6 +57,7 @@ export function PaginaCompetencias({
       etapaAtual={6}
       totalEtapas={9}
       progressoEtapaAtual={progresso}
+      onVoltarInicio={onVoltarInicio}
     >
       <section
         aria-labelledby="titulo-pagina-competencias"

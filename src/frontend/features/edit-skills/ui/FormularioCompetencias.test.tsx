@@ -136,4 +136,50 @@ describe("FormularioCompetencias", () => {
       softSkills: ["Comunicação"],
     });
   });
+
+  it("adiciona competência ao clicar no botão inline + Adicionar", async () => {
+    const usuario = userEvent.setup();
+    render(<FormularioCompetencias />);
+
+    const input = screen.getByRole("textbox", {
+      name: "Adicionar competência técnica",
+    });
+    await usuario.type(input, "TypeScript");
+
+    await usuario.click(
+      screen.getByRole("button", {
+        name: "Adicionar competência técnica digitada",
+      }),
+    );
+
+    const hardSkills = screen.getByLabelText("Hard Skills selecionadas");
+    expect(hardSkills).toHaveTextContent("TypeScript");
+    expect(input).toHaveValue("");
+  });
+
+  it("salva automaticamente o texto pendente nos inputs ao clicar em Salvar sem pressionar Enter", async () => {
+    const usuario = userEvent.setup();
+    const onSalvar = vi.fn();
+
+    render(<FormularioCompetencias onSalvar={onSalvar} />);
+
+    const hardInput = screen.getByRole("textbox", {
+      name: "Adicionar competência técnica",
+    });
+    const softInput = screen.getByRole("textbox", {
+      name: "Adicionar competência comportamental",
+    });
+
+    await usuario.type(hardInput, "Docker");
+    await usuario.type(softInput, "Liderança");
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar competências" }),
+    );
+
+    expect(onSalvar).toHaveBeenCalledWith({
+      hardSkills: ["Docker"],
+      softSkills: ["Liderança"],
+    });
+  });
 });

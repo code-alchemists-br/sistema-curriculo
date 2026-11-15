@@ -48,7 +48,7 @@ jobs:
         uses: cachix/install-nix-action@v31
 
       - name: Executar testes de integração com PostgreSQL temporário
-        run: nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh python -m unittest backend.tests.test_integracao_postgresql_nix backend.tests.integracao_repositorio_associacao_curriculo_vaga
+        run: nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh python -m unittest backend.tests.test_integracao_postgresql_nix backend.tests.integracao_repositorio_associacao_curriculo_vaga backend.tests.test_integracao_cursos_certificacoes_postgresql
 
   frontend-quality:
     name: Frontend quality

@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import {
+  LIMITES_EXPERIENCIA,
   criarExperienciaVazia,
+  obterDataAtualIso,
   ordenarPorDataDecrescente,
+  restringirAno4Digitos,
   validarListaExperiencias,
   type ErrosExperiencia,
   type Experiencia,
@@ -34,10 +37,36 @@ export function FormularioExperiencias({
   onVoltar,
   aoAlterarExperiencias,
 }: FormularioExperienciasProps) {
+  const dataMaximaHoje = obterDataAtualIso();
   const [experiencias, setExperiencias] =
     useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [experienciaRemovida, setExperienciaRemovida] = useState<{
+    item: Experiencia;
+    indice: number;
+  } | null>(null);
+  const [experienciasLimpas, setExperienciasLimpas] = useState<
+    Experiencia[] | null
+  >(null);
+
+  useEffect(() => {
+    if (experienciasLimpas) {
+      const timer = setTimeout(() => {
+        setExperienciasLimpas(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [experienciasLimpas]);
+
+  useEffect(() => {
+    if (experienciaRemovida) {
+      const timer = setTimeout(() => {
+        setExperienciaRemovida(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [experienciaRemovida]);
 
   useEffect(() => {
     aoAlterarExperiencias?.(experiencias);
@@ -81,8 +110,14 @@ export function FormularioExperiencias({
     campo: keyof Omit<Experiencia, "empregoAtual">,
     valor: string,
   ): void {
+    const valorTratado =
+      campo === "inicio" || campo === "fim"
+        ? restringirAno4Digitos(valor)
+        : valor;
     setExperiencias((atuais) =>
-      atuais.map((exp, i) => (i === indice ? { ...exp, [campo]: valor } : exp)),
+      atuais.map((exp, i) =>
+        i === indice ? { ...exp, [campo]: valorTratado } : exp,
+      ),
     );
     limparErroDoCampo(indice, campo as keyof ErrosExperiencia);
   }
@@ -129,8 +164,18 @@ export function FormularioExperiencias({
     setExperiencias((atuais) => [...atuais, criarExperienciaVazia()]);
   }
 
-  /** Remove uma experiência pela sua posição no array. */
+  /** Remove uma experiência pela sua posição no array com suporte a desfazer. */
   function removerExperiencia(indice: number): void {
+    const item = experiencias[indice];
+    if (
+      item &&
+      (item.empresa.trim() || item.cargo.trim() || item.descricao.trim())
+    ) {
+      setExperienciaRemovida({ item, indice });
+    } else {
+      setExperienciaRemovida(null);
+    }
+
     setExperiencias((atuais) => atuais.filter((_, i) => i !== indice));
     setErros((atuais) => {
       const novoMapa: Record<number, ErrosExperiencia> = {};
@@ -147,6 +192,39 @@ export function FormularioExperiencias({
       return novoMapa;
     });
     setMensagem(null);
+  }
+
+  /** Restaura a última experiência removida na mesma posição. */
+  function desfazerRemocao(): void {
+    if (!experienciaRemovida) return;
+    setExperiencias((atuais) => {
+      const copia = [...atuais];
+      copia.splice(experienciaRemovida.indice, 0, experienciaRemovida.item);
+      return copia;
+    });
+    setExperienciaRemovida(null);
+  }
+
+  /** Remove todas as experiências da lista com suporte a desfazer. */
+  function limparTodasExperiencias(): void {
+    const temDados = experiencias.some(
+      (e) => e.empresa.trim() || e.cargo.trim() || e.descricao.trim(),
+    );
+    if (temDados) {
+      setExperienciasLimpas(experiencias);
+    } else {
+      setExperienciasLimpas(null);
+    }
+    setExperiencias([]);
+    setErros({});
+    setMensagem(null);
+  }
+
+  /** Restaura a lista de experiências que havia sido limpa em massa. */
+  function desfazerLimpezaExperiencias(): void {
+    if (!experienciasLimpas) return;
+    setExperiencias(experienciasLimpas);
+    setExperienciasLimpas(null);
   }
 
   /**
@@ -244,6 +322,7 @@ export function FormularioExperiencias({
                   errosExp?.empresa !== undefined ? true : undefined
                 }
                 id={`${prefixo}-empresa`}
+                maxLength={LIMITES_EXPERIENCIA.empresaMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "empresa", e.target.value)
                 }
@@ -274,6 +353,7 @@ export function FormularioExperiencias({
                 }
                 aria-invalid={errosExp?.cargo !== undefined ? true : undefined}
                 id={`${prefixo}-cargo`}
+                maxLength={LIMITES_EXPERIENCIA.cargoMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "cargo", e.target.value)
                 }
@@ -304,6 +384,7 @@ export function FormularioExperiencias({
                 }
                 aria-invalid={errosExp?.inicio !== undefined ? true : undefined}
                 id={`${prefixo}-inicio`}
+                max={dataMaximaHoje}
                 onChange={(e) =>
                   atualizarCampo(indice, "inicio", e.target.value)
                 }
@@ -334,6 +415,8 @@ export function FormularioExperiencias({
                 aria-invalid={errosExp?.fim !== undefined ? true : undefined}
                 disabled={exp.empregoAtual}
                 id={`${prefixo}-fim`}
+                max={dataMaximaHoje}
+                min={exp.inicio || undefined}
                 onChange={(e) => atualizarCampo(indice, "fim", e.target.value)}
                 required={!exp.empregoAtual}
                 type="date"
@@ -378,6 +461,7 @@ export function FormularioExperiencias({
                   errosExp?.descricao !== undefined ? true : undefined
                 }
                 id={`${prefixo}-descricao`}
+                maxLength={LIMITES_EXPERIENCIA.descricaoMax}
                 onChange={(e) =>
                   atualizarCampo(indice, "descricao", e.target.value)
                 }
@@ -386,6 +470,26 @@ export function FormularioExperiencias({
                 rows={4}
                 value={exp.descricao}
               />
+              {(() => {
+                const totalDescricao = exp.descricao.length;
+                const limite = LIMITES_EXPERIENCIA.descricaoMax;
+                const classeModificadora =
+                  totalDescricao >= limite
+                    ? "formulario-experiencias__contador-caracteres--limite"
+                    : totalDescricao >= limite * 0.8
+                      ? "formulario-experiencias__contador-caracteres--alerta"
+                      : "";
+
+                return (
+                  <div
+                    aria-live="polite"
+                    className={`formulario-experiencias__contador-caracteres ${classeModificadora}`.trim()}
+                    id={`${prefixo}-descricao-contador`}
+                  >
+                    {totalDescricao}/{limite} caracteres
+                  </div>
+                );
+              })()}
               {errosExp?.descricao !== undefined && (
                 <p className="field__error" id={`${prefixo}-descricao-erro`}>
                   {errosExp.descricao}
@@ -395,6 +499,26 @@ export function FormularioExperiencias({
           </fieldset>
         );
       })}
+
+      {experienciaRemovida && (
+        <div className="alerta-desfazer" role="status">
+          <span>
+            Experiência{" "}
+            {experienciaRemovida.item.empresa
+              ? `em "${experienciaRemovida.item.empresa}"`
+              : ""}{" "}
+            removida.
+          </span>
+          <button
+            aria-label="Desfazer remoção da experiência"
+            className="btn-desfazer"
+            onClick={desfazerRemocao}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
 
       <button
         className="btn-adicionar-experiencia"
@@ -433,10 +557,24 @@ export function FormularioExperiencias({
         </button>
       </div>
 
+      {experienciasLimpas && (
+        <div className="alerta-desfazer" role="status">
+          <span>Experiências removidas.</span>
+          <button
+            aria-label="Desfazer remoção de todas as experiências"
+            className="btn-desfazer"
+            onClick={desfazerLimpezaExperiencias}
+            type="button"
+          >
+            Desfazer
+          </button>
+        </div>
+      )}
+
       {experiencias.length > 0 && (
         <button
           className="btn-limpar-experiencias"
-          onClick={() => setExperiencias([])}
+          onClick={limparTodasExperiencias}
           type="button"
         >
           Não possuo experiência profissional
