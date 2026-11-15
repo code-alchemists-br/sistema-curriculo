@@ -42,6 +42,7 @@ describe("PaginaRecuperacaoSenha", () => {
     const usuario = userEvent.setup();
     const cliente: ClienteRecuperacaoSenha = {
       solicitar: vi.fn().mockResolvedValue(undefined),
+      redefinir: vi.fn().mockResolvedValue(undefined),
     };
     const onSucesso = vi.fn();
 

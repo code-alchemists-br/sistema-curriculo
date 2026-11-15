@@ -44,6 +44,9 @@ export function traduzirFalhaRecuperacaoSenha(
     rede: "Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.",
     "resposta-invalida":
       "Recebemos uma resposta inesperada do servidor. Tente novamente mais tarde.",
+    "dados-invalidos": "Confira os dados informados e tente novamente.",
+    "token-invalido":
+      "Este link é inválido ou expirou. Solicite novas instruções para redefinir sua senha.",
   };
 
   return mensagens[codigo];

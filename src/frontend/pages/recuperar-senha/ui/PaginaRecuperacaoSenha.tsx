@@ -10,6 +10,7 @@ import "./PaginaRecuperacaoSenha.css";
 export interface PaginaRecuperacaoSenhaProps {
   cliente?: ClienteRecuperacaoSenha;
   emailInicial?: string;
+  token?: string;
   onVoltarLogin?: () => void;
   onVoltarInicio?: () => void;
   onSucessoSolicitacao?: (email: string) => void;
@@ -24,6 +25,7 @@ export interface PaginaRecuperacaoSenhaProps {
 export function PaginaRecuperacaoSenha({
   cliente,
   emailInicial = "",
+  token,
   onVoltarLogin,
   onVoltarInicio,
   onSucessoSolicitacao,
@@ -62,11 +64,12 @@ export function PaginaRecuperacaoSenha({
             className="pagina-recuperar-senha__titulo"
             id="titulo-recuperacao"
           >
-            Recupere sua senha
+            {token ? "Redefina sua senha" : "Recupere sua senha"}
           </h1>
           <p className="pagina-recuperar-senha__subtitulo">
-            Informe seu e-mail cadastrado para enviarmos as instruções de
-            redefinição de acesso.
+            {token
+              ? "Escolha uma nova senha para sua conta."
+              : "Informe seu e-mail cadastrado para enviarmos as instruções de redefinição de acesso."}
           </p>
 
           <section
@@ -77,6 +80,7 @@ export function PaginaRecuperacaoSenha({
               aoConcluirSolicitacao={onSucessoSolicitacao}
               cliente={clienteEfetivo}
               emailInicial={emailInicial}
+              token={token}
             />
           </section>
         </section>
