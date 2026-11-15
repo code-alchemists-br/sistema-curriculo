@@ -1,9 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+  type Ref,
+} from "react";
 
 import {
   criarCursoVazio,
+  cursoEstaVazio,
   normalizarCurso,
-  validarListaCursos,
+  validarCurso,
   type Curso,
   type ErrosCurso,
 } from "../model/cursos";
@@ -11,6 +19,14 @@ import "./FormularioCursos.css";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
 export interface FormularioCursosProps {
+  /** Encaminha o submit ao coordenador da página para não anunciar persistência local como remota. */
+  aoAvancar?: () => void | Promise<void>;
+  /** Valida e normaliza os dados para a página impedir avanço com entradas parciais. */
+  ref?: Ref<{ validar: () => Curso[] | null }>;
+  /** Ignora somente entradas inteiramente vazias nas etapas opcionais. */
+  permitirVazios?: boolean;
+  /** Impede alterações enquanto a página aguarda persistência. */
+  desabilitado?: boolean;
   cursosIniciais?: Curso[];
   onSalvar?: (cursos: Curso[]) => void;
   /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
@@ -30,6 +46,10 @@ export interface FormularioCursosProps {
  * de cursos sem depender de HTTP ou backend.
  */
 export function FormularioCursos({
+  aoAvancar,
+  ref,
+  permitirVazios = false,
+  desabilitado = false,
   cursosIniciais = [criarCursoVazio()],
   onSalvar,
   aoAlterarProgresso,
@@ -39,6 +59,20 @@ export function FormularioCursos({
   const [cursos, setCursos] = useState<Curso[]>(cursosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosCurso>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const focarErro = useRef(false);
+
+  useImperativeHandle(ref, () => ({ validar: validarFormulario }));
+
+  useEffect(() => {
+    if (focarErro.current) {
+      formularioRef.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+      focarErro.current = false;
+    }
+  }, [erros]);
+
   const [cursoRemovido, setCursoRemovido] = useState<{
     item: Curso;
     indice: number;
@@ -152,24 +186,45 @@ export function FormularioCursos({
     setCursoRemovido(null);
   }
 
-  /** Valida todos os cursos e chama o callback se não houver erros. */
+  /** Valida cada entrada por índice e normaliza o lote para impedir cadastro parcial sem perder o vínculo dos erros. */
+  function validarFormulario(): Curso[] | null {
+    const novosErros: Record<number, ErrosCurso> = {};
+    cursos.forEach((item, indice) => {
+      if (permitirVazios && cursoEstaVazio(item)) return;
+      const errosItem = validarCurso(item);
+      if (Object.keys(errosItem).length > 0) novosErros[indice] = errosItem;
+    });
+    setErros(novosErros);
+    if (Object.keys(novosErros).length > 0) {
+      focarErro.current = true;
+      return null;
+    }
+    return cursos
+      .filter((item) => !permitirVazios || !cursoEstaVazio(item))
+      .map(normalizarCurso);
+  }
+
+  /** Reutiliza a validação do avanço ao submeter para manter feedback e dados enviados coerentes. */
   function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
     evento.preventDefault();
-
-    const novosErros = validarListaCursos(cursos);
-
-    if (Object.keys(novosErros).length > 0) {
-      setErros(novosErros);
+    if (desabilitado) return;
+    if (aoAvancar) {
+      void aoAvancar();
       return;
     }
-
-    const cursosNormalizados = cursos.map(normalizarCurso);
+    const cursosNormalizados = validarFormulario();
+    if (cursosNormalizados === null || desabilitado) return;
     onSalvar?.(cursosNormalizados);
     setMensagem("Cursos salvos com sucesso.");
   }
 
   return (
-    <form className="formulario-cursos" noValidate onSubmit={enviarFormulario}>
+    <form
+      ref={formularioRef}
+      className="formulario-cursos"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
       <h2 className="secao-titulo">Cursos</h2>
 
       {cursos.map((curso, indice) => {
@@ -177,10 +232,14 @@ export function FormularioCursos({
         const prefixo = `curso-${indice}`;
 
         return (
-          <fieldset aria-label={`Curso ${indice + 1}`} key={prefixo}>
+          <fieldset
+            disabled={desabilitado}
+            aria-label={`Curso ${indice + 1}`}
+            key={prefixo}
+          >
             <legend className="sr-only">Curso {indice + 1}</legend>
 
-            {cursos.length > 1 && (
+            {cursos.length > 0 && (
               <div className="item-sublista__topo">
                 <span className="label-subtitulo">Curso {indice + 1}</span>
                 <button
@@ -290,6 +349,7 @@ export function FormularioCursos({
           </span>
           <button
             aria-label="Desfazer remoção do curso"
+            disabled={desabilitado}
             className="btn-desfazer"
             onClick={desfazerRemocaoCurso}
             type="button"
@@ -300,6 +360,7 @@ export function FormularioCursos({
       )}
 
       <button
+        disabled={desabilitado}
         className="btn-adicionar-item"
         onClick={adicionarCurso}
         type="button"
@@ -314,7 +375,11 @@ export function FormularioCursos({
       )}
 
       {exibirBotaoSalvar && (
-        <button className="btn-salvar-secao" type="submit">
+        <button
+          disabled={desabilitado}
+          className="btn-salvar-secao"
+          type="submit"
+        >
           Salvar cursos
         </button>
       )}

@@ -25,7 +25,7 @@ export function criarCursoVazio(): Curso {
  * Valida os campos de um único curso.
  *
  * A função verifica presença dos campos obrigatórios e um formato numérico
- * positivo para a carga horária. Ela existe para oferecer feedback imediato
+ * decimal inteiro entre 1 e 10000 para a carga opcional. Ela oferece feedback imediato
  * sem substituir as regras definitivas que serão aplicadas pelo backend.
  */
 export function validarCurso(curso: Curso): ErrosCurso {
@@ -39,8 +39,24 @@ export function validarCurso(curso: Curso): ErrosCurso {
     erros.instituicao = "Informe a instituição.";
   }
 
-  const carga = Number(curso.cargaHoraria);
-  if (curso.cargaHoraria.trim() === "" || Number.isNaN(carga) || carga <= 0) {
+  for (const campo of ["nome", "instituicao"] as const) {
+    const texto = curso[campo].trim();
+    if (Array.from(texto).length > 200) {
+      erros[campo] = "Informe no máximo 200 caracteres.";
+    } else if (/\p{C}/u.test(texto.replace(/[\n\t\x0d]/g, ""))) {
+      erros[campo] = "Remova os caracteres de controle inválidos.";
+    }
+  }
+
+  const textoCarga = curso.cargaHoraria.trim();
+  const carga = Number(textoCarga);
+  if (
+    textoCarga !== "" &&
+    (!/^[0-9]+$/.test(textoCarga) ||
+      !Number.isInteger(carga) ||
+      carga < 1 ||
+      carga > 10000)
+  ) {
     erros.cargaHoraria = "Informe uma carga horária válida (em horas).";
   }
 
@@ -80,4 +96,16 @@ export function normalizarCurso(curso: Curso): Curso {
     instituicao: curso.instituicao.trim(),
     cargaHoraria: curso.cargaHoraria.trim(),
   };
+}
+
+/**
+ * Identifica um rascunho totalmente vazio comparando os três campos aparados.
+ * Distingue ausência opcional de preenchimento parcial, sem perder dados na submissão.
+ */
+export function cursoEstaVazio(curso: Curso): boolean {
+  return (
+    curso.nome.trim() === "" &&
+    curso.instituicao.trim() === "" &&
+    curso.cargaHoraria.trim() === ""
+  );
 }
