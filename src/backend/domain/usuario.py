@@ -21,8 +21,8 @@ class Usuario:
 
     A entidade reúne uma identidade tipada, nome, e-mail e hash de senha já
     derivado, todos validados por value objects. Ela existe como proprietário
-    conceitual de currículos e itens de perfil, sem acoplar autenticação, sessão
-    ou recuperação de senha à primeira fatia de domínio.
+    conceitual de currículos e itens de perfil, sem acoplar autenticação,
+    sessão ou recuperação de senha ao aggregate root.
     """
 
     id: UsuarioId
@@ -66,6 +66,17 @@ class Usuario:
         if self.excluido:
             raise RegraDeDominioViolada("Perfil excluído não pode ser editado.")
         return replace(self, dados_contato=dados_contato)
+
+    def redefinir_senha(self, hash_senha: HashSenha) -> Usuario:
+        """Produz uma nova versão da conta com a credencial derivada recebida.
+
+        A transição preserva identidade, perfil e contato, e recusa contas
+        logicamente excluídas. Ela existe para manter a troca de credencial
+        dentro do aggregate root sem conhecer token, criptografia ou ORM.
+        """
+        if self.excluido:
+            raise RegraDeDominioViolada("Perfil excluído não pode alterar a senha.")
+        return replace(self, hash_senha=hash_senha)
 
     def excluir(self, excluido_em: datetime) -> Usuario:
         """Produz a exclusão lógica idempotente do perfil do usuário.
