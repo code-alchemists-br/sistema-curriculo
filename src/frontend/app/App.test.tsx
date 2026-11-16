@@ -53,6 +53,26 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("abre a tela de redefinição pelo token e remove o token ao voltar ao login", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/?token=token-de-teste");
+
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { name: "Redefina sua senha" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Nova senha")).toBeInTheDocument();
+    expect(screen.getByLabelText("Confirme a nova senha")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(window.location.search).not.toContain("token=");
+    expect(
+      screen.getByRole("heading", { name: "Conecte-se na LIMINAL" }),
+    ).toBeInTheDocument();
+  });
+
   it("permite preencher dados pessoais, avançar para a próxima etapa, voltar e verificar que os dados continuam preenchidos", async () => {
     sessionStorage.setItem(
       "liminal_usuario_sessao",

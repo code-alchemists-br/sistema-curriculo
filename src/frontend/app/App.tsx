@@ -41,6 +41,10 @@ import {
   criarClienteAcessoDemonstracao,
   criarClienteAcessoEstudante,
 } from "../features/acesso-estudante";
+import {
+  criarClienteRecuperacaoSenha,
+  criarClienteRecuperacaoSenhaIndisponivel,
+} from "../features/recuperar-senha";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
 import { criarClienteFormacaoAcademicaHttp } from "../features/cadastrar-formacao-academica";
 import { criarClienteExperienciasHttp } from "../features/edit-professional-experience";
@@ -74,6 +78,9 @@ const clienteAcessoBase = apiBaseUrl
 const clienteAcessoHttp = apiBaseUrl
   ? criarClienteAcessoResiliente(clienteAcessoBase, clienteAcessoDemo)
   : clienteAcessoDemo;
+const clienteRecuperacaoSenha = apiBaseUrl
+  ? criarClienteRecuperacaoSenha(apiBaseUrl)
+  : criarClienteRecuperacaoSenhaIndisponivel();
 
 const clienteDadosPessoaisBase = apiBaseUrl
   ? criarClienteDadosPessoaisHttp(apiBaseUrl)
@@ -235,6 +242,7 @@ export function App() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const etapa = params.get("etapa");
+      if (params.has("token")) return "recuperar-senha";
       if (etapa === "dados-pessoais") return "dados-pessoais";
       if (etapa === "formacao-academica") return "formacao-academica";
       if (etapa === "experiencias-profissionais")
@@ -372,6 +380,7 @@ export function App() {
       url.searchParams.delete("etapa");
       url.searchParams.delete("aba");
       url.searchParams.delete("intencao");
+      url.searchParams.delete("token");
       window.history.pushState({}, "", url.toString());
     }
     resetarScroll();
@@ -398,6 +407,7 @@ export function App() {
       } else {
         url.searchParams.delete("aba");
       }
+      url.searchParams.delete("token");
       if (intencao) {
         url.searchParams.set("intencao", intencao);
       } else {
@@ -914,6 +924,10 @@ export function App() {
   if (rotaAtiva === "recuperar-senha") {
     return (
       <PaginaRecuperacaoSenha
+        cliente={clienteRecuperacaoSenha}
+        token={
+          new URLSearchParams(window.location.search).get("token") ?? undefined
+        }
         onVoltarInicio={voltarAoInicio}
         onVoltarLogin={() => abrirAcesso("acesso", "login")}
       />

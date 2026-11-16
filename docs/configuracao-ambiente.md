@@ -239,7 +239,7 @@ precisar delas; os exemplos locais não devem ser reutilizados em produção.
 | `PASSWORD_RESET_SMTP_USERNAME` | Backend | Não | Usuário SMTP; deve ser configurado junto com a senha. |
 | `PASSWORD_RESET_SMTP_PASSWORD` | Backend | Não | Senha SMTP; mantenha fora do repositório e dos logs. |
 | `PASSWORD_RESET_FROM_EMAIL` | Backend | Para envio de recuperação | Endereço remetente da mensagem. |
-| `PASSWORD_RESET_URL` | Backend | Para envio de recuperação | URL HTTPS da tela frontend de redefinição contendo `{token}` no ponto em que o token deve ser inserido. |
+| `PASSWORD_RESET_URL` | Backend | Para envio de recuperação | URL HTTPS do frontend contendo `{token}` como parâmetro `token` (por exemplo, `https://app.exemplo/?token={token}`). O frontend abre a tela de redefinição ao detectar esse parâmetro. |
 
 Credenciais de banco devem usar uma conta local de desenvolvimento com acesso
 somente ao banco de desenvolvimento. Se a senha contiver caracteres especiais

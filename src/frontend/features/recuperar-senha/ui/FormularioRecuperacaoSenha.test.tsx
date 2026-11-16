@@ -13,6 +13,7 @@ afterEach(cleanup);
 function criarClienteSucesso(): ClienteRecuperacaoSenha {
   return {
     solicitar: vi.fn().mockResolvedValue(undefined),
+    redefinir: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -89,6 +90,7 @@ describe("FormularioRecuperacaoSenha", () => {
       solicitar: vi
         .fn()
         .mockRejectedValue(new FalhaRecuperacaoSenha("indisponivel")),
+      redefinir: vi.fn().mockResolvedValue(undefined),
     };
 
     render(<FormularioRecuperacaoSenha cliente={cliente} />);
@@ -106,5 +108,48 @@ describe("FormularioRecuperacaoSenha", () => {
         "A recuperação de senha está indisponível no momento. Tente novamente mais tarde.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("envia token e nova senha confirmada para redefinição", async () => {
+    const usuario = userEvent.setup();
+    const cliente = criarClienteSucesso();
+    render(
+      <FormularioRecuperacaoSenha cliente={cliente} token="token-seguro" />,
+    );
+
+    await usuario.type(screen.getByLabelText("Nova senha"), "senha-segura-123");
+    await usuario.type(
+      screen.getByLabelText("Confirme a nova senha"),
+      "senha-segura-123",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Redefinir senha" }),
+    );
+
+    expect(cliente.redefinir).toHaveBeenCalledWith({
+      token: "token-seguro",
+      senha: "senha-segura-123",
+    });
+    expect(await screen.findByText(/Senha redefinida/)).toBeInTheDocument();
+  });
+
+  it("não envia quando a confirmação diverge", async () => {
+    const usuario = userEvent.setup();
+    const cliente = criarClienteSucesso();
+    render(
+      <FormularioRecuperacaoSenha cliente={cliente} token="token-seguro" />,
+    );
+
+    await usuario.type(screen.getByLabelText("Nova senha"), "senha-segura-123");
+    await usuario.type(
+      screen.getByLabelText("Confirme a nova senha"),
+      "outra-senha-123",
+    );
+    await usuario.click(
+      screen.getByRole("button", { name: "Redefinir senha" }),
+    );
+
+    expect(screen.getByText("As senhas não coincidem.")).toBeInTheDocument();
+    expect(cliente.redefinir).not.toHaveBeenCalled();
   });
 });
