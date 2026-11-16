@@ -82,6 +82,7 @@ from backend.api.documentacao_openapi import (
     TAG_PERFIL_ESTUDANTE,
     TAG_PREVIA_VERSAO_CURRICULO,
     TAG_PROJETOS_ACADEMICOS,
+    TAG_RECUPERACAO_SENHA,
     TAG_SAUDE,
     TAG_SESSOES,
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
@@ -196,6 +197,13 @@ from backend.api.projeto_academico import (
 from backend.api.projeto_academico import (
     criar_router as criar_router_projeto_academico,
 )
+from backend.api.recuperacao_senha import (
+    RedefinicaoSenhaExecutor,
+    SolicitacaoRecuperacaoExecutor,
+)
+from backend.api.recuperacao_senha import (
+    criar_router as criar_router_recuperacao_senha,
+)
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.api.revisao_versao_curriculo import (
@@ -236,6 +244,7 @@ from backend.application.assistente_descricao_projeto_deterministico import (
 )
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.recomendacao_modelo import RecomendarModeloCurriculo
+from backend.application.recuperacao_senha import EnviadorLinkRecuperacao
 from backend.application.revisao_texto import RevisarTexto
 from backend.application.saude import VerificadorPersistencia, VerificadorSaude
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
@@ -328,6 +337,9 @@ def create_app(
     consultar_projeto_academico: ConsultaProjetoAcademicoExecutor | None = None,
     editar_projeto_academico: EdicaoProjetoAcademicoExecutor | None = None,
     excluir_projeto_academico: ExclusaoProjetoAcademicoExecutor | None = None,
+    solicitar_recuperacao_senha: SolicitacaoRecuperacaoExecutor | None = None,
+    redefinir_senha: RedefinicaoSenhaExecutor | None = None,
+    enviador_recuperacao_senha: EnviadorLinkRecuperacao | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -378,6 +390,15 @@ def create_app(
             configuracao_cookie,
         ),
         tags=[TAG_CADASTRO_ACESSO],
+    )
+    app.include_router(
+        criar_router_recuperacao_senha(
+            solicitar_recuperacao_senha,
+            redefinir_senha,
+            derivador_senha,
+            enviador_recuperacao_senha,
+        ),
+        tags=[TAG_RECUPERACAO_SENHA],
     )
     app.include_router(
         criar_router_perfil(

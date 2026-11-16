@@ -46,7 +46,7 @@ export function criarCertificacaoVazia(): ValoresCertificacao {
  * Valida os dados informados para uma certificação profissional.
  *
  * **O que faz:** Verifica se os campos obrigatórios estão preenchidos e não excedem o tamanho máximo.
- * **Como faz:** Avalia a presença de caracteres não brancos e o comprimento de cada string contra `LIMITE_CARACTERES_CERTIFICACAO`.
+ * **Como faz:** Rejeita controles Unicode e verifica presença e comprimento dos textos aparados contra `LIMITE_CARACTERES_CERTIFICACAO`.
  * **Qual finalidade atende:** Fornece feedback imediato de acessibilidade ao estudante antes do envio à API.
  */
 export function validarCertificacao(
@@ -57,7 +57,9 @@ export function validarCertificacao(
   const nomeLimpo = valores.nome.trim();
   if (nomeLimpo === "") {
     erros.nome = "Informe o nome da certificação.";
-  } else if (nomeLimpo.length > LIMITE_CARACTERES_CERTIFICACAO) {
+  } else if (/\p{Cc}/u.test(valores.nome)) {
+    erros.nome = "Remova os caracteres de controle inválidos.";
+  } else if (Array.from(nomeLimpo).length > LIMITE_CARACTERES_CERTIFICACAO) {
     erros.nome = `O nome da certificação deve ter no máximo ${LIMITE_CARACTERES_CERTIFICACAO} caracteres.`;
   }
 
@@ -65,7 +67,9 @@ export function validarCertificacao(
   if (emissorLimpo === "") {
     erros.organizacaoEmissora =
       "Informe a instituição ou organização emissora.";
-  } else if (emissorLimpo.length > LIMITE_CARACTERES_CERTIFICACAO) {
+  } else if (/\p{Cc}/u.test(valores.organizacaoEmissora)) {
+    erros.organizacaoEmissora = "Remova os caracteres de controle inválidos.";
+  } else if (Array.from(emissorLimpo).length > LIMITE_CARACTERES_CERTIFICACAO) {
     erros.organizacaoEmissora = `A organização emissora deve ter no máximo ${LIMITE_CARACTERES_CERTIFICACAO} caracteres.`;
   }
 
@@ -88,4 +92,14 @@ export function normalizarCertificacao(
       .trim()
       .replace(/\s+/g, " "),
   };
+}
+
+/**
+ * Identifica ausência total comparando os dois textos aparados, preservando
+ * entradas parciais para validação em vez de descartá-las na etapa opcional.
+ */
+export function certificacaoEstaVazia(valores: ValoresCertificacao): boolean {
+  return (
+    valores.nome.trim() === "" && valores.organizacaoEmissora.trim() === ""
+  );
 }

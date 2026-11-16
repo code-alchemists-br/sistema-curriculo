@@ -38,6 +38,8 @@ ROTAS_PUBLICAS = frozenset(
     {
         ("POST", "/estudantes"),
         ("POST", "/acessos"),
+        ("POST", "/recuperacoes-senha"),
+        ("POST", "/recuperacoes-senha/confirmacao"),
         ("DELETE", "/sessao/atual"),
         ("GET", "/docs"),
         ("GET", "/docs/oauth2-redirect"),

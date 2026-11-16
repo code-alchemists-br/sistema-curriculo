@@ -90,3 +90,21 @@ class RepositorioSessaoSqlAlchemy(RepositorioSessao, ConsultaSessaoAtiva):
         )
         await self._session.execute(comando)
         await self._session.flush()
+
+    async def revogar_todas(self, usuario_id: UsuarioId, instante: datetime) -> None:
+        """Revoga todas as sessões ativas de uma conta em uma única escrita.
+
+        A atualização condiciona usuário e ausência de revogação, preservando
+        datas já registradas. Ela existe para invalidar sessões antigas após a
+        redefinição de senha.
+        """
+        comando = (
+            update(SessaoRegistro)
+            .where(
+                SessaoRegistro.usuario_id == usuario_id.valor,
+                SessaoRegistro.revogada_em.is_(None),
+            )
+            .values(revogada_em=instante)
+        )
+        await self._session.execute(comando)
+        await self._session.flush()

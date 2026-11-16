@@ -17,6 +17,7 @@ from backend.api.sessoes import COOKIE_SESSAO
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 TAG_ASSOCIACOES_CURRICULO_VAGA = "Associações currículo-vaga"
 TAG_CADASTRO_ACESSO = "Cadastro e acesso"
+TAG_RECUPERACAO_SENHA = "Recuperação de senha"
 TAG_SESSOES = "Sessões"
 TAG_PERFIL_ESTUDANTE = "Perfil do estudante"
 TAG_DADOS_CONTATO = "Dados de contato"
@@ -55,6 +56,12 @@ METADADOS_TAGS: list[dict[str, str]] = [
             "Cadastro do estudante e login. Use `POST /acessos` para "
             "autenticar: o navegador guarda o cookie de sessão e o envia "
             "automaticamente nas demais requisições do Swagger."
+        ),
+    },
+    {
+        "name": TAG_RECUPERACAO_SENHA,
+        "description": (
+            "Solicitação pública de link temporário e redefinição de senha."
         ),
     },
     {"name": TAG_SESSOES, "description": "Encerramento da sessão atual (logout)."},

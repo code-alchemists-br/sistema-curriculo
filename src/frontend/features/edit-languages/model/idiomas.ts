@@ -32,7 +32,7 @@ export function criarIdiomaVazio(): Idioma {
 /**
  * Valida os campos de um único idioma.
  *
- * A função verifica presença do nome e seleção do nível de proficiência.
+ * A função limita o nome a 200 caracteres e exige um nível do vocabulário da tela.
  * Ela existe para oferecer feedback imediato sem substituir as regras
  * definitivas que serão aplicadas pelo backend.
  */
@@ -41,9 +41,11 @@ export function validarIdioma(idioma: Idioma): ErrosIdioma {
 
   if (idioma.nome.trim() === "") {
     erros.nome = "Informe o idioma.";
+  } else if (Array.from(idioma.nome.trim()).length > 200) {
+    erros.nome = "Informe no máximo 200 caracteres.";
   }
 
-  if (idioma.nivel === "") {
+  if (!Object.prototype.hasOwnProperty.call(NIVEIS_IDIOMA, idioma.nivel)) {
     erros.nivel = "Selecione o nível de proficiência.";
   }
 
@@ -69,4 +71,20 @@ export function validarListaIdiomas(
   });
 
   return erros;
+}
+
+/**
+ * Identifica ausência total pelo nome e nível aparados, sem tratar dados parciais
+ * como vazios, para permitir que somente rascunhos opcionais sejam ignorados.
+ */
+export function idiomaEstaVazio(idioma: Idioma): boolean {
+  return idioma.nome.trim() === "" && idioma.nivel.trim() === "";
+}
+
+/**
+ * Retorna uma cópia com o nome aparado e o nível controlado preservado.
+ * Padroniza o payload sem alterar o rascunho nem converter níveis inválidos em válidos.
+ */
+export function normalizarIdioma(idioma: Idioma): Idioma {
+  return { nome: idioma.nome.trim(), nivel: idioma.nivel };
 }

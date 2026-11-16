@@ -285,6 +285,21 @@ export function App() {
     },
   );
 
+  // Envio em andamento de uma etapa; é cancelado ao navegar, sair ou trocar de conta.
+  const identidadeCadastro = usuarioLogado?.email;
+  const envioCadastro = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      envioCadastro.current?.abort();
+    };
+  }, [identidadeCadastro]);
+
+  /** Invalida I/O da etapa anterior para não restaurar dados após saída, troca de conta ou logout. */
+  function cancelarCadastro(): void {
+    envioCadastro.current?.abort();
+    envioCadastro.current = null;
+  }
+
   const [intencaoAcesso, setIntencaoAcesso] = useState<
     "criar-curriculo" | "criar-conta" | "login" | null
   >(() => {
@@ -343,6 +358,7 @@ export function App() {
    * caminho de retorno previsível, inclusive para navegação por teclado.
    */
   function voltarAoInicio(): void {
+    cancelarCadastro();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("etapa");
@@ -386,6 +402,7 @@ export function App() {
   }
 
   function aoFazerLogout(): void {
+    cancelarCadastro();
     setUsuarioLogado(null);
     setCurriculoCarregadoDe(null);
     setCurriculoPronto(false);
@@ -674,6 +691,7 @@ export function App() {
    * sem depender de uma biblioteca externa de roteamento.
    */
   function navegar(etapa: RotaAtiva): void {
+    cancelarCadastro();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (etapa === "inicio" || etapa === "acesso") {
@@ -709,6 +727,8 @@ export function App() {
      * pessoa utiliza os botões de avançar e voltar do navegador.
      */
     function aoMudarHistorico(): void {
+      envioCadastro.current?.abort();
+      envioCadastro.current = null;
       const params = new URLSearchParams(window.location.search);
       const etapa = params.get("etapa") as RotaAtiva | null;
       const intencao = params.get("intencao") as
@@ -843,14 +863,15 @@ export function App() {
         }}
         certificacoesIniciais={certificacoes}
         cursosIniciais={cursos}
-        onAvancar={() =>
-          void salvarEAvancar(async () => {
-            await clienteCurriculo?.salvarCursos(ultimos.current.cursos ?? []);
-            await clienteCurriculo?.salvarCertificacoes(
-              ultimos.current.certificacoes ?? [],
-            );
-          }, "idiomas")
-        }
+        onAvancar={async (cursosValidados, certificacoesValidadas) => {
+          // Substitui as seções inteiras no banco (sem duplicar). Se falhar,
+          // a página mostra o erro e não avança.
+          setCursos(cursosValidados);
+          setCertificacoes(certificacoesValidadas);
+          await clienteCurriculo?.salvarCursos(cursosValidados);
+          await clienteCurriculo?.salvarCertificacoes(certificacoesValidadas);
+          navegar("idiomas");
+        }}
         onVoltar={() => navegar("experiencias-profissionais")}
         onVoltarInicio={voltarAoInicio}
       />,
@@ -861,12 +882,12 @@ export function App() {
     return comAviso(
       <PaginaIdiomas
         idiomasIniciais={idiomas}
-        onAvancar={() =>
-          void salvarEAvancar(
-            () => clienteCurriculo!.salvarIdiomas(ultimos.current.idiomas ?? []),
-            "competencias",
-          )
-        }
+        onAvancar={async (idiomasValidados) => {
+          // Substitui a seção inteira no banco; falhas aparecem na página.
+          setIdiomas(idiomasValidados);
+          await clienteCurriculo?.salvarIdiomas(idiomasValidados);
+          navegar("competencias");
+        }}
         onSalvar={(lista) => {
           ultimos.current.idiomas = lista;
           setIdiomas(lista);

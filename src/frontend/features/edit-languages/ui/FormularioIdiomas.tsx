@@ -1,9 +1,18 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+  type Ref,
+} from "react";
 
 import {
   criarIdiomaVazio,
+  idiomaEstaVazio,
+  normalizarIdioma,
   NIVEIS_IDIOMA,
-  validarListaIdiomas,
+  validarIdioma,
   type ErrosIdioma,
   type Idioma,
   type NivelIdioma,
@@ -12,6 +21,14 @@ import "./FormularioIdiomas.css";
 
 /** Define os valores iniciais e o callback de persistência da tela. */
 export interface FormularioIdiomasProps {
+  /** Encaminha o submit ao coordenador da página para não anunciar persistência local como remota. */
+  aoAvancar?: () => void | Promise<void>;
+  /** Valida e normaliza os dados para a página impedir avanço com entradas parciais. */
+  ref?: Ref<{ validar: () => Idioma[] | null }>;
+  /** Ignora somente entradas inteiramente vazias nas etapas opcionais. */
+  permitirVazios?: boolean;
+  /** Impede alterações enquanto a página aguarda persistência. */
+  desabilitado?: boolean;
   idiomasIniciais?: Idioma[];
   onSalvar?: (idiomas: Idioma[]) => void;
   /** Notifica a porcentagem de campos preenchidos nesta seção (0 a 100). */
@@ -33,6 +50,10 @@ export interface FormularioIdiomasProps {
  * idioma e um select para o nível de proficiência.
  */
 export function FormularioIdiomas({
+  aoAvancar,
+  ref,
+  permitirVazios = false,
+  desabilitado = false,
   idiomasIniciais = [criarIdiomaVazio()],
   onSalvar,
   aoAlterarProgresso,
@@ -43,6 +64,20 @@ export function FormularioIdiomas({
   const [idiomas, setIdiomas] = useState<Idioma[]>(idiomasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosIdioma>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const focarErro = useRef(false);
+
+  useImperativeHandle(ref, () => ({ validar: validarFormulario }));
+
+  useEffect(() => {
+    if (focarErro.current) {
+      formularioRef.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+      focarErro.current = false;
+    }
+  }, [erros]);
+
   const [idiomaRemovido, setIdiomaRemovido] = useState<{
     item: Idioma;
     indice: number;
@@ -159,27 +194,46 @@ export function FormularioIdiomas({
     setIdiomaRemovido(null);
   }
 
-  /** Valida todos os idiomas e chama o callback se não houver erros. */
+  /** Valida cada entrada por índice e normaliza o lote para impedir cadastro parcial sem perder o vínculo dos erros. */
+  function validarFormulario(): Idioma[] | null {
+    const novosErros: Record<number, ErrosIdioma> = {};
+    idiomas.forEach((item, indice) => {
+      if (permitirVazios && idiomaEstaVazio(item)) return;
+      const errosItem = validarIdioma(item);
+      if (Object.keys(errosItem).length > 0) novosErros[indice] = errosItem;
+    });
+    setErros(novosErros);
+    if (Object.keys(novosErros).length > 0) {
+      focarErro.current = true;
+      return null;
+    }
+    return idiomas
+      .filter((item) => !permitirVazios || !idiomaEstaVazio(item))
+      .map(normalizarIdioma);
+  }
+
+  /** Reutiliza a validação do avanço ao submeter para manter feedback e dados enviados coerentes. */
   function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    const novosErros = validarListaIdiomas(idiomas);
-
-    if (Object.keys(novosErros).length > 0) {
-      setErros(novosErros);
+    if (desabilitado) return;
+    if (aoAvancar) {
+      void aoAvancar();
       return;
     }
-
-    const idiomasNormalizados = idiomas.map((idioma) => ({
-      nome: idioma.nome.trim(),
-      nivel: idioma.nivel,
-    })) as Idioma[];
+    const idiomasNormalizados = validarFormulario();
+    if (idiomasNormalizados === null || desabilitado) return;
 
     onSalvar?.(idiomasNormalizados);
     setMensagem("Idiomas salvos com sucesso.");
   }
 
   return (
-    <form className="formulario-idiomas" noValidate onSubmit={enviarFormulario}>
+    <form
+      ref={formularioRef}
+      className="formulario-idiomas"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
       {exibirTitulo && <h2 className="secao-titulo">Idiomas</h2>}
 
       {idiomas.map((idioma, indice) => {
@@ -187,10 +241,14 @@ export function FormularioIdiomas({
         const prefixo = `idioma-${indice}`;
 
         return (
-          <fieldset aria-label={`Idioma ${indice + 1}`} key={prefixo}>
+          <fieldset
+            disabled={desabilitado}
+            aria-label={`Idioma ${indice + 1}`}
+            key={prefixo}
+          >
             <legend className="sr-only">Idioma {indice + 1}</legend>
 
-            {idiomas.length > 1 && (
+            {idiomas.length > 0 && (
               <div className="item-sublista__topo">
                 <span className="label-subtitulo">Idioma {indice + 1}</span>
                 <button
@@ -285,6 +343,7 @@ export function FormularioIdiomas({
           </span>
           <button
             aria-label="Desfazer remoção do idioma"
+            disabled={desabilitado}
             className="btn-desfazer"
             onClick={desfazerRemocaoIdioma}
             type="button"
@@ -295,6 +354,7 @@ export function FormularioIdiomas({
       )}
 
       <button
+        disabled={desabilitado}
         className="btn-adicionar-item"
         onClick={adicionarIdioma}
         type="button"
@@ -309,7 +369,11 @@ export function FormularioIdiomas({
       )}
 
       {exibirBotaoSalvar && (
-        <button className="btn-salvar-secao" type="submit">
+        <button
+          disabled={desabilitado}
+          className="btn-salvar-secao"
+          type="submit"
+        >
           Salvar idiomas
         </button>
       )}

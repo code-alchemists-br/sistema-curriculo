@@ -30,11 +30,9 @@ describe("validarCurso", () => {
     expect(erros.instituicao).toBe("Informe a instituição.");
   });
 
-  it("reporta carga horária vazia", () => {
+  it("aceita carga horária vazia porque é opcional", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "" });
-    expect(erros.cargaHoraria).toBe(
-      "Informe uma carga horária válida (em horas).",
-    );
+    expect(erros.cargaHoraria).toBeUndefined();
   });
 
   it("reporta carga horária não numérica", () => {

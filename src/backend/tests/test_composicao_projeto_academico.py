@@ -62,8 +62,17 @@ class ComposicaoProjetoTestCase(TestCase):
         deslocamento de chamadas posicionais e perda da injeção das operações.
         """
         nomes = list(inspect.signature(factory.create_app).parameters)
-        self.assertEqual(nomes[-3:], ["consultar_projeto_academico",
-                                    "editar_projeto_academico", "excluir_projeto_academico"])
+        self.assertEqual(
+            nomes[-6:],
+            [
+                "consultar_projeto_academico",
+                "editar_projeto_academico",
+                "excluir_projeto_academico",
+                "solicitar_recuperacao_senha",
+                "redefinir_senha",
+                "enviador_recuperacao_senha",
+            ],
+        )
         consulta, edicao, exclusao = Mock(), Mock(), Mock()
         with (
             patch.object(factory, "FastAPI"),

@@ -1,8 +1,16 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type FormEvent,
+  type Ref,
+} from "react";
 
 import { CampoFormulario } from "../../../shared";
 import {
   criarCertificacaoVazia,
+  certificacaoEstaVazia,
   normalizarCertificacao,
   validarCertificacao,
   type ErrosCertificacao,
@@ -14,6 +22,14 @@ import "./FormularioCertificacao.css";
  * Propriedades para configuração do formulário acessível de certificação.
  */
 export interface FormularioCertificacaoProps {
+  /** Encaminha o submit ao coordenador da página para não anunciar persistência local como remota. */
+  aoAvancar?: () => void | Promise<void>;
+  /** Valida e normaliza os dados para a página impedir avanço com entradas parciais. */
+  ref?: Ref<{ validar: () => ValoresCertificacao[] | null }>;
+  /** Ignora somente entradas inteiramente vazias nas etapas opcionais. */
+  permitirVazios?: boolean;
+  /** Impede alterações enquanto a página aguarda persistência. */
+  desabilitado?: boolean;
   /** Valores iniciais opcionais para uma certificação única. */
   valoresIniciais?: ValoresCertificacao;
   /** Lista inicial de certificações para edição múltipla. */
@@ -46,6 +62,10 @@ interface MensagemFeedback {
  * placeholders contextualizados e vínculos ARIA de acessibilidade.
  */
 export function FormularioCertificacao({
+  aoAvancar,
+  ref,
+  permitirVazios = false,
+  desabilitado = false,
   valoresIniciais,
   certificacoesIniciais,
   onSalvar,
@@ -57,7 +77,7 @@ export function FormularioCertificacao({
 }: FormularioCertificacaoProps) {
   const [certificacoes, setCertificacoes] = useState<ValoresCertificacao[]>(
     () => {
-      if (certificacoesIniciais && certificacoesIniciais.length > 0) {
+      if (certificacoesIniciais) {
         return certificacoesIniciais;
       }
       if (valoresIniciais) {
@@ -70,6 +90,20 @@ export function FormularioCertificacao({
   const [erros, setErros] = useState<Record<number, ErrosCertificacao>>({});
   const [mensagem, setMensagem] = useState<MensagemFeedback | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const focarErro = useRef(false);
+
+  useImperativeHandle(ref, () => ({ validar: validarFormulario }));
+
+  useEffect(() => {
+    if (focarErro.current) {
+      formularioRef.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+      focarErro.current = false;
+    }
+  }, [erros]);
+
   const [certificacaoRemovida, setCertificacaoRemovida] = useState<{
     item: ValoresCertificacao;
     indice: number;
@@ -169,35 +203,50 @@ export function FormularioCertificacao({
     setCertificacaoRemovida(null);
   }
 
-  async function enviarFormulario(
-    evento: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    evento.preventDefault();
-    if (enviando) return;
-
+  /** Valida certificações por índice e normaliza somente entradas preenchidas para unificar avanço e submissão. */
+  function validarFormulario(): ValoresCertificacao[] | null {
     const novosErros: Record<number, ErrosCertificacao> = {};
     certificacoes.forEach((cert, idx) => {
+      if (permitirVazios && certificacaoEstaVazia(cert)) return;
       const errosCert = validarCertificacao(cert);
       if (Object.keys(errosCert).length > 0) {
         novosErros[idx] = errosCert;
       }
     });
 
+    setErros(novosErros);
     if (Object.keys(novosErros).length > 0) {
-      setErros(novosErros);
+      focarErro.current = true;
       setMensagem({
         tipo: "erro",
         texto: "Corrija os campos destacados antes de salvar a certificação.",
       });
+      return null;
+    }
+    setMensagem(null);
+    return certificacoes
+      .filter((item) => !permitirVazios || !certificacaoEstaVazia(item))
+      .map(normalizarCertificacao);
+  }
+
+  /** Aguarda o callback após validar o lote para comunicar sucesso sem ocultar falhas de cadastro. */
+  async function enviarFormulario(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    evento.preventDefault();
+    if (desabilitado) return;
+    if (aoAvancar) {
+      void aoAvancar();
       return;
     }
-
+    if (enviando || desabilitado) return;
+    const valoresNormalizados = validarFormulario();
+    if (valoresNormalizados === null) return;
     setEnviando(true);
     setErros({});
     setMensagem(null);
 
     try {
-      const valoresNormalizados = certificacoes.map(normalizarCertificacao);
       if (onSalvar) {
         if (certificacoes.length === 1) {
           await onSalvar(valoresNormalizados[0]);
@@ -224,6 +273,7 @@ export function FormularioCertificacao({
 
   return (
     <form
+      ref={formularioRef}
       aria-labelledby={`${prefixoId}-titulo`}
       className="formulario-certificacao"
       noValidate
@@ -242,12 +292,13 @@ export function FormularioCertificacao({
 
         return (
           <fieldset
+            disabled={enviando || desabilitado}
             aria-label={`Certificação ${indice + 1}`}
             key={`cert-${indice}`}
           >
             <legend className="sr-only">Certificação {indice + 1}</legend>
 
-            {certificacoes.length > 1 && (
+            {certificacoes.length > 0 && (
               <div className="item-sublista__topo">
                 <span className="label-subtitulo">
                   Certificação {indice + 1}
@@ -301,6 +352,7 @@ export function FormularioCertificacao({
           </span>
           <button
             aria-label="Desfazer remoção da certificação"
+            disabled={enviando || desabilitado}
             className="btn-desfazer"
             onClick={desfazerRemocaoCertificacao}
             type="button"
@@ -311,6 +363,7 @@ export function FormularioCertificacao({
       )}
 
       <button
+        disabled={enviando || desabilitado}
         className="btn-adicionar-item"
         onClick={adicionarCertificacao}
         type="button"
@@ -329,7 +382,7 @@ export function FormularioCertificacao({
 
       {exibirBotaoSalvar && (
         <div className="formulario-certificacao__acoes">
-          <button disabled={enviando} type="submit">
+          <button disabled={enviando || desabilitado} type="submit">
             {enviando ? "Salvando certificação..." : "Salvar certificação"}
           </button>
         </div>

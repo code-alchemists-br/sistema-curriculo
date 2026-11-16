@@ -120,6 +120,24 @@ explícita da configuração.
 
 ## Operações HTTP
 
+### Solicitar recuperação — `POST /recuperacoes-senha`
+
+Recebe `email` e sempre responde `202 Accepted` com mensagem genérica quando o
+banco e o serviço de e-mail estão configurados. Conta inexistente, conta
+excluída ou solicitação limitada não altera a mensagem nem agenda envio. O
+token possui 256 bits de entropia, expira em 15 minutos e somente seu SHA-256 é
+persistido. Um novo pedido substitui o token anterior; cada conta tem intervalo
+mínimo de um minuto entre pedidos. O envio SMTP TLS ocorre após a resposta e
+falhas de entrega não registram endereço, token ou conteúdo da exceção.
+
+### Confirmar redefinição — `POST /recuperacoes-senha/confirmacao`
+
+Recebe `token` e `senha`. Com token válido, altera a credencial para o hash
+scrypt derivado e revoga todas as sessões do usuário na mesma transação, com
+resposta `204 No Content`. Token desconhecido, expirado, consumido ou associado
+a conta excluída responde `400` de forma uniforme. A confirmação não autentica
+nem emite cookie; o usuário deve fazer login novamente.
+
 ### Criar sessão — `POST /acessos`
 
 Requisição:
@@ -175,8 +193,9 @@ concede papel ou permissão por si só.
 
 O middleware exige sessão em todas as rotas que não estejam explicitamente
 liberadas. No estado atual, são públicas o cadastro `POST /estudantes`, o login
-`POST /acessos`, o logout `DELETE /sessao/atual`, a documentação OpenAPI, os
-health checks e requisições CORS `OPTIONS`. O token é lido somente do cookie;
+`POST /acessos`, as duas rotas `/recuperacoes-senha`, o logout
+`DELETE /sessao/atual`, a documentação OpenAPI, os health checks e requisições
+CORS `OPTIONS`. O token de sessão é lido somente do cookie;
 valores em caminho, query, corpo ou `Authorization` não autenticam a chamada.
 
 Não existe atualmente uma rota `GET /sessao/atual` para retornar a identidade da
@@ -192,12 +211,13 @@ declarado pelo cliente.
 
 ### Classificação de rotas
 
-O cadastro `POST /estudantes`, o login `POST /acessos`, o logout
-`DELETE /sessao/atual`, as rotas de documentação e as verificações operacionais
-estão liberados pelo middleware atual. Requisições `OPTIONS` também passam sem
-autenticação. O login só cria sessão depois de validar credenciais e confirmar
-que a conta não está excluída. A implementação destes cards não configura
-limitação de tentativas nem proteção CSRF.
+O cadastro `POST /estudantes`, o login `POST /acessos`, as rotas de recuperação,
+o logout `DELETE /sessao/atual`, as rotas de documentação e as verificações
+operacionais estão liberados pelo middleware atual. Requisições `OPTIONS`
+também passam sem autenticação. O login só cria sessão depois de validar
+credenciais e confirmar que a conta não está excluída. O pedido de recuperação
+tem contenção por conta, mas o backend ainda não configura limitação geral de
+tentativas de login nem proteção CSRF.
 
 Qualquer operação que leia ou altere informações pessoais ou profissionais do
 estudante DEVE exigir sessão. Na API atual, isso inclui:
@@ -288,8 +308,8 @@ mensagens de erro, métricas ou rastreamentos.
 - Logout revoga somente o registro associado ao token apresentado.
 - Exclusão lógica da conta invalida todas as sessões da conta; a validação
   também rejeita imediatamente uma conta com `deleted_at` preenchido.
-- Uma futura alteração ou redefinição de senha deve revogar todas as sessões
-  existentes da conta após a atualização bem-sucedida da credencial.
+- A redefinição de senha revoga todas as sessões ativas da conta na transação
+  que grava a nova credencial.
 - Registros expirados ou revogados podem ser removidos por rotina de limpeza,
   desde que a remoção não restaure sua validade nem afete auditoria exigida.
 
