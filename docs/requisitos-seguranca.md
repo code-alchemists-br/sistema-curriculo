@@ -179,6 +179,18 @@ O mecanismo deverá considerar:
 * proteção do token durante transmissão e armazenamento;
 * não exposição do token em logs.
 
+No backend, `POST /recuperacoes-senha` responde `202 Accepted` com a mesma
+mensagem para contas existentes e ausentes. Um token aleatório de 256 bits
+expira em 15 minutos; somente seu resumo SHA-256 é persistido. Um novo pedido
+substitui o token anterior e há um intervalo mínimo de um minuto entre envios
+para a mesma conta. A entrega ocorre em tarefa posterior à resposta HTTP.
+
+`POST /recuperacoes-senha/confirmacao` recebe token e senha nova. O backend
+consome o token, grava a senha derivada com scrypt e revoga todas as sessões da
+conta na mesma transação. Token desconhecido, expirado ou reutilizado recebe a
+mesma resposta. O envio real depende da configuração SMTP e da URL segura da
+tela de redefinição; sem essa configuração, o pedido responde indisponível.
+
 ## 2.9 Verificação de e-mail
 
 A verificação do endereço de e-mail será considerada como requisito do mecanismo de autenticação, principalmente por sua relação com a recuperação de conta.

@@ -159,7 +159,7 @@ Todos os caminhos abaixo são relativos à raiz do repositório.
 | ID  | Evidência de leitura                                                                                                                                                | Constatação                                                                                                                             |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | E01 | [src/backend/main.py][MAIN] e [autenticador_sessao_indisponivel.py][AUTH]                                                                                           | main não injeta executores de negócio; autenticador sempre rejeita token                                                                |
-| E02 | [src/backend/api/factory.py][FACTORY] e routers listados abaixo                                                                                                     | Recebe None, registra capacidades/indisponibilidade; assistente determinístico tem default; não inclui router de associação/recuperação |
+| E02 | [src/backend/api/factory.py][FACTORY] e routers listados abaixo                                                                                                     | Recebe None, registra capacidades/indisponibilidade; assistente determinístico tem default; recuperação possui router; associação segue sem HTTP |
 | E03 | [src/frontend/app/App.tsx][APP]                                                                                                                                     | Landing, acesso e etapas locais; não compõe painel autenticado, recuperação, documentos, gestão, prévia/download ou vagas/associação    |
 | E04 | [PaginaAcessoEstudante.tsx][PACCESS] e [cliente-acesso-estudante.ts][CACCESS]                                                                                       | Cliente HTTP existe, sem transição ao painel autenticado; sessão entre origens não comprovada                                           |
 | E05 | [PaginaRecuperacaoSenha.tsx][PREC] e [cliente-recuperacao-senha.ts][CREC]                                                                                           | Cliente indisponível; página independente não montada em App                                                                            |
@@ -258,17 +258,17 @@ As intenções abaixo descrevem a sessão futura. Em classe B, ficam registradas
 
 - **ID e ramo:** J02; Alternativo de acesso, não obrigatório a cada login.
 - **Objetivo para o estudante:** “Recupere o acesso à conta de demonstração se não lembrar sua credencial.”
-- **Ação de referência do facilitador:** Registrar a intenção de recuperação; não prescrever botões, URL ou envio enquanto o fluxo não estiver composto.
+- **Ação de referência do facilitador:** Registrar a intenção de recuperação; não prescrever percurso de tela enquanto cliente, formulário de redefinição e navegação não estiverem conectados.
 - **Pré-condição:** Conta e caixa de mensagens de demonstração controlada pela engenharia; serviço e tela conectados; nenhum e-mail para pessoa externa.
 - **Dados:** Identificador sintético M1; tokens/links de recuperação permanecem fora da evidência.
 - **Resultado esperado:** Solicitação de recuperação por e-mail e retorno ao acesso; fluxo de segurança prevê credencial atualizada sem exposição do token.
 - **Critério e origem:** **Definido:** [WF01], Recuperação: “Enviar link” e “Retorno para login”; [UC], Realizar login e recuperar senha; [SEG], §2.8. **Inferido:** forma de preparar o canal de demonstração, L10.
 - **Requisito e caso de teste:** UC02, RF-AUT-05; **sem CT dedicado** na matriz RF01–RF15. RNF02/RNF03 são contexto, não aceite integral.
 - **Evidência mínima futura:** Nota de solicitação e retorno alcançados, sem transcrever endereço, link ou código.
-- **Classe de planejamento, não resultado:** **B**. E05: página independente com cliente indisponível; não montada por App; E02 não registra recuperação.
+- **Classe de planejamento, não resultado:** **B**. O backend agora possui solicitação, envio configurável, confirmação, persistência e teste PostgreSQL; E05 ainda aponta cliente frontend indisponível e página não montada por App.
 - **Dependência:** Ramo de J01 com pré-condições próprias; sua ausência não exige executar recuperação para gerar PDF.
 - **Alternativa/falha:** Falha controlada ou campo inválido só quando cenário e esperado forem definidos; não simular sucesso de envio.
-- **Limite atual:** Não verifica envio/recebimento, validade/uso único do token ou retorno efetivo ao acesso.
+- **Limite atual:** A tela não está integrada ao backend; este roteiro não verifica entrega real do e-mail nem retorno navegável ao acesso.
 
 ### 10.4. J03 — Painel, iniciar e retomar
 
