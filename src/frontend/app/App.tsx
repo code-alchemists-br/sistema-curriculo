@@ -56,6 +56,7 @@ import {
 import {
   criarClienteAcessoDemonstracao,
   criarClienteAcessoEstudante,
+  encerrarSessao,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
 import { criarClienteVagasResiliente } from "./servicos-resilientes";
@@ -440,6 +441,8 @@ export function App() {
   }
 
   function aoFazerLogout(): void {
+    // Revoga a sessão no servidor sem bloquear a saída da tela; falha de rede é absorvida.
+    void encerrarSessao(apiBaseUrl);
     cancelarCadastro();
     setUsuarioLogado(null);
     setCurriculoCarregadoDe(null);

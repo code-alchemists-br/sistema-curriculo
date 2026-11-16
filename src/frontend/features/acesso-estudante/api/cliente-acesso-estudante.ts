@@ -205,3 +205,31 @@ export async function verificarSessaoAtiva(
     return true;
   }
 }
+
+/**
+ * Encerra a sessão atual na API, invalidando o cookie no servidor.
+ *
+ * O que faz: envia `DELETE /sessao/atual` com as credenciais do navegador, o
+ * que revoga o token no banco e apaga o cookie. Como a rota é idempotente,
+ * qualquer resposta HTTP é tratada como sessão encerrada. Falhas de rede são
+ * absorvidas e devolvem `false`, para o logout da tela nunca travar.
+ *
+ * Finalidade: impedir que o cookie da conta anterior continue autenticando a
+ * próxima conta que entrar no mesmo navegador.
+ *
+ * @returns `true` se a API respondeu; `false` se não foi possível contatá-la.
+ */
+export async function encerrarSessao(
+  urlDaApi = import.meta.env.VITE_API_URL,
+): Promise<boolean> {
+  if (urlDaApi === undefined || urlDaApi.trim() === "") return true;
+  try {
+    await fetch(`${urlDaApi.replace(/\/$/, "")}/sessao/atual`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
