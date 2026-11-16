@@ -179,7 +179,7 @@ export function ModeloClassico({ previa }: ModeloClassicoProps) {
       <SecaoClassica
         possuiConteudo={previa.documentos.length > 0}
         slug="documentos-complementares"
-        titulo="Documentos complementares"
+        titulo="Cursos e certificações"
       >
         <ul className="modelo-classico__lista-documentos">
           {previa.documentos.map((documento) => (

@@ -181,7 +181,7 @@ describe("Prévia de Currículo — Validação na Largura Móvel F1.1 (Issue #3
       expect(
         screen.getByRole("heading", {
           level: 2,
-          name: "Documentos complementares",
+          name: "Cursos e certificações",
         }),
       ).toBeInTheDocument();
       expect(

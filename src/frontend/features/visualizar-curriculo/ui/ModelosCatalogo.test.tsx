@@ -151,7 +151,7 @@ describe("modelos do catálogo", () => {
     ).toEqual([
       "Formação acadêmica",
       "Projetos acadêmicos",
-      "Documentos complementares",
+      "Cursos e certificações",
       "Experiência profissional relevante",
       "Competências",
       "Idiomas",
@@ -170,7 +170,7 @@ describe("modelos do catálogo", () => {
       "Projetos acadêmicos",
       "Competências",
       "Idiomas",
-      "Documentos complementares",
+      "Cursos e certificações",
       "Experiência profissional",
     ]);
   });

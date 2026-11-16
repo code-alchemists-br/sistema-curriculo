@@ -281,7 +281,7 @@ class BancoCredenciaisSessao:
         async with self.sessoes() as sessao:
             await RepositorioSessaoSqlAlchemy(sessao).salvar(
                 UsuarioId(usuario_id), resumo, INSTANTE_T,
-                expira_em if expira_em is not None else INSTANTE_T + timedelta(hours=8),
+                expira_em if expira_em is not None else INSTANTE_T + timedelta(minutes=60),
             )
             if revogada_em is not None:
                 await sessao.execute(update(SessaoRegistro).where(

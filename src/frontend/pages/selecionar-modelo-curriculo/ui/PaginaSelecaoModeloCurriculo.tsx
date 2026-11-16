@@ -1,18 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  criarClienteAssistenteIa,
+  RecomendacaoModeloIa,
+  type ModeloSugerido,
+} from "../../../features/assistente-ia";
+import {
   AlternadorModeloCurriculo,
   inferirObjetivoDoPerfil,
   obterModeloRecomendadoPorObjetivo,
   obterObjetivoPorModelo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
+  resumirPerfilParaIa,
   type ModeloApresentacaoCurriculo,
   type ObjetivoCurriculo,
   type PerfilParaRecomendacao,
 } from "../../../features/alternar-modelo-curriculo";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaSelecaoModeloCurriculo.css";
+
+const NOMES_MODELO: Record<ModeloSugerido, string> = {
+  classico: "Clássico",
+  compacto: "Compacto",
+  "ats-simples": "ATS simples",
+  criativo: "Criativo",
+  moderno: "Moderno",
+  academico: "Acadêmico",
+  "primeiro-emprego": "Primeiro emprego",
+};
 
 /** Define os dados necessários para confirmar a escolha de modelo na página. */
 export interface PaginaSelecaoModeloCurriculoProps {
@@ -34,7 +50,7 @@ export interface PaginaSelecaoModeloCurriculoProps {
  * Compõe a tela que orienta e confirma o modelo de apresentação do currículo.
  *
  * - O que faz: Mostra o objetivo profissional e todos os modelos reconhecidos pelo catálogo.
- * - Como faz: Mantém somente a seleção visual local e entrega o valor confirmado por callback, sem realizar HTTP ou simular persistência.
+ * - Como faz: Mantém somente a seleção visual local e entrega o valor confirmado por callback, sem realizar HTTP ou simular persistência. Mostra uma única recomendação: a da IA quando ela responde para o objetivo atual, ou a das regras fixas quando a IA ainda não respondeu ou está indisponível.
  * - Qual finalidade atende: Permite que a rota de criação associe um modelo válido à versão de currículo sem duplicar o seletor já existente na feature.
  */
 export function PaginaSelecaoModeloCurriculo({
@@ -69,6 +85,8 @@ export function PaginaSelecaoModeloCurriculo({
       return perfilEstudante ? modeloInferido : "classico";
     });
 
+  // Sem modelo salvo, avisa a composição do modelo sugerido logo ao abrir,
+  // para a prévia e o estado da rota já usarem a mesma escolha da tela.
   useEffect(() => {
     if (!modeloInicial) {
       aoAlterarModeloInstantaneo?.(modeloSelecionado);
@@ -76,16 +94,39 @@ export function PaginaSelecaoModeloCurriculo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
+  const perfilParaIa = useMemo(
+    () =>
+      resumirPerfilParaIa(
+        perfilEstudante,
+        OPCOES_OBJETIVO_CURRICULO.find((o) => o.valor === objetivo)?.rotulo ??
+          objetivo,
+      ),
+    [objetivo, perfilEstudante],
+  );
+  // Recomendação da IA para o objetivo atual. Quando existe, substitui a
+  // recomendação por regras fixas, para a tela não mostrar duas indicações.
+  const [modeloIa, setModeloIa] = useState<ModeloSugerido | null>(null);
+  // A IA roda sozinha só ao abrir a tela; depois de trocar o objetivo o
+  // estudante pede de novo pelo botão (evita gastar chamadas a cada troca).
+  const [iaAutomatica, setIaAutomatica] = useState(true);
   const recomendacao = obterRecomendacaoModelo(objetivo);
-  const modeloRecomendado = perfilEstudante
-    ? modeloInferido
-    : obterModeloRecomendadoPorObjetivo(objetivo);
+  const modeloRecomendado =
+    modeloIa ?? obterModeloRecomendadoPorObjetivo(objetivo);
 
   function aoAlterarObjetivo(novoObjetivo: ObjetivoCurriculo): void {
     setObjetivo(novoObjetivo);
+    setModeloIa(null);
+    setIaAutomatica(false);
     const modeloSugerido = obterModeloRecomendadoPorObjetivo(novoObjetivo);
     setModeloSelecionado(modeloSugerido);
     aoAlterarModeloInstantaneo?.(modeloSugerido);
+  }
+
+  function aoRecomendarComIa(modelo: ModeloSugerido): void {
+    setModeloIa(modelo);
+    setModeloSelecionado(modelo);
+    aoAlterarModeloInstantaneo?.(modelo);
   }
 
   return (
@@ -131,9 +172,20 @@ export function PaginaSelecaoModeloCurriculo({
           </select>
         </div>
 
-        <p className="pagina-selecao-modelo__recomendacao" role="status">
-          {recomendacao}
-        </p>
+        {modeloIa === null && (
+          <p className="pagina-selecao-modelo__recomendacao" role="status">
+            {recomendacao}
+          </p>
+        )}
+
+        <RecomendacaoModeloIa
+          key={objetivo}
+          automatico={iaAutomatica}
+          aoRecomendar={aoRecomendarComIa}
+          cliente={clienteIa}
+          nomeDoModelo={(modelo) => NOMES_MODELO[modelo] ?? modelo}
+          perfil={perfilParaIa}
+        />
 
         <AlternadorModeloCurriculo
           modeloRecomendado={modeloRecomendado}

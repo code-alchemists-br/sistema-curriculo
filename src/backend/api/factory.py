@@ -10,6 +10,8 @@ from typing import AsyncContextManager
 
 from fastapi import FastAPI
 
+from backend.api.assistente_ia import criar_router as criar_router_assistente_ia
+
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 from backend.api.associacoes_curriculo_vaga import (
     ListagemAssociacoesCurriculoVagaExecutor,
@@ -42,6 +44,7 @@ from backend.api.competencia import (
 )
 from backend.api.competencia import criar_router as criar_router_competencia
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
+from backend.api.curriculo_completo import criar_router_curriculo_completo
 
 # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
 from backend.api.curso import CadastroCursoExecutor
@@ -69,6 +72,7 @@ from backend.api.documentacao_openapi import (
     TAG_CADASTRO_ACESSO,
     TAG_CERTIFICACOES,
     TAG_COMPETENCIAS,
+    TAG_CURRICULO_GUIADO,
     TAG_CURSOS,
     TAG_DADOS_CONTATO,
     TAG_DOCUMENTOS_COMPLEMENTARES,
@@ -239,7 +243,10 @@ from backend.application.assistente_descricao_projeto_deterministico import (
     AssistenteDescricaoProjetoDeterministico,
 )
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.curriculo_completo import GerenciarCurriculoCompleto
+from backend.application.recomendacao_modelo import RecomendarModeloCurriculo
 from backend.application.recuperacao_senha import EnviadorLinkRecuperacao
+from backend.application.revisao_texto import RevisarTexto
 from backend.application.saude import VerificadorPersistencia, VerificadorSaude
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
@@ -331,6 +338,11 @@ def create_app(
     solicitar_recuperacao_senha: SolicitacaoRecuperacaoExecutor | None = None,
     redefinir_senha: RedefinicaoSenhaExecutor | None = None,
     enviador_recuperacao_senha: EnviadorLinkRecuperacao | None = None,
+    # Assistente de IA e currículo completo; ficam no fim para preservar a
+    # posição dos parâmetros já usados por consumidores posicionais.
+    revisar_texto: RevisarTexto | None = None,
+    recomendar_modelo_curriculo: RecomendarModeloCurriculo | None = None,
+    gerenciar_curriculo_completo: GerenciarCurriculoCompleto | None = None,
 ) -> FastAPI:
     """Cria a aplicação HTTP e registra as rotas com dependências injetadas.
 
@@ -342,7 +354,9 @@ def create_app(
     associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
     decisão sobre recomendações,
     experiências profissionais (cadastro, leitura, edição e exclusão), prévia, exportação do
-    currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
+    currículo em DOCX e PDF, vagas de emprego, assistente de IA (revisão de
+    textos e recomendação de modelo), currículo completo do estudante (leitura e
+    substituição por seção) e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
     A exceção é o assistente de descrição de projeto: sem assistente informado,
     usa a estratégia determinística padrão, que não depende de serviço externo,
@@ -517,6 +531,14 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])
+    app.include_router(
+        criar_router_assistente_ia(revisar_texto, recomendar_modelo_curriculo),
+        tags=[TAG_CURRICULO_GUIADO],
+    )
+    app.include_router(
+        criar_router_curriculo_completo(gerenciar_curriculo_completo),
+        tags=[TAG_PERFIL_ESTUDANTE],
+    )
     app.include_router(
         criar_router_sessoes(revogador_sessao, configuracao_cookie), tags=[TAG_SESSOES]
     )

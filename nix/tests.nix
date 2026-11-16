@@ -12,9 +12,8 @@ pkgs.mkShell {
     # Servidor e clientes para os testes de integração descartáveis.
     pkgs.postgresql
     # Proveniência: decision-analysis prompts/backend/20261019-191822-consulta-paginada-associacoes-estudante-v002.md#v002
-    (pkgs.python3.withPackages (
-      ps: backendPythonPackages ps ++ [ ps.aiosqlite ]
-    ))
+    # aiosqlite já faz parte das dependências do backend.
+    (pkgs.python3.withPackages backendPythonPackages)
   ];
 
   shellHook = ''

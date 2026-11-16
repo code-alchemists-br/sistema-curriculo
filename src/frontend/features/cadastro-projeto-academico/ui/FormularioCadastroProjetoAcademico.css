@@ -322,6 +322,12 @@
   text-decoration: underline;
 }
 
+.formulario-projeto-academico .form-message.form-message--aviso {
+  background-color: rgba(250, 204, 21, 0.12);
+  color: #fde68a;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+}
+
 .formulario-projeto__contador-caracteres {
   display: block;
   text-align: right;

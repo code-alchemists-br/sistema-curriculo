@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   LIMITES_EXPERIENCIA,
@@ -16,10 +16,41 @@ import "./FormularioExperiencias.css";
 export interface FormularioExperienciasProps {
   aoAlterarProgresso?: (progresso: number) => void;
   experienciasIniciais?: Experiencia[];
-  onSalvar?: (experiencias: Experiencia[]) => void;
+  /**
+   * Recebe as experiências válidas para salvar. Se devolver uma Promise que
+   * falhar, o formulário mostra a mensagem do erro e não anuncia sucesso.
+   */
+  onSalvar?: (experiencias: Experiencia[]) => void | Promise<void>;
   onVoltar?: () => void;
   /** Notifica alterações nas experiências para preservação de estado. */
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
+  /**
+   * Espaço opcional abaixo da descrição (por exemplo, a revisão por IA). A
+   * página decide o que mostrar; sem ele o formulário funciona como antes.
+   */
+  renderizarAssistenteDescricao?: (contexto: {
+    indice: number;
+    experiencia: Experiencia;
+    aplicarDescricao: (texto: string) => void;
+  }) => ReactNode;
+  /**
+   * Chamado antes de salvar, depois da validação local. Devolve, por índice,
+   * a pendência que impede salvar a descrição (por exemplo, a revisão por IA).
+   */
+  validarDescricoes?: (
+    experiencias: Experiencia[],
+  ) => Promise<Record<number, PendenciaDescricao>>;
+}
+
+/**
+ * Pendência de uma descrição vinda de uma validação externa.
+ *
+ * "erro" marca o campo como inválido; "aviso" só interrompe o envio uma vez,
+ * com mensagem neutra, para o estudante conferir algo antes de seguir.
+ */
+export interface PendenciaDescricao {
+  mensagem: string;
+  tipo: "erro" | "aviso";
 }
 
 /**
@@ -36,12 +67,16 @@ export function FormularioExperiencias({
   onSalvar,
   onVoltar,
   aoAlterarExperiencias,
+  renderizarAssistenteDescricao,
+  validarDescricoes,
 }: FormularioExperienciasProps) {
+  const [validandoDescricoes, setValidandoDescricoes] = useState(false);
   const dataMaximaHoje = obterDataAtualIso();
   const [experiencias, setExperiencias] =
     useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [mensagemAviso, setMensagemAviso] = useState(false);
   const [experienciaRemovida, setExperienciaRemovida] = useState<{
     item: Experiencia;
     indice: number;
@@ -230,12 +265,14 @@ export function FormularioExperiencias({
   /**
    * Valida, ordena cronologicamente e comunica o status de envio do formulário.
    */
-  function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
+  async function enviarFormulario(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
+    setMensagemAviso(false);
 
     if (experiencias.length === 0) {
-      onSalvar?.([]);
-      setMensagem("Experiências salvas com sucesso.");
+      await salvarComRetorno([]);
       return;
     }
 
@@ -245,6 +282,31 @@ export function FormularioExperiencias({
       setErros(novosErros);
       setMensagem("Há pendências que precisam ser corrigidas antes de salvar.");
       return;
+    }
+
+    if (validarDescricoes) {
+      setValidandoDescricoes(true);
+      setMensagem("Revisando as descrições...");
+      const pendencias = await validarDescricoes(experiencias);
+      setValidandoDescricoes(false);
+      const lista = Object.entries(pendencias);
+      if (lista.length > 0) {
+        const errosDescricao: Record<number, ErrosExperiencia> = {};
+        for (const [indice, pendencia] of lista) {
+          if (pendencia.tipo === "erro") {
+            errosDescricao[Number(indice)] = { descricao: pendencia.mensagem };
+          }
+        }
+        setErros(errosDescricao);
+        if (Object.keys(errosDescricao).length > 0) {
+          setMensagem("Corrija as descrições marcadas antes de continuar.");
+        } else {
+          setMensagemAviso(true);
+          setMensagem(lista[0][1].mensagem);
+        }
+        return;
+      }
+      setMensagem(null);
     }
 
     const experienciasNormalizadas = experiencias.map((exp) => ({
@@ -259,8 +321,30 @@ export function FormularioExperiencias({
     const experienciasOrdenadas = ordenarPorDataDecrescente(
       experienciasNormalizadas,
     );
-    onSalvar?.(experienciasOrdenadas);
-    setMensagem("Experiências salvas com sucesso.");
+    await salvarComRetorno(experienciasOrdenadas);
+  }
+
+  /**
+   * Entrega a lista para salvar e só anuncia sucesso se a gravação der certo.
+   *
+   * Em falha, mostra a mensagem recebida e mantém os dados no formulário para
+   * o estudante tentar de novo, em vez de seguir como se tivesse salvado.
+   */
+  async function salvarComRetorno(lista: Experiencia[]): Promise<void> {
+    setValidandoDescricoes(true);
+    setMensagem("Salvando...");
+    try {
+      await onSalvar?.(lista);
+      setMensagem("Experiências salvas com sucesso.");
+    } catch (erro: unknown) {
+      setMensagem(
+        erro instanceof Error && erro.message
+          ? erro.message
+          : "Não foi possível salvar agora. Tente novamente.",
+      );
+    } finally {
+      setValidandoDescricoes(false);
+    }
   }
 
   return (
@@ -495,6 +579,16 @@ export function FormularioExperiencias({
                   {errosExp.descricao}
                 </p>
               )}
+              {renderizarAssistenteDescricao?.({
+                indice,
+                experiencia: exp,
+                aplicarDescricao: (texto) =>
+                  atualizarCampo(
+                    indice,
+                    "descricao",
+                    texto.slice(0, LIMITES_EXPERIENCIA.descricaoMax),
+                  ),
+              })}
             </div>
           </fieldset>
         );
@@ -530,8 +624,12 @@ export function FormularioExperiencias({
 
       {mensagem !== null && (
         <p
-          className="form-message"
-          role={mensagem.includes("sucesso") ? "status" : "alert"}
+          className={
+            mensagemAviso ? "form-message form-message--aviso" : "form-message"
+          }
+          role={
+            mensagemAviso || mensagem.includes("sucesso") ? "status" : "alert"
+          }
         >
           {mensagem}
         </p>
@@ -551,9 +649,10 @@ export function FormularioExperiencias({
         <button
           aria-label="Salvar experiências"
           className="btn-proximo"
+          disabled={validandoDescricoes}
           type="submit"
         >
-          Próximo
+          {validandoDescricoes ? "Revisando..." : "Próximo"}
         </button>
       </div>
 

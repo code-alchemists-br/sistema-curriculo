@@ -19,8 +19,11 @@ export interface TelaValidacaoCurriculoProps {
 /**
  * Apresenta a revisão final das seções obrigatórias antes da prévia ou do PDF.
  * Calcula a validação a partir do estado recebido, exibe pendências e somente
- * dispara as ações finais quando o resultado permite. A tela existe para ser
- * encaixada no Wizard sem duplicar regras de validação em cada etapa.
+ * dispara as ações finais quando o resultado permite. Com `onCorrigirSecao`,
+ * o card inteiro de cada seção vira clicável e abre o formulário dela: o
+ * título é um botão (nome acessível "Editar …" ou "Corrigir …") cuja área de
+ * clique se estende pelo card via CSS. A tela existe para ser encaixada no
+ * Wizard sem duplicar regras de validação em cada etapa.
  */
 export function TelaValidacaoCurriculo({
   dados,
@@ -79,26 +82,31 @@ export function TelaValidacaoCurriculo({
         {resultado.secoes.map((secao) => (
           <li
             key={secao.id}
-            className={`tela-validacao-curriculo__secao tela-validacao-curriculo__secao--${secao.status}`}
+            className={`tela-validacao-curriculo__secao tela-validacao-curriculo__secao--${secao.status}${
+              onCorrigirSecao
+                ? " tela-validacao-curriculo__secao--clicavel"
+                : ""
+            }`}
           >
             <div className="tela-validacao-curriculo__secao-info">
-              <span>
-                <strong>{secao.titulo}</strong>:
-              </span>
+              {onCorrigirSecao ? (
+                <button
+                  type="button"
+                  className="tela-validacao-curriculo__secao-link"
+                  onClick={() => onCorrigirSecao(secao.id)}
+                  aria-label={`${acaoDaSecao(secao.status)} ${secao.titulo}`}
+                >
+                  <strong>{secao.titulo}</strong>:
+                </button>
+              ) : (
+                <span>
+                  <strong>{secao.titulo}</strong>:
+                </span>
+              )}
               <div className="tela-validacao-curriculo__secao-status-grupo">
                 <span className={`status-badge status-badge--${secao.status}`}>
                   {textoStatus(secao.status)}
                 </span>
-                {secao.status !== "valida" && onCorrigirSecao && (
-                  <button
-                    type="button"
-                    className="tela-validacao-curriculo__btn-corrigir"
-                    onClick={() => onCorrigirSecao(secao.id)}
-                    aria-label={`Corrigir ${secao.titulo}`}
-                  >
-                    Corrigir →
-                  </button>
-                )}
               </div>
             </div>
             {secao.mensagens.length > 0 && (
@@ -238,6 +246,18 @@ export function TelaValidacaoCurriculo({
       </div>
     </div>
   );
+}
+
+/**
+ * Define a ação anunciada ao clicar no card da seção.
+ *
+ * Seção válida recebe "Editar" e seção com pendência recebe "Corrigir". O
+ * texto compõe o nome acessível do card, para quem usa leitor de tela saber
+ * o que o clique faz; existe para o estudante ajustar qualquer parte do
+ * currículo direto da tela de validação, sem voltar etapa por etapa.
+ */
+function acaoDaSecao(status: "valida" | "pendente" | "erro"): string {
+  return status === "valida" ? "Editar" : "Corrigir";
 }
 
 /** Traduz o status técnico da validação para uma mensagem de interface. */

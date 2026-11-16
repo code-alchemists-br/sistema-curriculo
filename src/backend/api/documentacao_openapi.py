@@ -36,6 +36,7 @@ TAG_PREVIA_VERSAO_CURRICULO = "Prévia da versão de currículo"
 TAG_EXPORTACAO_CURRICULO = "Exportação de currículo"
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
 TAG_VAGAS = "Vagas"
+TAG_CURRICULO_GUIADO = "Currículo guiado por IA"
 TAG_SAUDE = "Saúde"
 
 ESQUEMA_SESSAO = "sessaoCookie"
@@ -117,6 +118,14 @@ METADADOS_TAGS: list[dict[str, str]] = [
     {
         "name": TAG_VAGAS,
         "description": "Consulta e listagem de vagas de emprego externas.",
+    },
+    {
+        "name": TAG_CURRICULO_GUIADO,
+        "description": (
+            "Assistente de IA (Gemini): revisa cada texto do formulário com 3 "
+            "sugestões e recomenda o modelo de currículo para o perfil salvo. "
+            "A IA não gera o currículo."
+        ),
     },
 ]
 

@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import {
+  criarClienteAssistenteIa,
+  PainelRevisaoIa,
+  useRevisoesIa,
+} from "../../../features/assistente-ia";
 import {
   FormularioExperiencias,
   type Experiencia,
@@ -10,7 +15,7 @@ import "./PaginaExperienciasProfissionais.css";
 /** Define as propriedades da página de experiências profissionais. */
 export interface PaginaExperienciasProfissionaisProps {
   experienciasIniciais?: Experiencia[];
-  onSalvar?: (experiencias: Experiencia[]) => void;
+  onSalvar?: (experiencias: Experiencia[]) => void | Promise<void>;
   onVoltar?: () => void;
   onVoltarInicio?: () => void;
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
@@ -30,6 +35,10 @@ export function PaginaExperienciasProfissionais({
   aoAlterarExperiencias,
 }: PaginaExperienciasProfissionaisProps) {
   const [progresso, setProgresso] = useState(0);
+  const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
+  const revisoes = useRevisoesIa(clienteIa);
+  const pergunta =
+    "O que você fazia nessa experiência e com quais tecnologias?";
 
   return (
     <LayoutCadastroCurriculo
@@ -55,6 +64,29 @@ export function PaginaExperienciasProfissionais({
           onSalvar={onSalvar}
           onVoltar={onVoltar}
           aoAlterarExperiencias={aoAlterarExperiencias}
+          validarDescricoes={(experiencias) =>
+            revisoes.revisarAntesDeSalvar(
+              experiencias.map((e) => ({
+                texto: e.descricao,
+                campo: "descricao_experiencia",
+                pergunta,
+                contexto: { cargo: e.cargo, empresa: e.empresa },
+              })),
+            )
+          }
+          renderizarAssistenteDescricao={({
+            indice,
+            experiencia,
+            aplicarDescricao,
+          }) => (
+            <PainelRevisaoIa
+              aoAplicarTexto={aplicarDescricao}
+              aoMudarMemoria={(memoria) => revisoes.atualizar(indice, memoria)}
+              id={`experiencia-${indice}-ia`}
+              memoria={revisoes.memoriaDe(indice)}
+              texto={experiencia.descricao}
+            />
+          )}
         />
       </section>
     </LayoutCadastroCurriculo>

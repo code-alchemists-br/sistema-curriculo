@@ -67,8 +67,9 @@ export function FormularioCadastro({
    *
    * O manipulador interrompe o envio nativo do formulário, valida os valores
    * via `validarCadastro`, emite alerta sonoro acessível via live region quando
-   * há pendências locais e, em caso de sucesso, delega a criação ao cliente injetado.
-   * Ele existe para coordenar o fluxo acessível de criação de conta sem acoplar a
+   * há pendências locais e, em caso de sucesso, delega a criação ao cliente injetado
+   * e já abre a sessão com as mesmas credenciais, para o estudante não precisar
+   * entrar de novo logo após criar a conta. Ele existe para coordenar o fluxo acessível de criação de conta sem acoplar a
    * interface ao transporte HTTP.
    */
   async function enviarCadastro(
@@ -94,6 +95,7 @@ export function FormularioCadastro({
         email: valores.email.trim(),
         senha: valores.senha,
       });
+      await cliente.acessar({ email: estudante.email, senha: valores.senha });
 
       setValores(valoresIniciais);
       aoCadastrar(estudante.email, estudante.nome);

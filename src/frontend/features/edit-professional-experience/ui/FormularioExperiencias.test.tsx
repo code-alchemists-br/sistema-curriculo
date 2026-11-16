@@ -189,6 +189,66 @@ describe("FormularioExperiencias", () => {
     );
   });
 
+  it("mostra o motivo e não anuncia sucesso quando salvar falha", async () => {
+    const usuario = userEvent.setup();
+    const onSalvar = vi.fn(async () => {
+      throw new Error("O servidor não conseguiu salvar agora.");
+    });
+
+    render(
+      <FormularioExperiencias
+        experienciasIniciais={[experienciaCompleta]}
+        onSalvar={onSalvar}
+      />,
+    );
+
+    await usuario.click(
+      screen.getByRole("button", { name: "Salvar experiências" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "O servidor não conseguiu salvar agora.",
+    );
+    expect(
+      screen.queryByText("Experiências salvas com sucesso."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("separa texto inválido (erro) de sugestões de melhoria (aviso) da revisão", async () => {
+    const usuario = userEvent.setup();
+    const onSalvar = vi.fn();
+    const validarDescricoes = vi
+      .fn()
+      .mockResolvedValueOnce({
+        0: { tipo: "aviso", mensagem: "Texto aprovado." },
+      })
+      .mockResolvedValueOnce({
+        0: { tipo: "erro", mensagem: "Texto inválido." },
+      });
+
+    render(
+      <FormularioExperiencias
+        experienciasIniciais={[experienciaCompleta]}
+        onSalvar={onSalvar}
+        validarDescricoes={validarDescricoes}
+      />,
+    );
+    const salvar = screen.getByRole("button", { name: "Salvar experiências" });
+
+    await usuario.click(salvar);
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Texto aprovado.",
+    );
+    expect(screen.getByRole("status")).toHaveClass("form-message--aviso");
+
+    await usuario.click(salvar);
+    expect(await screen.findByText("Texto inválido.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Corrija as descrições marcadas antes de continuar.",
+    );
+    expect(onSalvar).not.toHaveBeenCalled();
+  });
+
   it("não chama onSalvar quando há erros de validação", async () => {
     const usuario = userEvent.setup();
     const onSalvar = vi.fn();

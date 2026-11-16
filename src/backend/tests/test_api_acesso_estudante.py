@@ -99,7 +99,7 @@ class AcessoEstudanteRotaTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sessoes.usuario_ids, [acesso.usuario_id])
         cookie = resposta.headers["set-cookie"]
         self.assertIn("__Host-sessao=token-sintetico", cookie)
-        self.assertIn("Max-Age=28800", cookie)
+        self.assertIn("Max-Age=3600", cookie)
         self.assertIn("Path=/", cookie)
         self.assertIn("Secure", cookie)
         self.assertIn("HttpOnly", cookie)

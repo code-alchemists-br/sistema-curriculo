@@ -90,7 +90,7 @@ export function ModeloAcademico({ previa }: ModeloAcademicoProps): ReactNode {
         classe="modelo-academico__secao"
         id="academico-documentos"
         possuiConteudo={previa.documentos.length > 0}
-        titulo="Documentos complementares"
+        titulo="Cursos e certificações"
       >
         <ul className="modelo-academico__documentos">
           {previa.documentos.map((documento) => (

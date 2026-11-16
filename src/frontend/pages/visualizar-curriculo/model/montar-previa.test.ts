@@ -71,6 +71,24 @@ describe("montarPreviaCurriculo", () => {
     expect(previa.documentos).toHaveLength(2);
   });
 
+  it("mostra o status interrompido e mantém níveis desconhecidos como vieram", () => {
+    const previa = montarPreviaCurriculo({
+      formacoes: [
+        {
+          instituicao: "USP",
+          curso: "Física",
+          nivel: "outro-nivel" as never,
+          status: "interrompido",
+          dataInicio: "2020-02-01",
+          dataFim: "",
+        },
+      ],
+    });
+
+    expect(previa.formacoes[0].nivel).toBe("outro-nivel");
+    expect(previa.formacoes[0].status).toBe("Interrompido");
+  });
+
   it("preserva a previsão de conclusão e formata o nível corretamente em formações em andamento", () => {
     const previa = montarPreviaCurriculo({
       formacoes: [

@@ -14,3 +14,6 @@ export { ModeloPrimeiroEmprego } from "./ui/ModeloPrimeiroEmprego";
 export type { ModeloPrimeiroEmpregoProps } from "./ui/ModeloPrimeiroEmprego";
 export { EstadoVazioSecao } from "./ui/EstadoVazioSecao";
 export type { EstadoVazioSecaoProps } from "./ui/EstadoVazioSecao";
+export { CurriculoNoModelo } from "./ui/CurriculoNoModelo";
+export { ROTULOS_MODELO_CURRICULO } from "./model/rotulos-modelo";
+export type { CurriculoNoModeloProps } from "./ui/CurriculoNoModelo";

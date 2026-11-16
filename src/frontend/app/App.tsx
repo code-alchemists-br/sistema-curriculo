@@ -1,7 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+} from "react";
 
 import type { ModeloApresentacaoCurriculo } from "../features/alternar-modelo-curriculo";
-import type { ValoresFormacaoAcademica } from "../features/cadastrar-formacao-academica";
+import {
+  FalhaFormacaoAcademica,
+  type ClienteFormacaoAcademica,
+  type ValoresFormacaoAcademica,
+} from "../features/cadastrar-formacao-academica";
 import type { ValoresCertificacao } from "../features/cadastro-certificacoes";
 import type { ValoresProjetoAcademico } from "../features/cadastro-projeto-academico";
 import type { Curso } from "../features/edit-courses";
@@ -21,6 +32,7 @@ import { PaginaFormacaoAcademica } from "../pages/formacao-academica";
 import { PaginaIdiomas } from "../pages/idiomas";
 import { PaginaInicio } from "../pages/inicio";
 import { PaginaConfiguracoesPerfil } from "../pages/profile-settings";
+import { PaginaMeuPerfil } from "../pages/meu-perfil";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
@@ -31,8 +43,8 @@ import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 import {
   PaginaVisualizacaoCurriculo,
   montarPreviaCurriculo,
-  exportarPreviaParaDocx,
   exportarElementoParaPdf,
+  exportarPreviaParaDocx,
 } from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
 import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
@@ -46,19 +58,12 @@ import {
   criarClienteAcessoEstudante,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
-import { criarClienteFormacaoAcademicaHttp } from "../features/cadastrar-formacao-academica";
-import { criarClienteExperienciasHttp } from "../features/edit-professional-experience";
-import { criarClienteCursosHttp } from "../features/edit-courses";
-import { criarClienteCertificacoesHttp } from "../features/cadastro-certificacoes";
-import { criarClienteIdiomasHttp } from "../features/edit-languages";
-import { criarClienteCompetenciasHttp } from "../features/edit-skills";
-import { criarClienteProjetosAcademicosHttp } from "../features/cadastro-projeto-academico";
+import { criarClienteVagasResiliente } from "./servicos-resilientes";
 import {
-  criarClienteAcessoResiliente,
-  criarClienteDadosPessoaisResiliente,
-  criarClienteFormacaoAcademicaResiliente,
-  criarClienteVagasResiliente,
-} from "./servicos-resilientes";
+  criarClienteCurriculoNoBanco,
+  FalhaCurriculoNoBanco,
+  type CurriculoDasTelas,
+} from "./curriculo-no-banco";
 import "../shared/styles/animations.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL;
@@ -75,34 +80,39 @@ const clienteAcessoDemo = criarClienteAcessoDemonstracao();
 const clienteAcessoBase = apiBaseUrl
   ? criarClienteAcessoEstudante(apiBaseUrl)
   : clienteAcessoDemo;
-const clienteAcessoHttp = apiBaseUrl
-  ? criarClienteAcessoResiliente(clienteAcessoBase, clienteAcessoDemo)
-  : clienteAcessoDemo;
+// Sem "modo demonstração" quando a API cai: o estudante precisa saber que não
+// entrou de verdade, senão nada do que preencher será salvo.
+const clienteAcessoHttp = clienteAcessoBase;
 
-const clienteDadosPessoaisBase = apiBaseUrl
+// Dados pessoais vão direto para PUT /estudantes/me/perfil (substitui, não duplica).
+const clienteDadosPessoaisHttp = apiBaseUrl
   ? criarClienteDadosPessoaisHttp(apiBaseUrl)
   : undefined;
-const clienteDadosPessoaisHttp = clienteDadosPessoaisBase
-  ? criarClienteDadosPessoaisResiliente(clienteDadosPessoaisBase)
+
+// As demais seções são lidas e substituídas inteiras por /estudantes/me/curriculo.
+const clienteCurriculo = apiBaseUrl
+  ? criarClienteCurriculoNoBanco(apiBaseUrl)
   : undefined;
 
-const clienteFormacaoAcademicaBase = apiBaseUrl
-  ? criarClienteFormacaoAcademicaHttp(apiBaseUrl)
-  : undefined;
-const clienteFormacaoAcademicaHttp = clienteFormacaoAcademicaBase
-  ? criarClienteFormacaoAcademicaResiliente(clienteFormacaoAcademicaBase)
-  : undefined;
-
-const clienteExperienciasHttp = apiBaseUrl
-  ? criarClienteExperienciasHttp(apiBaseUrl)
-  : undefined;
-
-const clienteCompetenciasHttp = apiBaseUrl
-  ? criarClienteCompetenciasHttp(apiBaseUrl)
-  : undefined;
-const clienteProjetosAcademicosHttp = apiBaseUrl
-  ? criarClienteProjetosAcademicosHttp(apiBaseUrl)
-  : undefined;
+/** Estilo do aviso de falha ao salvar, fixo no rodapé da tela. */
+const ESTILO_AVISO_FALHA: CSSProperties = {
+  position: "fixed",
+  left: "50%",
+  bottom: "1.5rem",
+  transform: "translateX(-50%)",
+  zIndex: 1000,
+  display: "flex",
+  alignItems: "center",
+  gap: "1rem",
+  width: "min(calc(100% - 2rem), 40rem)",
+  padding: "0.9rem 1.1rem",
+  border: "1px solid rgba(239, 68, 68, 0.45)",
+  borderRadius: "0.75rem",
+  background: "#2a0f0f",
+  color: "#fecaca",
+  fontFamily: "Poppins, sans-serif",
+  boxShadow: "0 1rem 2.5rem rgb(0 0 0 / 45%)",
+};
 
 type RotaAtiva =
   | "inicio"
@@ -122,6 +132,7 @@ type RotaAtiva =
   | "visualizar-curriculo"
   | "vagas"
   | "configuracoes-perfil"
+  | "meu-perfil"
   | "recuperar-senha";
 
 /**
@@ -255,8 +266,8 @@ export function App() {
       if (etapa === "visualizar-curriculo" || etapa === "previa")
         return "visualizar-curriculo";
       if (etapa === "vagas") return "vagas";
-      if (etapa === "configuracoes-perfil" || etapa === "perfil")
-        return "configuracoes-perfil";
+      if (etapa === "configuracoes-perfil") return "configuracoes-perfil";
+      if (etapa === "meu-perfil" || etapa === "perfil") return "meu-perfil";
       if (etapa === "recuperar-senha" || etapa === "recuperacao-senha")
         return "recuperar-senha";
       if (etapa === "acesso") return "acesso";
@@ -278,8 +289,7 @@ export function App() {
     },
   );
 
-  // Cada conta mantém somente suas confirmações durante esta instância do App.
-  // Recriar os clientes na troca de identidade evita suprimir POSTs de outra pessoa.
+  // Envio em andamento de uma etapa; é cancelado ao navegar, sair ou trocar de conta.
   const identidadeCadastro = usuarioLogado?.email;
   const envioCadastro = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -294,23 +304,39 @@ export function App() {
     envioCadastro.current = null;
   }
 
-  /** Cria uma tentativa cancelável e substitui a anterior para impedir continuidade de lotes obsoletos. */
+  /**
+   * Abre uma nova tentativa de envio cancelável, cancelando a anterior.
+   *
+   * O sinal devolvido acompanha a requisição; navegar, sair ou trocar de conta
+   * o cancela, e quem chamou não deve avançar depois disso. Existe para que
+   * uma resposta atrasada não mude de tela nem restaure dados de outra sessão.
+   */
   function iniciarCadastro(): AbortController {
     cancelarCadastro();
     const controle = new AbortController();
     envioCadastro.current = controle;
     return controle;
   }
-  const clientesCadastro = useMemo(() => {
-    return {
-      identidade: identidadeCadastro,
-      cursos: apiBaseUrl ? criarClienteCursosHttp(apiBaseUrl) : undefined,
-      certificacoes: apiBaseUrl
-        ? criarClienteCertificacoesHttp(apiBaseUrl)
-        : undefined,
-      idiomas: apiBaseUrl ? criarClienteIdiomasHttp(apiBaseUrl) : undefined,
-    };
-  }, [identidadeCadastro]);
+
+  /**
+   * Salva uma etapa no banco e só avança se o envio não foi cancelado.
+   *
+   * Cria a tentativa cancelável, espera a gravação e verifica o sinal antes de
+   * navegar; falhas sobem para quem chamou (a página mostra o erro). Existe
+   * para as etapas cujas páginas exibem o próprio erro de gravação.
+   */
+  async function salvarComCancelamento(
+    salvar: (signal: AbortSignal) => Promise<void> | undefined,
+    destino: RotaAtiva,
+  ): Promise<void> {
+    const controle = iniciarCadastro();
+    try {
+      await salvar(controle.signal);
+      if (!controle.signal.aborted) navegar(destino);
+    } finally {
+      if (envioCadastro.current === controle) envioCadastro.current = null;
+    }
+  }
 
   const [intencaoAcesso, setIntencaoAcesso] = useState<
     "criar-curriculo" | "criar-conta" | "login" | null
@@ -416,6 +442,8 @@ export function App() {
   function aoFazerLogout(): void {
     cancelarCadastro();
     setUsuarioLogado(null);
+    setCurriculoCarregadoDe(null);
+    setCurriculoPronto(false);
     limparRascunho();
     setDadosPessoais(undefined);
     setFormacoes(undefined);
@@ -477,6 +505,254 @@ export function App() {
     "wizard" | "visualizacao"
   >("wizard");
   const [autoBaixarPdf, setAutoBaixarPdf] = useState(false);
+  // E-mail cujo currículo já veio do banco; enquanto for outro, está carregando.
+  const [curriculoCarregadoDe, setCurriculoCarregadoDe] = useState<
+    string | null
+  >(null);
+  const carregandoCurriculo = Boolean(
+    usuarioLogado &&
+    clienteCurriculo &&
+    curriculoCarregadoDe !== usuarioLogado.email,
+  );
+  const [erroSalvamento, setErroSalvamento] = useState<string | null>(null);
+  // Currículo pronto = o estudante chegou a escolher e salvar o modelo.
+  const [curriculoPronto, setCurriculoPronto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  // Valores mais recentes de cada seção. Algumas etapas chamam "salvar" e
+  // "avançar" no mesmo clique, antes de o estado do React atualizar; por isso
+  // o salvamento lê daqui, e não do estado capturado no render anterior.
+  const ultimos = useRef({
+    formacoes,
+    experiencias,
+    cursos,
+    certificacoes,
+    idiomas,
+    competencias,
+    projetos,
+  });
+  useEffect(() => {
+    ultimos.current = {
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+    };
+  });
+
+  // Callbacks estáveis: os formulários os usam em efeitos, e uma função nova a
+  // cada render faria o efeito rodar sem parar. Também atualizam `ultimos`
+  // na hora, para o salvamento disparado no mesmo clique ler a lista nova.
+  const alterarFormacoes = useCallback((lista: ValoresFormacaoAcademica[]) => {
+    ultimos.current.formacoes = lista;
+    setFormacoes(lista);
+  }, []);
+  const alterarCompetencias = useCallback((habilidades: Habilidades) => {
+    ultimos.current.competencias = habilidades;
+    setCompetencias(habilidades);
+  }, []);
+  const alterarProjetos = useCallback((lista: ValoresProjetoAcademico[]) => {
+    ultimos.current.projetos = lista;
+    setProjetos(lista);
+  }, []);
+
+  /**
+   * Troca o estado das telas pelo currículo lido do banco.
+   *
+   * Seções vazias viram `undefined` para os formulários abrirem com seus
+   * valores iniciais; também marca se o currículo está pronto e usa o nome
+   * salvo no cabeçalho. Existe para o banco ser a fonte do que a tela mostra.
+   */
+  function aplicarCurriculo(c: CurriculoDasTelas): void {
+    const ouNada = <T,>(lista: T[]) => (lista.length > 0 ? lista : undefined);
+    setDadosPessoais(c.dadosPessoais);
+    setFormacoes(ouNada(c.formacoes));
+    setExperiencias(ouNada(c.experiencias));
+    setCursos(ouNada(c.cursos));
+    setCertificacoes(ouNada(c.certificacoes));
+    setIdiomas(ouNada(c.idiomas));
+    setProjetos(ouNada(c.projetos));
+    setCompetencias(
+      c.competencias.hardSkills.length || c.competencias.softSkills.length
+        ? c.competencias
+        : undefined,
+    );
+    if (c.modelo) setModelo(c.modelo);
+    setCurriculoPronto(c.modelo !== null);
+    // O login só devolve o e-mail; o nome de verdade vem do banco.
+    const nome = c.dadosPessoais.nomeCompleto.trim();
+    if (nome) {
+      setUsuarioLogado((atual) => {
+        if (!atual || atual.nome === nome) return atual;
+        const atualizado = { ...atual, nome };
+        try {
+          sessionStorage.setItem(
+            "liminal_usuario_sessao",
+            JSON.stringify(atualizado),
+          );
+        } catch {
+          // Ignora erro em ambientes sem suporte a sessionStorage
+        }
+        return atualizado;
+      });
+    }
+  }
+
+  /**
+   * Esquece o estudante deste navegador quando a sessão acaba.
+   *
+   * Limpa o usuário do estado e do `sessionStorage`. Existe para que uma
+   * sessão expirada (401) leve o estudante a entrar de novo.
+   */
+  function esquecerUsuario(): void {
+    setUsuarioLogado(null);
+    try {
+      sessionStorage.removeItem("liminal_usuario_sessao");
+    } catch {
+      // Ignora erro em ambientes sem suporte a sessionStorage
+    }
+  }
+
+  // Ao abrir a aplicação logado, ou logo após o login, o currículo vem do banco:
+  // ele é a fonte de verdade, e o rascunho do navegador só guarda o que está
+  // sendo digitado. Sessão expirada (401) faz o estudante entrar de novo.
+  useEffect(() => {
+    if (!usuarioLogado || !clienteCurriculo) return;
+    let ativo = true;
+    const email = usuarioLogado.email;
+    clienteCurriculo
+      .carregar()
+      .then((curriculo) => {
+        if (ativo) aplicarCurriculo(curriculo);
+      })
+      .catch((erro: unknown) => {
+        if (!ativo) return;
+        if (erro instanceof FalhaCurriculoNoBanco && erro.status === 401) {
+          esquecerUsuario();
+        } else {
+          setErroSalvamento(
+            "Não foi possível carregar seu currículo do servidor. Os dados mostrados podem estar desatualizados.",
+          );
+        }
+      })
+      .finally(() => {
+        if (ativo) setCurriculoCarregadoDe(email);
+      });
+    return () => {
+      ativo = false;
+    };
+    // Recarrega só quando muda quem está logado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuarioLogado?.email]);
+
+  /**
+   * Salva uma etapa no banco e só então avança.
+   *
+   * Se a gravação falhar, o estudante continua na etapa, com os dados
+   * digitados, e vê o motivo no aviso do rodapé. Sem API configurada, só avança.
+   */
+  async function salvarEAvancar(
+    salvar: (signal: AbortSignal) => Promise<void>,
+    destino: RotaAtiva,
+  ): Promise<void> {
+    if (!clienteCurriculo) {
+      navegar(destino);
+      return;
+    }
+    const controle = iniciarCadastro();
+    setSalvando(true);
+    setErroSalvamento(null);
+    try {
+      await salvar(controle.signal);
+      if (!controle.signal.aborted) navegar(destino);
+    } catch (erro: unknown) {
+      if (controle.signal.aborted) return;
+      if (erro instanceof FalhaCurriculoNoBanco && erro.status === 401) {
+        esquecerUsuario();
+      }
+      setErroSalvamento(
+        erro instanceof Error ? erro.message : "Não foi possível salvar agora.",
+      );
+    } finally {
+      if (envioCadastro.current === controle) envioCadastro.current = null;
+      setSalvando(false);
+    }
+  }
+
+  // A etapa de formação chama `cadastrar` uma vez por formação; cada chamada
+  // substitui a lista inteira, então repetir não duplica nada.
+  const clienteFormacaoAcademicaHttp: ClienteFormacaoAcademica | undefined =
+    clienteCurriculo
+      ? {
+          async cadastrar() {
+            try {
+              await clienteCurriculo.salvarFormacoes(
+                ultimos.current.formacoes ?? [],
+              );
+            } catch (erro: unknown) {
+              const status =
+                erro instanceof FalhaCurriculoNoBanco ? erro.status : null;
+              throw new FalhaFormacaoAcademica(
+                status === null
+                  ? "rede"
+                  : status === 401 || status >= 500
+                    ? "indisponivel"
+                    : "resposta-invalida",
+              );
+            }
+          },
+        }
+      : undefined;
+
+  /**
+   * Mostra a página com o aviso de gravação no rodapé, quando houver.
+   *
+   * Exibe "Salvando no servidor..." durante a gravação e, em falha, o motivo
+   * com um botão para fechar. Existe para as etapas cujas páginas não mostram
+   * o erro de gravação sozinhas.
+   */
+  function comAviso(pagina: ReactElement): ReactElement {
+    return (
+      <>
+        {pagina}
+        {salvando && (
+          <div
+            role="status"
+            style={{
+              ...ESTILO_AVISO_FALHA,
+              background: "#1a1a1a",
+              color: "#f3f3f3",
+              border: "1px solid rgb(255 255 255 / 15%)",
+            }}
+          >
+            Salvando no servidor...
+          </div>
+        )}
+        {erroSalvamento && !salvando && (
+          <div role="alert" style={ESTILO_AVISO_FALHA}>
+            <span style={{ flex: 1 }}>{erroSalvamento}</span>
+            <button
+              onClick={() => setErroSalvamento(null)}
+              style={{
+                background: "none",
+                border: "1px solid currentColor",
+                borderRadius: "0.5rem",
+                color: "inherit",
+                cursor: "pointer",
+                padding: "0.35rem 0.75rem",
+                font: "inherit",
+              }}
+              type="button"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
+      </>
+    );
+  }
 
   useEffect(() => {
     salvarRascunho({
@@ -523,6 +799,7 @@ export function App() {
       window.history.pushState({}, "", url.toString());
     }
     resetarScroll();
+    setErroSalvamento(null);
     setRotaAtiva(etapa);
   }
 
@@ -590,6 +867,40 @@ export function App() {
       })) ?? [],
   };
 
+  // Enquanto o currículo chega do banco, as etapas esperam: os formulários
+  // leem os valores iniciais só ao abrir e mostrariam dados antigos.
+  const rotasComCurriculo: RotaAtiva[] = [
+    "dados-pessoais",
+    "formacao-academica",
+    "experiencias-profissionais",
+    "cursos-certificacoes",
+    "cursos-idiomas",
+    "idiomas",
+    "competencias",
+    "projetos-academicos",
+    "selecionar-modelo",
+    "validacao-curriculo",
+    "visualizar-curriculo",
+    "meu-perfil",
+  ];
+  if (carregandoCurriculo && rotasComCurriculo.includes(rotaAtiva)) {
+    return (
+      <main
+        aria-busy="true"
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#050505",
+          color: "#a3a3a3",
+          fontFamily: "Poppins, sans-serif",
+        }}
+      >
+        Carregando seu currículo...
+      </main>
+    );
+  }
+
   if (rotaAtiva === "dados-pessoais") {
     return (
       <PaginaDadosPessoais
@@ -606,7 +917,7 @@ export function App() {
   if (rotaAtiva === "formacao-academica") {
     return (
       <PaginaFormacaoAcademica
-        aoAlterarFormacoes={setFormacoes}
+        aoAlterarFormacoes={alterarFormacoes}
         cliente={clienteFormacaoAcademicaHttp}
         formacoesIniciais={formacoes}
         onAvancar={() => navegar("experiencias-profissionais")}
@@ -623,14 +934,12 @@ export function App() {
         experienciasIniciais={experiencias}
         onSalvar={async (listaExperiencias) => {
           setExperiencias(listaExperiencias);
-          if (clienteExperienciasHttp) {
-            try {
-              await clienteExperienciasHttp.salvar(listaExperiencias);
-            } catch {
-              // Em caso de indisponibilidade, mantém os dados no estado e no rascunho
-            }
-          }
-          navegar("cursos-certificacoes");
+          // Falha aqui sobe para o formulário, que mostra o motivo e não avança.
+          await salvarComCancelamento(
+            (signal) =>
+              clienteCurriculo?.salvarExperiencias(listaExperiencias, signal),
+            "cursos-certificacoes",
+          );
         }}
         onVoltar={() => navegar("formacao-academica")}
         onVoltarInicio={voltarAoInicio}
@@ -639,137 +948,116 @@ export function App() {
   }
 
   if (rotaAtiva === "cursos-certificacoes" || rotaAtiva === "cursos-idiomas") {
-    return (
+    return comAviso(
       <PaginaCursosCertificacoes
         aoAlterarCertificacoes={setCertificacoes}
         aoAlterarCursos={setCursos}
         certificacoesIniciais={certificacoes}
         cursosIniciais={cursos}
         onAvancar={async (cursosValidados, certificacoesValidadas) => {
-          const controle = iniciarCadastro();
-          try {
-            await clientesCadastro.cursos?.salvar(
-              cursosValidados,
-              controle.signal,
-            );
-            if (controle.signal.aborted) return;
-            await clientesCadastro.certificacoes?.salvar(
-              certificacoesValidadas,
-              controle.signal,
-            );
-            if (controle.signal.aborted) return;
-            setCursos(cursosValidados);
-            setCertificacoes(certificacoesValidadas);
-            navegar("idiomas");
-          } finally {
-            if (envioCadastro.current === controle)
-              envioCadastro.current = null;
-          }
-        }}
-        onContinuarLocal={(cursosValidados, certificacoesValidadas) => {
+          // Substitui as seções inteiras no banco (sem duplicar). Se falhar,
+          // a página mostra o erro e não avança.
           setCursos(cursosValidados);
           setCertificacoes(certificacoesValidadas);
-          navegar("idiomas");
+          await salvarComCancelamento(async (signal) => {
+            await clienteCurriculo?.salvarCursos(cursosValidados, signal);
+            if (signal.aborted) return;
+            await clienteCurriculo?.salvarCertificacoes(
+              certificacoesValidadas,
+              signal,
+            );
+          }, "idiomas");
         }}
         onVoltar={() => navegar("experiencias-profissionais")}
         onVoltarInicio={voltarAoInicio}
-      />
+      />,
     );
   }
 
   if (rotaAtiva === "idiomas") {
-    return (
+    return comAviso(
       <PaginaIdiomas
         idiomasIniciais={idiomas}
         onAvancar={async (idiomasValidados) => {
-          const controle = iniciarCadastro();
-          try {
-            await clientesCadastro.idiomas?.salvar(
-              idiomasValidados,
-              controle.signal,
-            );
-            if (controle.signal.aborted) return;
-            setIdiomas(idiomasValidados);
-            navegar("competencias");
-          } finally {
-            if (envioCadastro.current === controle)
-              envioCadastro.current = null;
-          }
-        }}
-        onContinuarLocal={(idiomasValidados) => {
+          // Substitui a seção inteira no banco; falhas aparecem na página.
           setIdiomas(idiomasValidados);
-          navegar("competencias");
+          await salvarComCancelamento(
+            (signal) =>
+              clienteCurriculo?.salvarIdiomas(idiomasValidados, signal),
+            "competencias",
+          );
         }}
         onSalvar={setIdiomas}
         onVoltar={() => navegar("cursos-certificacoes")}
         onVoltarInicio={voltarAoInicio}
-      />
+      />,
     );
   }
 
   if (rotaAtiva === "competencias") {
-    return (
+    return comAviso(
       <PaginaCompetencias
         competenciasIniciais={competencias}
-        onAvancar={async () => {
-          if (clienteCompetenciasHttp && competencias) {
-            try {
-              await clienteCompetenciasHttp.salvar(competencias);
-            } catch {
-              // Preservado no rascunho
-            }
-          }
-          navegar("projetos-academicos");
-        }}
-        onSalvar={setCompetencias}
+        onAvancar={() =>
+          void salvarEAvancar(
+            (signal) =>
+              clienteCurriculo!.salvarCompetencias(
+                ultimos.current.competencias ?? {
+                  hardSkills: [],
+                  softSkills: [],
+                },
+                signal,
+              ),
+            "projetos-academicos",
+          )
+        }
+        onSalvar={alterarCompetencias}
         onVoltar={() => navegar("idiomas")}
         onVoltarInicio={voltarAoInicio}
-      />
+      />,
     );
   }
 
   if (rotaAtiva === "projetos-academicos") {
-    return (
+    return comAviso(
       <PaginaCadastroProjetosAcademicos
-        aoAlterarProjetos={setProjetos}
-        onAvancar={async () => {
-          if (clienteProjetosAcademicosHttp && projetos) {
-            for (const p of projetos) {
-              if (p.titulo.trim() || p.descricao.trim()) {
-                try {
-                  await clienteProjetosAcademicosHttp.cadastrar(p);
-                } catch {
-                  // Preservado no rascunho
-                }
-              }
-            }
-          }
+        aoAlterarProjetos={alterarProjetos}
+        onAvancar={() => {
           setOrigemSelecaoModelo("wizard");
-          navegar("selecionar-modelo");
+          void salvarEAvancar(
+            (signal) =>
+              clienteCurriculo!.salvarProjetos(
+                ultimos.current.projetos ?? [],
+                signal,
+              ),
+            "selecionar-modelo",
+          );
         }}
         onVoltar={() => navegar("competencias")}
         onVoltarInicio={voltarAoInicio}
         projetosIniciais={projetos}
-      />
+      />,
     );
   }
 
   if (rotaAtiva === "selecionar-modelo") {
     const veioDeVisualizacao = origemSelecaoModelo === "visualizacao";
 
-    return (
+    return comAviso(
       <PaginaSelecaoModeloCurriculo
         aoAlterarModeloInstantaneo={(novoModelo) => {
           setModelo(novoModelo);
         }}
         aoConfirmar={(novoModelo) => {
           setModelo(novoModelo);
-          if (veioDeVisualizacao) {
-            setOrigemSelecaoModelo("wizard");
-            navegar("visualizar-curriculo");
-          } else {
-            navegar("validacao-curriculo");
-          }
+          if (veioDeVisualizacao) setOrigemSelecaoModelo("wizard");
+          void salvarEAvancar(
+            async (signal) => {
+              await clienteCurriculo!.salvarModelo(novoModelo, signal);
+              if (!signal.aborted) setCurriculoPronto(true);
+            },
+            veioDeVisualizacao ? "visualizar-curriculo" : "validacao-curriculo",
+          );
         }}
         modeloInicial={modelo}
         onVoltar={() => {
@@ -789,8 +1077,11 @@ export function App() {
           formacoes,
           projetos,
           competencias,
+          idiomas,
+          cursos,
+          certificacoes,
         }}
-      />
+      />,
     );
   }
 
@@ -861,7 +1152,7 @@ export function App() {
       modelo: modeloAtivo,
     });
 
-    return (
+    return comAviso(
       <PaginaVisualizacaoCurriculo
         aoAlterarModelo={() => {
           setOrigemSelecaoModelo("visualizacao");
@@ -869,6 +1160,11 @@ export function App() {
         }}
         aoTrocarModelo={(novoModelo) => {
           setModelo(novoModelo);
+          // Grava a troca no banco; se falhar, o aviso do rodapé mostra o motivo.
+          void salvarEAvancar(
+            (signal) => clienteCurriculo!.salvarModelo(novoModelo, signal),
+            "visualizar-curriculo",
+          );
         }}
         autoBaixar={autoBaixarPdf}
         modelo={modeloAtivo}
@@ -885,7 +1181,7 @@ export function App() {
         }}
         podeExportar={resultadoValidacao.podeExportarPdf}
         previa={previaCalculada}
-      />
+      />,
     );
   }
 
@@ -989,6 +1285,54 @@ export function App() {
     return <PaginaConfiguracoesPerfil onVoltar={() => navegar("inicio")} />;
   }
 
+  if (rotaAtiva === "meu-perfil") {
+    const possuiCurriculo = Boolean(
+      (formacoes && formacoes.length > 0) ||
+      (experiencias && experiencias.length > 0) ||
+      (projetos && projetos.length > 0) ||
+      (cursos && cursos.length > 0) ||
+      (idiomas && idiomas.length > 0) ||
+      competencias?.hardSkills?.length ||
+      competencias?.softSkills?.length,
+    );
+    const dadosDoPerfil = {
+      ...dadosPessoais,
+      nomeCompleto:
+        dadosPessoais?.nomeCompleto || usuarioLogado?.nome || "Estudante",
+      email: dadosPessoais?.email || usuarioLogado?.email || "",
+    } as ValoresDadosPessoais;
+    const previaDoPerfil = montarPreviaCurriculo({
+      dadosPessoais: dadosDoPerfil,
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+      modelo: modeloAtivo,
+    });
+    const nomeArquivo = `Curriculo - ${dadosDoPerfil.nomeCompleto}`;
+
+    return (
+      <PaginaMeuPerfil
+        modelo={modeloAtivo}
+        onEditarCurriculo={() =>
+          navegar(possuiCurriculo ? "validacao-curriculo" : "dados-pessoais")
+        }
+        onEditarPerfil={() => navegar("dados-pessoais")}
+        aoBaixarCurriculo={(formato) =>
+          formato === "pdf"
+            ? exportarElementoParaPdf({ previa: previaDoPerfil, nomeArquivo })
+            : exportarPreviaParaDocx({ previa: previaDoPerfil, nomeArquivo })
+        }
+        onVoltarInicio={voltarAoInicio}
+        possuiCurriculo={possuiCurriculo}
+        previa={previaDoPerfil}
+      />
+    );
+  }
+
   return (
     <PaginaInicio
       onCriarCurriculo={aoClicarCriarCurriculo}
@@ -996,12 +1340,15 @@ export function App() {
       onNavegarLogin={() => abrirAcesso("acesso", "login")}
       onNavegarInicio={voltarAoInicio}
       onNavegarVagas={() => navegar("vagas")}
-      onNavegarPerfil={() => navegar("configuracoes-perfil")}
+      onNavegarPerfil={() =>
+        usuarioLogado ? navegar("meu-perfil") : abrirAcesso("acesso", "login")
+      }
       onNavegarPoliticaDePrivacidade={() =>
         abrirDocumentoPublico("politica-de-privacidade")
       }
       onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
       usuarioLogado={usuarioLogado}
+      temCurriculoPronto={curriculoPronto}
       temProgressoCurriculo={Boolean(
         dadosPessoais?.nomeCompleto ||
         (formacoes && formacoes.length > 0) ||

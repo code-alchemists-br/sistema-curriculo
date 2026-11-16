@@ -63,7 +63,7 @@ class ComposicaoProjetoTestCase(TestCase):
         """
         nomes = list(inspect.signature(factory.create_app).parameters)
         self.assertEqual(
-            nomes[-6:],
+            nomes[-9:],
             [
                 "consultar_projeto_academico",
                 "editar_projeto_academico",
@@ -71,6 +71,9 @@ class ComposicaoProjetoTestCase(TestCase):
                 "solicitar_recuperacao_senha",
                 "redefinir_senha",
                 "enviador_recuperacao_senha",
+                "revisar_texto",
+                "recomendar_modelo_curriculo",
+                "gerenciar_curriculo_completo",
             ],
         )
         consulta, edicao, exclusao = Mock(), Mock(), Mock()

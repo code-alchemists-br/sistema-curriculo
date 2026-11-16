@@ -17,7 +17,7 @@ class ConfiguracaoCookieSessao:
     """
 
     seguro: bool = True
-    duracao_segundos: int = 28_800
+    duracao_segundos: int = 3_600
 
     @property
     def nome(self) -> str:

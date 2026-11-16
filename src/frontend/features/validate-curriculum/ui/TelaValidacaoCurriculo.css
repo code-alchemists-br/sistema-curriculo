@@ -96,6 +96,44 @@
   gap: 0.5rem 0.75rem;
 }
 
+/* Card inteiro clicável: o botão do título estende a área de clique. */
+.tela-validacao-curriculo__secao--clicavel {
+  position: relative;
+  cursor: pointer;
+}
+
+.tela-validacao-curriculo__secao--clicavel:hover {
+  border-color: rgba(255, 133, 51, 0.6);
+  background-color: #1d1d1d;
+}
+
+.tela-validacao-curriculo__secao--clicavel:focus-within {
+  outline: 2px solid #ff6a00;
+  outline-offset: 2px;
+}
+
+.tela-validacao-curriculo__secao-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tela-validacao-curriculo__secao-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.tela-validacao-curriculo__secao-link:focus-visible {
+  outline: none;
+}
+
 .tela-validacao-curriculo__secao-info strong {
   font-weight: 500;
   color: #f3f3f3;

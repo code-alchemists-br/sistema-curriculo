@@ -26,6 +26,13 @@ export interface DadosParaMontagemPrevia {
   modelo?: ModeloApresentacaoCurriculo;
 }
 
+/**
+ * Rótulos de exibição do nível e do status da formação.
+ *
+ * O formulário guarda valores internos ("tecnologo", "em_andamento"); a prévia
+ * troca pelo texto que o recrutador deve ler. Valores desconhecidos aparecem
+ * como vieram.
+ */
 const ROTULOS_NIVEL_FORMACAO: Readonly<Record<string, string>> = {
   ensino_fundamental: "Ensino fundamental",
   ensino_medio: "Ensino médio",

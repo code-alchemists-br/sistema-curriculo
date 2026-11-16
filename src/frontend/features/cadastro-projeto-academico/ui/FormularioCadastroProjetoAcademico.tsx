@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   FalhaCadastroProjeto,
@@ -29,6 +29,33 @@ export interface FormularioCadastroProjetoAcademicoProps {
   projetosIniciais?: ValoresProjetoAcademico[];
   /** Notifica a lista de projetos sempre que houver alteração. */
   aoAlterarProjetos?: (projetos: ValoresProjetoAcademico[]) => void;
+  /**
+   * Espaço opcional abaixo da descrição (por exemplo, a revisão por IA). A
+   * página decide o que mostrar; sem ele o formulário funciona como antes.
+   */
+  renderizarAssistenteDescricao?: (contexto: {
+    indice: number;
+    projeto: ValoresProjetoAcademico;
+    aplicarDescricao: (texto: string) => void;
+  }) => ReactNode;
+  /**
+   * Chamado antes de enviar, depois da validação local. Devolve, por índice,
+   * a pendência que impede salvar a descrição (por exemplo, a revisão por IA).
+   */
+  validarDescricoes?: (
+    projetos: ValoresProjetoAcademico[],
+  ) => Promise<Record<number, PendenciaDescricaoProjeto>>;
+}
+
+/**
+ * Pendência de uma descrição vinda de uma validação externa.
+ *
+ * "erro" marca o campo como inválido; "aviso" só interrompe o envio uma vez,
+ * com mensagem neutra, para o estudante conferir algo antes de seguir.
+ */
+export interface PendenciaDescricaoProjeto {
+  mensagem: string;
+  tipo: "erro" | "aviso";
 }
 
 const valoresIniciais: ValoresProjetoAcademico = {
@@ -50,11 +77,14 @@ export function FormularioCadastroProjetoAcademico({
   onVoltar,
   projetosIniciais = [valoresIniciais],
   aoAlterarProjetos,
+  renderizarAssistenteDescricao,
+  validarDescricoes,
 }: FormularioCadastroProjetoAcademicoProps) {
   const [projetos, setProjetos] =
     useState<ValoresProjetoAcademico[]>(projetosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosProjetoAcademico>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [mensagemAviso, setMensagemAviso] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [semProjetos, setSemProjetos] = useState(false);
   const [projetoRemovido, setProjetoRemovido] = useState<{
@@ -198,6 +228,28 @@ export function FormularioCadastroProjetoAcademico({
 
     setEnviando(true);
     setMensagem(null);
+    setMensagemAviso(false);
+
+    if (validarDescricoes) {
+      const pendencias = Object.entries(await validarDescricoes(projetos));
+      if (pendencias.length > 0) {
+        const errosDescricao: Record<number, ErrosProjetoAcademico> = {};
+        for (const [indice, pendencia] of pendencias) {
+          if (pendencia.tipo === "erro") {
+            errosDescricao[Number(indice)] = { descricao: pendencia.mensagem };
+          }
+        }
+        setErros(errosDescricao);
+        if (Object.keys(errosDescricao).length > 0) {
+          setMensagem("Corrija as descrições marcadas antes de continuar.");
+        } else {
+          setMensagemAviso(true);
+          setMensagem(pendencias[0][1].mensagem);
+        }
+        setEnviando(false);
+        return;
+      }
+    }
 
     try {
       for (const proj of projetos) {
@@ -309,6 +361,12 @@ export function FormularioCadastroProjetoAcademico({
                   placeholder="Explique o objetivo do projeto, sua contribuição e os principais desafios..."
                   value={valores.descricao}
                 />
+                {renderizarAssistenteDescricao?.({
+                  indice,
+                  projeto: valores,
+                  aplicarDescricao: (texto) =>
+                    atualizarCampo(indice, "descricao", texto),
+                })}
                 <CampoTexto
                   erro={errosItem.tecnologias}
                   id={`${prefixo}-tecnologias`}
@@ -357,8 +415,14 @@ export function FormularioCadastroProjetoAcademico({
 
       {mensagem !== null && (
         <p
-          className="form-message"
-          role={mensagem.includes("processamento") ? "status" : "alert"}
+          className={
+            mensagemAviso ? "form-message form-message--aviso" : "form-message"
+          }
+          role={
+            mensagemAviso || mensagem.includes("processamento")
+              ? "status"
+              : "alert"
+          }
         >
           {mensagem}
         </p>
@@ -379,7 +443,7 @@ export function FormularioCadastroProjetoAcademico({
           disabled={enviando}
           type="submit"
         >
-          {enviando ? "Enviando projeto..." : "Próximo"}
+          {enviando ? "Revisando e enviando..." : "Próximo"}
         </button>
       </div>
 
