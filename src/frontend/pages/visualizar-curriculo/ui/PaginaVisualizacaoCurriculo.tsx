@@ -39,6 +39,8 @@ export interface PaginaVisualizacaoCurriculoProps {
   onExportarPdf?: () => void;
   /** Dispara o download automático do PDF assim que a tela for montada. */
   autoBaixar?: boolean;
+  /** Indica se o currículo está válido e habilitado para download. */
+  podeExportar?: boolean;
 }
 
 interface OpcaoModeloCatalogo {
@@ -139,6 +141,7 @@ export function PaginaVisualizacaoCurriculo({
   onVoltarInicio,
   onExportarPdf,
   autoBaixar = false,
+  podeExportar,
 }: PaginaVisualizacaoCurriculoProps) {
   const ModeloSelecionado = modelos[modelo] || ModeloClassico;
   const folhaRef = useRef<HTMLDivElement | null>(null);
@@ -146,6 +149,14 @@ export function PaginaVisualizacaoCurriculo({
   const [sucessoDownload, setSucessoDownload] = useState(false);
   const [erroDownload, setErroDownload] = useState<string | null>(null);
   const [modalModelosAberto, setModalModelosAberto] = useState(false);
+
+  const possuiDadosMinimos = Boolean(
+    previa?.estudante?.nome?.trim() &&
+    previa.estudante.nome.trim() !== "Estudante" &&
+    previa?.estudante?.email?.trim(),
+  );
+  const exportacaoHabilitada =
+    podeExportar !== undefined ? podeExportar : possuiDadosMinimos;
 
   useEffect(() => {
     function aoPressionarTecla(e: KeyboardEvent) {
@@ -160,7 +171,7 @@ export function PaginaVisualizacaoCurriculo({
   }, [modalModelosAberto]);
 
   const handleBaixarPdf = useCallback(async (): Promise<void> => {
-    if (baixando) return;
+    if (baixando || !exportacaoHabilitada) return;
     const el = folhaRef.current;
     if (!el && !previa) return;
 
@@ -194,9 +205,10 @@ export function PaginaVisualizacaoCurriculo({
     } finally {
       setBaixando(false);
     }
-  }, [baixando, modelo, onExportarPdf, previa]);
+  }, [baixando, exportacaoHabilitada, modelo, onExportarPdf, previa]);
 
   const handleBaixarDocx = useCallback(async (): Promise<void> => {
+    if (!exportacaoHabilitada) return;
     try {
       setErroDownload(null);
       const nomeEstudante = previa.estudante?.nome?.trim() || "Estudante";
@@ -222,16 +234,16 @@ export function PaginaVisualizacaoCurriculo({
         setErroDownload(null);
       }, 6000);
     }
-  }, [modelo, previa]);
+  }, [exportacaoHabilitada, modelo, previa]);
 
   useEffect(() => {
-    if (autoBaixar) {
+    if (autoBaixar && exportacaoHabilitada) {
       const timer = setTimeout(() => {
         void handleBaixarPdf();
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [autoBaixar, handleBaixarPdf]);
+  }, [autoBaixar, exportacaoHabilitada, handleBaixarPdf]);
 
   return (
     <main className="pagina-visualizacao-curriculo">
@@ -320,7 +332,13 @@ export function PaginaVisualizacaoCurriculo({
           <div className="pagina-visualizacao-curriculo__acoes">
             <button
               className="pagina-visualizacao-curriculo__btn-exportar-word"
+              disabled={!exportacaoHabilitada}
               onClick={handleBaixarDocx}
+              title={
+                !exportacaoHabilitada
+                  ? "Preencha e valide os dados obrigatórios antes de baixar o currículo"
+                  : undefined
+              }
               type="button"
             >
               <svg
@@ -345,7 +363,12 @@ export function PaginaVisualizacaoCurriculo({
             <button
               className="pagina-visualizacao-curriculo__btn-exportar-pdf"
               onClick={() => void handleBaixarPdf()}
-              disabled={baixando}
+              disabled={baixando || !exportacaoHabilitada}
+              title={
+                !exportacaoHabilitada
+                  ? "Preencha e valide os dados obrigatórios antes de baixar o currículo"
+                  : undefined
+              }
               type="button"
             >
               {baixando ? (
@@ -391,6 +414,30 @@ export function PaginaVisualizacaoCurriculo({
         </header>
 
         {/* Mensagens de Feedback Acessíveis */}
+        {!exportacaoHabilitada && (
+          <div
+            role="alert"
+            className="pagina-visualizacao-curriculo__feedback-erro"
+          >
+            <svg
+              className="pagina-visualizacao-curriculo__feedback-icone"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>
+              Currículo incompleto: preencha e valide os dados obrigatórios
+              antes de exportar o documento.
+            </span>
+          </div>
+        )}
+
         {sucessoDownload && (
           <div
             role="status"

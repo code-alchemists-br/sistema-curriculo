@@ -115,4 +115,31 @@ describe("PaginaVisualizacaoCurriculo", () => {
       /Não foi possível gerar o arquivo PDF/i,
     );
   });
+
+  it("desabilita os downloads e exibe alerta quando o currículo está vazio ou não validado", () => {
+    const previaVazia: PreviaCurriculo = {
+      ...previa,
+      estudante: {
+        nome: "Estudante",
+        email: "",
+        contato: null,
+      },
+    };
+
+    render(
+      <PaginaVisualizacaoCurriculo
+        modelo="classico"
+        podeExportar={false}
+        previa={previaVazia}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Baixar PDF" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Baixar Word \(DOCX\)/i }),
+    ).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Currículo incompleto/i,
+    );
+  });
 });

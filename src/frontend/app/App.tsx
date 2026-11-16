@@ -9,7 +9,10 @@ import type { Idioma } from "../features/edit-languages";
 import type { ValoresDadosPessoais } from "../features/edit-personal-data";
 import type { Experiencia } from "../features/edit-professional-experience";
 import type { Habilidades } from "../features/edit-skills";
-import type { CurriculoParaValidacao } from "../features/validate-curriculum";
+import {
+  validarCurriculo,
+  type CurriculoParaValidacao,
+} from "../features/validate-curriculum";
 import { PaginaAcessoEstudante } from "../pages/acesso-estudante";
 import { PaginaCompetencias } from "../pages/competencias";
 import { PaginaCursosCertificacoes } from "../pages/cursos-certificacoes";
@@ -845,6 +848,7 @@ export function App() {
   }
 
   if (rotaAtiva === "visualizar-curriculo") {
+    const resultadoValidacao = validarCurriculo(dadosValidacao);
     const previaCalculada = montarPreviaCurriculo({
       dadosPessoais,
       formacoes,
@@ -879,6 +883,7 @@ export function App() {
           setAutoBaixarPdf(false);
           voltarAoInicio();
         }}
+        podeExportar={resultadoValidacao.podeExportarPdf}
         previa={previaCalculada}
       />
     );

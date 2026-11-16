@@ -1,16 +1,33 @@
 .modelo-compacto {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   max-width: 56rem;
   margin: 0 auto;
   padding: 1.5rem;
+  box-sizing: border-box;
+  overflow: hidden;
   color: #1f2937;
   background: #ffffff;
   line-height: 1.45;
 }
 
+.modelo-compacto h1,
+.modelo-compacto h2,
+.modelo-compacto h3,
+.modelo-compacto p,
+.modelo-compacto li,
+.modelo-compacto span,
+.modelo-compacto strong,
+.modelo-compacto a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .modelo-compacto__cabecalho {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 2px solid #2563eb;
