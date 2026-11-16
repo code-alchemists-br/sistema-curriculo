@@ -18,6 +18,7 @@ import { PaginaFormacaoAcademica } from "../pages/formacao-academica";
 import { PaginaIdiomas } from "../pages/idiomas";
 import { PaginaInicio } from "../pages/inicio";
 import { PaginaConfiguracoesPerfil } from "../pages/profile-settings";
+import { PaginaMeuPerfil } from "../pages/meu-perfil";
 import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
@@ -127,6 +128,7 @@ type RotaAtiva =
   | "visualizar-curriculo"
   | "vagas"
   | "configuracoes-perfil"
+  | "meu-perfil"
   | "recuperar-senha";
 
 /**
@@ -260,8 +262,8 @@ export function App() {
       if (etapa === "visualizar-curriculo" || etapa === "previa")
         return "visualizar-curriculo";
       if (etapa === "vagas") return "vagas";
-      if (etapa === "configuracoes-perfil" || etapa === "perfil")
-        return "configuracoes-perfil";
+      if (etapa === "configuracoes-perfil") return "configuracoes-perfil";
+      if (etapa === "meu-perfil" || etapa === "perfil") return "meu-perfil";
       if (etapa === "recuperar-senha" || etapa === "recuperacao-senha")
         return "recuperar-senha";
       if (etapa === "acesso") return "acesso";
@@ -910,6 +912,47 @@ export function App() {
     return <PaginaConfiguracoesPerfil onVoltar={() => navegar("inicio")} />;
   }
 
+  if (rotaAtiva === "meu-perfil") {
+    const possuiCurriculo = Boolean(
+      (formacoes && formacoes.length > 0) ||
+        (experiencias && experiencias.length > 0) ||
+        (projetos && projetos.length > 0) ||
+        (cursos && cursos.length > 0) ||
+        (idiomas && idiomas.length > 0) ||
+        competencias?.hardSkills?.length ||
+        competencias?.softSkills?.length,
+    );
+    const dadosDoPerfil = {
+      ...dadosPessoais,
+      nomeCompleto:
+        dadosPessoais?.nomeCompleto || usuarioLogado?.nome || "Estudante",
+      email: dadosPessoais?.email || usuarioLogado?.email || "",
+    } as ValoresDadosPessoais;
+
+    return (
+      <PaginaMeuPerfil
+        modelo={modelo}
+        onEditarCurriculo={() =>
+          navegar(possuiCurriculo ? "validacao-curriculo" : "dados-pessoais")
+        }
+        onEditarPerfil={() => navegar("dados-pessoais")}
+        onVoltarInicio={voltarAoInicio}
+        possuiCurriculo={possuiCurriculo}
+        previa={montarPreviaCurriculo({
+          dadosPessoais: dadosDoPerfil,
+          formacoes,
+          experiencias,
+          cursos,
+          certificacoes,
+          idiomas,
+          competencias,
+          projetos,
+          modelo,
+        })}
+      />
+    );
+  }
+
   return (
     <PaginaInicio
       onCriarCurriculo={aoClicarCriarCurriculo}
@@ -917,7 +960,9 @@ export function App() {
       onNavegarLogin={() => abrirAcesso("acesso", "login")}
       onNavegarInicio={voltarAoInicio}
       onNavegarVagas={() => navegar("vagas")}
-      onNavegarPerfil={() => navegar("configuracoes-perfil")}
+      onNavegarPerfil={() =>
+        usuarioLogado ? navegar("meu-perfil") : abrirAcesso("acesso", "login")
+      }
       onNavegarPoliticaDePrivacidade={() =>
         abrirDocumentoPublico("politica-de-privacidade")
       }

@@ -1,21 +1,10 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ComponentType,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PreviaCurriculo } from "../../../entities/curriculo";
 import type { ModeloApresentacaoCurriculo } from "../../../features/alternar-modelo-curriculo";
 import {
-  ModeloAcademico,
-  ModeloAtsSimples,
-  ModeloClassico,
-  ModeloCompacto,
-  ModeloCriativo,
-  ModeloModerno,
-  ModeloPrimeiroEmprego,
+  CurriculoNoModelo,
+  ROTULOS_MODELO_CURRICULO,
 } from "../../../features/visualizar-curriculo";
 import { exportarElementoParaPdf } from "../model/exportar-pdf-cliente";
 import { exportarPreviaParaDocx } from "../model/exportar-docx-cliente";
@@ -39,31 +28,6 @@ export interface PaginaVisualizacaoCurriculoProps {
   autoBaixar?: boolean;
 }
 
-const rotulosModelo: Readonly<Record<ModeloApresentacaoCurriculo, string>> = {
-  classico: "Profissional clássico",
-  compacto: "Compacto",
-  "ats-simples": "ATS simples",
-  criativo: "Criativo",
-  moderno: "Moderno",
-  academico: "Acadêmico",
-  "primeiro-emprego": "Primeiro emprego",
-};
-
-const modelos: Readonly<
-  Record<
-    ModeloApresentacaoCurriculo,
-    ComponentType<{ previa: PreviaCurriculo }>
-  >
-> = {
-  classico: ModeloClassico,
-  compacto: ModeloCompacto,
-  "ats-simples": ModeloAtsSimples,
-  criativo: ModeloCriativo,
-  moderno: ModeloModerno,
-  academico: ModeloAcademico,
-  "primeiro-emprego": ModeloPrimeiroEmprego,
-};
-
 /**
  * Compõe a tela de visualização do currículo no modelo escolhido.
  *
@@ -80,7 +44,6 @@ export function PaginaVisualizacaoCurriculo({
   onExportarPdf,
   autoBaixar = false,
 }: PaginaVisualizacaoCurriculoProps) {
-  const ModeloSelecionado = modelos[modelo] || ModeloClassico;
   const folhaRef = useRef<HTMLDivElement | null>(null);
   const [baixando, setBaixando] = useState(false);
   const [sucessoDownload, setSucessoDownload] = useState(false);
@@ -160,7 +123,7 @@ export function PaginaVisualizacaoCurriculo({
               Visualização do currículo
             </h1>
             <p>
-              Modelo selecionado: <strong>{rotulosModelo[modelo]}</strong>
+              Modelo selecionado: <strong>{ROTULOS_MODELO_CURRICULO[modelo]}</strong>
             </p>
           </div>
           <div className="pagina-visualizacao-curriculo__acoes">
@@ -233,7 +196,7 @@ export function PaginaVisualizacaoCurriculo({
 
           {/* Só a folha do currículo é exportada, sem a moldura escura da tela. */}
           <div ref={folhaRef}>
-            <ModeloSelecionado previa={previa} />
+            <CurriculoNoModelo modelo={modelo} previa={previa} />
           </div>
         </section>
       </section>
