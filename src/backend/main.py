@@ -1,7 +1,7 @@
 """Compõe a aplicação ASGI, a readiness de persistência e o logging.
 
 O módulo cria uma engine assíncrona quando `DATABASE_URL` está configurada,
-compõe os executores persistidos, incluindo perfil do estudante, cadastro, leitura,
+compõe os executores persistidos, incluindo cadastro de idiomas, perfil do estudante, cadastro, leitura,
 edição e exclusão de formações acadêmicas, projetos acadêmicos e experiências profissionais,
 injeta a readiness e encerra a engine no shutdown. Sem essa variável, os fluxos
 persistidos ficam indisponíveis. Ele existe para concentrar a composição de
@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.cadastro_idioma import CadastrarIdioma
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
     RegistrarDecisaoRecomendacao,
@@ -55,6 +56,7 @@ from backend.infrastructure.identificadores.geradores import (
     GeradorCursoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
+    GeradorIdiomaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     GeradorProjetoAcademicoIdUuid4,
     GeradorUsuarioIdUuid4,
@@ -143,6 +145,9 @@ from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import 
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_decisao_recomendacao import (
     RepositorioDecisaoRecomendacaoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
+    RepositorioIdiomaSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
@@ -628,6 +633,12 @@ app = create_app(
     # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
     cadastrar_curso=_cadastrar_curso,
     cadastrar_certificacao=_cadastrar_certificacao,
+    cadastrar_idioma=criar_executor_transacional(
+        _sessoes_persistencia,
+        lambda sessao: CadastrarIdioma(
+            RepositorioIdiomaSqlAlchemy(sessao), GeradorIdiomaIdUuid4()
+        ),
+    ),
     acessar_estudante=_acessar_estudante,
     criador_sessao=_criador_sessao,
     derivador_senha=_derivador_senha,
