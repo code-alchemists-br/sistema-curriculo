@@ -157,7 +157,7 @@ describe("ModeloClassico", () => {
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Documentos complementares",
+        name: "Cursos e certificações",
       }),
     ).toBeInTheDocument();
     expect(
@@ -199,7 +199,7 @@ describe("ModeloClassico", () => {
     expect(
       screen.queryByRole("heading", {
         level: 2,
-        name: "Documentos complementares",
+        name: "Cursos e certificações",
       }),
     ).not.toBeInTheDocument();
 

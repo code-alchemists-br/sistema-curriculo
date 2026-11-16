@@ -155,7 +155,7 @@ export function ModeloModerno({ previa }: ModeloModernoProps): ReactNode {
             classe="modelo-moderno__secao"
             id="moderno-documentos"
             possuiConteudo={previa.documentos.length > 0}
-            titulo="Documentos complementares"
+            titulo="Cursos e certificações"
           >
             <ul className="modelo-moderno__documentos">
               {previa.documentos.map((documento) => (

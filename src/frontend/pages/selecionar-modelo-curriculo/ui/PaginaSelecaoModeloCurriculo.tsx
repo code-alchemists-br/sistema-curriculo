@@ -47,7 +47,7 @@ export interface PaginaSelecaoModeloCurriculoProps {
  * Compõe a tela que orienta e confirma o modelo de apresentação do currículo.
  *
  * - O que faz: Mostra o objetivo profissional e todos os modelos reconhecidos pelo catálogo.
- * - Como faz: Mantém somente a seleção visual local e entrega o valor confirmado por callback, sem realizar HTTP ou simular persistência.
+ * - Como faz: Mantém somente a seleção visual local e entrega o valor confirmado por callback, sem realizar HTTP ou simular persistência. Mostra uma única recomendação: a da IA quando ela responde para o objetivo atual, ou a das regras fixas quando a IA ainda não respondeu ou está indisponível.
  * - Qual finalidade atende: Permite que a rota de criação associe um modelo válido à versão de currículo sem duplicar o seletor já existente na feature.
  */
 export function PaginaSelecaoModeloCurriculo({
@@ -87,13 +87,26 @@ export function PaginaSelecaoModeloCurriculo({
       ),
     [objetivo, perfilEstudante],
   );
+  // Recomendação da IA para o objetivo atual. Quando existe, substitui a
+  // recomendação por regras fixas, para a tela não mostrar duas indicações.
+  const [modeloIa, setModeloIa] = useState<ModeloSugerido | null>(null);
+  // A IA roda sozinha só ao abrir a tela; depois de trocar o objetivo o
+  // estudante pede de novo pelo botão (evita gastar chamadas a cada troca).
+  const [iaAutomatica, setIaAutomatica] = useState(true);
   const recomendacao = obterRecomendacaoModelo(objetivo);
-  const modeloRecomendado = obterModeloRecomendadoPorObjetivo(objetivo);
+  const modeloRecomendado = modeloIa ?? obterModeloRecomendadoPorObjetivo(objetivo);
 
   function aoAlterarObjetivo(novoObjetivo: ObjetivoCurriculo): void {
     setObjetivo(novoObjetivo);
+    setModeloIa(null);
+    setIaAutomatica(false);
     const modeloSugerido = obterModeloRecomendadoPorObjetivo(novoObjetivo);
     setModeloSelecionado(modeloSugerido);
+  }
+
+  function aoRecomendarComIa(modelo: ModeloSugerido): void {
+    setModeloIa(modelo);
+    setModeloSelecionado(modelo);
   }
 
   return (
@@ -139,13 +152,16 @@ export function PaginaSelecaoModeloCurriculo({
           </select>
         </div>
 
-        <p className="pagina-selecao-modelo__recomendacao" role="status">
-          {recomendacao}
-        </p>
+        {modeloIa === null && (
+          <p className="pagina-selecao-modelo__recomendacao" role="status">
+            {recomendacao}
+          </p>
+        )}
 
         <RecomendacaoModeloIa
-          automatico
-          aoRecomendar={(modelo) => setModeloSelecionado(modelo)}
+          key={objetivo}
+          automatico={iaAutomatica}
+          aoRecomendar={aoRecomendarComIa}
           cliente={clienteIa}
           nomeDoModelo={(modelo) => NOMES_MODELO[modelo] ?? modelo}
           perfil={perfilParaIa}

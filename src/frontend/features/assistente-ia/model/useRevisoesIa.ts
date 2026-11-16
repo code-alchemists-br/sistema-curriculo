@@ -12,6 +12,18 @@ export interface TextoParaRevisar {
   contexto?: Record<string, string>;
 }
 
+/**
+ * Motivo para o formulário não avançar ainda.
+ *
+ * "erro" é texto inválido, que precisa ser reescrito. "aviso" é texto aceito
+ * com sugestões de melhoria: o formulário para uma vez, sem visual de erro,
+ * só para o estudante ver as sugestões.
+ */
+export interface PendenciaRevisao {
+  mensagem: string;
+  tipo: "erro" | "aviso";
+}
+
 const MEMORIA_VAZIA: MemoriaRevisao = { iaIndisponivel: false };
 
 /**
@@ -19,10 +31,11 @@ const MEMORIA_VAZIA: MemoriaRevisao = { iaIndisponivel: false };
  * revisa automaticamente os textos ainda não aprovados quando o estudante
  * tenta avançar.
  *
- * `revisarAntesDeSalvar` devolve, por índice, o motivo para não salvar:
- * - texto inválido: precisa ser reescrito;
- * - texto que acabou de receber sugestões de melhoria: para uma vez, para o
- *   estudante ver as sugestões; no próximo clique ele segue com o próprio texto.
+ * `revisarAntesDeSalvar` devolve, por índice, a pendência que impede salvar:
+ * - texto inválido (tipo "erro"): precisa ser reescrito;
+ * - texto que acabou de receber sugestões de melhoria (tipo "aviso"): para
+ *   uma vez, para o estudante ver as sugestões; no próximo clique ele segue
+ *   com o próprio texto.
  * Se a IA falhar, o item segue sem bloqueio (a IA é opcional).
  */
 export function useRevisoesIa(cliente: ClienteAssistenteIa) {
@@ -41,8 +54,8 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
   );
 
   const revisarAntesDeSalvar = useCallback(
-    async (itens: TextoParaRevisar[]): Promise<Record<number, string>> => {
-      const bloqueios: Record<number, string> = {};
+    async (itens: TextoParaRevisar[]): Promise<Record<number, PendenciaRevisao>> => {
+      const bloqueios: Record<number, PendenciaRevisao> = {};
       for (const [indice, item] of itens.entries()) {
         const texto = item.texto.trim();
         if (!texto) continue;
@@ -58,11 +71,15 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
           });
           atualizar(indice, registrarRevisao(item.texto, revisao));
           if (revisao.situacao === "invalido") {
-            bloqueios[indice] =
-              "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.";
+            bloqueios[indice] = {
+              tipo: "erro",
+              mensagem: "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.",
+            };
           } else if (revisao.situacao === "melhorado") {
-            bloqueios[indice] =
-              "A IA sugeriu melhorias. Escolha uma sugestão ou avance de novo para manter o seu texto.";
+            bloqueios[indice] = {
+              tipo: "aviso",
+              mensagem: "Texto aprovado. Veja as sugestões da IA ou clique em Próximo de novo para manter o seu.",
+            };
           }
         } catch {
           atualizar(indice, { ...memoria, iaIndisponivel: true });

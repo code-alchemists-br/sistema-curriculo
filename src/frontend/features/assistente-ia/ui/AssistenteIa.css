@@ -88,3 +88,13 @@
 .painel-revisao-ia__sugestoes li p {
   margin: 0 0 var(--space-1);
 }
+
+.painel-revisao-ia__status--aprovado {
+  color: #4ade80;
+  font-weight: var(--font-weight-semibold);
+}
+
+.painel-revisao-ia__status--invalido {
+  color: #f87171;
+  font-weight: var(--font-weight-semibold);
+}

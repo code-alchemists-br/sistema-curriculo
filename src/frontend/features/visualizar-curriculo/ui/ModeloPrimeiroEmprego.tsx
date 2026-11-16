@@ -117,7 +117,7 @@ export function ModeloPrimeiroEmprego({
         classe="modelo-primeiro-emprego__secao"
         id="primeiro-emprego-documentos"
         possuiConteudo={previa.documentos.length > 0}
-        titulo="Documentos complementares"
+        titulo="Cursos e certificações"
       >
         <ul className="modelo-primeiro-emprego__lista-curta">
           {previa.documentos.map((documento) => (

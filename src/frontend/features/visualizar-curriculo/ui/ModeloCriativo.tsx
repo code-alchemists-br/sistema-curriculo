@@ -146,7 +146,7 @@ export function ModeloCriativo({ previa }: ModeloCriativoProps): ReactNode {
           classe="modelo-criativo__secao"
           id="criativo-documentos"
           possuiConteudo={previa.documentos.length > 0}
-          titulo="Documentos complementares"
+          titulo="Cursos e certificações"
         >
           <ul className="modelo-criativo__documentos">
             {previa.documentos.map((documento) => (

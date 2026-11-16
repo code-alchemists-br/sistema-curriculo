@@ -39,9 +39,22 @@ export interface FormularioCadastroProjetoAcademicoProps {
   }) => ReactNode;
   /**
    * Chamado antes de enviar, depois da validação local. Devolve, por índice,
-   * o motivo para não salvar a descrição (por exemplo, a revisão por IA).
+   * a pendência que impede salvar a descrição (por exemplo, a revisão por IA).
    */
-  validarDescricoes?: (projetos: ValoresProjetoAcademico[]) => Promise<Record<number, string>>;
+  validarDescricoes?: (
+    projetos: ValoresProjetoAcademico[],
+  ) => Promise<Record<number, PendenciaDescricaoProjeto>>;
+}
+
+/**
+ * Pendência de uma descrição vinda de uma validação externa.
+ *
+ * "erro" marca o campo como inválido; "aviso" só interrompe o envio uma vez,
+ * com mensagem neutra, para o estudante conferir algo antes de seguir.
+ */
+export interface PendenciaDescricaoProjeto {
+  mensagem: string;
+  tipo: "erro" | "aviso";
 }
 
 const valoresIniciais: ValoresProjetoAcademico = {
@@ -70,6 +83,7 @@ export function FormularioCadastroProjetoAcademico({
     useState<ValoresProjetoAcademico[]>(projetosIniciais);
   const [erros, setErros] = useState<Record<number, ErrosProjetoAcademico>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [mensagemAviso, setMensagemAviso] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [semProjetos, setSemProjetos] = useState(false);
   const [projetoRemovido, setProjetoRemovido] = useState<{
@@ -213,16 +227,24 @@ export function FormularioCadastroProjetoAcademico({
 
     setEnviando(true);
     setMensagem(null);
+    setMensagemAviso(false);
 
     if (validarDescricoes) {
-      const bloqueios = await validarDescricoes(projetos);
-      if (Object.keys(bloqueios).length > 0) {
+      const pendencias = Object.entries(await validarDescricoes(projetos));
+      if (pendencias.length > 0) {
         const errosDescricao: Record<number, ErrosProjetoAcademico> = {};
-        for (const [indice, motivo] of Object.entries(bloqueios)) {
-          errosDescricao[Number(indice)] = { descricao: motivo };
+        for (const [indice, pendencia] of pendencias) {
+          if (pendencia.tipo === "erro") {
+            errosDescricao[Number(indice)] = { descricao: pendencia.mensagem };
+          }
         }
         setErros(errosDescricao);
-        setMensagem("Confira a revisão das descrições antes de continuar.");
+        if (Object.keys(errosDescricao).length > 0) {
+          setMensagem("Corrija as descrições marcadas antes de continuar.");
+        } else {
+          setMensagemAviso(true);
+          setMensagem(pendencias[0][1].mensagem);
+        }
         setEnviando(false);
         return;
       }
@@ -388,8 +410,14 @@ export function FormularioCadastroProjetoAcademico({
 
       {mensagem !== null && (
         <p
-          className="form-message"
-          role={mensagem.includes("processamento") ? "status" : "alert"}
+          className={
+            mensagemAviso ? "form-message form-message--aviso" : "form-message"
+          }
+          role={
+            mensagemAviso || mensagem.includes("processamento")
+              ? "status"
+              : "alert"
+          }
         >
           {mensagem}
         </p>

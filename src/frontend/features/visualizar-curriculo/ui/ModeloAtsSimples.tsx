@@ -131,7 +131,7 @@ export function ModeloAtsSimples({ previa }: ModeloAtsSimplesProps): ReactNode {
         classe="modelo-ats-simples__secao"
         id="ats-documentos-complementares"
         possuiConteudo={previa.documentos.length > 0}
-        titulo="Documentos complementares"
+        titulo="Cursos e certificações"
       >
         <ul className="modelo-ats-simples__lista-textual">
           {previa.documentos.map((documento) => (

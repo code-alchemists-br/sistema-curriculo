@@ -33,9 +33,15 @@ export function PainelRevisaoIa({ id, texto, memoria, aoMudarMemoria, aoAplicarT
 
   return (
     <div className="painel-revisao-ia">
-      <p aria-live="polite" className="painel-revisao-ia__status" id={`${id}-status`}>
+      <p
+        aria-live="polite"
+        className={`painel-revisao-ia__status painel-revisao-ia__status--${estado}`}
+        id={`${id}-status`}
+      >
         {estado === "aprovado"
-          ? "✓ Texto aprovado pela IA."
+          ? revisao?.situacao === "melhorado" && memoria.revisadoPara === texto
+            ? "✓ Texto aprovado pela IA. As sugestões abaixo são opcionais."
+            : "✓ Texto aprovado pela IA."
           : estado === "invalido"
             ? "Reescreva o texto ou use um modelo abaixo."
             : estado === "nao-revisado" && texto.trim()

@@ -147,7 +147,7 @@ export function ModeloCompacto({
       <Secao
         exibirQuandoVazio={exibirSecoesVazias}
         possuiConteudo={previa.documentos.length > 0}
-        titulo="Documentos complementares"
+        titulo="Cursos e certificações"
       >
         <ul className="modelo-compacto__itens-inline">
           {previa.documentos.map((documento) => (

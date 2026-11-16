@@ -26,6 +26,30 @@ export interface DadosParaMontagemPrevia {
   modelo?: ModeloApresentacaoCurriculo;
 }
 
+/**
+ * Rótulos de exibição do nível e do status da formação.
+ *
+ * O formulário guarda valores internos ("tecnologo", "em_andamento"); a prévia
+ * troca pelo texto que o recrutador deve ler. Valores desconhecidos aparecem
+ * como vieram.
+ */
+const ROTULOS_NIVEL_FORMACAO: Record<string, string> = {
+  ensino_fundamental: "Ensino fundamental",
+  ensino_medio: "Ensino médio",
+  tecnico: "Técnico",
+  tecnologo: "Tecnólogo",
+  graduacao: "Graduação",
+  especializacao: "Especialização",
+  mestrado: "Mestrado",
+  doutorado: "Doutorado",
+};
+
+const ROTULOS_STATUS_FORMACAO: Record<string, string> = {
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  interrompido: "Interrompido",
+};
+
 /** Garante que datas inseridas pelo usuário tenham formato ISO seguro para Intl.DateTimeFormat. */
 function normalizarData(data?: string | null): string {
   if (!data || typeof data !== "string") return "2024-01-01";
@@ -86,8 +110,10 @@ export function montarPreviaCurriculo(
       id: `formacao-${index + 1}`,
       instituicao: formacao.instituicao || "Instituição de ensino",
       curso: formacao.curso || "Curso superior",
-      nivel: formacao.nivel || "Graduação",
-      status: formacao.status === "concluido" ? "Concluído" : "Em andamento",
+      nivel: formacao.nivel
+        ? (ROTULOS_NIVEL_FORMACAO[formacao.nivel] ?? formacao.nivel)
+        : "Graduação",
+      status: ROTULOS_STATUS_FORMACAO[formacao.status] ?? "Em andamento",
       inicio: normalizarData(formacao.dataInicio),
       fim:
         formacao.status === "concluido" && formacao.dataFim

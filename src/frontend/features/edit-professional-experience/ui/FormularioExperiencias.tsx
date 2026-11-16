@@ -31,9 +31,22 @@ export interface FormularioExperienciasProps {
   }) => ReactNode;
   /**
    * Chamado antes de salvar, depois da validação local. Devolve, por índice,
-   * o motivo para não salvar a descrição (por exemplo, a revisão por IA).
+   * a pendência que impede salvar a descrição (por exemplo, a revisão por IA).
    */
-  validarDescricoes?: (experiencias: Experiencia[]) => Promise<Record<number, string>>;
+  validarDescricoes?: (
+    experiencias: Experiencia[],
+  ) => Promise<Record<number, PendenciaDescricao>>;
+}
+
+/**
+ * Pendência de uma descrição vinda de uma validação externa.
+ *
+ * "erro" marca o campo como inválido; "aviso" só interrompe o envio uma vez,
+ * com mensagem neutra, para o estudante conferir algo antes de seguir.
+ */
+export interface PendenciaDescricao {
+  mensagem: string;
+  tipo: "erro" | "aviso";
 }
 
 /**
@@ -59,6 +72,7 @@ export function FormularioExperiencias({
     useState<Experiencia[]>(experienciasIniciais);
   const [erros, setErros] = useState<Record<number, ErrosExperiencia>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [mensagemAviso, setMensagemAviso] = useState(false);
   const [experienciaRemovida, setExperienciaRemovida] = useState<{
     item: Experiencia;
     indice: number;
@@ -251,6 +265,7 @@ export function FormularioExperiencias({
     evento: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     evento.preventDefault();
+    setMensagemAviso(false);
 
     if (experiencias.length === 0) {
       onSalvar?.([]);
@@ -269,15 +284,23 @@ export function FormularioExperiencias({
     if (validarDescricoes) {
       setValidandoDescricoes(true);
       setMensagem("Revisando as descrições...");
-      const bloqueios = await validarDescricoes(experiencias);
+      const pendencias = await validarDescricoes(experiencias);
       setValidandoDescricoes(false);
-      if (Object.keys(bloqueios).length > 0) {
+      const lista = Object.entries(pendencias);
+      if (lista.length > 0) {
         const errosDescricao: Record<number, ErrosExperiencia> = {};
-        for (const [indice, motivo] of Object.entries(bloqueios)) {
-          errosDescricao[Number(indice)] = { descricao: motivo };
+        for (const [indice, pendencia] of lista) {
+          if (pendencia.tipo === "erro") {
+            errosDescricao[Number(indice)] = { descricao: pendencia.mensagem };
+          }
         }
         setErros(errosDescricao);
-        setMensagem("Confira a revisão das descrições antes de continuar.");
+        if (Object.keys(errosDescricao).length > 0) {
+          setMensagem("Corrija as descrições marcadas antes de continuar.");
+        } else {
+          setMensagemAviso(true);
+          setMensagem(lista[0][1].mensagem);
+        }
         return;
       }
       setMensagem(null);
@@ -576,8 +599,12 @@ export function FormularioExperiencias({
 
       {mensagem !== null && (
         <p
-          className="form-message"
-          role={mensagem.includes("sucesso") ? "status" : "alert"}
+          className={
+            mensagemAviso ? "form-message form-message--aviso" : "form-message"
+          }
+          role={
+            mensagemAviso || mensagem.includes("sucesso") ? "status" : "alert"
+          }
         >
           {mensagem}
         </p>

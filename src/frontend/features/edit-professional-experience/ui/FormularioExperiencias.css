@@ -371,3 +371,9 @@
   color: #ff6a00;
   font-weight: 600;
 }
+
+.formulario-experiencias .form-message.form-message--aviso {
+  background-color: rgba(250, 204, 21, 0.12);
+  color: #fde68a;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+}
