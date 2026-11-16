@@ -205,6 +205,8 @@ from backend.api.revisao_versao_curriculo import (
     criar_router as criar_router_revisao_versao_curriculo,
 )
 from backend.api.assistente_ia import criar_router as criar_router_assistente_ia
+from backend.api.curriculo_completo import criar_router_curriculo_completo
+from backend.application.curriculo_completo import GerenciarCurriculoCompleto
 from backend.api.saude import criar_router as criar_router_saude
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
@@ -307,6 +309,7 @@ def create_app(
     consultar_decisoes_recomendacao: ConsultaDecisoesRecomendacaoExecutor | None = None,
     revisar_texto: RevisarTexto | None = None,
     recomendar_modelo_curriculo: RecomendarModeloCurriculo | None = None,
+    gerenciar_curriculo_completo: GerenciarCurriculoCompleto | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -505,6 +508,10 @@ def create_app(
     app.include_router(
         criar_router_assistente_ia(revisar_texto, recomendar_modelo_curriculo),
         tags=[TAG_CURRICULO_GUIADO],
+    )
+    app.include_router(
+        criar_router_curriculo_completo(gerenciar_curriculo_completo),
+        tags=[TAG_PERFIL_ESTUDANTE],
     )
     app.include_router(
         criar_router_sessoes(revogador_sessao, configuracao_cookie), tags=[TAG_SESSOES]

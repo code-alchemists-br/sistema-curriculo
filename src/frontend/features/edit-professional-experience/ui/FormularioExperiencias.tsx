@@ -16,7 +16,11 @@ import "./FormularioExperiencias.css";
 export interface FormularioExperienciasProps {
   aoAlterarProgresso?: (progresso: number) => void;
   experienciasIniciais?: Experiencia[];
-  onSalvar?: (experiencias: Experiencia[]) => void;
+  /**
+   * Recebe as experiências válidas para salvar. Se devolver uma Promise que
+   * falhar, o formulário mostra a mensagem do erro e não anuncia sucesso.
+   */
+  onSalvar?: (experiencias: Experiencia[]) => void | Promise<void>;
   onVoltar?: () => void;
   /** Notifica alterações nas experiências para preservação de estado. */
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
@@ -268,8 +272,7 @@ export function FormularioExperiencias({
     setMensagemAviso(false);
 
     if (experiencias.length === 0) {
-      onSalvar?.([]);
-      setMensagem("Experiências salvas com sucesso.");
+      await salvarComRetorno([]);
       return;
     }
 
@@ -318,8 +321,30 @@ export function FormularioExperiencias({
     const experienciasOrdenadas = ordenarPorDataDecrescente(
       experienciasNormalizadas,
     );
-    onSalvar?.(experienciasOrdenadas);
-    setMensagem("Experiências salvas com sucesso.");
+    await salvarComRetorno(experienciasOrdenadas);
+  }
+
+  /**
+   * Entrega a lista para salvar e só anuncia sucesso se a gravação der certo.
+   *
+   * Em falha, mostra a mensagem recebida e mantém os dados no formulário para
+   * o estudante tentar de novo, em vez de seguir como se tivesse salvado.
+   */
+  async function salvarComRetorno(lista: Experiencia[]): Promise<void> {
+    setValidandoDescricoes(true);
+    setMensagem("Salvando...");
+    try {
+      await onSalvar?.(lista);
+      setMensagem("Experiências salvas com sucesso.");
+    } catch (erro: unknown) {
+      setMensagem(
+        erro instanceof Error && erro.message
+          ? erro.message
+          : "Não foi possível salvar agora. Tente novamente.",
+      );
+    } finally {
+      setValidandoDescricoes(false);
+    }
   }
 
   return (

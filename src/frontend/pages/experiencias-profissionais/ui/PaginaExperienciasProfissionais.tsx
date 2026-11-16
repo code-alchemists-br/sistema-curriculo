@@ -15,7 +15,7 @@ import "./PaginaExperienciasProfissionais.css";
 /** Define as propriedades da página de experiências profissionais. */
 export interface PaginaExperienciasProfissionaisProps {
   experienciasIniciais?: Experiencia[];
-  onSalvar?: (experiencias: Experiencia[]) => void;
+  onSalvar?: (experiencias: Experiencia[]) => void | Promise<void>;
   onVoltar?: () => void;
   onVoltarInicio?: () => void;
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;

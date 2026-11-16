@@ -113,3 +113,19 @@ com o qual o psycopg assíncrono não funciona, e a API não consegue falar com 
 banco.
 
 A sessão de login dura 60 minutos.
+
+## Currículo salvo no banco
+
+O frontend lê e grava o currículo inteiro pelo banco, sem duplicar itens:
+
+| Rota | O que faz |
+|---|---|
+| `GET /estudantes/me/curriculo` | Devolve tudo o que o estudante logado salvou (dados pessoais, formações, experiências, projetos, competências, idiomas, cursos, certificações e modelo). |
+| `PUT /estudantes/me/curriculo/{secao}` | Troca a seção inteira pela lista enviada em `itens` (`formacoes`, `experiencias`, `projetos`, `competencias`, `idiomas`, `cursos`, `certificacoes`). Em `formacoes`, aceita também `curriculo_lattes`. |
+| `PUT /estudantes/me/curriculo/modelo` | Guarda o modelo visual escolhido. |
+
+Dados pessoais continuam em `PUT /estudantes/me/perfil`.
+
+- Ao entrar (ou abrir o sistema já logado), o currículo é carregado do banco.
+- Cada etapa só avança depois de salvar. Se a API falhar, a etapa mostra o motivo e mantém o que foi digitado.
+- Não existe mais "modo demonstração" no login quando a API está fora do ar.

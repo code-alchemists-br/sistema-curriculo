@@ -107,6 +107,10 @@ from backend.infrastructure.persistence.sqlalchemy.executor_transacional import 
 from backend.infrastructure.persistence.sqlalchemy.leitor_perfil import (
     LeitorPerfilSqlAlchemy,
 )
+from backend.application.curriculo_completo import GerenciarCurriculoCompleto
+from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo_completo import (
+    RepositorioCurriculoCompletoSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
 from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
     RepositorioIdiomaSqlAlchemy,
@@ -485,6 +489,11 @@ _recomendar_modelo_curriculo = (
     if _sessoes_persistencia is not None
     else None
 )
+_gerenciar_curriculo_completo = (
+    GerenciarCurriculoCompleto(RepositorioCurriculoCompletoSqlAlchemy(_sessoes_persistencia))
+    if _sessoes_persistencia is not None
+    else None
+)
 
 
 @asynccontextmanager
@@ -643,6 +652,7 @@ app = create_app(
     cadastrar_link_profissional=_cadastrar_link_profissional,
     revisar_texto=_revisar_texto,
     recomendar_modelo_curriculo=_recomendar_modelo_curriculo,
+    gerenciar_curriculo_completo=_gerenciar_curriculo_completo,
     lifespan=_ciclo_vida_aplicacao,
     configuracao_cookie=_configuracao_cookie_sessao,
 )
