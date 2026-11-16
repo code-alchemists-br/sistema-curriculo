@@ -26,6 +26,22 @@ describe("validarProjetoAcademico", () => {
       }),
     ).toEqual({});
   });
+
+  it("rejeita campos que excedem os limites máximos de caracteres", () => {
+    const erros = validarProjetoAcademico({
+      titulo: "a".repeat(101),
+      descricao: "b".repeat(1501),
+      tecnologias: "c".repeat(201),
+    });
+
+    expect(erros.titulo).toBe("O título deve ter no máximo 100 caracteres.");
+    expect(erros.descricao).toBe(
+      "A descrição deve ter no máximo 1500 caracteres.",
+    );
+    expect(erros.tecnologias).toBe(
+      "As tecnologias devem ter no máximo 200 caracteres.",
+    );
+  });
 });
 
 describe("traduzirFalhaCadastroProjeto", () => {

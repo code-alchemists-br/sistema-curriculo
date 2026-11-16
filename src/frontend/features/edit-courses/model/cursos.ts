@@ -1,3 +1,11 @@
+/** Limites de tamanho e carga para os campos de curso. */
+export const LIMITES_CURSO = {
+  nome: 100,
+  instituicao: 100,
+  cargaHoraria: 4,
+  cargaHorariaMaxima: 9999,
+} as const;
+
 /** Representa um curso ou certificação informado pelo estudante. */
 export interface Curso {
   nome: string;
@@ -22,26 +30,31 @@ export function criarCursoVazio(): Curso {
 }
 
 /**
- * Valida os campos de um único curso.
+ * Valida os campos de um único curso e seus limites de caracteres.
  *
- * A função verifica presença dos campos obrigatórios e um formato numérico
- * positivo para a carga horária. Ela existe para oferecer feedback imediato
- * sem substituir as regras definitivas que serão aplicadas pelo backend.
+ * A função verifica presença dos campos obrigatórios, formato numérico
+ * positivo para a carga horária e limites máximos de tamanho.
  */
 export function validarCurso(curso: Curso): ErrosCurso {
   const erros: ErrosCurso = {};
 
   if (curso.nome.trim() === "") {
     erros.nome = "Informe o nome do curso.";
+  } else if (curso.nome.length > LIMITES_CURSO.nome) {
+    erros.nome = `O nome do curso deve ter no máximo ${LIMITES_CURSO.nome} caracteres.`;
   }
 
   if (curso.instituicao.trim() === "") {
     erros.instituicao = "Informe a instituição.";
+  } else if (curso.instituicao.length > LIMITES_CURSO.instituicao) {
+    erros.instituicao = `A instituição deve ter no máximo ${LIMITES_CURSO.instituicao} caracteres.`;
   }
 
   const carga = Number(curso.cargaHoraria);
   if (curso.cargaHoraria.trim() === "" || Number.isNaN(carga) || carga <= 0) {
     erros.cargaHoraria = "Informe uma carga horária válida (em horas).";
+  } else if (carga > LIMITES_CURSO.cargaHorariaMaxima) {
+    erros.cargaHoraria = `A carga horária não pode ultrapassar ${LIMITES_CURSO.cargaHorariaMaxima} horas.`;
   }
 
   return erros;

@@ -104,11 +104,14 @@
   border-radius: 999px;
   position: relative;
   z-index: 3;
+  pointer-events: none;
   box-shadow: 0 2px 8px rgba(255, 106, 0, 0.4);
 }
 
-.alternador-modelo-curriculo__opcao--recomendada {
-  border-color: rgba(255, 106, 0, 0.4);
+.alternador-modelo-curriculo__opcao--recomendada:not(
+  .alternador-modelo-curriculo__opcao--selecionada
+) {
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 /* Pseudo-elemento do label cobre todo o card, tornando qualquer clique no card capaz de selecionar o modelo */
@@ -300,6 +303,11 @@
 @media (max-width: 40rem) {
   .alternador-modelo-curriculo__opcoes {
     grid-template-columns: 1fr;
+  }
+
+  .alternador-modelo-curriculo__opcao {
+    min-width: 0;
+    padding: 1rem;
   }
 }
 

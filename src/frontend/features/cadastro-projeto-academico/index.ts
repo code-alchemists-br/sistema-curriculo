@@ -9,5 +9,8 @@ export type {
   ClienteProjetosAcademicos,
   ProjetoAcademicoEntrada,
 } from "./api/cliente-projetos-academicos";
-export type { ValoresProjetoAcademico } from "./model/formulario-projeto-academico";
+export {
+  LIMITES_PROJETO_ACADEMICO,
+  type ValoresProjetoAcademico,
+} from "./model/formulario-projeto-academico";
 export { FormularioCadastroProjetoAcademico } from "./ui/FormularioCadastroProjetoAcademico";

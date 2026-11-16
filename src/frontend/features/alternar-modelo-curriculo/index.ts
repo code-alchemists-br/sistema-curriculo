@@ -4,6 +4,7 @@ export {
 } from "./ui/AlternadorModeloCurriculo";
 export {
   obterModeloRecomendadoPorObjetivo,
+  obterObjetivoPorModelo,
   obterRecomendacaoModelo,
   inferirObjetivoDoPerfil,
   OPCOES_OBJETIVO_CURRICULO,

@@ -57,6 +57,24 @@ describe("validarCurso", () => {
       "Informe uma carga horária válida (em horas).",
     );
   });
+
+  it("reporta campos que excedem os limites máximos permitidos", () => {
+    const erros = validarCurso({
+      nome: "a".repeat(101),
+      instituicao: "b".repeat(101),
+      cargaHoraria: "10000",
+    });
+
+    expect(erros.nome).toBe(
+      "O nome do curso deve ter no máximo 100 caracteres.",
+    );
+    expect(erros.instituicao).toBe(
+      "A instituição deve ter no máximo 100 caracteres.",
+    );
+    expect(erros.cargaHoraria).toBe(
+      "A carga horária não pode ultrapassar 9999 horas.",
+    );
+  });
 });
 
 describe("validarListaCursos", () => {

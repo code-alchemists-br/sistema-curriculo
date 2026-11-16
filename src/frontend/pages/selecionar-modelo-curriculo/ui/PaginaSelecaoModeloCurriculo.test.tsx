@@ -57,4 +57,32 @@ describe("PaginaSelecaoModeloCurriculo", () => {
     ).toBeChecked();
     expect(screen.getByText("★ Recomendado")).toBeInTheDocument();
   });
+
+  it("sincroniza o seletor de objetivo com o modeloInicial e atualiza ao clicar nos cards", async () => {
+    const usuario = userEvent.setup();
+    const aoAlterarInstantaneo = vi.fn();
+
+    render(
+      <PaginaSelecaoModeloCurriculo
+        aoAlterarModeloInstantaneo={aoAlterarInstantaneo}
+        aoConfirmar={vi.fn()}
+        modeloInicial="criativo"
+        perfilEstudante={{
+          experiencias: [],
+          formacoes: [{ nivel: "doutorado" }],
+        }}
+      />,
+    );
+
+    const selectObjetivo = screen.getByLabelText(
+      "Objetivo do currículo",
+    ) as HTMLSelectElement;
+    expect(selectObjetivo.value).toBe("criativo-design");
+    expect(screen.getByRole("radio", { name: "Criativo" })).toBeChecked();
+
+    // Mesmo tendo vindo com Criativo selecionado, o usuário pode selecionar Acadêmico pelo select ou card
+    await usuario.selectOptions(selectObjetivo, "academico-pesquisador");
+    expect(screen.getByRole("radio", { name: "Acadêmico" })).toBeChecked();
+    expect(aoAlterarInstantaneo).toHaveBeenCalledWith("academico");
+  });
 });

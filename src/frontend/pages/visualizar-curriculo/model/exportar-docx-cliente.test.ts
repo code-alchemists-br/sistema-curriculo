@@ -68,7 +68,7 @@ describe("exportarPreviaParaDocx", () => {
     documentos: [],
   };
 
-  it("cria um link com blob Word e aciona o clique para download", () => {
+  it("cria um link com blob .docx genuíno e aciona o clique para download", async () => {
     const createObjectURLSpy = vi
       .spyOn(URL, "createObjectURL")
       .mockReturnValue("blob:mock-url");
@@ -94,13 +94,13 @@ describe("exportarPreviaParaDocx", () => {
     const appendChildSpy = vi.spyOn(document.body, "appendChild");
     const removeChildSpy = vi.spyOn(document.body, "removeChild");
 
-    exportarPreviaParaDocx({
+    await exportarPreviaParaDocx({
       previa: previaExemplo,
       nomeArquivo: "Curriculo - Maria Oliveira",
     });
 
     expect(capturedLink).not.toBeNull();
-    expect(capturedLink?.download).toBe("Curriculo - Maria Oliveira.doc");
+    expect(capturedLink?.download).toBe("Curriculo - Maria Oliveira.docx");
     expect(capturedLink?.href).toBe("blob:mock-url");
     expect(appendChildSpy).toHaveBeenCalledWith(capturedLink);
     expect(clickSpy).toHaveBeenCalled();
@@ -108,6 +108,5 @@ describe("exportarPreviaParaDocx", () => {
     expect(revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
 
     createObjectURLSpy.mockRestore();
-    revokeObjectURLSpy.mockRestore();
   });
 });
