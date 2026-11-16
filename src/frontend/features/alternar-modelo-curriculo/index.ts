@@ -7,6 +7,7 @@ export {
   obterRecomendacaoModelo,
   inferirObjetivoDoPerfil,
   OPCOES_OBJETIVO_CURRICULO,
+  resumirPerfilParaIa,
 } from "./model/recomendacao-modelo";
 export type {
   ObjetivoCurriculo,

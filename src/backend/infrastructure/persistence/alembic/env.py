@@ -74,4 +74,8 @@ async def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    asyncio.run(run_migrations_online())
+    # No Windows, o psycopg assíncrono não funciona com o laço padrão (Proactor).
+    asyncio.run(
+        run_migrations_online(),
+        loop_factory=asyncio.SelectorEventLoop if os.name == "nt" else None,
+    )

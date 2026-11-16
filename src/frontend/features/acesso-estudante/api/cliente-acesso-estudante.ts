@@ -180,3 +180,25 @@ function classificarFalhaAcesso(status: number): CodigoFalhaAcessoEstudante {
   if (status === 401) return "credenciais-invalidas";
   return "indisponivel";
 }
+
+/**
+ * Confere com a API se o cookie de sessão ainda vale.
+ *
+ * Devolve `false` só quando a API responde 401; em falha de rede devolve `true`
+ * para não deslogar o estudante por um problema passageiro. Existe porque o
+ * usuário fica guardado no navegador e pode sobreviver a uma sessão apagada
+ * (por exemplo, quando a API reinicia com banco em memória).
+ */
+export async function verificarSessaoAtiva(
+  urlDaApi = import.meta.env.VITE_API_URL,
+): Promise<boolean> {
+  if (urlDaApi === undefined || urlDaApi.trim() === "") return true;
+  try {
+    const resposta = await fetch(`${urlDaApi.replace(/\/$/, "")}/sessao/atual`, {
+      credentials: "include",
+    });
+    return resposta.status !== 401;
+  } catch {
+    return true;
+  }
+}

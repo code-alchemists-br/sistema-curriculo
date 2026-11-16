@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   FalhaCadastroProjeto,
@@ -28,6 +28,20 @@ export interface FormularioCadastroProjetoAcademicoProps {
   projetosIniciais?: ValoresProjetoAcademico[];
   /** Notifica a lista de projetos sempre que houver alteração. */
   aoAlterarProjetos?: (projetos: ValoresProjetoAcademico[]) => void;
+  /**
+   * Espaço opcional abaixo da descrição (por exemplo, a revisão por IA). A
+   * página decide o que mostrar; sem ele o formulário funciona como antes.
+   */
+  renderizarAssistenteDescricao?: (contexto: {
+    indice: number;
+    projeto: ValoresProjetoAcademico;
+    aplicarDescricao: (texto: string) => void;
+  }) => ReactNode;
+  /**
+   * Chamado antes de enviar, depois da validação local. Devolve, por índice,
+   * o motivo para não salvar a descrição (por exemplo, a revisão por IA).
+   */
+  validarDescricoes?: (projetos: ValoresProjetoAcademico[]) => Promise<Record<number, string>>;
 }
 
 const valoresIniciais: ValoresProjetoAcademico = {
@@ -49,6 +63,8 @@ export function FormularioCadastroProjetoAcademico({
   onVoltar,
   projetosIniciais = [valoresIniciais],
   aoAlterarProjetos,
+  renderizarAssistenteDescricao,
+  validarDescricoes,
 }: FormularioCadastroProjetoAcademicoProps) {
   const [projetos, setProjetos] =
     useState<ValoresProjetoAcademico[]>(projetosIniciais);
@@ -198,6 +214,20 @@ export function FormularioCadastroProjetoAcademico({
     setEnviando(true);
     setMensagem(null);
 
+    if (validarDescricoes) {
+      const bloqueios = await validarDescricoes(projetos);
+      if (Object.keys(bloqueios).length > 0) {
+        const errosDescricao: Record<number, ErrosProjetoAcademico> = {};
+        for (const [indice, motivo] of Object.entries(bloqueios)) {
+          errosDescricao[Number(indice)] = { descricao: motivo };
+        }
+        setErros(errosDescricao);
+        setMensagem("Confira a revisão das descrições antes de continuar.");
+        setEnviando(false);
+        return;
+      }
+    }
+
     try {
       for (const proj of projetos) {
         await cliente.cadastrar({
@@ -305,6 +335,12 @@ export function FormularioCadastroProjetoAcademico({
                   placeholder="Explique o objetivo do projeto, sua contribuição e os principais desafios..."
                   value={valores.descricao}
                 />
+                {renderizarAssistenteDescricao?.({
+                  indice,
+                  projeto: valores,
+                  aplicarDescricao: (texto) =>
+                    atualizarCampo(indice, "descricao", texto),
+                })}
                 <CampoTexto
                   erro={errosItem.tecnologias}
                   id={`${prefixo}-tecnologias`}
@@ -374,7 +410,7 @@ export function FormularioCadastroProjetoAcademico({
           disabled={enviando}
           type="submit"
         >
-          {enviando ? "Enviando projeto..." : "Próximo"}
+          {enviando ? "Revisando e enviando..." : "Próximo"}
         </button>
       </div>
 

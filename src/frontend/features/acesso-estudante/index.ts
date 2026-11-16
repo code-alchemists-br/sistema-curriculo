@@ -2,6 +2,7 @@
 export {
   criarClienteAcessoEstudante,
   FalhaAcessoEstudante,
+  verificarSessaoAtiva,
 } from "./api/cliente-acesso-estudante";
 export { criarClienteAcessoDemonstracao } from "./api/cliente-acesso-demonstracao";
 export type {

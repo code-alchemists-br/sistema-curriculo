@@ -40,6 +40,7 @@ import {
 import {
   criarClienteAcessoDemonstracao,
   criarClienteAcessoEstudante,
+  verificarSessaoAtiva,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
 import { criarClienteFormacaoAcademicaHttp } from "../features/cadastrar-formacao-academica";
@@ -281,6 +282,27 @@ export function App() {
       return null;
     },
   );
+
+  useEffect(() => {
+    // O usuário fica salvo no navegador; confere se a sessão ainda existe na API
+    // (ela some quando a API reinicia com banco em memória).
+    if (!usuarioLogado) return;
+    let ativo = true;
+    void verificarSessaoAtiva().then((valida) => {
+      if (valida || !ativo) return;
+      setUsuarioLogado(null);
+      try {
+        sessionStorage.removeItem("liminal_usuario_sessao");
+      } catch {
+        // Ignora erro em ambientes sem suporte a sessionStorage
+      }
+    });
+    return () => {
+      ativo = false;
+    };
+    // Confere só ao abrir a aplicação.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [intencaoAcesso, setIntencaoAcesso] = useState<
     "criar-curriculo" | "criar-conta" | "login" | null
@@ -711,6 +733,9 @@ export function App() {
           formacoes,
           projetos,
           competencias,
+          idiomas,
+          cursos,
+          certificacoes,
         }}
       />
     );

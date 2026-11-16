@@ -115,19 +115,29 @@ export interface PerfilParaRecomendacao {
     empresa?: string;
     cargo?: string;
     descricao?: string;
+    inicio?: string;
+    fim?: string;
+    empregoAtual?: boolean;
   }>;
   formacoes?: ReadonlyArray<{
     nivel?: string;
     curriculoLattes?: string;
+    curso?: string;
+    instituicao?: string;
+    status?: string;
   }>;
   projetos?: ReadonlyArray<{
     titulo?: string;
     tecnologias?: string;
+    descricao?: string;
   }>;
   competencias?: {
     hardSkills?: ReadonlyArray<string>;
     softSkills?: ReadonlyArray<string>;
   };
+  idiomas?: ReadonlyArray<{ nome?: string; nivel?: string }>;
+  cursos?: ReadonlyArray<{ nome?: string; instituicao?: string }>;
+  certificacoes?: ReadonlyArray<{ nome?: string; organizacaoEmissora?: string }>;
 }
 
 /**
@@ -169,4 +179,67 @@ export function inferirObjetivoDoPerfil(
   }
 
   return "administrativo-corporativo";
+}
+
+/** Um dado do perfil descrito como pergunta e resposta, para enviar à IA. */
+export interface LinhaPerfilIa {
+  pergunta: string;
+  resposta: string;
+}
+
+/**
+ * Resume o perfil preenchido nas etapas em até 10 linhas para a IA recomendar
+ * o modelo.
+ *
+ * Como faz: agrupa cada seção numa linha (experiências com período, formação com
+ * nível e situação, projetos, competências, idiomas, cursos e certificações) e
+ * inclui o objetivo escolhido e a quantidade de itens, que pesa na escolha de
+ * um modelo compacto. Não inclui nome nem contatos.
+ */
+export function resumirPerfilParaIa(
+  perfil: PerfilParaRecomendacao | undefined,
+  objetivo: string,
+): LinhaPerfilIa[] {
+  const linhas: LinhaPerfilIa[] = [{ pergunta: "Objetivo do currículo", resposta: objetivo }];
+  if (!perfil) return linhas;
+  const limpar = (itens: ReadonlyArray<string | undefined>, separador = ", ") =>
+    itens.map((i) => i?.trim()).filter(Boolean).join(separador);
+  const adicionar = (pergunta: string, resposta: string) => {
+    if (resposta) linhas.push({ pergunta, resposta: resposta.slice(0, 2000) });
+  };
+
+  const experiencias = perfil.experiencias ?? [];
+  adicionar(
+    `Experiências (${experiencias.length})`,
+    limpar(
+      experiencias.map((e) => {
+        const periodo = e.inicio ? `${e.inicio} a ${e.empregoAtual ? "atual" : e.fim || "?"}` : "";
+        return limpar([e.cargo, e.empresa, periodo, e.descricao], " - ");
+      }),
+      " | ",
+    ),
+  );
+  if (experiencias.length === 0) adicionar("Experiência profissional", "Nenhuma informada");
+
+  const formacoes = perfil.formacoes ?? [];
+  adicionar(
+    "Formação",
+    limpar(formacoes.map((f) => limpar([f.nivel, f.curso, f.instituicao, f.status], " - ")), " | "),
+  );
+  if (formacoes.some((f) => f.curriculoLattes?.trim())) adicionar("Currículo Lattes", "Informado");
+
+  const projetos = perfil.projetos ?? [];
+  adicionar(
+    `Projetos (${projetos.length})`,
+    limpar(projetos.map((p) => limpar([p.titulo, p.tecnologias, p.descricao], " - ")), " | "),
+  );
+  adicionar("Competências técnicas", limpar(perfil.competencias?.hardSkills ?? []));
+  adicionar("Competências comportamentais", limpar(perfil.competencias?.softSkills ?? []));
+  adicionar("Idiomas", limpar((perfil.idiomas ?? []).map((i) => limpar([i.nome, i.nivel], " "))));
+  adicionar("Cursos", limpar((perfil.cursos ?? []).map((c) => limpar([c.nome, c.instituicao], " - "))));
+  adicionar(
+    "Certificações",
+    limpar((perfil.certificacoes ?? []).map((c) => limpar([c.nome, c.organizacaoEmissora], " - "))),
+  );
+  return linhas.slice(0, 10);
 }

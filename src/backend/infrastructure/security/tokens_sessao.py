@@ -17,11 +17,11 @@ class CriadorSessaoSeguro(CriadorSessao):
     """Gera token opaco de 256 bits e persiste somente seu resumo SHA-256.
 
     O adapter usa bytes criptograficamente aleatórios, codifica-os em Base64
-    URL-safe sem padding e grava a validade de oito horas. Ele existe para
+    URL-safe sem padding e grava a validade de 60 minutos. Ele existe para
     emitir credenciais sem manter um token reutilizável no banco.
     """
 
-    _DURACAO = timedelta(hours=8)
+    _DURACAO = timedelta(minutes=60)
 
     def __init__(self, repositorio: RepositorioSessao) -> None:
         """Recebe a porta que armazenará os metadados não secretos da sessão.

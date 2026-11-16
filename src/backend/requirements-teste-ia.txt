@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+aiosqlite
+alembic
+psycopg[binary]
+pydantic-settings
+python-docx
+reportlab
+google-genai

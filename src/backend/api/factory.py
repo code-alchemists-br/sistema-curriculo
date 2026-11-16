@@ -69,6 +69,7 @@ from backend.api.documentacao_openapi import (
     TAG_CADASTRO_ACESSO,
     TAG_CERTIFICACOES,
     TAG_COMPETENCIAS,
+    TAG_CURRICULO_GUIADO,
     TAG_CURSOS,
     TAG_DADOS_CONTATO,
     TAG_DOCUMENTOS_COMPLEMENTARES,
@@ -203,6 +204,7 @@ from backend.api.revisao_versao_curriculo import (
 from backend.api.revisao_versao_curriculo import (
     criar_router as criar_router_revisao_versao_curriculo,
 )
+from backend.api.assistente_ia import criar_router as criar_router_assistente_ia
 from backend.api.saude import criar_router as criar_router_saude
 from backend.api.sessoes import criar_router as criar_router_sessoes
 
@@ -231,6 +233,8 @@ from backend.application.assistente_descricao_projeto_deterministico import (
     AssistenteDescricaoProjetoDeterministico,
 )
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.recomendacao_modelo import RecomendarModeloCurriculo
+from backend.application.revisao_texto import RevisarTexto
 from backend.application.saude import VerificadorPersistencia, VerificadorSaude
 from backend.application.sessoes import CriadorSessao, RevogadorSessao
 
@@ -301,6 +305,8 @@ def create_app(
     # Proveniência: decision-analysis prompts/backend/20261025-140000-expor-decisao-recomendacao-v001.md#v001
     registrar_decisao_recomendacao: RegistroDecisaoRecomendacaoExecutor | None = None,
     consultar_decisoes_recomendacao: ConsultaDecisoesRecomendacaoExecutor | None = None,
+    revisar_texto: RevisarTexto | None = None,
+    recomendar_modelo_curriculo: RecomendarModeloCurriculo | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -496,6 +502,10 @@ def create_app(
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
     app.include_router(criar_router_vagas(consultar_vagas), tags=[TAG_VAGAS])
+    app.include_router(
+        criar_router_assistente_ia(revisar_texto, recomendar_modelo_curriculo),
+        tags=[TAG_CURRICULO_GUIADO],
+    )
     app.include_router(
         criar_router_sessoes(revogador_sessao, configuracao_cookie), tags=[TAG_SESSOES]
     )

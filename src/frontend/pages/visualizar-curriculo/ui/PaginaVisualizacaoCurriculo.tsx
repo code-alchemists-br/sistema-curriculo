@@ -81,7 +81,7 @@ export function PaginaVisualizacaoCurriculo({
   autoBaixar = false,
 }: PaginaVisualizacaoCurriculoProps) {
   const ModeloSelecionado = modelos[modelo] || ModeloClassico;
-  const folhaRef = useRef<HTMLElement | null>(null);
+  const folhaRef = useRef<HTMLDivElement | null>(null);
   const [baixando, setBaixando] = useState(false);
   const [sucessoDownload, setSucessoDownload] = useState(false);
   const [erroDownload, setErroDownload] = useState<string | null>(null);
@@ -212,7 +212,6 @@ export function PaginaVisualizacaoCurriculo({
         <section
           aria-label="Prévia do currículo no modelo selecionado"
           className="pagina-visualizacao-curriculo__moldura-previa"
-          ref={folhaRef}
         >
           {sucessoDownload && (
             <div
@@ -232,7 +231,10 @@ export function PaginaVisualizacaoCurriculo({
             </div>
           )}
 
-          <ModeloSelecionado previa={previa} />
+          {/* Só a folha do currículo é exportada, sem a moldura escura da tela. */}
+          <div ref={folhaRef}>
+            <ModeloSelecionado previa={previa} />
+          </div>
         </section>
       </section>
     </main>

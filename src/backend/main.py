@@ -3,9 +3,10 @@
 O módulo cria uma engine assíncrona quando `DATABASE_URL` está configurada,
 compõe os executores persistidos, incluindo perfil do estudante, cadastro, leitura,
 edição e exclusão de formações acadêmicas, projetos acadêmicos e experiências profissionais,
-injeta a readiness e encerra a engine no shutdown. Sem essa variável, os fluxos
-persistidos ficam indisponíveis. Ele existe para concentrar a composição de
-infraestrutura fora das camadas internas.
+injeta a readiness e encerra a engine no shutdown. Sem essa variável (branch
+teste-IA), usa um SQLite em memória criado na inicialização e perdido ao
+encerrar. Também compõe o assistente de IA quando `GEMINI_API_KEY` existe. Ele
+existe para concentrar a composição de infraestrutura fora das camadas internas.
 """
 
 import os
@@ -21,10 +22,13 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import StaticPool
 
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.cadastro_idioma import CadastrarIdioma
+from backend.application.cadastro_link_profissional import CadastrarLinkProfissional
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
     RegistrarDecisaoRecomendacao,
@@ -33,6 +37,8 @@ from backend.application.exclusao_versao_curriculo import ExcluirVersaoCurriculo
 from backend.application.listagem_versoes_curriculo import ListarVersoesCurriculo
 from backend.application.ports import GeradorUsuarioId, VerificadorSenha
 from backend.application.previa_versao_curriculo import GerarPreviaVersaoCurriculo
+from backend.application.recomendacao_modelo import RecomendarModeloCurriculo
+from backend.application.revisao_texto import RevisarTexto
 from backend.application.revisao_versao_curriculo import RevisarVersaoCurriculo
 from backend.application.saude import VerificadorPersistencia
 from backend.application.selecao_itens_versao_curriculo import (
@@ -55,9 +61,18 @@ from backend.infrastructure.identificadores.geradores import (
     GeradorCursoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
+    GeradorIdiomaIdUuid4,
+    GeradorLinkProfissionalIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     GeradorProjetoAcademicoIdUuid4,
     GeradorUsuarioIdUuid4,
+)
+from backend.infrastructure.integrations.assistente_gemini import (
+    MODELO_PADRAO,
+    RecomendadorModeloAusente,
+    RecomendadorModeloGemini,
+    RevisorTextoAusente,
+    RevisorTextoGemini,
 )
 from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
@@ -88,6 +103,16 @@ from backend.infrastructure.persistence.sqlalchemy.consulta_proprietario_item im
 # Proveniência: docs/decisao-executor-transacional.md
 from backend.infrastructure.persistence.sqlalchemy.executor_transacional import (
     criar_executor_transacional,
+)
+from backend.infrastructure.persistence.sqlalchemy.leitor_perfil import (
+    LeitorPerfilSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
+from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
+    RepositorioIdiomaSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_link_profissional import (
+    RepositorioLinkProfissionalSqlAlchemy,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
@@ -200,14 +225,16 @@ def _configurar_cors(aplicacao: FastAPI, origens: tuple[str, ...]) -> None:
 
 
 def _criar_engine_persistencia(database_url: str | None) -> AsyncEngine | None:
-    """Cria a engine PostgreSQL assíncrona quando há URL de persistência.
+    """Cria a engine PostgreSQL ou, sem `DATABASE_URL`, um SQLite em memória.
 
-    A função normaliza URLs PostgreSQL sem driver para `postgresql+psycopg`,
-    ativa verificação de conexão e limita o tempo de conexão. Ela existe para
-    fornecer à aplicação uma dependência real para o probe de readiness.
+    O SQLite em memória (branch teste-IA) perde todos os dados ao encerrar.
     """
     if not database_url:
-        return None
+        return create_async_engine(
+            "sqlite+aiosqlite:///:memory:",
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False},
+        )
 
     url = make_url(database_url)
     if url.drivername == "postgresql":
@@ -432,6 +459,32 @@ _autenticador_sessao = _criar_autenticador_sessao(_sessoes_persistencia)
 _configuracao_cookie_sessao = _criar_configuracao_cookie_sessao(
     os.environ.get("SESSION_COOKIE_SECURE")
 )
+_cadastrar_idioma = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: CadastrarIdioma(RepositorioIdiomaSqlAlchemy(sessao), GeradorIdiomaIdUuid4()),
+)
+_cadastrar_link_profissional = criar_executor_transacional(
+    _sessoes_persistencia,
+    lambda sessao: CadastrarLinkProfissional(
+        RepositorioLinkProfissionalSqlAlchemy(sessao), GeradorLinkProfissionalIdUuid4()
+    ),
+)
+# Assistente de IA (branch teste-IA): revisa textos e recomenda o modelo.
+_chave_gemini = os.environ.get("GEMINI_API_KEY")
+_modelo_gemini = os.environ.get("GEMINI_MODEL") or MODELO_PADRAO
+_revisar_texto = RevisarTexto(
+    RevisorTextoGemini(_chave_gemini, _modelo_gemini) if _chave_gemini else RevisorTextoAusente()
+)
+_recomendar_modelo_curriculo = (
+    RecomendarModeloCurriculo(
+        RecomendadorModeloGemini(_chave_gemini, _modelo_gemini)
+        if _chave_gemini
+        else RecomendadorModeloAusente(),
+        LeitorPerfilSqlAlchemy(_sessoes_persistencia),
+    )
+    if _sessoes_persistencia is not None
+    else None
+)
 
 
 @asynccontextmanager
@@ -442,6 +495,9 @@ async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
     engine assíncrona ao sair. Ele existe para evitar conexões ou pools abertos
     após o encerramento da aplicação.
     """
+    if _engine_persistencia is not None and _engine_persistencia.dialect.name == "sqlite":
+        async with _engine_persistencia.begin() as conexao:
+            await conexao.run_sync(metadata.create_all)
     try:
         yield
     finally:
@@ -583,6 +639,10 @@ app = create_app(
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
     listar_associacoes_curriculo_vaga=_listar_associacoes_curriculo_vaga,
     verificador_persistencia=_verificador_persistencia,
+    cadastrar_idioma=_cadastrar_idioma,
+    cadastrar_link_profissional=_cadastrar_link_profissional,
+    revisar_texto=_revisar_texto,
+    recomendar_modelo_curriculo=_recomendar_modelo_curriculo,
     lifespan=_ciclo_vida_aplicacao,
     configuracao_cookie=_configuracao_cookie_sessao,
 )

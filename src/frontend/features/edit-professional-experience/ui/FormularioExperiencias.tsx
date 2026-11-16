@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   LIMITES_EXPERIENCIA,
@@ -20,6 +20,20 @@ export interface FormularioExperienciasProps {
   onVoltar?: () => void;
   /** Notifica alterações nas experiências para preservação de estado. */
   aoAlterarExperiencias?: (experiencias: Experiencia[]) => void;
+  /**
+   * Espaço opcional abaixo da descrição (por exemplo, a revisão por IA). A
+   * página decide o que mostrar; sem ele o formulário funciona como antes.
+   */
+  renderizarAssistenteDescricao?: (contexto: {
+    indice: number;
+    experiencia: Experiencia;
+    aplicarDescricao: (texto: string) => void;
+  }) => ReactNode;
+  /**
+   * Chamado antes de salvar, depois da validação local. Devolve, por índice,
+   * o motivo para não salvar a descrição (por exemplo, a revisão por IA).
+   */
+  validarDescricoes?: (experiencias: Experiencia[]) => Promise<Record<number, string>>;
 }
 
 /**
@@ -36,7 +50,10 @@ export function FormularioExperiencias({
   onSalvar,
   onVoltar,
   aoAlterarExperiencias,
+  renderizarAssistenteDescricao,
+  validarDescricoes,
 }: FormularioExperienciasProps) {
+  const [validandoDescricoes, setValidandoDescricoes] = useState(false);
   const dataMaximaHoje = obterDataAtualIso();
   const [experiencias, setExperiencias] =
     useState<Experiencia[]>(experienciasIniciais);
@@ -230,7 +247,9 @@ export function FormularioExperiencias({
   /**
    * Valida, ordena cronologicamente e comunica o status de envio do formulário.
    */
-  function enviarFormulario(evento: FormEvent<HTMLFormElement>): void {
+  async function enviarFormulario(
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     evento.preventDefault();
 
     if (experiencias.length === 0) {
@@ -245,6 +264,23 @@ export function FormularioExperiencias({
       setErros(novosErros);
       setMensagem("Há pendências que precisam ser corrigidas antes de salvar.");
       return;
+    }
+
+    if (validarDescricoes) {
+      setValidandoDescricoes(true);
+      setMensagem("Revisando as descrições...");
+      const bloqueios = await validarDescricoes(experiencias);
+      setValidandoDescricoes(false);
+      if (Object.keys(bloqueios).length > 0) {
+        const errosDescricao: Record<number, ErrosExperiencia> = {};
+        for (const [indice, motivo] of Object.entries(bloqueios)) {
+          errosDescricao[Number(indice)] = { descricao: motivo };
+        }
+        setErros(errosDescricao);
+        setMensagem("Confira a revisão das descrições antes de continuar.");
+        return;
+      }
+      setMensagem(null);
     }
 
     const experienciasNormalizadas = experiencias.map((exp) => ({
@@ -495,6 +531,16 @@ export function FormularioExperiencias({
                   {errosExp.descricao}
                 </p>
               )}
+              {renderizarAssistenteDescricao?.({
+                indice,
+                experiencia: exp,
+                aplicarDescricao: (texto) =>
+                  atualizarCampo(
+                    indice,
+                    "descricao",
+                    texto.slice(0, LIMITES_EXPERIENCIA.descricaoMax),
+                  ),
+              })}
             </div>
           </fieldset>
         );
@@ -551,9 +597,10 @@ export function FormularioExperiencias({
         <button
           aria-label="Salvar experiências"
           className="btn-proximo"
+          disabled={validandoDescricoes}
           type="submit"
         >
-          Próximo
+          {validandoDescricoes ? "Revisando..." : "Próximo"}
         </button>
       </div>
 

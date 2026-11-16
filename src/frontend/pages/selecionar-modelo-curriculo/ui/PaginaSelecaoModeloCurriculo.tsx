@@ -1,17 +1,33 @@
 import { useMemo, useState } from "react";
 
 import {
+  criarClienteAssistenteIa,
+  RecomendacaoModeloIa,
+  type ModeloSugerido,
+} from "../../../features/assistente-ia";
+import {
   AlternadorModeloCurriculo,
   inferirObjetivoDoPerfil,
   obterModeloRecomendadoPorObjetivo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
+  resumirPerfilParaIa,
   type ModeloApresentacaoCurriculo,
   type ObjetivoCurriculo,
   type PerfilParaRecomendacao,
 } from "../../../features/alternar-modelo-curriculo";
 import { LayoutCadastroCurriculo } from "../../../shared/ui/layout-cadastro";
 import "./PaginaSelecaoModeloCurriculo.css";
+
+const NOMES_MODELO: Record<ModeloSugerido, string> = {
+  classico: "Clássico",
+  compacto: "Compacto",
+  "ats-simples": "ATS simples",
+  criativo: "Criativo",
+  moderno: "Moderno",
+  academico: "Acadêmico",
+  "primeiro-emprego": "Primeiro emprego",
+};
 
 /** Define os dados necessários para confirmar a escolha de modelo na página. */
 export interface PaginaSelecaoModeloCurriculoProps {
@@ -62,6 +78,15 @@ export function PaginaSelecaoModeloCurriculo({
       return perfilEstudante ? modeloInferido : modeloInicial;
     });
 
+  const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
+  const perfilParaIa = useMemo(
+    () =>
+      resumirPerfilParaIa(
+        perfilEstudante,
+        OPCOES_OBJETIVO_CURRICULO.find((o) => o.valor === objetivo)?.rotulo ?? objetivo,
+      ),
+    [objetivo, perfilEstudante],
+  );
   const recomendacao = obterRecomendacaoModelo(objetivo);
   const modeloRecomendado = obterModeloRecomendadoPorObjetivo(objetivo);
 
@@ -117,6 +142,14 @@ export function PaginaSelecaoModeloCurriculo({
         <p className="pagina-selecao-modelo__recomendacao" role="status">
           {recomendacao}
         </p>
+
+        <RecomendacaoModeloIa
+          automatico
+          aoRecomendar={(modelo) => setModeloSelecionado(modelo)}
+          cliente={clienteIa}
+          nomeDoModelo={(modelo) => NOMES_MODELO[modelo] ?? modelo}
+          perfil={perfilParaIa}
+        />
 
         <AlternadorModeloCurriculo
           modeloRecomendado={modeloRecomendado}
