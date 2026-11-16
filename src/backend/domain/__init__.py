@@ -13,6 +13,7 @@ from backend.domain.adequacao_semantica import (
     ItemSelecionadoAdequacao,
     PropostaAdequacaoCurriculoVaga,
     SolicitacaoAdequacaoCurriculoVaga,
+    SolicitacaoAssistenciaCurriculo,
     SugestaoAdequacao,
     TipoSugestaoAdequacao,
 )
@@ -100,12 +101,8 @@ from backend.domain.itens_perfil import (
 # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
 from backend.domain.modelo_curriculo import ModeloCurriculo
 
-# Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
-from backend.domain.recomendacao_modelo_curriculo import (
-    ObjetivoCurriculo,
-    PoliticaRecomendacaoModeloCurriculo,
-    RecomendacaoModeloCurriculo,
-)
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+from backend.domain.recomendacao_modelo_curriculo import RecomendacaoModeloCurriculo
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
 from backend.domain.revisao_curriculo import (
@@ -201,8 +198,6 @@ __all__ = [
     "LinkProfissionalId",
     # Proveniência: decision-analysis prompts/backend/20261017-140000-modelo-curriculo-edicao-versao-v001.md#v001
     "ModeloCurriculo",
-    # Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
-    "ObjetivoCurriculo",
     "Nome",
     # Proveniência: decision-analysis prompts/backend/20261015-130837-cadastro-curso-api-v001.md#v001
     "normalizar_chave_curso",
@@ -226,14 +221,14 @@ __all__ = [
     "Periodo",
     "ProjetoAcademico",
     "ProjetoAcademicoId",
-    # Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
-    "PoliticaRecomendacaoModeloCurriculo",
     "ReferenciaCurriculo",
     # Proveniência: decision-analysis prompts/backend/20261017-120000-propriedade-referencia-curriculo-v001.md#v001
     "ReferenciaDeOutroProprietario",
     "RegraDeDominioViolada",
-    # Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
     "RecomendacaoModeloCurriculo",
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    "SolicitacaoAssistenciaCurriculo",
     "StatusFormacaoAcademica",
     # Proveniência: decision-analysis prompts/backend/20261015-152803-cadastro-link-profissional-api-v001.md#v001
     "TAMANHO_MAXIMO_ROTULO_LINK",

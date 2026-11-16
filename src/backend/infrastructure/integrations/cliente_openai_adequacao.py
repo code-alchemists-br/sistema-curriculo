@@ -1,8 +1,8 @@
-"""Implementa o gateway HTTP da Responses API para adequação semântica.
+"""Implementa gateways HTTP da Responses API para assistência curricular.
 
 O módulo traduz o contexto mínimo definido pela Application para uma requisição
-estruturada da OpenAI e converte a resposta JSON em sugestões de domínio. Ele
-existe para manter HTTP, JSON e autenticação bearer fora do caso de uso, sem
+estruturada da OpenAI e converte a resposta JSON em propostas de domínio. Ele
+existe para manter HTTP, JSON e autenticação bearer fora dos casos de uso, sem
 persistir ou aplicar automaticamente qualquer sugestão.
 """
 
@@ -20,7 +20,12 @@ from backend.application.adequacao_semantica import (
     ContextoAdequacaoCurriculoVaga,
     GeracaoPropostaAdequacaoIndisponivel,
 )
+from backend.application.recomendacao_modelo_curriculo import (
+    GeradorRecomendacaoModeloCurriculo,
+)
 from backend.domain.adequacao_semantica import SugestaoAdequacao, TipoSugestaoAdequacao
+from backend.domain.modelo_curriculo import ModeloCurriculo
+from backend.domain.recomendacao_modelo_curriculo import RecomendacaoModeloCurriculo
 from backend.domain.value_objects import (
     CompetenciaId,
     ExperienciaProfissionalId,
@@ -40,7 +45,9 @@ class RespostaOpenAiAdequacaoInvalida(ValueError):
     """
 
 
-def montar_requisicao_openai(contexto: ContextoAdequacaoCurriculoVaga) -> dict[str, Any]:
+def montar_requisicao_openai(
+    contexto: ContextoAdequacaoCurriculoVaga,
+) -> dict[str, Any]:
     """Converte o contexto autorizado em payload estruturado da Responses API.
 
     A função envia cargo, vaga e itens já limitados, preservando referências
@@ -78,7 +85,10 @@ def montar_requisicao_openai(contexto: ContextoAdequacaoCurriculoVaga) -> dict[s
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": json.dumps(dados, ensure_ascii=False)}
+                    {
+                        "type": "input_text",
+                        "text": json.dumps(dados, ensure_ascii=False),
+                    }
                 ],
             },
         ],
@@ -103,7 +113,9 @@ def mapear_resposta_openai_para_sugestoes(
     formato específico do provedor atravesse a fronteira da infraestrutura.
     """
     if not isinstance(resposta, dict):
-        raise RespostaOpenAiAdequacaoInvalida("A resposta da OpenAI deve ser um objeto.")
+        raise RespostaOpenAiAdequacaoInvalida(
+            "A resposta da OpenAI deve ser um objeto."
+        )
     texto = _extrair_texto_saida(resposta)
     try:
         dados = json.loads(texto)
@@ -163,9 +175,9 @@ class ClienteOpenAiAdequacaoHttp:
         existe para cumprir a porta interna sem expor HTTP ou payload bruto à
         Application.
         """
-        corpo = json.dumps(montar_requisicao_openai(contexto), ensure_ascii=False).encode(
-            "utf-8"
-        )
+        corpo = json.dumps(
+            montar_requisicao_openai(contexto), ensure_ascii=False
+        ).encode("utf-8")
         try:
             resposta_bruta = await asyncio.to_thread(
                 self._executor_http, self._url_responses, corpo, self._api_key
@@ -239,7 +251,9 @@ def _mapear_sugestao(item: object) -> SugestaoAdequacao:
         raise ValueError("A sugestão deve ser um objeto JSON.")
     referencia_bruta = item["referencia_item"]
     referencia = (
-        None if referencia_bruta is None else _desserializar_referencia(referencia_bruta)
+        None
+        if referencia_bruta is None
+        else _desserializar_referencia(referencia_bruta)
     )
     return SugestaoAdequacao(
         codigo=item["codigo"],
@@ -310,7 +324,10 @@ def _schema_resposta_adequacao() -> dict[str, Any]:
     referencia = {
         "type": "object",
         "properties": {
-            "tipo": {"type": "string", "enum": ["experiencia", "projeto", "competencia"]},
+            "tipo": {
+                "type": "string",
+                "enum": ["experiencia", "projeto", "competencia"],
+            },
             "id": {"type": "string"},
         },
         "required": ["tipo", "id"],
@@ -341,5 +358,190 @@ def _schema_resposta_adequacao() -> dict[str, Any]:
         "type": "object",
         "properties": {"sugestoes": {"type": "array", "items": sugestao}},
         "required": ["sugestoes"],
+        "additionalProperties": False,
+    }
+
+
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+def montar_requisicao_openai_recomendacao(
+    contexto: ContextoAdequacaoCurriculoVaga,
+) -> dict[str, Any]:
+    """Converte o contexto autorizado em pedido estruturado de recomendação.
+
+    A função reaproveita somente vaga e itens já minimizados, restringindo a
+    resposta aos modelos reconhecidos pelo domínio. Ela existe para impedir que
+    o provedor invente modelos ou receba identificadores e dados não autorizados.
+    """
+    dados = {
+        "cargo_alvo": contexto.cargo_alvo,
+        "descricao_vaga": contexto.descricao_vaga,
+        "itens_selecionados": [
+            {"conteudo": item.conteudo} for item in contexto.itens_selecionados
+        ],
+    }
+    return {
+        "model": contexto.modelo,
+        "input": [
+            {
+                "role": "developer",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Sugira um único modelo de currículo do catálogo fornecido e "
+                            "uma justificativa revisável. Não altere dados nem recomende "
+                            "um modelo fora do schema."
+                        ),
+                    }
+                ],
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": json.dumps(dados, ensure_ascii=False),
+                    }
+                ],
+            },
+        ],
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "recomendacao_modelo_curriculo",
+                "strict": True,
+                "schema": _schema_resposta_recomendacao(),
+            }
+        },
+    }
+
+
+def mapear_resposta_openai_para_recomendacao(
+    resposta: object,
+) -> RecomendacaoModeloCurriculo:
+    """Converte a resposta estruturada externa em proposta tipada de modelo.
+
+    A função extrai o texto final, exige os dois campos do schema e delega a
+    validação do catálogo ao value object. Ela existe para não deixar JSON ou
+    valores inventados pelo provedor atravessarem a fronteira de infraestrutura.
+    """
+    if not isinstance(resposta, dict):
+        raise RespostaOpenAiAdequacaoInvalida(
+            "A resposta da OpenAI deve ser um objeto."
+        )
+    try:
+        dados = json.loads(_extrair_texto_saida(resposta))
+        if not isinstance(dados, dict):
+            raise ValueError("A resposta deve ser um objeto.")
+        return RecomendacaoModeloCurriculo(
+            modelo_recomendado=ModeloCurriculo(dados["modelo_recomendado"]),
+            justificativa=dados["justificativa"],
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as erro:
+        raise RespostaOpenAiAdequacaoInvalida(
+            "A saída estruturada da OpenAI não contém recomendação válida."
+        ) from erro
+
+
+class ClienteOpenAiRecomendacaoModeloHttp(GeradorRecomendacaoModeloCurriculo):
+    """Implementa a porta de recomendação com a Responses API da OpenAI.
+
+    O cliente serializa o contexto já protegido, executa HTTP em thread e mapeia
+    a resposta para o value object de domínio. Ele existe para manter credencial,
+    rede e JSON fora da Application e não aplicar a sugestão recebida.
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        url_responses: str = URL_RESPONSES_OPENAI,
+        executor_http: Callable[[str, bytes, str], bytes] | None = None,
+    ) -> None:
+        """Recebe credencial e transporte substituível sem ler ambiente.
+
+        O construtor reutiliza as validações mínimas do gateway de adequação e
+        aceita executor falso para testes. Ele existe para isolar a integração
+        concreta sem expor segredo ao caso de uso.
+        """
+        if not isinstance(api_key, str) or not api_key.strip():
+            raise ValueError("A chave da API OpenAI deve ser informada.")
+        if not isinstance(url_responses, str) or not url_responses.strip():
+            raise ValueError("A URL da Responses API deve ser informada.")
+        self._api_key = api_key.strip()
+        self._url_responses = url_responses.strip()
+        self._executor_http = executor_http or self._executar_requisicao_padrao
+
+    async def gerar(
+        self, contexto: ContextoAdequacaoCurriculoVaga
+    ) -> RecomendacaoModeloCurriculo:
+        """Envia contexto reduzido e devolve recomendação validada.
+
+        O método executa transporte bloqueante em thread e converte envelopes ou
+        respostas inválidas na falha interna já reconhecida pela borda. Ele existe
+        para cumprir a porta sem revelar o protocolo do provedor à Application.
+        """
+        corpo = json.dumps(
+            montar_requisicao_openai_recomendacao(contexto), ensure_ascii=False
+        ).encode("utf-8")
+        try:
+            resposta_bruta = await asyncio.to_thread(
+                self._executor_http, self._url_responses, corpo, self._api_key
+            )
+            resposta = json.loads(resposta_bruta.decode("utf-8"))
+            return mapear_resposta_openai_para_recomendacao(resposta)
+        except (
+            OSError,
+            URLError,
+            AttributeError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+        ) as erro:
+            raise GeracaoPropostaAdequacaoIndisponivel(
+                "Não foi possível comunicar com a OpenAI."
+            ) from erro
+        except RespostaOpenAiAdequacaoInvalida as erro:
+            raise GeracaoPropostaAdequacaoIndisponivel(
+                "A resposta da OpenAI não pôde ser processada."
+            ) from erro
+
+    def _executar_requisicao_padrao(
+        self, url: str, corpo: bytes, api_key: str
+    ) -> bytes:
+        """Executa POST autenticado sem registrar conteúdo ou credencial.
+
+        O método monta a requisição HTTP e devolve seus bytes para a conversão
+        do adapter. Ele existe para concentrar o mecanismo de transporte fora do
+        caso de uso e permitir sua substituição unitária.
+        """
+        requisicao = urllib.request.Request(
+            url,
+            data=corpo,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(requisicao) as resposta:
+            return resposta.read()
+
+
+def _schema_resposta_recomendacao() -> dict[str, Any]:
+    """Define schema externo para modelo permitido e justificativa não vazia.
+
+    A função enumera os valores do domínio e exige texto de explicação. Ela
+    existe para reduzir respostas não mapeáveis antes da validação do value object.
+    """
+    return {
+        "type": "object",
+        "properties": {
+            "modelo_recomendado": {
+                "type": "string",
+                "enum": [modelo.value for modelo in ModeloCurriculo],
+            },
+            "justificativa": {"type": "string"},
+        },
+        "required": ["modelo_recomendado", "justificativa"],
         "additionalProperties": False,
     }

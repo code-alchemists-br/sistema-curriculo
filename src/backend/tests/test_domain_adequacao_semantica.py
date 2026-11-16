@@ -12,6 +12,7 @@ from backend.domain import (
     ReferenciaCurriculo,
     RegraDeDominioViolada,
     SolicitacaoAdequacaoCurriculoVaga,
+    SolicitacaoAssistenciaCurriculo,
     SugestaoAdequacao,
     TipoSugestaoAdequacao,
 )
@@ -47,6 +48,26 @@ def _solicitacao(**alteracoes) -> SolicitacaoAdequacaoCurriculoVaga:
     return SolicitacaoAdequacaoCurriculoVaga(**campos)
 
 
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+def _solicitacao_assistencia(**alteracoes) -> SolicitacaoAssistenciaCurriculo:
+    """Cria uma solicitação genérica válida para uma ação de assistência.
+
+    A função monta os mesmos dados consentidos da adequação, mas explicita a
+    ação de recomendação. Ela existe para verificar que o contexto compartilhado
+    não carrega capacidades exclusivas de proposta textual.
+    """
+    campos = {
+        "curriculo_id": CurriculoId(uuid4()),
+        "cargo_alvo": "Desenvolvedora Frontend",
+        "descricao_vaga": "Buscamos experiência com React e APIs REST.",
+        "itens_selecionados": (_item_experiencia(),),
+        "consentimento_explicito": True,
+        "acao": AcaoAdequacaoSemantica.RECOMENDAR_MODELO_CURRICULO,
+    }
+    campos.update(alteracoes)
+    return SolicitacaoAssistenciaCurriculo(**campos)
+
+
 class SolicitacaoAdequacaoCurriculoVagaTestCase(unittest.TestCase):
     """Verifica consentimento, seleção e revisão de propostas da adequação.
 
@@ -55,7 +76,9 @@ class SolicitacaoAdequacaoCurriculoVagaTestCase(unittest.TestCase):
     sobre conteúdo não selecionado antes das camadas externas serem adicionadas.
     """
 
-    def test_cria_solicitacao_consentida_para_a_vaga_com_itens_rastreaveis(self) -> None:
+    def test_cria_solicitacao_consentida_para_a_vaga_com_itens_rastreaveis(
+        self,
+    ) -> None:
         """Mantém a ação, a seleção e a vaga informada na intenção válida.
 
         O cenário cria a solicitação padrão e confere os valores derivados. Ele
@@ -69,6 +92,22 @@ class SolicitacaoAdequacaoCurriculoVagaTestCase(unittest.TestCase):
         )
         self.assertEqual(len(solicitacao.referencias_selecionadas), 1)
         self.assertEqual(solicitacao.cargo_alvo, "Desenvolvedora Frontend")
+
+    def test_cria_solicitacao_generica_para_recomendacao_sem_proposta_textual(
+        self,
+    ) -> None:
+        """Mantém contexto compartilhado separado da proposta de adequação.
+
+        O cenário cria a intenção de recomendação e confere sua ação e seleção.
+        Ele existe para impedir que recomendação dependa de métodos exclusivos
+        da especialização que cria sugestões textuais para vaga.
+        """
+        solicitacao = _solicitacao_assistencia()
+
+        self.assertEqual(
+            solicitacao.acao, AcaoAdequacaoSemantica.RECOMENDAR_MODELO_CURRICULO
+        )
+        self.assertFalse(hasattr(solicitacao, "criar_proposta"))
 
     def test_recusa_sem_consentimento_sem_selecao_ou_referencia_repetida(self) -> None:
         """Impede intenções que violam consentimento ou controle da seleção.
@@ -87,7 +126,9 @@ class SolicitacaoAdequacaoCurriculoVagaTestCase(unittest.TestCase):
                 with self.assertRaises(RegraDeDominioViolada):
                     _solicitacao(**alteracoes)
 
-    def test_cria_proposta_sem_mutar_solicitacao_e_registra_itens_utilizados(self) -> None:
+    def test_cria_proposta_sem_mutar_solicitacao_e_registra_itens_utilizados(
+        self,
+    ) -> None:
         """Cria uma proposta revisável ligada exclusivamente ao item autorizado.
 
         O cenário envia uma sugestão de experiência para a referência escolhida
@@ -115,7 +156,9 @@ class SolicitacaoAdequacaoCurriculoVagaTestCase(unittest.TestCase):
         self.assertEqual(proposta.sugestoes, (sugestao,))
         self.assertEqual(solicitacao.itens_selecionados[0].referencia, referencia)
 
-    def test_recusa_proposta_para_item_nao_autorizado_e_codigos_duplicados(self) -> None:
+    def test_recusa_proposta_para_item_nao_autorizado_e_codigos_duplicados(
+        self,
+    ) -> None:
         """Bloqueia sugestões fora da seleção e propostas ambíguas.
 
         O cenário aponta uma sugestão para competência não selecionada e depois

@@ -24,6 +24,7 @@ from backend.domain.adequacao_semantica import (
     ItemSelecionadoAdequacao,
     PropostaAdequacaoCurriculoVaga,
     SolicitacaoAdequacaoCurriculoVaga,
+    SolicitacaoAssistenciaCurriculo,
     SugestaoAdequacao,
 )
 from backend.domain.itens_perfil import (
@@ -88,6 +89,20 @@ class ContextoAdequacaoCurriculoVaga:
     limites: LimitesContextoIa
 
 
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+@dataclass(frozen=True, slots=True)
+class PreparacaoContextoAssistenciaCurriculo:
+    """Agrupa solicitação validada e contexto reduzido para uma ação de IA.
+
+    O modelo conserva a solicitação que comprovou consentimento e o contexto
+    limitado correspondente, sem depender do tipo de resposta que será gerado.
+    Ele existe para reutilizar as mesmas salvaguardas em adequação e recomendação.
+    """
+
+    solicitacao: SolicitacaoAssistenciaCurriculo
+    contexto: ContextoAdequacaoCurriculoVaga
+
+
 class GeradorPropostaAdequacao(Protocol):
     """Define a geração de sugestões sem escolher provedor ou transporte.
 
@@ -105,6 +120,123 @@ class GeradorPropostaAdequacao(Protocol):
         contrato tipado de retorno sem mutar o currículo. Isso existe para que a
         orquestração mantenha a revisão pelo estudante como etapa posterior.
         """
+
+
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+class PreparadorContextoAssistenciaCurriculo:
+    """Prepara contexto profissional autorizado para uma ação interna de IA.
+
+    O preparador verifica propriedade, resolve limites por ação, materializa só
+    itens permitidos e cria a solicitação que valida consentimento. Ele existe
+    para evitar que adequação e recomendação divirjam na proteção do contexto.
+    """
+
+    def __init__(
+        self,
+        repositorio_curriculo: RepositorioCurriculo,
+        consulta_item: ConsultaItemPerfil,
+        fonte_politica: FontePoliticaLimitesContextoIa,
+        modelo: str,
+        acao: AcaoAdequacaoSemantica,
+    ) -> None:
+        """Recebe portas internas e a intenção que seleciona a política efetiva.
+
+        O construtor guarda somente abstrações e valida identificador e ação
+        tipados antes do fluxo assíncrono. Ele existe para tornar o preparo
+        reutilizável sem conhecer provedor, transporte ou persistência concreta.
+        """
+        if not isinstance(modelo, str) or not modelo.strip():
+            raise ValueError("O modelo de assistência deve ser informado.")
+        if not isinstance(acao, AcaoAdequacaoSemantica):
+            raise ValueError("A ação de assistência deve ser reconhecida.")
+        self._repositorio_curriculo = repositorio_curriculo
+        self._consulta_item = consulta_item
+        self._fonte_politica = fonte_politica
+        self._modelo = modelo.strip()
+        self._acao = acao
+
+    async def preparar(
+        self, entrada: SolicitarAdequacaoCurriculoVagaEntrada
+    ) -> PreparacaoContextoAssistenciaCurriculo:
+        """Valida a entrada e devolve somente o contexto autorizado e limitado.
+
+        O método oculta versão alheia, aplica a política da ação, reduz campos e
+        itens e deixa o domínio exigir consentimento explícito. Ele existe para
+        garantir uma fronteira de dados idêntica para todas as intenções de IA.
+        """
+        curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
+        if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
+            raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
+        politica = self._fonte_politica.obter()
+        limites = politica.resolver(self._acao.value, self._modelo)
+        descricao_vaga = _limitar_texto(
+            entrada.descricao_vaga, limites.limites_campos["descricao_vaga"]
+        )
+        itens = await self._materializar_itens(entrada, curriculo.referencias, limites)
+        solicitacao = SolicitacaoAssistenciaCurriculo(
+            curriculo_id=entrada.curriculo_id,
+            cargo_alvo=_limitar_texto(
+                entrada.cargo_alvo, limites.limites_campos["cargo"]
+            ),
+            descricao_vaga=descricao_vaga,
+            itens_selecionados=itens,
+            consentimento_explicito=entrada.consentimento_explicito,
+            acao=self._acao,
+        )
+        contexto = ContextoAdequacaoCurriculoVaga(
+            curriculo_id=entrada.curriculo_id,
+            cargo_alvo=solicitacao.cargo_alvo,
+            descricao_vaga=solicitacao.descricao_vaga,
+            itens_selecionados=solicitacao.itens_selecionados,
+            modelo=self._modelo,
+            versao_politica=politica.versao,
+            limites=limites,
+        )
+        return PreparacaoContextoAssistenciaCurriculo(solicitacao, contexto)
+
+    async def _materializar_itens(
+        self,
+        entrada: SolicitarAdequacaoCurriculoVagaEntrada,
+        referencias_do_curriculo: frozenset[ReferenciaCurriculo],
+        limites: LimitesContextoIa,
+    ) -> tuple[ItemSelecionadoAdequacao, ...]:
+        """Lê e reduz itens selecionados sem ultrapassar o orçamento permitido.
+
+        O método respeita ordem, propriedade e pertencimento à versão antes de
+        cortar conteúdos ao orçamento restante. Ele existe para impedir que uma
+        ação de IA amplie o contexto autorizado pelo estudante.
+        """
+        if len(set(entrada.referencias_selecionadas)) != len(
+            entrada.referencias_selecionadas
+        ):
+            raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
+        restantes = limites.orcamento_total_caracteres - len(entrada.cargo_alvo)
+        if entrada.descricao_vaga is not None:
+            restantes -= len(
+                _limitar_texto(
+                    entrada.descricao_vaga, limites.limites_campos["descricao_vaga"]
+                )
+            )
+        itens: list[ItemSelecionadoAdequacao] = []
+        for referencia in entrada.referencias_selecionadas:
+            if referencia not in referencias_do_curriculo:
+                raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
+            item = await self._consulta_item.obter_item(referencia)
+            conteudo = _conteudo_permitido(
+                item, entrada.usuario_id, referencia, limites
+            )
+            if conteudo is None:
+                raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
+            if restantes <= 0:
+                break
+            conteudo = conteudo[:restantes].strip()
+            if not conteudo:
+                break
+            itens.append(
+                ItemSelecionadoAdequacao(referencia=referencia, conteudo=conteudo)
+            )
+            restantes -= len(conteudo)
+        return tuple(itens)
 
 
 class SolicitarAdequacaoCurriculoVaga:
@@ -133,9 +265,13 @@ class SolicitarAdequacaoCurriculoVaga:
         """
         if not isinstance(modelo, str) or not modelo.strip():
             raise ValueError("O modelo de adequação deve ser informado.")
-        self._repositorio_curriculo = repositorio_curriculo
-        self._consulta_item = consulta_item
-        self._fonte_politica = fonte_politica
+        self._preparador = PreparadorContextoAssistenciaCurriculo(
+            repositorio_curriculo,
+            consulta_item,
+            fonte_politica,
+            modelo,
+            AcaoAdequacaoSemantica.ADEQUAR_CURRICULO_VAGA,
+        )
         self._gerador = gerador
         self._modelo = modelo.strip()
 
@@ -149,74 +285,20 @@ class SolicitarAdequacaoCurriculoVaga:
         com consentimento explícito validado pelo domínio. Ele existe para que
         todo dado enviado ao gerador seja mínimo, rastreável e autorizado.
         """
-        curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
-        if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
-            raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
-
-        politica = self._fonte_politica.obter()
-        limites = politica.resolver(
-            AcaoAdequacaoSemantica.ADEQUAR_CURRICULO_VAGA.value, self._modelo
-        )
-        descricao_vaga = _limitar_texto(
-            entrada.descricao_vaga, limites.limites_campos["descricao_vaga"]
-        )
-        itens = await self._materializar_itens(entrada, curriculo.referencias, limites)
+        preparacao = await self._preparador.preparar(entrada)
+        sugestoes = await self._gerador.gerar(preparacao.contexto)
         solicitacao = SolicitacaoAdequacaoCurriculoVaga(
-            curriculo_id=entrada.curriculo_id,
-            cargo_alvo=_limitar_texto(entrada.cargo_alvo, limites.limites_campos["cargo"]),
-            descricao_vaga=descricao_vaga,
-            itens_selecionados=itens,
-            consentimento_explicito=entrada.consentimento_explicito,
+            curriculo_id=preparacao.solicitacao.curriculo_id,
+            cargo_alvo=preparacao.solicitacao.cargo_alvo,
+            descricao_vaga=preparacao.solicitacao.descricao_vaga,
+            itens_selecionados=preparacao.solicitacao.itens_selecionados,
+            consentimento_explicito=preparacao.solicitacao.consentimento_explicito,
         )
-        contexto = ContextoAdequacaoCurriculoVaga(
-            curriculo_id=entrada.curriculo_id,
-            cargo_alvo=solicitacao.cargo_alvo,
-            descricao_vaga=solicitacao.descricao_vaga,
-            itens_selecionados=solicitacao.itens_selecionados,
-            modelo=self._modelo,
-            versao_politica=politica.versao,
-            limites=limites,
-        )
-        sugestoes = await self._gerador.gerar(contexto)
         return solicitacao.criar_proposta(
             modelo=self._modelo,
-            versao_politica=politica.versao,
+            versao_politica=preparacao.contexto.versao_politica,
             sugestoes=sugestoes,
         )
-
-    async def _materializar_itens(
-        self,
-        entrada: SolicitarAdequacaoCurriculoVagaEntrada,
-        referencias_do_curriculo: frozenset[ReferenciaCurriculo],
-        limites: LimitesContextoIa,
-    ) -> tuple[ItemSelecionadoAdequacao, ...]:
-        """Lê e reduz os itens selecionados sem ultrapassar o orçamento total.
-
-        O método percorre a ordem declarada, exige que cada referência componha
-        o currículo próprio e para quando o orçamento se esgota. Ele existe para
-        tornar a seleção explícita e a minimização de contexto determinística.
-        """
-        if len(set(entrada.referencias_selecionadas)) != len(entrada.referencias_selecionadas):
-            raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
-        restantes = limites.orcamento_total_caracteres - len(entrada.cargo_alvo)
-        if entrada.descricao_vaga is not None:
-            restantes -= len(_limitar_texto(entrada.descricao_vaga, limites.limites_campos["descricao_vaga"]))
-        itens: list[ItemSelecionadoAdequacao] = []
-        for referencia in entrada.referencias_selecionadas:
-            if referencia not in referencias_do_curriculo:
-                raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
-            item = await self._consulta_item.obter_item(referencia)
-            conteudo = _conteudo_permitido(item, entrada.usuario_id, referencia, limites)
-            if conteudo is None:
-                raise ItemAdequacaoNaoEncontrado("Item do perfil não encontrado.")
-            if restantes <= 0:
-                break
-            conteudo = conteudo[:restantes].strip()
-            if not conteudo:
-                break
-            itens.append(ItemSelecionadoAdequacao(referencia=referencia, conteudo=conteudo))
-            restantes -= len(conteudo)
-        return tuple(itens)
 
 
 def _limitar_texto(valor: str | None, limite: int) -> str | None:
@@ -244,7 +326,11 @@ def _conteudo_permitido(
     para excluir contatos, documentos e quaisquer tipos sem relação direta com
     a adequação da vaga.
     """
-    if item is None or getattr(item, "usuario_id", None) != usuario_id or getattr(item, "id", None) != referencia.item_id:
+    if (
+        item is None
+        or getattr(item, "usuario_id", None) != usuario_id
+        or getattr(item, "id", None) != referencia.item_id
+    ):
         return None
     if isinstance(item, ExperienciaProfissional):
         return "\n".join(

@@ -11,11 +11,13 @@ from typing import AsyncContextManager
 from fastapi import FastAPI
 
 from backend.api.adequacao_semantica import (
+    RecomendarModeloCurriculoExecutor,
     SolicitarAdequacaoCurriculoVagaExecutor,
 )
 from backend.api.adequacao_semantica import (
     criar_router as criar_router_adequacao_semantica,
 )
+
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 from backend.api.associacoes_curriculo_vaga import (
     ListagemAssociacoesCurriculoVagaExecutor,
@@ -298,6 +300,8 @@ def create_app(
     consultar_decisoes_recomendacao: ConsultaDecisoesRecomendacaoExecutor | None = None,
     solicitar_adequacao_curriculo_vaga: SolicitarAdequacaoCurriculoVagaExecutor
     | None = None,
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    recomendar_modelo_curriculo: RecomendarModeloCurriculoExecutor | None = None,
     verificadores_saude: Sequence[VerificadorSaude] = (),
     verificador_persistencia: VerificadorPersistencia | None = None,
     lifespan: Callable[[FastAPI], AsyncContextManager[None]] | None = None,
@@ -313,7 +317,8 @@ def create_app(
     idiomas, cursos, certificações, links profissionais, documentos complementares,
     formações acadêmicas, versões de currículo, seleção de itens, listagem de
     associações currículo-vaga, exclusão de versão, revisão de campos obrigatórios,
-    decisão sobre recomendações e adequação semântica revisável,
+    decisão sobre recomendações, adequação semântica revisável e sugestão de
+    modelo de currículo por IA,
     experiências profissionais (cadastro, edição e exclusão), prévia, exportação do
     currículo em DOCX e PDF, vagas de emprego e health/readiness com seus verificadores;
     ausências permanecem explícitas e são traduzidas por cada router em indisponibilidade.
@@ -467,7 +472,9 @@ def create_app(
         tags=[TAG_VERSOES_CURRICULO],
     )
     app.include_router(
-        criar_router_adequacao_semantica(solicitar_adequacao_curriculo_vaga),
+        criar_router_adequacao_semantica(
+            solicitar_adequacao_curriculo_vaga, recomendar_modelo_curriculo
+        ),
         tags=[TAG_ADEQUACAO_SEMANTICA],
     )
     # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001

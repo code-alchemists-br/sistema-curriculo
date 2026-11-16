@@ -1,73 +1,71 @@
-"""Orquestra a recomendação local de modelo para uma versão de currículo.
+"""Orquestra uma recomendação revisável de modelo de currículo por IA.
 
-O módulo verifica que a versão pertence ao estudante e delega a orientação à
-política pura de domínio. Ele existe para separar a intenção de recomendar
-apresentação da adequação textual por IA e não persiste qualquer mudança.
+O módulo reaproveita a entrada e o preparo seguro da adequação à vaga, mas
+delega a resposta a uma porta distinta e não grava alterações. Ele existe para
+separar a sugestão de apresentação da decisão posterior do estudante.
 """
 
-from dataclasses import dataclass
+from typing import Protocol
 
-from backend.application.ports import RepositorioCurriculo
-from backend.application.versao_curriculo import CurriculoNaoEncontrado
-from backend.domain.recomendacao_modelo_curriculo import (
-    ObjetivoCurriculo,
-    PoliticaRecomendacaoModeloCurriculo,
-    RecomendacaoModeloCurriculo,
+from backend.application.adequacao_semantica import (
+    ContextoAdequacaoCurriculoVaga,
+    PreparadorContextoAssistenciaCurriculo,
+    SolicitarAdequacaoCurriculoVagaEntrada,
 )
-from backend.domain.value_objects import CurriculoId, UsuarioId
+from backend.domain.recomendacao_modelo_curriculo import RecomendacaoModeloCurriculo
 
-# Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
 
 
-@dataclass(frozen=True, slots=True)
-class RecomendarModeloCurriculoEntrada:
-    """Reúne solicitante, versão e objetivo para pedir orientação de layout.
+class GeradorRecomendacaoModeloCurriculo(Protocol):
+    """Define a porta que obtém uma recomendação tipada para contexto autorizado.
 
-    A entrada transporta identidades e a enumeração de domínio sem representar
-    transporte HTTP ou estado persistido. Ela existe para tornar a intenção de
-    recomendação explícita e independente do adaptador de entrada.
+    A porta recebe o mesmo contexto limitado da adequação e devolve somente um
+    value object de recomendação. Ela existe para permitir IA ou doubles sem
+    acoplar o caso de uso a HTTP, SDK ou formato externo.
     """
 
-    usuario_id: UsuarioId
-    curriculo_id: CurriculoId
-    objetivo: ObjetivoCurriculo
+    async def gerar(
+        self, contexto: ContextoAdequacaoCurriculoVaga
+    ) -> RecomendacaoModeloCurriculo:
+        """Gera uma recomendação revisável a partir do contexto já protegido.
+
+        Implementações escolhem o provedor e validam o formato externo antes de
+        devolver o resultado tipado. O método existe para que a Application não
+        conheça detalhes de integração nem aplique a sugestão recebida.
+        """
 
 
 class RecomendarModeloCurriculo:
-    """Recomenda um modelo inicial sem alterar uma versão de currículo.
+    """Gera sugestão de modelo sem alterar a versão de currículo.
 
-    O caso de uso consulta a versão por porta, oculta ausência ou propriedade
-    alheia e delega o mapeamento à política do domínio, sem chamar IA nem
-    persistir a resposta. Ele existe para orientar a decisão do estudante sem
-    remover sua autonomia sobre o layout final.
+    O caso usa um preparador compartilhado para verificar propriedade,
+    consentimento e minimização, e chama uma porta de recomendação. Ele existe
+    para tornar a IA uma fonte de proposta, não uma alteração automática.
     """
 
     def __init__(
         self,
-        repositorio_curriculo: RepositorioCurriculo,
-        politica: PoliticaRecomendacaoModeloCurriculo | None = None,
+        preparador: PreparadorContextoAssistenciaCurriculo,
+        gerador: GeradorRecomendacaoModeloCurriculo,
     ) -> None:
-        """Armazena a porta de consulta e a política de recomendação escolhida.
+        """Recebe o preparo comum e a porta de geração por injeção interna.
 
-        O construtor usa a política padrão quando nenhuma é informada e aceita
-        injeção para testes ou evolução de regras internas, sem conhecer
-        persistência concreta. Ele existe para manter a orquestração coesa e
-        substituível dentro das fronteiras da Application.
+        O construtor mantém as dependências substituíveis e não compõe adapters.
+        Ele existe para permitir testes unitários e preservar dependências em
+        direção ao núcleo.
         """
-        self._repositorio_curriculo = repositorio_curriculo
-        self._politica = politica or PoliticaRecomendacaoModeloCurriculo()
+        self._preparador = preparador
+        self._gerador = gerador
 
     async def executar(
-        self, entrada: RecomendarModeloCurriculoEntrada
+        self, entrada: SolicitarAdequacaoCurriculoVagaEntrada
     ) -> RecomendacaoModeloCurriculo:
-        """Verifica propriedade e devolve a recomendação sem persistir alterações.
+        """Prepara contexto compartilhado e devolve a proposta sem persistir.
 
-        O método consulta apenas a versão indicada, trata ausência e dono alheio
-        pela mesma falha e aplica a política ao objetivo declarado. Ele existe
-        para impedir recomendação sobre currículo de terceiros e garantir que
-        este fluxo permaneça somente de leitura.
+        O método delega todas as regras de propriedade, seleção e consentimento
+        ao preparador antes de chamar a porta. Ele existe para garantir que a
+        recomendação por IA não ultrapasse os dados autorizados nem mude layout.
         """
-        curriculo = await self._repositorio_curriculo.obter_por_id(entrada.curriculo_id)
-        if curriculo is None or curriculo.usuario_id != entrada.usuario_id:
-            raise CurriculoNaoEncontrado("Versão de currículo não encontrada.")
-        return self._politica.recomendar(entrada.objetivo)
+        preparacao = await self._preparador.preparar(entrada)
+        return await self._gerador.gerar(preparacao.contexto)

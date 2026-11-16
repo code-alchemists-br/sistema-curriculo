@@ -1,79 +1,39 @@
-"""Testa a política determinística de recomendação de modelos de currículo."""
+"""Testa a proposta tipada e revisável de recomendação de modelo."""
 
 import unittest
 
-from backend.domain import (
-    ModeloCurriculo,
-    ObjetivoCurriculo,
-    PoliticaRecomendacaoModeloCurriculo,
-    RecomendacaoModeloCurriculo,
-)
+from backend.domain import ModeloCurriculo, RecomendacaoModeloCurriculo
 
-# Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
 
 
-class PoliticaRecomendacaoModeloCurriculoTestCase(unittest.TestCase):
-    """Verifica o mapeamento documentado e a explicabilidade da orientação.
+class RecomendacaoModeloCurriculoTestCase(unittest.TestCase):
+    """Verifica os invariantes da sugestão de modelo sem gerador externo.
 
-    Os cenários exercitam a política pura, sem adaptadores, persistência ou
-    relógio. A classe existe para impedir que um objetivo seja mapeado para um
-    modelo diferente da tabela aprovada pelo produto.
+    Os cenários constroem somente o value object e rejeitam valores fora do
+    catálogo ou sem justificativa. A classe existe para impedir que a IA
+    atravesse a fronteira interna com uma recomendação opaca ou inválida.
     """
 
-    def test_recomenda_modelo_documentado_para_cada_objetivo(self) -> None:
-        """Reproduz a tabela de objetivo para modelo inicial da documentação.
+    def test_aceita_modelo_do_catalogo_com_justificativa(self) -> None:
+        """Mantém proposta válida como orientação não vinculante.
 
-        O cenário percorre todas as categorias fechadas e verifica o modelo e
-        uma justificativa não vazia. Ele existe para manter a recomendação
-        determinística, explicável e independente de inteligência artificial.
+        O cenário instancia modelo reconhecido e explicação não vazia. Ele
+        existe para garantir que a saída tipada preserve a sugestão revisável.
         """
-        politica = PoliticaRecomendacaoModeloCurriculo()
-        esperados = {
-            ObjetivoCurriculo.PRIMEIRO_EMPREGO: ModeloCurriculo.PRIMEIRO_EMPREGO,
-            ObjetivoCurriculo.TECNOLOGIA: ModeloCurriculo.MODERNO,
-            ObjetivoCurriculo.ADMINISTRATIVO_CORPORATIVO: ModeloCurriculo.ATS_SIMPLES,
-            ObjetivoCurriculo.CRIATIVO_DESIGN: ModeloCurriculo.CRIATIVO,
-            ObjetivoCurriculo.ACADEMICO_PESQUISADOR: ModeloCurriculo.ACADEMICO,
-            ObjetivoCurriculo.OUTRO: ModeloCurriculo.MODERNO,
-        }
-
-        for objetivo, modelo_esperado in esperados.items():
-            with self.subTest(objetivo=objetivo.value):
-                recomendacao = politica.recomendar(objetivo)
-
-                self.assertEqual(recomendacao.modelo_recomendado, modelo_esperado)
-                self.assertTrue(recomendacao.justificativa.strip())
-
-    def test_explicita_profissional_classico_como_alternativa_administrativa(self) -> None:
-        """Mantém a alternativa documental na justificativa do caso administrativo.
-
-        O cenário confere que ATS simples permanece a recomendação inicial e
-        que a explicação preserva a possibilidade de escolher o clássico. Ele
-        existe para orientar sem restringir a autonomia sobre o layout final.
-        """
-        recomendacao = PoliticaRecomendacaoModeloCurriculo().recomendar(
-            ObjetivoCurriculo.ADMINISTRATIVO_CORPORATIVO
+        recomendacao = RecomendacaoModeloCurriculo(
+            ModeloCurriculo.MODERNO, "Valoriza projetos e competências selecionados."
         )
 
-        self.assertEqual(recomendacao.modelo_recomendado, ModeloCurriculo.ATS_SIMPLES)
-        self.assertIn("Profissional clássico", recomendacao.justificativa)
+        self.assertEqual(recomendacao.modelo_recomendado, ModeloCurriculo.MODERNO)
 
-    def test_recusa_objetivo_ou_resultado_sem_tipo_de_dominio_valido(self) -> None:
-        """Protege o vocabulário e a explicação usados pela recomendação.
+    def test_recusa_modelo_ou_justificativa_invalidos(self) -> None:
+        """Bloqueia resposta externa sem catálogo ou explicação legível.
 
-        O cenário tenta usar texto solto como objetivo e dados vazios no
-        resultado. Ele existe para impedir orientação opaca ou valores fora da
-        política aprovada de alcançarem a Application.
+        O cenário tenta criar propostas com texto solto e explicação vazia. Ele
+        existe para garantir que o adaptador futuro tenha resultado verificável.
         """
-        politica = PoliticaRecomendacaoModeloCurriculo()
-
         with self.assertRaises(ValueError):
-            politica.recomendar("tecnologia")  # type: ignore[arg-type]
+            RecomendacaoModeloCurriculo("moderno", "Orientação.")  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
-            RecomendacaoModeloCurriculo(  # type: ignore[arg-type]
-                modelo_recomendado="moderno", justificativa="Recomendado."
-            )
-        with self.assertRaises(ValueError):
-            RecomendacaoModeloCurriculo(
-                modelo_recomendado=ModeloCurriculo.MODERNO, justificativa=" "
-            )
+            RecomendacaoModeloCurriculo(ModeloCurriculo.MODERNO, " ")

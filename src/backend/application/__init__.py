@@ -19,6 +19,9 @@ from backend.application.adequacao_semantica import (
     GeracaoPropostaAdequacaoIndisponivel,
     GeradorPropostaAdequacao,
     ItemAdequacaoNaoEncontrado,
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    PreparacaoContextoAssistenciaCurriculo,
+    PreparadorContextoAssistenciaCurriculo,
     SolicitarAdequacaoCurriculoVaga,
     SolicitarAdequacaoCurriculoVagaEntrada,
 )
@@ -265,10 +268,10 @@ from backend.application.previa_versao_curriculo import (
     PreviaVersaoCurriculo,
 )
 
-# Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
 from backend.application.recomendacao_modelo_curriculo import (
+    GeradorRecomendacaoModeloCurriculo,
     RecomendarModeloCurriculo,
-    RecomendarModeloCurriculoEntrada,
 )
 
 # Proveniência: decision-analysis prompts/backend/20261015-165611-revisao-campos-obrigatorios-curriculo-v001.md#v001
@@ -304,11 +307,14 @@ __all__ = [
     "GeracaoPropostaAdequacaoIndisponivel",
     "GeradorPropostaAdequacao",
     "ItemAdequacaoNaoEncontrado",
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    "PreparacaoContextoAssistenciaCurriculo",
+    "PreparadorContextoAssistenciaCurriculo",
     "SolicitarAdequacaoCurriculoVaga",
     "SolicitarAdequacaoCurriculoVagaEntrada",
-    # Proveniência: decision-analysis prompts/backend/20261102-235645-adequacao-semantica-gpt-nano-v003.md#v003
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    "GeradorRecomendacaoModeloCurriculo",
     "RecomendarModeloCurriculo",
-    "RecomendarModeloCurriculoEntrada",
     # Proveniência: decision-analysis prompts/backend/20261017-184313-associacao-curriculo-vaga-v004.md#v004
     "AssociacaoCurriculoVagaJaExiste",
     "AssociacaoCurriculoVagaNaoEncontrada",

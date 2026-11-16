@@ -1,9 +1,9 @@
-"""Expõe a solicitação revisável de adequação de currículo a uma vaga.
+"""Expõe propostas revisáveis de adequação e de modelo de currículo.
 
 O módulo converte o contrato HTTP mínimo em uma entrada da Application e
 apresenta a proposta sem serializar entidades de domínio. Ele existe para
-preservar a identidade de sessão, o consentimento e a revisão humana na
-fronteira pública da assistência de IA.
+preservar identidade de sessão, consentimento e revisão humana na fronteira
+pública da assistência de IA.
 """
 
 from typing import Literal, Protocol
@@ -24,6 +24,7 @@ from backend.domain import (
     ExperienciaProfissionalId,
     ProjetoAcademicoId,
     PropostaAdequacaoCurriculoVaga,
+    RecomendacaoModeloCurriculo,
     ReferenciaCurriculo,
     RegraDeDominioViolada,
     UsuarioId,
@@ -110,6 +111,19 @@ class PropostaAdequacaoCurriculoVagaResposta(BaseModel):
     sugestoes: list[SugestaoAdequacaoResposta]
 
 
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+class RecomendacaoModeloCurriculoResposta(BaseModel):
+    """Apresenta a sugestão de modelo sem aplicá-la à versão de currículo.
+
+    O DTO expõe somente modelo e motivo já validados pelo núcleo. Ele existe
+    para que a tela ofereça aceite ou recusa explícitos, sem tratar a resposta
+    de IA como alteração automática.
+    """
+
+    modelo_recomendado: str
+    justificativa: str
+
+
 class SolicitarAdequacaoCurriculoVagaExecutor(Protocol):
     """Define a capacidade de gerar uma proposta que o router consome.
 
@@ -126,6 +140,25 @@ class SolicitarAdequacaoCurriculoVagaExecutor(Protocol):
         Implementações validam propriedade, consentimento e contexto antes de
         chamar o gerador configurado. O método existe para deixar a rota focada
         apenas na tradução segura de HTTP.
+        """
+
+
+class RecomendarModeloCurriculoExecutor(Protocol):
+    """Define a capacidade interna de sugerir modelo a partir do DTO comum.
+
+    O protocolo recebe a mesma entrada tipada da adequação e devolve proposta
+    de apresentação sem expor detalhes de IA. Ele existe para manter o handler
+    limitado à tradução HTTP e sessão.
+    """
+
+    async def executar(
+        self, entrada: SolicitarAdequacaoCurriculoVagaEntrada
+    ) -> RecomendacaoModeloCurriculo:
+        """Gera recomendação revisável com o contexto autorizado da entrada.
+
+        Implementações verificam propriedade, consentimento e limites antes de
+        chamar a porta externa. O método existe para preservar essas regras fora
+        do adapter HTTP.
         """
 
 
@@ -187,8 +220,24 @@ def _para_resposta(
     )
 
 
+def _para_resposta_recomendacao(
+    recomendacao: RecomendacaoModeloCurriculo,
+) -> RecomendacaoModeloCurriculoResposta:
+    """Projeta o value object de recomendação na resposta pública estável.
+
+    A função converte somente o enum do catálogo em texto e preserva a
+    justificativa tipada. Ela existe para evitar que a API exponha estruturas de
+    domínio ou introduza uma operação implícita de aplicação do modelo.
+    """
+    return RecomendacaoModeloCurriculoResposta(
+        modelo_recomendado=recomendacao.modelo_recomendado.value,
+        justificativa=recomendacao.justificativa,
+    )
+
+
 def criar_router(
     solicitar_adequacao: SolicitarAdequacaoCurriculoVagaExecutor | None,
+    recomendar_modelo: RecomendarModeloCurriculoExecutor | None = None,
 ) -> APIRouter:
     """Cria a rota autenticada que solicita uma proposta de adequação.
 
@@ -262,5 +311,68 @@ def criar_router(
                 detail="Adequação semântica indisponível.",
             ) from erro
         return _para_resposta(proposta)
+
+    @router.post(
+        "/curriculos/{curriculo_id}/recomendacao-modelo",
+        response_model=RecomendacaoModeloCurriculoResposta,
+        status_code=status.HTTP_200_OK,
+        responses={
+            401: {"description": "Autenticação necessária."},
+            404: {"description": "Versão ou item não encontrado."},
+            422: {"description": "Dados da recomendação inválidos."},
+            503: {"description": "Recomendação de modelo indisponível."},
+        },
+    )
+    async def recomendar(
+        curriculo_id: UUID,
+        requisicao: SolicitarAdequacaoCurriculoVagaRequisicao,
+        request: Request,
+    ) -> RecomendacaoModeloCurriculoResposta:
+        """Solicita recomendação sem aplicar o modelo na versão autenticada.
+
+        O handler deriva a identidade da sessão e reutiliza a conversão do DTO
+        de adequação, devolvendo somente uma proposta revisável. Ele existe para
+        separar a sugestão gerada por IA do aceite posterior na interface.
+        """
+        if recomendar_modelo is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Recomendação de modelo indisponível.",
+            )
+        usuario_id = getattr(request.state, "usuario_id", None)
+        if not isinstance(usuario_id, UUID):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária.",
+            )
+        entrada = SolicitarAdequacaoCurriculoVagaEntrada(
+            usuario_id=UsuarioId(usuario_id),
+            curriculo_id=CurriculoId(curriculo_id),
+            cargo_alvo=requisicao.cargo_alvo,
+            descricao_vaga=requisicao.descricao_vaga,
+            referencias_selecionadas=tuple(
+                _para_referencia(referencia)
+                for referencia in requisicao.referencias_selecionadas
+            ),
+            consentimento_explicito=requisicao.consentimento_explicito,
+        )
+        try:
+            recomendacao = await recomendar_modelo.executar(entrada)
+            return _para_resposta_recomendacao(recomendacao)
+        except (CurriculoNaoEncontrado, ItemAdequacaoNaoEncontrado) as erro:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Versão ou item não encontrado.",
+            ) from erro
+        except RegraDeDominioViolada as erro:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Dados da recomendação inválidos.",
+            ) from erro
+        except GeracaoPropostaAdequacaoIndisponivel as erro:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Recomendação de modelo indisponível.",
+            ) from erro
 
     return router

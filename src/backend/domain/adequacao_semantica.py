@@ -10,7 +10,7 @@ currículo automaticamente.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from backend.domain.exceptions import RegraDeDominioViolada
@@ -21,12 +21,14 @@ from backend.domain.value_objects import CurriculoId, ReferenciaCurriculo
 class AcaoAdequacaoSemantica(str, Enum):
     """Identifica a ação de assistência semântica suportada nesta entrega.
 
-    A enumeração mantém a intenção de adequar o currículo a uma vaga como um
-    vocabulário fechado. Ela existe para que a política de contexto, a futura
-    porta de geração e a proposta usem o mesmo nome de ação sem texto solto.
+    A enumeração mantém as intenções que reutilizam contexto profissional como
+    vocabulário fechado. Ela existe para que a política e as portas internas
+    usem nomes estáveis, sem texto solto.
     """
 
     ADEQUAR_CURRICULO_VAGA = "adequar_curriculo_vaga"
+    # Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+    RECOMENDAR_MODELO_CURRICULO = "recomendar_modelo_curriculo"
 
 
 # Proveniência: docs/adequacao_semantica_ia.md#papel-da-ia.
@@ -76,14 +78,15 @@ class ItemSelecionadoAdequacao:
             )
 
 
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
 @dataclass(frozen=True, slots=True)
-class SolicitacaoAdequacaoCurriculoVaga:
-    """Representa uma solicitação consentida de adequação a uma vaga.
+class SolicitacaoAssistenciaCurriculo:
+    """Representa contexto profissional consentido para uma ação de IA.
 
     A entidade reúne o currículo, o cargo desejado, a descrição opcional da
-    vaga e os itens profissionais que o estudante autorizou usar. Ela existe
-    para que qualquer gerador receba uma intenção válida sem assumir que a
-    sugestão será aplicada ao currículo.
+    vaga, itens profissionais e ação que o estudante autorizou usar. Ela existe
+    para compartilhar invariantes de contexto entre adequação e recomendação,
+    sem assumir qual tipo de proposta será produzido.
     """
 
     curriculo_id: CurriculoId
@@ -92,7 +95,7 @@ class SolicitacaoAdequacaoCurriculoVaga:
     itens_selecionados: tuple[ItemSelecionadoAdequacao, ...]
     consentimento_explicito: bool
 
-    acao: AcaoAdequacaoSemantica = AcaoAdequacaoSemantica.ADEQUAR_CURRICULO_VAGA
+    acao: AcaoAdequacaoSemantica
 
     def __post_init__(self) -> None:
         """Protege consentimento, objetivo e seleção única de itens profissionais.
@@ -105,6 +108,8 @@ class SolicitacaoAdequacaoCurriculoVaga:
         """
         if not isinstance(self.curriculo_id, CurriculoId):
             raise RegraDeDominioViolada("A solicitação deve referenciar um currículo.")
+        if not isinstance(self.acao, AcaoAdequacaoSemantica):
+            raise RegraDeDominioViolada("A ação de assistência deve ser reconhecida.")
         if not isinstance(self.cargo_alvo, str) or not self.cargo_alvo.strip():
             raise RegraDeDominioViolada("O cargo-alvo deve ser informado.")
         if self.descricao_vaga is not None and (
@@ -118,7 +123,9 @@ class SolicitacaoAdequacaoCurriculoVaga:
                 "A adequação semântica exige consentimento explícito."
             )
         itens = tuple(self.itens_selecionados)
-        if not itens or not all(isinstance(item, ItemSelecionadoAdequacao) for item in itens):
+        if not itens or not all(
+            isinstance(item, ItemSelecionadoAdequacao) for item in itens
+        ):
             raise RegraDeDominioViolada(
                 "A solicitação deve conter ao menos um item profissional selecionado."
             )
@@ -138,41 +145,6 @@ class SolicitacaoAdequacaoCurriculoVaga:
         coleção interna como uma estrutura mutável.
         """
         return frozenset(item.referencia for item in self.itens_selecionados)
-
-    def criar_proposta(
-        self,
-        modelo: str,
-        versao_politica: str,
-        sugestoes: Iterable[SugestaoAdequacao],
-    ) -> PropostaAdequacaoCurriculoVaga:
-        """Cria uma proposta revisável, limitada aos itens previamente autorizados.
-
-        O método materializa as sugestões recebidas do gerador, exige que toda
-        sugestão com referência aponte para a seleção e preserva a solicitação
-        original sem mutá-la. Ele existe para impedir que uma resposta externa
-        alcance itens não autorizados ou altere o currículo automaticamente.
-        """
-        sugestoes_materializadas = tuple(sugestoes)
-        referencias_autorizadas = self.referencias_selecionadas
-        for sugestao in sugestoes_materializadas:
-            if not isinstance(sugestao, SugestaoAdequacao):
-                raise RegraDeDominioViolada("A proposta contém uma sugestão inválida.")
-            if (
-                sugestao.referencia_item is not None
-                and sugestao.referencia_item not in referencias_autorizadas
-            ):
-                raise RegraDeDominioViolada(
-                    "A proposta não pode sugerir mudança em item não selecionado."
-                )
-        return PropostaAdequacaoCurriculoVaga(
-            curriculo_id=self.curriculo_id,
-            modelo=modelo,
-            versao_politica=versao_politica,
-            referencias_utilizadas=tuple(
-                item.referencia for item in self.itens_selecionados
-            ),
-            sugestoes=sugestoes_materializadas,
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -242,7 +214,10 @@ class PropostaAdequacaoCurriculoVaga:
         """
         if not isinstance(self.curriculo_id, CurriculoId):
             raise RegraDeDominioViolada("A proposta deve referenciar um currículo.")
-        for nome, valor in (("modelo", self.modelo), ("versao_politica", self.versao_politica)):
+        for nome, valor in (
+            ("modelo", self.modelo),
+            ("versao_politica", self.versao_politica),
+        ):
             if not isinstance(valor, str) or not valor.strip():
                 raise RegraDeDominioViolada(f"{nome} deve ser informado.")
         referencias = tuple(self.referencias_utilizadas)
@@ -260,6 +235,58 @@ class PropostaAdequacaoCurriculoVaga:
         ):
             raise RegraDeDominioViolada("A proposta deve conter sugestões válidas.")
         if len({sugestao.codigo for sugestao in sugestoes}) != len(sugestoes):
-            raise RegraDeDominioViolada("A proposta não pode repetir códigos de sugestão.")
+            raise RegraDeDominioViolada(
+                "A proposta não pode repetir códigos de sugestão."
+            )
         object.__setattr__(self, "referencias_utilizadas", referencias)
         object.__setattr__(self, "sugestoes", sugestoes)
+
+
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+@dataclass(frozen=True, slots=True)
+class SolicitacaoAdequacaoCurriculoVaga(SolicitacaoAssistenciaCurriculo):
+    """Especializa a assistência que produz sugestões textuais para uma vaga.
+
+    A classe fixa a ação de adequação e converte somente sugestões autorizadas
+    em proposta revisável. Ela existe para que a regra específica de proposta
+    não seja exposta à recomendação de modelo.
+    """
+
+    acao: AcaoAdequacaoSemantica = field(
+        default=AcaoAdequacaoSemantica.ADEQUAR_CURRICULO_VAGA,
+        init=False,
+    )
+
+    def criar_proposta(
+        self,
+        modelo: str,
+        versao_politica: str,
+        sugestoes: Iterable[SugestaoAdequacao],
+    ) -> PropostaAdequacaoCurriculoVaga:
+        """Cria proposta textual limitada aos itens previamente autorizados.
+
+        O método confere referências e materializa a saída do gerador sem mutar
+        a solicitação. Ele existe para impedir que uma proposta de adequação
+        alcance itens não selecionados ou altere o currículo automaticamente.
+        """
+        sugestoes_materializadas = tuple(sugestoes)
+        referencias_autorizadas = self.referencias_selecionadas
+        for sugestao in sugestoes_materializadas:
+            if not isinstance(sugestao, SugestaoAdequacao):
+                raise RegraDeDominioViolada("A proposta contém uma sugestão inválida.")
+            if (
+                sugestao.referencia_item is not None
+                and sugestao.referencia_item not in referencias_autorizadas
+            ):
+                raise RegraDeDominioViolada(
+                    "A proposta não pode sugerir mudança em item não selecionado."
+                )
+        return PropostaAdequacaoCurriculoVaga(
+            curriculo_id=self.curriculo_id,
+            modelo=modelo,
+            versao_politica=versao_politica,
+            referencias_utilizadas=tuple(
+                item.referencia for item in self.itens_selecionados
+            ),
+            sugestoes=sugestoes_materializadas,
+        )

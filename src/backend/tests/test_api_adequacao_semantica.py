@@ -18,7 +18,9 @@ from backend.application import (
 from backend.domain import (
     CurriculoId,
     ExperienciaProfissionalId,
+    ModeloCurriculo,
     PropostaAdequacaoCurriculoVaga,
+    RecomendacaoModeloCurriculo,
     ReferenciaCurriculo,
     SugestaoAdequacao,
     TipoSugestaoAdequacao,
@@ -86,6 +88,35 @@ class IndisponivelExecutor:
         raise GeracaoPropostaAdequacaoIndisponivel("falha externa")
 
 
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+class RecomendarModeloSpy:
+    """Registra a entrada e devolve recomendação controlada pelo cenário.
+
+    O double cumpre somente a porta consumida pelo router, sem chamar IA ou
+    persistência. Ele existe para verificar a tradução HTTP do fluxo paralelo.
+    """
+
+    def __init__(self, recomendacao: RecomendacaoModeloCurriculo) -> None:
+        """Guarda a recomendação válida e inicia o histórico de chamadas.
+
+        O construtor recebe um value object já validado para manter o teste
+        focado no adapter HTTP. Ele existe para tornar a entrada observável.
+        """
+        self.recomendacao = recomendacao
+        self.entradas: list[SolicitarAdequacaoCurriculoVagaEntrada] = []
+
+    async def executar(
+        self, entrada: SolicitarAdequacaoCurriculoVagaEntrada
+    ) -> RecomendacaoModeloCurriculo:
+        """Registra a entrada traduzida e retorna a recomendação configurada.
+
+        O método não aplica o modelo nem consulta serviços externos. Ele existe
+        para isolar a responsabilidade do handler em um teste unitário.
+        """
+        self.entradas.append(entrada)
+        return self.recomendacao
+
+
 def _proposta(referencia: ReferenciaCurriculo) -> PropostaAdequacaoCurriculoVaga:
     """Constrói uma proposta mínima e revisável para os cenários HTTP.
 
@@ -118,7 +149,9 @@ class AdequacaoSemanticaApiTestCase(unittest.IsolatedAsyncioTestCase):
     e falhas públicas estáveis na fronteira de entrada.
     """
 
-    async def test_deriva_usuario_da_sessao_e_apresenta_proposta_revisavel(self) -> None:
+    async def test_deriva_usuario_da_sessao_e_apresenta_proposta_revisavel(
+        self,
+    ) -> None:
         """Converte rota e DTO no comando e devolve somente a proposta pública.
 
         O cenário usa referências de experiência e um campo extra ignorado,
@@ -202,3 +235,74 @@ class AdequacaoSemanticaApiTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(contexto.exception.status_code, 503)
         self.assertEqual(contexto.exception.detail, "Adequação semântica indisponível.")
+
+
+# Proveniência: decision-analysis prompts/backend/20261105-181751-adequacao-semantica-gpt-nano-v005.md#v005
+class RecomendacaoModeloCurriculoApiTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a borda HTTP da recomendação de modelo revisável.
+
+    Os cenários chamam o endpoint registrado com doubles da Application. A
+    classe existe para garantir uso do DTO comum sem introduzir aplicação de
+    layout, servidor real ou provedor externo.
+    """
+
+    async def test_reutiliza_dto_e_apresenta_recomendacao_sem_aplica_la(self) -> None:
+        """Deriva a sessão, reutiliza referências e expõe somente a sugestão.
+
+        O cenário chama a segunda rota do router e verifica a entrada recebida.
+        Ele existe para preservar consentimento prévio e decisão posterior na UI.
+        """
+        usuario_id = uuid4()
+        curriculo_id = uuid4()
+        referencia_id = uuid4()
+        executor = RecomendarModeloSpy(
+            RecomendacaoModeloCurriculo(
+                modelo_recomendado=ModeloCurriculo.MODERNO,
+                justificativa="Organiza melhor competências técnicas recentes.",
+            )
+        )
+        endpoint = criar_router(None, executor).routes[1].endpoint
+        corpo = SolicitarAdequacaoCurriculoVagaRequisicao(
+            cargo_alvo="Desenvolvedora Backend",
+            descricao_vaga="Experiência com Python.",
+            referencias_selecionadas=[
+                ReferenciaAdequacaoRequisicao(tipo="experiencia", id=referencia_id)
+            ],
+            consentimento_explicito=True,
+        )
+
+        resposta = await endpoint(curriculo_id, corpo, _request(usuario_id))
+
+        self.assertEqual(len(executor.entradas), 1)
+        self.assertEqual(executor.entradas[0].usuario_id.valor, usuario_id)
+        self.assertEqual(executor.entradas[0].curriculo_id.valor, curriculo_id)
+        self.assertTrue(executor.entradas[0].consentimento_explicito)
+        self.assertEqual(resposta.modelo_recomendado, "moderno")
+        self.assertEqual(
+            resposta.justificativa,
+            "Organiza melhor competências técnicas recentes.",
+        )
+
+    async def test_explica_indisponibilidade_quando_executor_nao_foi_composto(
+        self,
+    ) -> None:
+        """Retorna 503 estável quando a capacidade de IA não foi injetada.
+
+        O cenário mantém a aplicação inicializável sem credenciais de provedor.
+        Ele existe para que ausência de composição não cause erro interno HTTP.
+        """
+        endpoint = criar_router(None).routes[1].endpoint
+        corpo = SolicitarAdequacaoCurriculoVagaRequisicao(
+            cargo_alvo="Desenvolvedora Backend",
+            referencias_selecionadas=[],
+            consentimento_explicito=True,
+        )
+
+        with self.assertRaises(HTTPException) as contexto:
+            await endpoint(uuid4(), corpo, _request(uuid4()))
+
+        self.assertEqual(contexto.exception.status_code, 503)
+        self.assertEqual(
+            contexto.exception.detail,
+            "Recomendação de modelo indisponível.",
+        )
