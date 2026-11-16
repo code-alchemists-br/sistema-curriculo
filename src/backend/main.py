@@ -1,7 +1,7 @@
 """Compõe a aplicação ASGI, a readiness de persistência e o logging.
 
 O módulo cria uma engine assíncrona quando `DATABASE_URL` está configurada,
-compõe os executores persistidos, incluindo perfil do estudante, cadastro, leitura,
+compõe os executores persistidos, incluindo cadastro de idiomas, perfil do estudante, cadastro, leitura,
 edição e exclusão de formações acadêmicas, projetos acadêmicos e experiências profissionais,
 injeta a readiness e encerra a engine no shutdown. Sem essa variável, os fluxos
 persistidos ficam indisponíveis. Ele existe para concentrar a composição de
@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import (
 from backend.api.configuracao_cookie_sessao import ConfiguracaoCookieSessao
 from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
+from backend.application.cadastro_idioma import CadastrarIdioma
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
     RegistrarDecisaoRecomendacao,
@@ -55,9 +56,14 @@ from backend.infrastructure.identificadores.geradores import (
     GeradorCursoIdUuid4,
     GeradorExperienciaProfissionalIdUuid4,
     GeradorFormacaoAcademicaIdUuid4,
+    GeradorIdiomaIdUuid4,
     # Proveniência: decision-analysis prompts/backend/20261108-110818-consulta-atualizacao-exclusao-projeto-academico-v001.md#v001
     GeradorProjetoAcademicoIdUuid4,
     GeradorUsuarioIdUuid4,
+)
+from backend.infrastructure.integrations.email_recuperacao_senha import (
+    ConfiguracaoSmtpRecuperacao,
+    EnviadorRecuperacaoSmtp,
 )
 from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
@@ -130,11 +136,18 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_projeto_academico i
     EdicaoProjetoAcademicoSqlAlchemy,
     ExclusaoProjetoAcademicoSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.operacoes_recuperacao_senha import (
+    RedefinirSenhaSqlAlchemy,
+    SolicitarRecuperacaoSenhaSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_decisao_recomendacao import (
     RepositorioDecisaoRecomendacaoSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
+    RepositorioIdiomaSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
@@ -146,6 +159,9 @@ from backend.infrastructure.security.autenticador_sessao_indisponivel import (
     AutenticadorSessaoIndisponivel,
 )
 from backend.infrastructure.security.senhas import DerivadorSenhaScrypt
+from backend.infrastructure.security.tokens_recuperacao_senha import (
+    GeradorTokenRecuperacaoSeguro,
+)
 
 configurar_logging()
 
@@ -328,6 +344,37 @@ def _criar_autenticador_sessao(
     )
 
 
+def _criar_solicitador_recuperacao_senha(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> SolicitarRecuperacaoSenhaSqlAlchemy | None:
+    """Compõe o executor de solicitação quando o banco está disponível.
+
+    A função não cria sessão nem conexão SMTP; sem banco devolve None para a
+    API sinalizar indisponibilidade. Ela existe para centralizar a composição
+    sem misturar transporte de e-mail à transação.
+    """
+    if sessoes is None:
+        return None
+    return SolicitarRecuperacaoSenhaSqlAlchemy(
+        sessoes, GeradorTokenRecuperacaoSeguro(), RelogioUtc()
+    )
+
+
+def _criar_redefinidor_senha(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> RedefinirSenhaSqlAlchemy | None:
+    """Compõe a troca de senha quando a persistência relacional está disponível.
+
+    A função fornece gerador e relógio determinísticos por dependência, sem
+    abrir sessão. Ela existe para permitir confirmação transacional isolada.
+    """
+    if sessoes is None:
+        return None
+    return RedefinirSenhaSqlAlchemy(
+        sessoes, GeradorTokenRecuperacaoSeguro(), RelogioUtc()
+    )
+
+
 _engine_persistencia = _criar_engine_persistencia(os.environ.get("DATABASE_URL"))
 _verificador_persistencia: VerificadorPersistencia | None = (
     VerificadorPersistenciaSqlalchemy(_engine_persistencia)
@@ -336,6 +383,16 @@ _verificador_persistencia: VerificadorPersistencia | None = (
 )
 _cadastrar_estudante = _criar_cadastrar_estudante(_engine_persistencia)
 _sessoes_persistencia = _criar_sessoes_persistencia(_engine_persistencia)
+_configuracao_smtp_recuperacao = ConfiguracaoSmtpRecuperacao.do_ambiente()
+_enviador_recuperacao = (
+    EnviadorRecuperacaoSmtp(_configuracao_smtp_recuperacao)
+    if _configuracao_smtp_recuperacao is not None
+    else None
+)
+_solicitar_recuperacao_senha = _criar_solicitador_recuperacao_senha(
+    _sessoes_persistencia
+)
+_redefinir_senha = _criar_redefinidor_senha(_sessoes_persistencia)
 # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
 _cadastrar_curso = _criar_cadastrar_curso(_sessoes_persistencia)
 _cadastrar_certificacao = _criar_cadastrar_certificacao(_sessoes_persistencia)
@@ -576,6 +633,12 @@ app = create_app(
     # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
     cadastrar_curso=_cadastrar_curso,
     cadastrar_certificacao=_cadastrar_certificacao,
+    cadastrar_idioma=criar_executor_transacional(
+        _sessoes_persistencia,
+        lambda sessao: CadastrarIdioma(
+            RepositorioIdiomaSqlAlchemy(sessao), GeradorIdiomaIdUuid4()
+        ),
+    ),
     acessar_estudante=_acessar_estudante,
     criador_sessao=_criador_sessao,
     derivador_senha=_derivador_senha,
@@ -585,5 +648,8 @@ app = create_app(
     verificador_persistencia=_verificador_persistencia,
     lifespan=_ciclo_vida_aplicacao,
     configuracao_cookie=_configuracao_cookie_sessao,
+    solicitar_recuperacao_senha=_solicitar_recuperacao_senha,
+    redefinir_senha=_redefinir_senha,
+    enviador_recuperacao_senha=_enviador_recuperacao,
 )
 _configurar_cors(app, _obter_origens_cors(os.environ.get("CORS_ALLOWED_ORIGINS")))

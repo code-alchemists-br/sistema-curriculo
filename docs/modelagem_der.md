@@ -189,9 +189,9 @@ erDiagram
     uuid id PK
     uuid usuario_id FK
     string token_hash
+    timestamp criada_em
     timestamp expira_em
-    timestamp usado_em
-    timestamp created_at
+    timestamp usada_em
   }
 
   SESSAO {

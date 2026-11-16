@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ModeloApresentacaoCurriculo } from "../features/alternar-modelo-curriculo";
 import type { ValoresFormacaoAcademica } from "../features/cadastrar-formacao-academica";
@@ -93,15 +93,7 @@ const clienteFormacaoAcademicaHttp = clienteFormacaoAcademicaBase
 const clienteExperienciasHttp = apiBaseUrl
   ? criarClienteExperienciasHttp(apiBaseUrl)
   : undefined;
-const clienteCursosHttp = apiBaseUrl
-  ? criarClienteCursosHttp(apiBaseUrl)
-  : undefined;
-const clienteCertificacoesHttp = apiBaseUrl
-  ? criarClienteCertificacoesHttp(apiBaseUrl)
-  : undefined;
-const clienteIdiomasHttp = apiBaseUrl
-  ? criarClienteIdiomasHttp(apiBaseUrl)
-  : undefined;
+
 const clienteCompetenciasHttp = apiBaseUrl
   ? criarClienteCompetenciasHttp(apiBaseUrl)
   : undefined;
@@ -283,6 +275,40 @@ export function App() {
     },
   );
 
+  // Cada conta mantém somente suas confirmações durante esta instância do App.
+  // Recriar os clientes na troca de identidade evita suprimir POSTs de outra pessoa.
+  const identidadeCadastro = usuarioLogado?.email;
+  const envioCadastro = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      envioCadastro.current?.abort();
+    };
+  }, [identidadeCadastro]);
+
+  /** Invalida I/O da etapa anterior para não restaurar dados após saída, troca de conta ou logout. */
+  function cancelarCadastro(): void {
+    envioCadastro.current?.abort();
+    envioCadastro.current = null;
+  }
+
+  /** Cria uma tentativa cancelável e substitui a anterior para impedir continuidade de lotes obsoletos. */
+  function iniciarCadastro(): AbortController {
+    cancelarCadastro();
+    const controle = new AbortController();
+    envioCadastro.current = controle;
+    return controle;
+  }
+  const clientesCadastro = useMemo(() => {
+    return {
+      identidade: identidadeCadastro,
+      cursos: apiBaseUrl ? criarClienteCursosHttp(apiBaseUrl) : undefined,
+      certificacoes: apiBaseUrl
+        ? criarClienteCertificacoesHttp(apiBaseUrl)
+        : undefined,
+      idiomas: apiBaseUrl ? criarClienteIdiomasHttp(apiBaseUrl) : undefined,
+    };
+  }, [identidadeCadastro]);
+
   const [intencaoAcesso, setIntencaoAcesso] = useState<
     "criar-curriculo" | "criar-conta" | "login" | null
   >(() => {
@@ -341,6 +367,7 @@ export function App() {
    * caminho de retorno previsível, inclusive para navegação por teclado.
    */
   function voltarAoInicio(): void {
+    cancelarCadastro();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("etapa");
@@ -384,6 +411,7 @@ export function App() {
   }
 
   function aoFazerLogout(): void {
+    cancelarCadastro();
     setUsuarioLogado(null);
     limparRascunho();
     setDadosPessoais(undefined);
@@ -481,6 +509,7 @@ export function App() {
    * sem depender de uma biblioteca externa de roteamento.
    */
   function navegar(etapa: RotaAtiva): void {
+    cancelarCadastro();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (etapa === "inicio" || etapa === "acesso") {
@@ -515,6 +544,8 @@ export function App() {
      * pessoa utiliza os botões de avançar e voltar do navegador.
      */
     function aoMudarHistorico(): void {
+      envioCadastro.current?.abort();
+      envioCadastro.current = null;
       const params = new URLSearchParams(window.location.search);
       const etapa = params.get("etapa") as RotaAtiva | null;
       const intencao = params.get("intencao") as
@@ -611,21 +642,30 @@ export function App() {
         aoAlterarCursos={setCursos}
         certificacoesIniciais={certificacoes}
         cursosIniciais={cursos}
-        onAvancar={async () => {
-          if (clienteCursosHttp && cursos) {
-            try {
-              await clienteCursosHttp.salvar(cursos);
-            } catch {
-              // Preservado no rascunho
-            }
+        onAvancar={async (cursosValidados, certificacoesValidadas) => {
+          const controle = iniciarCadastro();
+          try {
+            await clientesCadastro.cursos?.salvar(
+              cursosValidados,
+              controle.signal,
+            );
+            if (controle.signal.aborted) return;
+            await clientesCadastro.certificacoes?.salvar(
+              certificacoesValidadas,
+              controle.signal,
+            );
+            if (controle.signal.aborted) return;
+            setCursos(cursosValidados);
+            setCertificacoes(certificacoesValidadas);
+            navegar("idiomas");
+          } finally {
+            if (envioCadastro.current === controle)
+              envioCadastro.current = null;
           }
-          if (clienteCertificacoesHttp && certificacoes) {
-            try {
-              await clienteCertificacoesHttp.salvar(certificacoes);
-            } catch {
-              // Preservado no rascunho
-            }
-          }
+        }}
+        onContinuarLocal={(cursosValidados, certificacoesValidadas) => {
+          setCursos(cursosValidados);
+          setCertificacoes(certificacoesValidadas);
           navegar("idiomas");
         }}
         onVoltar={() => navegar("experiencias-profissionais")}
@@ -638,14 +678,23 @@ export function App() {
     return (
       <PaginaIdiomas
         idiomasIniciais={idiomas}
-        onAvancar={async () => {
-          if (clienteIdiomasHttp && idiomas) {
-            try {
-              await clienteIdiomasHttp.salvar(idiomas);
-            } catch {
-              // Preservado no rascunho
-            }
+        onAvancar={async (idiomasValidados) => {
+          const controle = iniciarCadastro();
+          try {
+            await clientesCadastro.idiomas?.salvar(
+              idiomasValidados,
+              controle.signal,
+            );
+            if (controle.signal.aborted) return;
+            setIdiomas(idiomasValidados);
+            navegar("competencias");
+          } finally {
+            if (envioCadastro.current === controle)
+              envioCadastro.current = null;
           }
+        }}
+        onContinuarLocal={(idiomasValidados) => {
+          setIdiomas(idiomasValidados);
           navegar("competencias");
         }}
         onSalvar={setIdiomas}

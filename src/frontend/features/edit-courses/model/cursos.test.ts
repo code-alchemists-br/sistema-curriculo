@@ -30,11 +30,9 @@ describe("validarCurso", () => {
     expect(erros.instituicao).toBe("Informe a instituição.");
   });
 
-  it("reporta carga horária vazia", () => {
+  it("aceita carga horária vazia porque é opcional", () => {
     const erros = validarCurso({ ...cursoValido, cargaHoraria: "" });
-    expect(erros.cargaHoraria).toBe(
-      "Informe uma carga horária válida (em horas).",
-    );
+    expect(erros.cargaHoraria).toBeUndefined();
   });
 
   it("reporta carga horária não numérica", () => {
@@ -60,19 +58,15 @@ describe("validarCurso", () => {
 
   it("reporta campos que excedem os limites máximos permitidos", () => {
     const erros = validarCurso({
-      nome: "a".repeat(101),
-      instituicao: "b".repeat(101),
-      cargaHoraria: "10000",
+      nome: "a".repeat(201),
+      instituicao: "b".repeat(201),
+      cargaHoraria: "10001",
     });
 
-    expect(erros.nome).toBe(
-      "O nome do curso deve ter no máximo 100 caracteres.",
-    );
-    expect(erros.instituicao).toBe(
-      "A instituição deve ter no máximo 100 caracteres.",
-    );
+    expect(erros.nome).toBe("Informe no máximo 200 caracteres.");
+    expect(erros.instituicao).toBe("Informe no máximo 200 caracteres.");
     expect(erros.cargaHoraria).toBe(
-      "A carga horária não pode ultrapassar 9999 horas.",
+      "Informe uma carga horária válida (em horas).",
     );
   });
 });
