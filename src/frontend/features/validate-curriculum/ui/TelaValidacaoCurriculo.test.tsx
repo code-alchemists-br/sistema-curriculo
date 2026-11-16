@@ -105,7 +105,25 @@ describe("TelaValidacaoCurriculo", () => {
     expect(onCorrigirSecao).toHaveBeenCalledWith("formacao-academica");
   });
 
-  it("leva cada seção válida ao seu formulário pelo atalho Editar", async () => {
+  it("abre o formulário ao clicar no card, sem botão de editar separado", async () => {
+    const user = userEvent.setup();
+    const onCorrigirSecao = vi.fn();
+
+    render(
+      <TelaValidacaoCurriculo
+        dados={dadosFicticios}
+        onVisualizarPreview={vi.fn()}
+        onCorrigirSecao={onCorrigirSecao}
+      />,
+    );
+
+    await user.click(screen.getByText("Competências"));
+
+    expect(onCorrigirSecao).toHaveBeenCalledWith("competencias");
+    expect(screen.queryByText(/Editar →|Corrigir →/)).not.toBeInTheDocument();
+  });
+
+  it("leva cada seção válida ao seu formulário pelo card", async () => {
     const user = userEvent.setup();
     const onCorrigirSecao = vi.fn();
 

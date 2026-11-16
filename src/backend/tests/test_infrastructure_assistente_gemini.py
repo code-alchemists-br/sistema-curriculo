@@ -34,14 +34,23 @@ class ClienteFalso:
     lança o erro configurado. Existe para testar os adaptadores sem rede.
     """
 
-    def __init__(self, parsed=None, erro: Exception | None = None) -> None:
-        """Configura a resposta (``parsed``) ou o erro e o histórico de chamadas.
+    def __init__(
+        self,
+        parsed=None,
+        erro: Exception | None = None,
+        falhas_antes: list[Exception] | None = None,
+    ) -> None:
+        """Configura a resposta (``parsed``), o erro fixo e falhas iniciais.
 
-        Existe para que cada teste simule um comportamento do Gemini.
+        ``erro`` é lançado em toda chamada; ``falhas_antes`` são lançadas uma
+        por chamada, na ordem, antes de a resposta ser devolvida. Existe para
+        que cada teste simule um comportamento do Gemini, inclusive falhas
+        passageiras seguidas de sucesso.
         """
         self.chamadas: list[dict] = []
         self._parsed = parsed
         self._erro = erro
+        self._falhas_antes = list(falhas_antes or [])
         self.aio = SimpleNamespace(models=SimpleNamespace(generate_content=self._gerar))
 
     async def _gerar(self, **argumentos):
@@ -52,15 +61,40 @@ class ClienteFalso:
         self.chamadas.append(argumentos)
         if self._erro:
             raise self._erro
+        if self._falhas_antes:
+            raise self._falhas_antes.pop(0)
         return SimpleNamespace(parsed=self._parsed)
 
 
-def _erro_api() -> errors.APIError:
+class EsperaFalsa:
+    """Registra as pausas pedidas entre tentativas sem esperar de verdade.
+
+    Existe para testar as novas tentativas sem deixar os testes lentos e sem
+    depender do relógio.
+    """
+
+    def __init__(self) -> None:
+        """Começa sem nenhuma pausa registrada.
+
+        Existe para cada teste conferir só as pausas que provocou.
+        """
+        self.pausas: list[float] = []
+
+    async def __call__(self, segundos: float) -> None:
+        """Guarda a duração pedida e retorna na hora.
+
+        Existe para substituir ``asyncio.sleep`` nos adaptadores.
+        """
+        self.pausas.append(segundos)
+
+
+def _erro_api(codigo: int = 503) -> errors.APIError:
     """Cria um ``APIError`` do SDK como o devolvido em falhas do Gemini.
 
-    Existe para simular indisponibilidade do provedor.
+    Usa 503 (sobrecarga) por padrão. Existe para simular indisponibilidade ou
+    outros erros do provedor.
     """
-    return errors.APIError(503, {"error": {"message": "indisponível", "status": "UNAVAILABLE"}})
+    return errors.APIError(codigo, {"error": {"message": "falha", "status": "UNAVAILABLE"}})
 
 
 class RevisorTextoGeminiTestCase(unittest.IsolatedAsyncioTestCase):
@@ -100,9 +134,43 @@ class RevisorTextoGeminiTestCase(unittest.IsolatedAsyncioTestCase):
         for cliente in (ClienteFalso(erro=_erro_api()), ClienteFalso(parsed=None)):
             with self.subTest(cliente=cliente):
                 with self.assertRaises(RevisorTextoIndisponivel):
-                    await RevisorTextoGemini("chave", cliente=cliente).avaliar(
-                        CampoRevisavel.OUTRO, None, "texto", {}
-                    )
+                    await RevisorTextoGemini(
+                        "chave", cliente=cliente, esperar=EsperaFalsa()
+                    ).avaliar(CampoRevisavel.OUTRO, None, "texto", {})
+
+    async def test_tenta_de_novo_quando_o_gemini_esta_sobrecarregado(self) -> None:
+        """Repete após 503 e 429 e devolve a revisão da tentativa que deu certo.
+
+        Existe porque o Gemini recusa chamadas isoladas por sobrecarga, e a
+        revisão do estudante não deve ser pulada por uma falha momentânea.
+        """
+        avaliacao = AvaliacaoIa(situacao=SituacaoTexto.VALIDO, motivo="Ok.", sugestoes=["a"])
+        cliente = ClienteFalso(parsed=avaliacao, falhas_antes=[_erro_api(503), _erro_api(429)])
+        espera = EsperaFalsa()
+
+        resultado = await RevisorTextoGemini("chave", cliente=cliente, esperar=espera).avaliar(
+            CampoRevisavel.OUTRO, None, "texto", {}
+        )
+
+        self.assertIs(resultado, avaliacao)
+        self.assertEqual(len(cliente.chamadas), 3)
+        self.assertEqual(espera.pausas, [0.5, 1.5])
+
+    async def test_desiste_apos_tres_tentativas_e_nao_repete_erro_definitivo(self) -> None:
+        """Faz no máximo 3 chamadas em falha passageira e 1 em erro definitivo.
+
+        Um 503 persistente vira indisponível depois da terceira tentativa; um
+        400 (pedido inválido) não é repetido. Existe para limitar o tempo de
+        espera do estudante e não gastar cota com chamadas que não vão passar.
+        """
+        for codigo, chamadas_esperadas in ((503, 3), (400, 1)):
+            with self.subTest(codigo=codigo):
+                cliente = ClienteFalso(erro=_erro_api(codigo))
+                with self.assertRaises(RevisorTextoIndisponivel):
+                    await RevisorTextoGemini(
+                        "chave", cliente=cliente, esperar=EsperaFalsa()
+                    ).avaliar(CampoRevisavel.OUTRO, None, "texto", {})
+                self.assertEqual(len(cliente.chamadas), chamadas_esperadas)
 
 
 class RecomendadorModeloGeminiTestCase(unittest.IsolatedAsyncioTestCase):
@@ -139,9 +207,26 @@ class RecomendadorModeloGeminiTestCase(unittest.IsolatedAsyncioTestCase):
         for cliente in (ClienteFalso(erro=_erro_api()), ClienteFalso(parsed="texto solto")):
             with self.subTest(cliente=cliente):
                 with self.assertRaises(RecomendadorModeloIndisponivel):
-                    await RecomendadorModeloGemini("chave", cliente=cliente).recomendar(
-                        [InformacaoPerfil("Formação", "ADS")]
-                    )
+                    await RecomendadorModeloGemini(
+                        "chave", cliente=cliente, esperar=EsperaFalsa()
+                    ).recomendar([InformacaoPerfil("Formação", "ADS")])
+
+    async def test_tenta_de_novo_quando_o_gemini_esta_sobrecarregado(self) -> None:
+        """Repete após um 503 e devolve a recomendação da segunda tentativa.
+
+        Existe para que a recomendação não falhe por sobrecarga momentânea.
+        """
+        recomendacao = RecomendacaoModelo(
+            modelo=ModeloCurriculo.MODERNO, motivo="Tecnologia.", alternativa=None
+        )
+        cliente = ClienteFalso(parsed=recomendacao, falhas_antes=[_erro_api(503)])
+
+        resultado = await RecomendadorModeloGemini(
+            "chave", cliente=cliente, esperar=EsperaFalsa()
+        ).recomendar([InformacaoPerfil("Formação", "ADS")])
+
+        self.assertIs(resultado, recomendacao)
+        self.assertEqual(len(cliente.chamadas), 2)
 
 
 class AdaptadoresAusentesTestCase(unittest.IsolatedAsyncioTestCase):

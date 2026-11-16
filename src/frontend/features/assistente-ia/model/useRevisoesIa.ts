@@ -42,8 +42,10 @@ const MEMORIA_VAZIA: MemoriaRevisao = { iaIndisponivel: false };
  * - texto inválido (tipo "erro"): precisa ser reescrito;
  * - texto aceito, válido ou melhorável (tipo "aviso"): para uma vez, para o
  *   estudante ver que a IA aprovou e conferir as sugestões; no próximo clique
- *   ele segue com o próprio texto, sem nova chamada à IA.
- * Se a IA falhar, o item segue sem bloqueio (a IA é opcional).
+ *   ele segue com o próprio texto, sem nova chamada à IA;
+ * - IA que não respondeu (tipo "aviso"): para uma vez, avisando que o texto
+ *   não foi revisado; no próximo clique o item segue sem revisão, porque a IA
+ *   é opcional e não pode travar o cadastro.
  */
 export function useRevisoesIa(cliente: ClienteAssistenteIa) {
   const [memorias, setMemorias] = useState<Record<number, MemoriaRevisao>>({});
@@ -93,6 +95,11 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
                   };
           } catch {
             atualizar(indice, { ...memoria, iaIndisponivel: true });
+            bloqueios[indice] = {
+              tipo: "aviso",
+              mensagem:
+                "A IA não conseguiu revisar o texto agora. Clique em Próximo de novo para continuar sem a revisão.",
+            };
           }
         }),
       );

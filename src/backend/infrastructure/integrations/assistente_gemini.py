@@ -7,6 +7,10 @@ ela só melhora os textos que o estudante escreve e escolhe qual dos modelos do
 sistema combina com o perfil salvo.
 """
 
+import asyncio
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from google import genai
 from google.genai import errors, types
 
@@ -24,6 +28,15 @@ from backend.application.revisao_texto import (
 )
 
 MODELO_PADRAO = "gemini-3.5-flash-lite"
+
+# Códigos HTTP de falhas passageiras do Gemini (sobrecarga, limite de taxa ou
+# erro interno), que costumam passar ao tentar de novo em seguida.
+CODIGOS_TEMPORARIOS = frozenset({429, 500, 503})
+
+# Espera, em segundos, antes de cada nova tentativa após uma falha passageira.
+ESPERAS_ENTRE_TENTATIVAS = (0.5, 1.5)
+
+Esperar = Callable[[float], Awaitable[None]]
 
 INSTRUCAO_REVISAO = """\
 Você revisa um campo de um formulário de currículo de tecnologia. Você recebe o
@@ -114,27 +127,56 @@ def _criar_cliente(chave_api: str) -> genai.Client:
     return genai.Client(api_key=chave_api)
 
 
+async def _gerar_com_novas_tentativas(
+    cliente: genai.Client, esperar: Esperar, **argumentos: Any
+) -> Any:
+    """Chama ``generate_content`` e tenta de novo quando a falha é passageira.
+
+    Faz a primeira chamada e, se o Gemini devolver um código de
+    ``CODIGOS_TEMPORARIOS`` (por exemplo 503 por sobrecarga), espera cada
+    intervalo de ``ESPERAS_ENTRE_TENTATIVAS`` e repete. Outros erros, ou a
+    falha da última tentativa, sobem como ``errors.APIError``. Existe porque o
+    Gemini, principalmente no plano gratuito, recusa chamadas isoladas com 503
+    e a revisão do estudante não deve ser perdida por uma falha momentânea.
+    """
+    for espera in (*ESPERAS_ENTRE_TENTATIVAS, None):
+        try:
+            return await cliente.aio.models.generate_content(**argumentos)
+        except errors.APIError as erro:
+            if espera is None or erro.code not in CODIGOS_TEMPORARIOS:
+                raise
+            await esperar(espera)
+    raise AssertionError("inalcançável")  # pragma: no cover
+
+
 class RevisorTextoGemini(RevisorTextoIa):
     """Revisa um campo do formulário numa chamada ao Gemini com saída JSON tipada.
 
     O adaptador monta a mensagem com campo, pergunta, contexto e texto, envia
     as instruções de revisão e pede a resposta no esquema ``AvaliacaoIa``.
-    Falhas do provedor ou respostas fora do esquema viram
+    Falhas passageiras são repetidas por ``_gerar_com_novas_tentativas``; as
+    que persistem, ou respostas fora do esquema, viram
     ``RevisorTextoIndisponivel``. Existe para implementar a porta de revisão
     com o Gemini sem expor o SDK à aplicação.
     """
 
     def __init__(
-        self, chave_api: str, modelo: str = MODELO_PADRAO, cliente: genai.Client | None = None
+        self,
+        chave_api: str,
+        modelo: str = MODELO_PADRAO,
+        cliente: genai.Client | None = None,
+        esperar: Esperar = asyncio.sleep,
     ) -> None:
-        """Prepara o cliente do Gemini e o modelo usado nas revisões.
+        """Prepara o cliente do Gemini, o modelo e a espera entre tentativas.
 
         Usa o cliente recebido ou cria um com a chave; o modelo pode ser trocado
-        por configuração. Existe para que a composição escolha chave e modelo e
-        os testes injetem um cliente falso.
+        por configuração e ``esperar`` controla a pausa antes de repetir uma
+        chamada. Existe para que a composição escolha chave e modelo e os
+        testes injetem um cliente falso e uma espera instantânea.
         """
         self._cliente = cliente or _criar_cliente(chave_api)
         self._modelo = modelo
+        self._esperar = esperar
 
     async def avaliar(
         self, campo: CampoRevisavel, pergunta: str | None, texto: str, contexto: dict[str, str]
@@ -151,7 +193,9 @@ class RevisorTextoGemini(RevisorTextoIa):
         linhas += [f"Contexto - {chave}: {valor}" for chave, valor in contexto.items()]
         linhas.append(f"Texto do estudante: {texto}")
         try:
-            resposta = await self._cliente.aio.models.generate_content(
+            resposta = await _gerar_com_novas_tentativas(
+                self._cliente,
+                self._esperar,
                 model=self._modelo,
                 contents="\n".join(linhas),
                 config=types.GenerateContentConfig(
@@ -173,22 +217,30 @@ class RecomendadorModeloGemini(RecomendadorModeloIa):
 
     O adaptador envia o perfil como linhas "pergunta: resposta" com as
     instruções de recomendação e pede a resposta no esquema
-    ``RecomendacaoModelo``, que só aceita modelos do catálogo. Falhas viram
-    ``RecomendadorModeloIndisponivel``. Existe para implementar a porta de
-    recomendação com o Gemini sem expor o SDK à aplicação.
+    ``RecomendacaoModelo``, que só aceita modelos do catálogo. Falhas
+    passageiras são repetidas por ``_gerar_com_novas_tentativas``; as que
+    persistem viram ``RecomendadorModeloIndisponivel``. Existe para
+    implementar a porta de recomendação com o Gemini sem expor o SDK à
+    aplicação.
     """
 
     def __init__(
-        self, chave_api: str, modelo: str = MODELO_PADRAO, cliente: genai.Client | None = None
+        self,
+        chave_api: str,
+        modelo: str = MODELO_PADRAO,
+        cliente: genai.Client | None = None,
+        esperar: Esperar = asyncio.sleep,
     ) -> None:
-        """Prepara o cliente do Gemini e o modelo usado nas recomendações.
+        """Prepara o cliente do Gemini, o modelo e a espera entre tentativas.
 
         Usa o cliente recebido ou cria um com a chave; o modelo pode ser trocado
-        por configuração. Existe para que a composição escolha chave e modelo e
-        os testes injetem um cliente falso.
+        por configuração e ``esperar`` controla a pausa antes de repetir uma
+        chamada. Existe para que a composição escolha chave e modelo e os
+        testes injetem um cliente falso e uma espera instantânea.
         """
         self._cliente = cliente or _criar_cliente(chave_api)
         self._modelo = modelo
+        self._esperar = esperar
 
     async def recomendar(self, perfil: list[InformacaoPerfil]) -> RecomendacaoModelo:
         """Pede ao Gemini o modelo que combina com o perfil informado.
@@ -199,7 +251,9 @@ class RecomendadorModeloGemini(RecomendadorModeloIa):
         """
         dados = "\n".join(f"{i.pergunta}: {i.resposta}" for i in perfil)
         try:
-            resposta = await self._cliente.aio.models.generate_content(
+            resposta = await _gerar_com_novas_tentativas(
+                self._cliente,
+                self._esperar,
                 model=self._modelo,
                 contents=dados,
                 config=types.GenerateContentConfig(

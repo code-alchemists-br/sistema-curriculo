@@ -116,19 +116,32 @@ describe("useRevisoesIa", () => {
     expect(revisar).toHaveBeenCalledTimes(1);
   });
 
-  it("não bloqueia quando a IA está indisponível e ignora textos vazios", async () => {
+  it("avisa uma vez quando a IA falha e segue sem revisão no clique seguinte", async () => {
     const { cliente, revisar } = clienteFalso(new Error("sem IA"));
     const { result } = renderHook(() => useRevisoesIa(cliente));
 
-    let pendencias = {};
+    let primeira = {};
     await act(async () => {
-      pendencias = await result.current.revisarAntesDeSalvar([
+      primeira = await result.current.revisarAntesDeSalvar([
+        item("Fiz um app"),
+        item("   "),
+      ]);
+    });
+    let segunda = {};
+    await act(async () => {
+      segunda = await result.current.revisarAntesDeSalvar([
         item("Fiz um app"),
         item("   "),
       ]);
     });
 
-    expect(pendencias).toEqual({});
+    expect(primeira).toEqual({
+      0: expect.objectContaining({
+        tipo: "aviso",
+        mensagem: expect.stringMatching(/não conseguiu revisar/),
+      }),
+    });
+    expect(segunda).toEqual({});
     expect(revisar).toHaveBeenCalledTimes(1);
     expect(result.current.memoriaDe(0).iaIndisponivel).toBe(true);
   });
