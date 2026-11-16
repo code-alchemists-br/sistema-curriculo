@@ -14,7 +14,7 @@ from backend.application.acesso_estudante import (
 )
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.ports import VerificadorSenha
-from backend.application.sessoes import CriadorSessao
+from backend.application.sessoes import CriadorSessao, RevogadorSessao
 from backend.domain.value_objects import UsuarioId
 from backend.infrastructure.persistence.sqlalchemy.repositorio_sessao import (
     RepositorioSessaoSqlAlchemy,
@@ -25,7 +25,10 @@ from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
 from backend.infrastructure.security.autenticador_sessao import (
     AutenticadorSessaoPersistida,
 )
-from backend.infrastructure.security.tokens_sessao import CriadorSessaoSeguro
+from backend.infrastructure.security.tokens_sessao import (
+    CriadorSessaoSeguro,
+    RevogadorSessaoSeguro,
+)
 
 
 class AcessarEstudanteSqlAlchemy:
@@ -90,6 +93,36 @@ class CriadorSessaoSqlAlchemy(CriadorSessao):
         async with self._sessoes.begin() as sessao:
             repositorio = RepositorioSessaoSqlAlchemy(sessao)
             return await CriadorSessaoSeguro(repositorio).criar(usuario_id)
+
+
+class RevogadorSessaoSqlAlchemy(RevogadorSessao):
+    """Revoga a sessão apresentada no logout em transação SQLAlchemy por chamada.
+
+    O adapter abre uma transação, liga o repositório de sessões ao revogador
+    seguro e confirma a revogação antes de devolver. Ele existe para que o
+    logout invalide o token no banco e o cookie antigo deixe de autenticar,
+    em vez de apenas ser apagado do navegador.
+    """
+
+    def __init__(self, sessoes: async_sessionmaker[AsyncSession]) -> None:
+        """Armazena a fábrica que abrirá a transação de cada logout.
+
+        O construtor não abre conexão; mantém apenas a dependência externa
+        usada por chamada. Ele existe para manter o ciclo de vida do banco na
+        camada de composição.
+        """
+        self._sessoes = sessoes
+
+    async def revogar(self, token: str) -> None:
+        """Marca como revogada a sessão cujo resumo corresponde ao token.
+
+        O método abre uma transação, delega o cálculo do resumo e a atualização
+        condicional ao revogador seguro e deixa o contexto confirmar a escrita.
+        Ele existe para tornar a revogação atômica com o registro da sessão.
+        """
+        async with self._sessoes.begin() as sessao:
+            repositorio = RepositorioSessaoSqlAlchemy(sessao)
+            await RevogadorSessaoSeguro(repositorio).revogar(token)
 
 
 class AutenticadorSessaoSqlAlchemy(AutenticadorSessao):
