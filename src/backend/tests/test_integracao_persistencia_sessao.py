@@ -87,7 +87,7 @@ class PersistenciaSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
         dados = {
             "id": uuid4(), "usuario_id": USUARIO_A,
             "token_hash": resumo_token(token_sintetico(1)),
-            "criada_em": INSTANTE_T, "expira_em": INSTANTE_T + timedelta(hours=8),
+            "criada_em": INSTANTE_T, "expira_em": INSTANTE_T + timedelta(minutes=60),
             "revogada_em": None,
         }
         async with self.banco.sessoes() as sessao:
@@ -127,7 +127,7 @@ class PersistenciaSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
                 await repositorio.salvar(
                     UsuarioId(UUID("10000000-0000-4000-8000-000000000099")),
                     resumo_token(token_sintetico(3)), INSTANTE_T,
-                    INSTANTE_T + timedelta(hours=8),
+                    INSTANTE_T + timedelta(minutes=60),
                 )
                 await sessao.commit()
             await sessao.rollback()
@@ -163,7 +163,7 @@ class PersistenciaSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
         criada = linha["criada_em"].replace(tzinfo=timezone.utc)
         expira = linha["expira_em"].replace(tzinfo=timezone.utc)
         self.assertEqual(criada, INSTANTE_T)
-        self.assertEqual(expira - criada, timedelta(hours=8))
+        self.assertEqual(expira - criada, timedelta(minutes=60))
         async with self.banco.sessoes() as sessao:
             with patch("backend.infrastructure.security.autenticador_sessao.datetime") as relogio:
                 relogio.now.return_value = INSTANTE_T
@@ -216,7 +216,7 @@ class PersistenciaSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCase):
         async with self.banco.sessoes() as sessao:
             await RepositorioSessaoSqlAlchemy(sessao).salvar(
                 UsuarioId(USUARIO_A), resumo_token(token_sintetico(7)),
-                INSTANTE_T, INSTANTE_T + timedelta(hours=8),
+                INSTANTE_T, INSTANTE_T + timedelta(minutes=60),
             )
             self.assertEqual(len((await sessao.execute(select(SessaoRegistro.id))).all()), 1)
             await sessao.rollback()

@@ -65,10 +65,10 @@ class RepositorioSessaoStub(RepositorioSessao):
 class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
     """Protege a entropia do token e o armazenamento exclusivo de seu hash."""
 
-    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_oito_horas(
+    async def test_gera_token_opaco_e_salva_hash_sha256_com_prazo_de_sessenta_minutos(
         self,
     ) -> None:
-        """Confirma token URL-safe, resumo persistido e validade de oito horas.
+        """Confirma token URL-safe, resumo persistido e validade de 60 minutos.
 
         O teste controla apenas o repositório e usa os campos observados para
         calcular as garantias. Ele existe para prevenir armazenamento do segredo.
@@ -86,7 +86,7 @@ class CriadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resumo, hashlib.sha256(token.encode("ascii")).hexdigest())
         self.assertNotEqual(resumo, token)
         self.assertIsNotNone(criada_em.tzinfo)
-        self.assertEqual(expira_em - criada_em, timedelta(hours=8))
+        self.assertEqual(expira_em - criada_em, timedelta(minutes=60))
 
 
 class RevogadorSessaoSeguroTestCase(unittest.IsolatedAsyncioTestCase):
@@ -185,7 +185,7 @@ class RepositorioSessaoSqlAlchemyTestCase(unittest.IsolatedAsyncioTestCase):
         token_hash = "a" * 64
 
         await RepositorioSessaoSqlAlchemy(session).salvar(
-            usuario_id, token_hash, criada_em, criada_em + timedelta(hours=8)
+            usuario_id, token_hash, criada_em, criada_em + timedelta(minutes=60)
         )
 
         self.assertEqual(session.flush_count, 1)

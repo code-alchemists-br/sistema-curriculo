@@ -1,4 +1,8 @@
-import { estadoDoTexto, registrarSugestaoUsada, type MemoriaRevisao } from "../model/revisao";
+import {
+  estadoDoTexto,
+  registrarSugestaoUsada,
+  type MemoriaRevisao,
+} from "../model/revisao";
 import "./AssistenteIa.css";
 
 const ROTULO_SITUACAO = {
@@ -22,10 +26,22 @@ export interface PainelRevisaoIaProps {
  * Mostra o resultado da revisão automática (feita ao clicar em Próximo): o
  * veredito, o motivo e 3 sugestões de texto que o estudante pode usar.
  */
-export function PainelRevisaoIa({ id, texto, memoria, aoMudarMemoria, aoAplicarTexto }: PainelRevisaoIaProps) {
+export function PainelRevisaoIa({
+  id,
+  texto,
+  memoria,
+  aoMudarMemoria,
+  aoAplicarTexto,
+}: PainelRevisaoIaProps) {
   const estado = estadoDoTexto(memoria, texto);
   const revisao = memoria.revisao;
 
+  /**
+   * Aplica a sugestão escolhida no campo e registra que ela foi usada.
+   *
+   * Sugestões de texto aceito passam a contar como aprovadas; modelos de texto
+   * inválido continuam pedindo revisão. Existe para o botão "Usar sugestão".
+   */
   function usar(sugestao: string): void {
     aoMudarMemoria(registrarSugestaoUsada(memoria, sugestao));
     aoAplicarTexto(sugestao);
@@ -55,15 +71,22 @@ export function PainelRevisaoIa({ id, texto, memoria, aoMudarMemoria, aoAplicarT
           className={`painel-revisao-ia__revisao painel-revisao-ia__revisao--${revisao.situacao}`}
         >
           <p>
-            <strong>{ROTULO_SITUACAO[revisao.situacao]}.</strong> {revisao.motivo}
+            <strong>{ROTULO_SITUACAO[revisao.situacao]}.</strong>{" "}
+            {revisao.motivo}
           </p>
           {revisao.sugestoes.length > 0 && (
             <ol className="painel-revisao-ia__sugestoes">
               {revisao.sugestoes.map((sugestao, indice) => (
                 <li key={sugestao}>
                   <p>{sugestao}</p>
-                  <button className="painel-revisao-ia__usar" onClick={() => usar(sugestao)} type="button">
-                    {revisao.podeManterTexto ? `Usar sugestão ${indice + 1}` : `Usar modelo ${indice + 1}`}
+                  <button
+                    className="painel-revisao-ia__usar"
+                    onClick={() => usar(sugestao)}
+                    type="button"
+                  >
+                    {revisao.podeManterTexto
+                      ? `Usar sugestão ${indice + 1}`
+                      : `Usar modelo ${indice + 1}`}
                   </button>
                 </li>
               ))}

@@ -29,6 +29,7 @@ from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.cadastro_idioma import CadastrarIdioma
 from backend.application.cadastro_link_profissional import CadastrarLinkProfissional
+from backend.application.curriculo_completo import GerenciarCurriculoCompleto
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
     RegistrarDecisaoRecomendacao,
@@ -111,17 +112,6 @@ from backend.infrastructure.persistence.sqlalchemy.executor_transacional import 
 from backend.infrastructure.persistence.sqlalchemy.leitor_perfil import (
     LeitorPerfilSqlAlchemy,
 )
-from backend.application.curriculo_completo import GerenciarCurriculoCompleto
-from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo_completo import (
-    RepositorioCurriculoCompletoSqlAlchemy,
-)
-from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
-from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
-    RepositorioIdiomaSqlAlchemy,
-)
-from backend.infrastructure.persistence.sqlalchemy.repositorio_link_profissional import (
-    RepositorioLinkProfissionalSqlAlchemy,
-)
 
 # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
 from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_vaga import (
@@ -132,6 +122,7 @@ from backend.infrastructure.persistence.sqlalchemy.listar_associacoes_curriculo_
 from backend.infrastructure.persistence.sqlalchemy.listar_experiencias_profissionais import (
     ListarExperienciasProfissionaisSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.metadata import metadata
 from backend.infrastructure.persistence.sqlalchemy.operacoes_competencia import (
     CadastroCompetenciaSqlAlchemy,
     ExclusaoCompetenciaSqlAlchemy,
@@ -170,11 +161,17 @@ from backend.infrastructure.persistence.sqlalchemy.operacoes_recuperacao_senha i
 from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo import (
     RepositorioCurriculoSqlAlchemy,
 )
+from backend.infrastructure.persistence.sqlalchemy.repositorio_curriculo_completo import (
+    RepositorioCurriculoCompletoSqlAlchemy,
+)
 from backend.infrastructure.persistence.sqlalchemy.repositorio_decisao_recomendacao import (
     RepositorioDecisaoRecomendacaoSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_idioma import (
     RepositorioIdiomaSqlAlchemy,
+)
+from backend.infrastructure.persistence.sqlalchemy.repositorio_link_profissional import (
+    RepositorioLinkProfissionalSqlAlchemy,
 )
 from backend.infrastructure.persistence.sqlalchemy.repositorio_usuario import (
     RepositorioUsuarioSqlAlchemy,
@@ -243,18 +240,26 @@ def _configurar_cors(aplicacao: FastAPI, origens: tuple[str, ...]) -> None:
 
 
 def _criar_engine_persistencia(database_url: str | None) -> AsyncEngine | None:
-    """Cria a engine PostgreSQL ou, sem `DATABASE_URL`, um SQLite em memória.
+    """Cria a engine assíncrona quando há URL de persistência.
 
-    O SQLite em memória (branch teste-IA) perde todos os dados ao encerrar.
+    Sem `DATABASE_URL`, devolve `None` e as rotas que dependem de banco ficam
+    indisponíveis. Com uma URL PostgreSQL, normaliza o driver para
+    `postgresql+psycopg`, ativa verificação de conexão e limita o tempo de
+    conexão. Com `sqlite+aiosqlite:///:memory:`, cria um banco em memória de uma
+    única conexão, útil para testar a aplicação localmente sem PostgreSQL (os
+    dados somem ao encerrar). Ela existe para fornecer à aplicação uma
+    dependência real para persistência e para o probe de readiness.
     """
     if not database_url:
+        return None
+
+    url = make_url(database_url)
+    if url.get_backend_name() == "sqlite":
         return create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
+            url,
             poolclass=StaticPool,
             connect_args={"check_same_thread": False},
         )
-
-    url = make_url(database_url)
     if url.drivername == "postgresql":
         url = url.set(drivername="postgresql+psycopg")
     return create_async_engine(
@@ -549,11 +554,12 @@ _gerenciar_curriculo_completo = (
 
 @asynccontextmanager
 async def _ciclo_vida_aplicacao(_aplicacao: FastAPI) -> AsyncIterator[None]:
-    """Libera recursos da engine quando o processo ASGI é encerrado.
+    """Prepara e libera os recursos da engine durante a vida do processo ASGI.
 
-    O contexto mantém os recursos disponíveis durante a execução e descarta a
-    engine assíncrona ao sair. Ele existe para evitar conexões ou pools abertos
-    após o encerramento da aplicação.
+    No modo SQLite em memória, cria as tabelas a partir dos mapeamentos ORM ao
+    iniciar, já que esse banco nasce vazio e não passa pelas migrations; com
+    PostgreSQL o schema vem só do Alembic. Ao sair, descarta a engine. Existe
+    para evitar conexões ou pools abertos após o encerramento da aplicação.
     """
     if _engine_persistencia is not None and _engine_persistencia.dialect.name == "sqlite":
         async with _engine_persistencia.begin() as conexao:

@@ -30,7 +30,7 @@ incorreta produz a mesma falha de credenciais.
   identidade ou autorização legíveis pelo cliente.
 - A credencial é transportada exclusivamente por cookie. A API NÃO DEVE aceitá-la
   em `Authorization`, query string ou corpo da requisição.
-- Uma sessão dura no máximo **8 horas** desde sua criação. Não há renovação
+- Uma sessão dura no máximo **60 minutos** desde sua criação. Não há renovação
   automática nem extensão por atividade; após expirar, o usuário autentica-se
   novamente.
 - Uma conta pode manter mais de uma sessão ativa, por exemplo em dispositivos
@@ -66,7 +66,7 @@ flowchart LR
     O --> P[Remover cookie]
     P --> Q[Sessão revogada]
 
-    H --> R[Expiração após 8 horas]
+    H --> R[Expiração após 60 minutos]
     R --> S[Sessão expirada]
 
     H --> T[Exclusão lógica da conta]
@@ -92,7 +92,7 @@ O registro de sessão persistido contém:
 | `usuario_id` | Conta proprietária da sessão. |
 | `token_hash` | SHA-256 do token recebido no cookie; único e nunca devolvido pela API. |
 | `criada_em` | Instante UTC de emissão. |
-| `expira_em` | Instante UTC igual a `criada_em + 8 horas`. |
+| `expira_em` | Instante UTC igual a `criada_em + 60 minutos`. |
 | `revogada_em` | Instante UTC da revogação, nulo enquanto ativa. |
 
 O mapeamento e as migrations ficam na infraestrutura. O middleware de sessão
@@ -106,7 +106,7 @@ O código atual usa o cookie `__Host-sessao` e define os atributos abaixo no
 login, inclusive no ambiente local:
 
 ```http
-Set-Cookie: __Host-sessao=<token-opaco>; Path=/; Max-Age=28800; Secure; HttpOnly; SameSite=Lax
+Set-Cookie: __Host-sessao=<token-opaco>; Path=/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax
 ```
 
 O cookie não define `Domain`, conforme os requisitos do prefixo `__Host-`. Ele
@@ -279,7 +279,7 @@ revisão deste documento.
 | Nome do cookie | `__Host-sessao` |
 | Token | 32 bytes aleatórios codificados em Base64 URL-safe |
 | Persistência do token | Somente SHA-256 |
-| Duração | 8 horas |
+| Duração | 60 minutos |
 | Renovação automática | Não |
 | Sessões simultâneas | Permitidas |
 | Logout | Revoga somente a sessão atual |

@@ -19,7 +19,7 @@ from backend.application.curriculo_completo import (
     IdiomaItem,
     ProjetoItem,
     RepositorioCurriculoCompleto,
-    SecaoCurriculo,
+    SecaoSubstituivel,
 )
 from backend.domain.modelo_curriculo import ModeloCurriculo
 from backend.infrastructure.persistence.sqlalchemy import (
@@ -36,16 +36,16 @@ from backend.infrastructure.persistence.sqlalchemy.usuario import UsuarioRegistr
 
 # Tabela e conversor de entidade → registro de cada seção.
 _MAPEAMENTO = {
-    SecaoCurriculo.FORMACOES: (formacao_academica.FormacaoAcademicaRegistro, formacao_academica.para_registro),
-    SecaoCurriculo.EXPERIENCIAS: (
+    SecaoSubstituivel.FORMACOES: (formacao_academica.FormacaoAcademicaRegistro, formacao_academica.para_registro),
+    SecaoSubstituivel.EXPERIENCIAS: (
         experiencia_profissional.ExperienciaProfissionalRegistro,
         experiencia_profissional.para_registro,
     ),
-    SecaoCurriculo.PROJETOS: (projeto_academico.ProjetoAcademicoRegistro, projeto_academico.para_registro),
-    SecaoCurriculo.COMPETENCIAS: (competencia.CompetenciaRegistro, competencia.para_registro),
-    SecaoCurriculo.IDIOMAS: (idioma.IdiomaRegistro, idioma.para_registro),
-    SecaoCurriculo.CURSOS: (curso.CursoRegistro, curso.para_registro),
-    SecaoCurriculo.CERTIFICACOES: (certificacao.CertificacaoRegistro, certificacao.para_registro),
+    SecaoSubstituivel.PROJETOS: (projeto_academico.ProjetoAcademicoRegistro, projeto_academico.para_registro),
+    SecaoSubstituivel.COMPETENCIAS: (competencia.CompetenciaRegistro, competencia.para_registro),
+    SecaoSubstituivel.IDIOMAS: (idioma.IdiomaRegistro, idioma.para_registro),
+    SecaoSubstituivel.CURSOS: (curso.CursoRegistro, curso.para_registro),
+    SecaoSubstituivel.CERTIFICACOES: (certificacao.CertificacaoRegistro, certificacao.para_registro),
 }
 
 
@@ -61,15 +61,32 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
     """
 
     def __init__(self, sessoes: async_sessionmaker[AsyncSession]) -> None:
+        """Recebe a fábrica de sessões usada nas leituras e gravações.
+
+        Cada operação abre a própria sessão (e transação, na gravação). Existe
+        para que a troca de uma seção seja atômica e independente de outras
+        operações.
+        """
         self._sessoes = sessoes
 
     async def ler(self, usuario_id: UUID) -> CurriculoCompleto | None:
+        """Lê dados pessoais, todas as seções ativas e o modelo do estudante.
+
+        Ignora contas e itens excluídos, ordena formações e experiências da mais
+        recente para a mais antiga e omite o telefone de preenchimento
+        "Não informado". Existe para que o frontend carregue o currículo do banco.
+        """
         async with self._sessoes() as s:
             usuario = await s.get(UsuarioRegistro, usuario_id)
             if usuario is None or usuario.deleted_at is not None:
                 return None
 
-            async def itens(secao: SecaoCurriculo):
+            async def itens(secao: SecaoSubstituivel):
+                """Busca os registros ativos do estudante em uma seção.
+
+                Filtra pelo dono, ignora excluídos e ordena por início quando a
+                tabela tem datas. Existe para reaproveitar a consulta por seção.
+                """
                 registro, _ = _MAPEAMENTO[secao]
                 consulta = select(registro).where(registro.usuario_id == usuario_id)
                 if hasattr(registro, "deleted_at"):
@@ -100,7 +117,7 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
                         data_inicio=f.data_inicio,
                         data_fim=f.data_fim,
                     )
-                    for f in await itens(SecaoCurriculo.FORMACOES)
+                    for f in await itens(SecaoSubstituivel.FORMACOES)
                 ],
                 experiencias=[
                     ExperienciaItem(
@@ -110,24 +127,24 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
                         data_inicio=e.data_inicio,
                         data_fim=e.data_fim,
                     )
-                    for e in await itens(SecaoCurriculo.EXPERIENCIAS)
+                    for e in await itens(SecaoSubstituivel.EXPERIENCIAS)
                 ],
                 projetos=[
                     ProjetoItem(titulo=p.titulo, descricao=p.descricao, tecnologias=p.tecnologias)
-                    for p in await itens(SecaoCurriculo.PROJETOS)
+                    for p in await itens(SecaoSubstituivel.PROJETOS)
                 ],
                 competencias=[
                     CompetenciaItem(categoria=c.categoria, descricao=c.descricao, nivel=c.nivel)
-                    for c in await itens(SecaoCurriculo.COMPETENCIAS)
+                    for c in await itens(SecaoSubstituivel.COMPETENCIAS)
                 ],
-                idiomas=[IdiomaItem(idioma=i.idioma, nivel=i.nivel) for i in await itens(SecaoCurriculo.IDIOMAS)],
+                idiomas=[IdiomaItem(idioma=i.idioma, nivel=i.nivel) for i in await itens(SecaoSubstituivel.IDIOMAS)],
                 cursos=[
                     CursoItem(nome=c.nome, instituicao=c.instituicao, carga_horaria=c.carga_horaria)
-                    for c in await itens(SecaoCurriculo.CURSOS)
+                    for c in await itens(SecaoSubstituivel.CURSOS)
                 ],
                 certificacoes=[
                     CertificacaoItem(nome=c.nome, organizacao_emissora=c.organizacao_emissora)
-                    for c in await itens(SecaoCurriculo.CERTIFICACOES)
+                    for c in await itens(SecaoSubstituivel.CERTIFICACOES)
                 ],
                 modelo=ModeloCurriculo(curriculo.layout) if curriculo else None,
             )
@@ -135,10 +152,18 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
     async def substituir(
         self,
         usuario_id: UUID,
-        secao: SecaoCurriculo,
+        secao: SecaoSubstituivel,
         entidades: list,
         curriculo_lattes: str | None = None,
     ) -> None:
+        """Troca, numa transação, os itens da seção pelas entidades recebidas.
+
+        Marca como excluídos (``deleted_at``) os itens ativos das tabelas com
+        exclusão lógica e apaga os das demais, insere os novos registros e, na
+        seção de formações, grava o Lattes. Violação de unicidade vira
+        ``DadosRepetidos`` e desfaz tudo. Existe para que salvar de novo uma
+        etapa não duplique itens.
+        """
         registro, para_registro = _MAPEAMENTO[secao]
         try:
             async with self._sessoes.begin() as s:
@@ -151,7 +176,7 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
                 else:
                     await s.execute(delete(registro).where(registro.usuario_id == usuario_id))
                 s.add_all(para_registro(e) for e in entidades)
-                if secao is SecaoCurriculo.FORMACOES:
+                if secao is SecaoSubstituivel.FORMACOES:
                     await s.execute(
                         update(UsuarioRegistro)
                         .where(UsuarioRegistro.id == usuario_id)
@@ -161,6 +186,12 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
             raise DadosRepetidos("Há itens repetidos na lista enviada.") from erro
 
     async def salvar_modelo(self, usuario_id: UUID, modelo: ModeloCurriculo) -> None:
+        """Guarda o modelo visual no currículo principal do estudante.
+
+        Cria o currículo "Currículo principal" (privado) na primeira escolha e
+        só atualiza o ``layout`` nas seguintes. Existe para que o modelo
+        escolhido sobreviva entre sessões e dispositivos.
+        """
         async with self._sessoes.begin() as s:
             curriculo = await s.scalar(
                 select(CurriculoRegistro).where(CurriculoRegistro.usuario_id == usuario_id).limit(1)

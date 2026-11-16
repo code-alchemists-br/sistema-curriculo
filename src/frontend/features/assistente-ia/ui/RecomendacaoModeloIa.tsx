@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { ClienteAssistenteIa } from "../api/cliente-assistente-ia";
-import type { InformacaoPerfil, ModeloSugerido, RecomendacaoModelo } from "../model/tipos";
+import type {
+  InformacaoPerfil,
+  ModeloSugerido,
+  RecomendacaoModelo,
+} from "../model/tipos";
 import "./AssistenteIa.css";
 
 /** Props do botão que pede à IA o modelo de currículo. */
@@ -26,7 +30,9 @@ export function RecomendacaoModeloIa({
   aoRecomendar,
   automatico = false,
 }: RecomendacaoModeloIaProps) {
-  const [recomendacao, setRecomendacao] = useState<RecomendacaoModelo | null>(null);
+  const [recomendacao, setRecomendacao] = useState<RecomendacaoModelo | null>(
+    null,
+  );
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const jaPediu = useRef(false);
@@ -39,6 +45,13 @@ export function RecomendacaoModeloIa({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automatico]);
 
+  /**
+   * Pede a recomendação à IA e informa o modelo escolhido à página.
+   *
+   * Mostra o carregamento, guarda a resposta e, em falha, exibe o motivo com a
+   * orientação de escolher manualmente. Existe para a chamada automática e
+   * para o botão "Recomendar de novo".
+   */
   async function recomendar(): Promise<void> {
     setCarregando(true);
     setErro(null);
@@ -47,7 +60,9 @@ export function RecomendacaoModeloIa({
       setRecomendacao(resultado);
       aoRecomendar(resultado.modelo);
     } catch (falha) {
-      setErro(`${falha instanceof Error ? falha.message : "IA indisponível."} Escolha o modelo abaixo.`);
+      setErro(
+        `${falha instanceof Error ? falha.message : "IA indisponível."} Escolha o modelo abaixo.`,
+      );
     } finally {
       setCarregando(false);
     }
@@ -55,7 +70,12 @@ export function RecomendacaoModeloIa({
 
   return (
     <div className="recomendacao-modelo-ia">
-      <button className="painel-revisao-ia__botao" disabled={carregando} onClick={recomendar} type="button">
+      <button
+        className="painel-revisao-ia__botao"
+        disabled={carregando}
+        onClick={recomendar}
+        type="button"
+      >
         {carregando
           ? "A IA está analisando seu perfil..."
           : recomendacao
@@ -66,9 +86,14 @@ export function RecomendacaoModeloIa({
         {recomendacao && (
           <div className="painel-revisao-ia__revisao painel-revisao-ia__revisao--valido">
             <p>
-              <strong>IA recomenda: {nomeDoModelo(recomendacao.modelo)}.</strong> {recomendacao.motivo}
+              <strong>
+                IA recomenda: {nomeDoModelo(recomendacao.modelo)}.
+              </strong>{" "}
+              {recomendacao.motivo}
             </p>
-            {recomendacao.alternativa && <p>Segunda opção: {nomeDoModelo(recomendacao.alternativa)}.</p>}
+            {recomendacao.alternativa && (
+              <p>Segunda opção: {nomeDoModelo(recomendacao.alternativa)}.</p>
+            )}
           </div>
         )}
       </div>

@@ -83,7 +83,8 @@ export function PaginaSelecaoModeloCurriculo({
     () =>
       resumirPerfilParaIa(
         perfilEstudante,
-        OPCOES_OBJETIVO_CURRICULO.find((o) => o.valor === objetivo)?.rotulo ?? objetivo,
+        OPCOES_OBJETIVO_CURRICULO.find((o) => o.valor === objetivo)?.rotulo ??
+          objetivo,
       ),
     [objetivo, perfilEstudante],
   );
@@ -94,7 +95,8 @@ export function PaginaSelecaoModeloCurriculo({
   // estudante pede de novo pelo botão (evita gastar chamadas a cada troca).
   const [iaAutomatica, setIaAutomatica] = useState(true);
   const recomendacao = obterRecomendacaoModelo(objetivo);
-  const modeloRecomendado = modeloIa ?? obterModeloRecomendadoPorObjetivo(objetivo);
+  const modeloRecomendado =
+    modeloIa ?? obterModeloRecomendadoPorObjetivo(objetivo);
 
   function aoAlterarObjetivo(novoObjetivo: ObjetivoCurriculo): void {
     setObjetivo(novoObjetivo);

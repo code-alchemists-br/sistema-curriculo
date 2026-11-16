@@ -44,8 +44,9 @@ Os dois exigem a sessão de `POST /acessos`.
 
 ## Rodar localmente
 
-Sem `DATABASE_URL`, a API usa um SQLite em memória, e os dados se perdem ao
-fechar.
+O caminho oficial é o ambiente Nix (`nix develop .#backend`), que já inclui o
+SDK do Gemini (`google-genai`) e o `aiosqlite`. No Windows sem Nix, dá para
+usar um ambiente virtual com:
 
 ```bash
 pip install -r src/backend/requirements-teste-ia.txt
@@ -55,9 +56,10 @@ Variáveis de ambiente:
 
 | Variável | Valor |
 | --- | --- |
-| `GEMINI_API_KEY` | A sua chave do Gemini. |
+| `GEMINI_API_KEY` | A sua chave do Gemini. Sem ela, a IA responde 503 e o fluxo segue sem revisão. |
 | `GEMINI_MODEL` | Opcional. O padrão é `gemini-3.5-flash-lite`. |
 | `SESSION_COOKIE_SECURE` | `false`, para o login funcionar em `http://`. |
+| `DATABASE_URL` | PostgreSQL, ou `sqlite+aiosqlite:///:memory:` para um banco em memória (os dados somem ao fechar). Sem ela, as rotas que dependem de banco respondem 503. |
 
 Para subir a API, rode de dentro de `src`:
 
@@ -129,3 +131,25 @@ Dados pessoais continuam em `PUT /estudantes/me/perfil`.
 - Ao entrar (ou abrir o sistema já logado), o currículo é carregado do banco.
 - Cada etapa só avança depois de salvar. Se a API falhar, a etapa mostra o motivo e mantém o que foi digitado.
 - Não existe mais "modo demonstração" no login quando a API está fora do ar.
+
+## Testes
+
+Seguem as regras de ambiente do `AGENTS.md`:
+
+| Escopo | Comando |
+| --- | --- |
+| Backend (unitários) | `nix develop .#backend --command python -m unittest discover -s src/backend/tests -t src` |
+| Integração (PostgreSQL descartável) | `nix develop .#tests --command ./scripts/executar-testes-integracao-postgresql.sh python -m unittest backend.tests.test_integracao_curriculo_completo_postgresql` |
+| Frontend (unitários) | `nix develop .#frontend --command npm --prefix src/frontend test` |
+
+Cobertura das funcionalidades desta entrega:
+
+- **Backend:** casos de uso de revisão, recomendação e currículo completo
+  (`test_application_*`), rotas (`test_api_assistente_ia`,
+  `test_api_curriculo_completo`), adaptadores do Gemini com cliente falso
+  (`test_infrastructure_assistente_gemini`) e a substituição atômica no
+  PostgreSQL (`test_integracao_curriculo_completo_postgresql`).
+- **Frontend:** cliente do currículo no banco, feature `assistente-ia`,
+  tela Meu perfil, página inicial com foco em vagas, seleção de modelo com
+  recomendação única e salvamento das etapas de cursos, certificações e
+  idiomas (`App.cadastros-33*.test.tsx`).

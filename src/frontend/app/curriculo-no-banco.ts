@@ -59,14 +59,30 @@ type Secao =
 export function criarClienteCurriculoNoBanco(urlDaApi: string) {
   const base = urlDaApi.replace(/\/+$/, "");
 
-  async function requisitar(metodo: string, caminho: string, corpo?: unknown) {
+  /**
+   * Faz uma requisição ao currículo do estudante logado e trata a resposta.
+   *
+   * Envia o JSON com o cookie de sessão e o sinal de cancelamento; respostas
+   * de erro e falhas de rede viram `FalhaCurriculoNoBanco` com texto para a
+   * tela. Existe para concentrar transporte e tradução de erros do cliente.
+   */
+  async function requisitar(
+    metodo: string,
+    caminho: string,
+    corpo?: unknown,
+    signal?: AbortSignal,
+  ) {
     let resposta: Response;
     try {
       resposta = await fetch(`${base}/estudantes/me/curriculo${caminho}`, {
         method: metodo,
-        headers: corpo === undefined ? undefined : { "Content-Type": "application/json" },
+        headers:
+          corpo === undefined
+            ? undefined
+            : { "Content-Type": "application/json" },
         body: corpo === undefined ? undefined : JSON.stringify(corpo),
         credentials: "include",
+        signal,
       });
     } catch {
       throw new FalhaCurriculoNoBanco(
@@ -75,7 +91,10 @@ export function criarClienteCurriculoNoBanco(urlDaApi: string) {
       );
     }
     if (resposta.ok) return resposta;
-    throw new FalhaCurriculoNoBanco(await mensagemDeErro(resposta), resposta.status);
+    throw new FalhaCurriculoNoBanco(
+      await mensagemDeErro(resposta),
+      resposta.status,
+    );
   }
 
   return {
@@ -84,87 +103,166 @@ export function criarClienteCurriculoNoBanco(urlDaApi: string) {
       return paraTelas(await resposta.json());
     },
 
-    async salvarFormacoes(formacoes: ValoresFormacaoAcademica[]): Promise<void> {
+    async salvarFormacoes(
+      formacoes: ValoresFormacaoAcademica[],
+      signal?: AbortSignal,
+    ): Promise<void> {
       const lattes = formacoes.some((f) => f.naoPossuiLattes)
         ? undefined
-        : formacoes.find((f) => f.curriculoLattes?.trim())?.curriculoLattes?.trim();
-      await requisitar("PUT", "/formacoes", {
-        curriculo_lattes: lattes || null,
-        itens: formacoes
-          .filter((f) => f.instituicao.trim() || f.curso.trim())
-          .map((f) => ({
-            instituicao: f.instituicao.trim(),
-            curso: f.curso.trim(),
-            nivel: f.nivel,
-            status: f.status,
-            data_inicio: dataCompleta(f.dataInicio),
-            data_fim: f.status === "concluido" || f.dataFim ? dataCompleta(f.dataFim) : null,
+        : formacoes
+            .find((f) => f.curriculoLattes?.trim())
+            ?.curriculoLattes?.trim();
+      await requisitar(
+        "PUT",
+        "/formacoes",
+        {
+          curriculo_lattes: lattes || null,
+          itens: formacoes
+            .filter((f) => f.instituicao.trim() || f.curso.trim())
+            .map((f) => ({
+              instituicao: f.instituicao.trim(),
+              curso: f.curso.trim(),
+              nivel: f.nivel,
+              status: f.status,
+              data_inicio: dataCompleta(f.dataInicio),
+              data_fim:
+                f.status === "concluido" || f.dataFim
+                  ? dataCompleta(f.dataFim)
+                  : null,
+            })),
+        },
+        signal,
+      );
+    },
+
+    async salvarExperiencias(
+      experiencias: Experiencia[],
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await salvarSecao(
+        "experiencias",
+        experiencias
+          .filter((e) => e.empresa.trim() || e.cargo.trim())
+          .map((e) => ({
+            empresa: e.empresa.trim(),
+            cargo: e.cargo.trim(),
+            descricao: e.descricao.trim(),
+            data_inicio: dataCompleta(e.inicio),
+            data_fim: e.empregoAtual ? null : dataCompleta(e.fim),
           })),
-      });
+        signal,
+      );
     },
 
-    async salvarExperiencias(experiencias: Experiencia[]): Promise<void> {
-      await salvarSecao("experiencias", experiencias
-        .filter((e) => e.empresa.trim() || e.cargo.trim())
-        .map((e) => ({
-          empresa: e.empresa.trim(),
-          cargo: e.cargo.trim(),
-          descricao: e.descricao.trim(),
-          data_inicio: dataCompleta(e.inicio),
-          data_fim: e.empregoAtual ? null : dataCompleta(e.fim),
-        })));
+    async salvarCursos(cursos: Curso[], signal?: AbortSignal): Promise<void> {
+      await salvarSecao(
+        "cursos",
+        cursos
+          .filter((c) => c.nome.trim())
+          .map((c) => ({
+            nome: c.nome.trim(),
+            instituicao: c.instituicao.trim(),
+            carga_horaria: c.cargaHoraria.trim()
+              ? Number(c.cargaHoraria)
+              : null,
+          })),
+        signal,
+      );
     },
 
-    async salvarCursos(cursos: Curso[]): Promise<void> {
-      await salvarSecao("cursos", cursos
-        .filter((c) => c.nome.trim())
-        .map((c) => ({
-          nome: c.nome.trim(),
-          instituicao: c.instituicao.trim(),
-          carga_horaria: c.cargaHoraria.trim() ? Number(c.cargaHoraria) : null,
-        })));
+    async salvarCertificacoes(
+      certificacoes: ValoresCertificacao[],
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await salvarSecao(
+        "certificacoes",
+        certificacoes
+          .filter((c) => c.nome.trim())
+          .map((c) => ({
+            nome: c.nome.trim(),
+            organizacao_emissora: c.organizacaoEmissora.trim(),
+          })),
+        signal,
+      );
     },
 
-    async salvarCertificacoes(certificacoes: ValoresCertificacao[]): Promise<void> {
-      await salvarSecao("certificacoes", certificacoes
-        .filter((c) => c.nome.trim())
-        .map((c) => ({ nome: c.nome.trim(), organizacao_emissora: c.organizacaoEmissora.trim() })));
+    async salvarIdiomas(
+      idiomas: Idioma[],
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await salvarSecao(
+        "idiomas",
+        idiomas
+          .filter((i) => i.nome.trim() && i.nivel)
+          .map((i) => ({ idioma: i.nome.trim(), nivel: i.nivel })),
+        signal,
+      );
     },
 
-    async salvarIdiomas(idiomas: Idioma[]): Promise<void> {
-      await salvarSecao("idiomas", idiomas
-        .filter((i) => i.nome.trim() && i.nivel)
-        .map((i) => ({ idioma: i.nome.trim(), nivel: i.nivel })));
+    async salvarCompetencias(
+      competencias: Habilidades,
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await salvarSecao(
+        "competencias",
+        [
+          ...competencias.hardSkills.map((d) => ({
+            categoria: "tecnica",
+            descricao: d.trim(),
+          })),
+          ...competencias.softSkills.map((d) => ({
+            categoria: "comportamental",
+            descricao: d.trim(),
+          })),
+        ].filter((c) => c.descricao),
+        signal,
+      );
     },
 
-    async salvarCompetencias(competencias: Habilidades): Promise<void> {
-      await salvarSecao("competencias", [
-        ...competencias.hardSkills.map((d) => ({ categoria: "tecnica", descricao: d.trim() })),
-        ...competencias.softSkills.map((d) => ({ categoria: "comportamental", descricao: d.trim() })),
-      ].filter((c) => c.descricao));
+    async salvarProjetos(
+      projetos: ValoresProjetoAcademico[],
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await salvarSecao(
+        "projetos",
+        projetos
+          .filter((p) => p.titulo.trim() || p.descricao.trim())
+          .map((p) => ({
+            titulo: p.titulo.trim(),
+            descricao: p.descricao.trim(),
+            tecnologias: p.tecnologias.trim(),
+          })),
+        signal,
+      );
     },
 
-    async salvarProjetos(projetos: ValoresProjetoAcademico[]): Promise<void> {
-      await salvarSecao("projetos", projetos
-        .filter((p) => p.titulo.trim() || p.descricao.trim())
-        .map((p) => ({
-          titulo: p.titulo.trim(),
-          descricao: p.descricao.trim(),
-          tecnologias: p.tecnologias.trim(),
-        })));
-    },
-
-    async salvarModelo(modelo: ModeloApresentacaoCurriculo): Promise<void> {
-      await requisitar("PUT", "/modelo", { modelo });
+    async salvarModelo(
+      modelo: ModeloApresentacaoCurriculo,
+      signal?: AbortSignal,
+    ): Promise<void> {
+      await requisitar("PUT", "/modelo", { modelo }, signal);
     },
   };
 
-  async function salvarSecao(secao: Secao, itens: unknown[]): Promise<void> {
-    await requisitar("PUT", `/${secao}`, { itens });
+  /**
+   * Substitui a seção inteira pela lista enviada.
+   *
+   * Envia `PUT /estudantes/me/curriculo/{secao}` com `{ itens }`; o sinal
+   * permite cancelar o envio quando o estudante sai da etapa. Existe para
+   * concentrar o formato comum das seções substituíveis.
+   */
+  async function salvarSecao(
+    secao: Secao,
+    itens: unknown[],
+    signal?: AbortSignal,
+  ): Promise<void> {
+    await requisitar("PUT", `/${secao}`, { itens }, signal);
   }
 }
 
-export type ClienteCurriculoNoBanco = ReturnType<typeof criarClienteCurriculoNoBanco>;
+export type ClienteCurriculoNoBanco = ReturnType<
+  typeof criarClienteCurriculoNoBanco
+>;
 
 /** Converte "2025-03" ou "2025-03-01" na data completa que a API espera. */
 function dataCompleta(data: string | undefined): string | null {
@@ -175,14 +273,17 @@ function dataCompleta(data: string | undefined): string | null {
 
 /** Traduz a resposta de erro em uma frase que o estudante entenda. */
 async function mensagemDeErro(resposta: Response): Promise<string> {
-  if (resposta.status === 401) return "Sua sessão expirou. Entre novamente para salvar.";
-  if (resposta.status === 409) return "Há itens repetidos. Remova as repetições e tente de novo.";
+  if (resposta.status === 401)
+    return "Sua sessão expirou. Entre novamente para salvar.";
+  if (resposta.status === 409)
+    return "Há itens repetidos. Remova as repetições e tente de novo.";
   if (resposta.status >= 500) {
     return "O servidor não conseguiu salvar agora. Seus dados continuam aqui; tente novamente.";
   }
   try {
     const corpo = await resposta.json();
-    if (typeof corpo?.detail === "string") return `Não foi possível salvar: ${corpo.detail}`;
+    if (typeof corpo?.detail === "string")
+      return `Não foi possível salvar: ${corpo.detail}`;
   } catch {
     // Sem corpo legível: usa a mensagem genérica abaixo.
   }

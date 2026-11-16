@@ -14,4 +14,8 @@ ps: with ps; [
   reportlab
   # Leitura de PDF usada pelos testes de conteúdo do arquivo exportado.
   pypdf
+  # Assistente de IA: revisão de textos e recomendação de modelo (Gemini).
+  google-genai
+  # Banco SQLite em memória, opcional, para testar a API sem PostgreSQL.
+  aiosqlite
 ]

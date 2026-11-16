@@ -72,7 +72,14 @@ export async function exportarElementoParaPdf({
     if (pagina > 0) {
       pdf.addPage();
     }
-    pdf.addImage(imgData, "PNG", 0, -(pagina * alturaPdf), larguraPdf, alturaTotal);
+    pdf.addImage(
+      imgData,
+      "PNG",
+      0,
+      -(pagina * alturaPdf),
+      larguraPdf,
+      alturaTotal,
+    );
     alturaRestante -= alturaPdf;
     pagina++;
   }

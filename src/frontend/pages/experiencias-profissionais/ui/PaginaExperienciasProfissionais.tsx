@@ -37,7 +37,8 @@ export function PaginaExperienciasProfissionais({
   const [progresso, setProgresso] = useState(0);
   const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
   const revisoes = useRevisoesIa(clienteIa);
-  const pergunta = "O que você fazia nessa experiência e com quais tecnologias?";
+  const pergunta =
+    "O que você fazia nessa experiência e com quais tecnologias?";
 
   return (
     <LayoutCadastroCurriculo
@@ -73,7 +74,11 @@ export function PaginaExperienciasProfissionais({
               })),
             )
           }
-          renderizarAssistenteDescricao={({ indice, experiencia, aplicarDescricao }) => (
+          renderizarAssistenteDescricao={({
+            indice,
+            experiencia,
+            aplicarDescricao,
+          }) => (
             <PainelRevisaoIa
               aoAplicarTexto={aplicarDescricao}
               aoMudarMemoria={(memoria) => revisoes.atualizar(indice, memoria)}

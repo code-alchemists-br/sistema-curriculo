@@ -1,7 +1,10 @@
-"""Adapters do Gemini (SDK google-genai): revisão de textos e recomendação de modelo.
+"""Adaptadores do Gemini (SDK google-genai) para revisão de textos e recomendação.
 
-A IA não gera o currículo: ela só melhora os textos que o estudante escreve e
-escolhe qual dos modelos do sistema combina com o perfil salvo.
+O módulo implementa as portas de revisão de texto e de recomendação de modelo
+com chamadas ao Gemini que pedem saída JSON tipada, e oferece versões
+"ausentes" para quando não há chave configurada. A IA não gera o currículo:
+ela só melhora os textos que o estudante escreve e escolhe qual dos modelos do
+sistema combina com o perfil salvo.
 """
 
 from google import genai
@@ -101,16 +104,47 @@ indique sempre um segundo modelo diferente que também faria sentido.
 """
 
 
-class RevisorTextoGemini(RevisorTextoIa):
-    """Revisa um campo do formulário numa chamada ao Gemini com saída JSON tipada."""
+def _criar_cliente(chave_api: str) -> genai.Client:
+    """Cria o cliente do SDK google-genai autenticado pela chave informada.
 
-    def __init__(self, chave_api: str, modelo: str = MODELO_PADRAO) -> None:
-        self._cliente = genai.Client(api_key=chave_api)
+    A função apenas instancia o cliente oficial; a chamada de rede só acontece
+    ao gerar conteúdo. Existe para centralizar a criação do cliente e permitir
+    que os adaptadores recebam um double em testes.
+    """
+    return genai.Client(api_key=chave_api)
+
+
+class RevisorTextoGemini(RevisorTextoIa):
+    """Revisa um campo do formulário numa chamada ao Gemini com saída JSON tipada.
+
+    O adaptador monta a mensagem com campo, pergunta, contexto e texto, envia
+    as instruções de revisão e pede a resposta no esquema ``AvaliacaoIa``.
+    Falhas do provedor ou respostas fora do esquema viram
+    ``RevisorTextoIndisponivel``. Existe para implementar a porta de revisão
+    com o Gemini sem expor o SDK à aplicação.
+    """
+
+    def __init__(
+        self, chave_api: str, modelo: str = MODELO_PADRAO, cliente: genai.Client | None = None
+    ) -> None:
+        """Prepara o cliente do Gemini e o modelo usado nas revisões.
+
+        Usa o cliente recebido ou cria um com a chave; o modelo pode ser trocado
+        por configuração. Existe para que a composição escolha chave e modelo e
+        os testes injetem um cliente falso.
+        """
+        self._cliente = cliente or _criar_cliente(chave_api)
         self._modelo = modelo
 
     async def avaliar(
         self, campo: CampoRevisavel, pergunta: str | None, texto: str, contexto: dict[str, str]
     ) -> AvaliacaoIa:
+        """Pede ao Gemini a avaliação do texto e três sugestões de reescrita.
+
+        Cada informação vai numa linha ("Campo", "Pergunta", "Contexto",
+        "Texto do estudante") e a resposta é validada contra ``AvaliacaoIa``.
+        Existe para revisar o texto do estudante com o provedor configurado.
+        """
         linhas = [f"Campo: {campo.value}"]
         if pergunta:
             linhas.append(f"Pergunta: {pergunta}")
@@ -135,13 +169,34 @@ class RevisorTextoGemini(RevisorTextoIa):
 
 
 class RecomendadorModeloGemini(RecomendadorModeloIa):
-    """Pede ao Gemini um dos modelos do sistema, com motivo e alternativa."""
+    """Pede ao Gemini um dos modelos do sistema, com motivo e alternativa.
 
-    def __init__(self, chave_api: str, modelo: str = MODELO_PADRAO) -> None:
-        self._cliente = genai.Client(api_key=chave_api)
+    O adaptador envia o perfil como linhas "pergunta: resposta" com as
+    instruções de recomendação e pede a resposta no esquema
+    ``RecomendacaoModelo``, que só aceita modelos do catálogo. Falhas viram
+    ``RecomendadorModeloIndisponivel``. Existe para implementar a porta de
+    recomendação com o Gemini sem expor o SDK à aplicação.
+    """
+
+    def __init__(
+        self, chave_api: str, modelo: str = MODELO_PADRAO, cliente: genai.Client | None = None
+    ) -> None:
+        """Prepara o cliente do Gemini e o modelo usado nas recomendações.
+
+        Usa o cliente recebido ou cria um com a chave; o modelo pode ser trocado
+        por configuração. Existe para que a composição escolha chave e modelo e
+        os testes injetem um cliente falso.
+        """
+        self._cliente = cliente or _criar_cliente(chave_api)
         self._modelo = modelo
 
     async def recomendar(self, perfil: list[InformacaoPerfil]) -> RecomendacaoModelo:
+        """Pede ao Gemini o modelo que combina com o perfil informado.
+
+        Monta uma linha por informação do perfil, usa temperatura baixa para
+        respostas estáveis e valida a saída contra ``RecomendacaoModelo``.
+        Existe para recomendar o modelo com o provedor configurado.
+        """
         dados = "\n".join(f"{i.pergunta}: {i.resposta}" for i in perfil)
         try:
             resposta = await self._cliente.aio.models.generate_content(
@@ -162,16 +217,35 @@ class RecomendadorModeloGemini(RecomendadorModeloIa):
 
 
 class RevisorTextoAusente(RevisorTextoIa):
-    """Usado quando GEMINI_API_KEY não está definida; responde 503."""
+    """Implementa a porta de revisão quando não há chave do Gemini configurada.
+
+    Toda chamada lança ``RevisorTextoIndisponivel``, que a API traduz em 503.
+    Existe para que a aplicação suba sem IA e o fluxo siga sem revisão.
+    """
 
     async def avaliar(
         self, campo: CampoRevisavel, pergunta: str | None, texto: str, contexto: dict[str, str]
     ) -> AvaliacaoIa:
+        """Recusa a revisão informando que falta a chave do Gemini.
+
+        Lança ``RevisorTextoIndisponivel`` sem consultar nenhum serviço. Existe
+        para deixar explícito ao estudante que a IA não está ativa.
+        """
         raise RevisorTextoIndisponivel("Defina GEMINI_API_KEY para revisar textos.")
 
 
 class RecomendadorModeloAusente(RecomendadorModeloIa):
-    """Usado quando GEMINI_API_KEY não está definida; responde 503."""
+    """Implementa a porta de recomendação quando não há chave do Gemini.
+
+    Toda chamada lança ``RecomendadorModeloIndisponivel``, que a API traduz em
+    503. Existe para que a aplicação suba sem IA e a escolha do modelo siga
+    manual.
+    """
 
     async def recomendar(self, perfil: list[InformacaoPerfil]) -> RecomendacaoModelo:
+        """Recusa a recomendação informando que falta a chave do Gemini.
+
+        Lança ``RecomendadorModeloIndisponivel`` sem consultar nenhum serviço.
+        Existe para deixar explícito ao estudante que a IA não está ativa.
+        """
         raise RecomendadorModeloIndisponivel("Defina GEMINI_API_KEY para recomendar o modelo.")

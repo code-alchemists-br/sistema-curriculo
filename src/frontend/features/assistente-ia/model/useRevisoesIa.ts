@@ -1,7 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 
 import type { ClienteAssistenteIa } from "../api/cliente-assistente-ia";
-import { estadoDoTexto, registrarRevisao, type MemoriaRevisao } from "./revisao";
+import {
+  estadoDoTexto,
+  registrarRevisao,
+  type MemoriaRevisao,
+} from "./revisao";
 import type { CampoRevisavel } from "./tipos";
 
 /** Um texto da lista que deve passar pela IA antes de salvar. */
@@ -54,7 +58,9 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
   );
 
   const revisarAntesDeSalvar = useCallback(
-    async (itens: TextoParaRevisar[]): Promise<Record<number, PendenciaRevisao>> => {
+    async (
+      itens: TextoParaRevisar[],
+    ): Promise<Record<number, PendenciaRevisao>> => {
       const bloqueios: Record<number, PendenciaRevisao> = {};
       for (const [indice, item] of itens.entries()) {
         const texto = item.texto.trim();
@@ -73,12 +79,14 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
           if (revisao.situacao === "invalido") {
             bloqueios[indice] = {
               tipo: "erro",
-              mensagem: "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.",
+              mensagem:
+                "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.",
             };
           } else if (revisao.situacao === "melhorado") {
             bloqueios[indice] = {
               tipo: "aviso",
-              mensagem: "Texto aprovado. Veja as sugestões da IA ou clique em Próximo de novo para manter o seu.",
+              mensagem:
+                "Texto aprovado. Veja as sugestões da IA ou clique em Próximo de novo para manter o seu.",
             };
           }
         } catch {

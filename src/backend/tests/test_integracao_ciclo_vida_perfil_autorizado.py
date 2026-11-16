@@ -97,7 +97,7 @@ class CicloVidaPerfilAutorizadoIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         """
         cookie = resposta.cookie_sessao()
         for atributo, esperado in {
-            "path": "/", "max-age": "0" if removido else "28800",
+            "path": "/", "max-age": "0" if removido else "3600",
             "secure": True, "httponly": True, "samesite": "lax", "domain": "",
         }.items():
             atual = cookie[atributo]
@@ -179,7 +179,7 @@ class CicloVidaPerfilAutorizadoIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         linha = emitidas[0]
         self.assertTrue(linha["usuario_id"] == usuario_id, "Dono da sessão divergente [REDACTED]")
         self.assertTrue(linha["revogada_em"] is None, "Sessão já revogada [REDACTED]")
-        self.assertTrue(linha["expira_em"] - linha["criada_em"] == timedelta(hours=8),
+        self.assertTrue(linha["expira_em"] - linha["criada_em"] == timedelta(minutes=60),
                         "Validade da sessão divergente [REDACTED]")
         self.assertTrue(linha["expira_em"].replace(tzinfo=timezone.utc) >
                         linha["criada_em"].replace(tzinfo=timezone.utc),

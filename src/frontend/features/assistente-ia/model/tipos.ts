@@ -42,4 +42,5 @@ export interface InformacaoPerfil {
 }
 
 /** Estado de um texto revisado, informado à página para bloquear o salvamento. */
-export type EstadoTextoIa = "nao-revisado" | "aprovado" | "invalido" | "ia-indisponivel";
+export type EstadoTextoIa =
+  "nao-revisado" | "aprovado" | "invalido" | "ia-indisponivel";

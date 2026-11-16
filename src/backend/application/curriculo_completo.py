@@ -39,8 +39,13 @@ from backend.domain.value_objects import (
 )
 
 
-class SecaoCurriculo(StrEnum):
-    """Seções do currículo que podem ser substituídas de uma vez."""
+class SecaoSubstituivel(StrEnum):
+    """Enumera as seções do currículo que podem ser substituídas de uma vez.
+
+    O valor de cada membro é o trecho usado na rota ``PUT .../{secao}`` e chave
+    do mapeamento para o modelo de item. O enum existe para recusar seções
+    desconhecidas já na fronteira HTTP.
+    """
 
     FORMACOES = "formacoes"
     EXPERIENCIAS = "experiencias"
@@ -52,7 +57,12 @@ class SecaoCurriculo(StrEnum):
 
 
 class FormacaoItem(BaseModel):
-    """Formação acadêmica como o frontend envia e recebe."""
+    """Representa uma formação acadêmica como o frontend envia e recebe.
+
+    O DTO valida tipos e vocabulários (nível e status) na fronteira; as regras
+    de texto e período ficam na entidade ``FormacaoAcademica``. Existe para
+    transportar a seção de formações sem expor a entidade de domínio.
+    """
 
     instituicao: str
     curso: str
@@ -63,7 +73,12 @@ class FormacaoItem(BaseModel):
 
 
 class ExperienciaItem(BaseModel):
-    """Experiência profissional; sem ``data_fim`` é o emprego atual."""
+    """Representa uma experiência profissional como o frontend envia e recebe.
+
+    Sem ``data_fim``, a experiência é o emprego atual; as regras de período e
+    de datas futuras ficam na entidade ``ExperienciaProfissional``. Existe para
+    transportar a seção de experiências sem expor a entidade de domínio.
+    """
 
     empresa: str
     cargo: str
@@ -73,7 +88,12 @@ class ExperienciaItem(BaseModel):
 
 
 class ProjetoItem(BaseModel):
-    """Projeto acadêmico."""
+    """Representa um projeto acadêmico como o frontend envia e recebe.
+
+    O DTO carrega título, descrição e tecnologias; tamanhos e conteúdo são
+    validados pela entidade ``ProjetoAcademico``. Existe para transportar a
+    seção de projetos sem expor a entidade de domínio.
+    """
 
     titulo: str
     descricao: str
@@ -81,7 +101,12 @@ class ProjetoItem(BaseModel):
 
 
 class CompetenciaItem(BaseModel):
-    """Competência técnica ou comportamental."""
+    """Representa uma competência técnica ou comportamental.
+
+    A categoria é validada pelo enum do domínio e o nível tem valor padrão,
+    pois a tela não pede nível. Existe para transportar a seção de
+    competências sem expor a entidade de domínio.
+    """
 
     categoria: CategoriaCompetencia
     descricao: str
@@ -89,14 +114,24 @@ class CompetenciaItem(BaseModel):
 
 
 class IdiomaItem(BaseModel):
-    """Idioma e nível de proficiência."""
+    """Representa um idioma e o nível de proficiência do estudante.
+
+    O DTO carrega os textos recebidos; normalização e obrigatoriedade ficam na
+    entidade ``Idioma``. Existe para transportar a seção de idiomas sem expor
+    a entidade de domínio.
+    """
 
     idioma: str
     nivel: str
 
 
 class CursoItem(BaseModel):
-    """Curso complementar."""
+    """Representa um curso complementar e sua carga horária opcional.
+
+    O DTO valida o tipo da carga horária; nome e instituição são validados pela
+    entidade ``Curso``. Existe para transportar a seção de cursos sem expor a
+    entidade de domínio.
+    """
 
     nome: str
     instituicao: str
@@ -104,25 +139,35 @@ class CursoItem(BaseModel):
 
 
 class CertificacaoItem(BaseModel):
-    """Certificação e organização emissora."""
+    """Representa uma certificação e a organização que a emitiu.
+
+    O DTO carrega os textos recebidos; normalização e obrigatoriedade ficam na
+    entidade ``Certificacao``. Existe para transportar a seção de
+    certificações sem expor a entidade de domínio.
+    """
 
     nome: str
     organizacao_emissora: str
 
 
-ITEM_POR_SECAO: dict[SecaoCurriculo, type[BaseModel]] = {
-    SecaoCurriculo.FORMACOES: FormacaoItem,
-    SecaoCurriculo.EXPERIENCIAS: ExperienciaItem,
-    SecaoCurriculo.PROJETOS: ProjetoItem,
-    SecaoCurriculo.COMPETENCIAS: CompetenciaItem,
-    SecaoCurriculo.IDIOMAS: IdiomaItem,
-    SecaoCurriculo.CURSOS: CursoItem,
-    SecaoCurriculo.CERTIFICACOES: CertificacaoItem,
+ITEM_POR_SECAO: dict[SecaoSubstituivel, type[BaseModel]] = {
+    SecaoSubstituivel.FORMACOES: FormacaoItem,
+    SecaoSubstituivel.EXPERIENCIAS: ExperienciaItem,
+    SecaoSubstituivel.PROJETOS: ProjetoItem,
+    SecaoSubstituivel.COMPETENCIAS: CompetenciaItem,
+    SecaoSubstituivel.IDIOMAS: IdiomaItem,
+    SecaoSubstituivel.CURSOS: CursoItem,
+    SecaoSubstituivel.CERTIFICACOES: CertificacaoItem,
 }
 
 
 class DadosPessoaisSalvos(BaseModel):
-    """Dados pessoais e de contato gravados na conta."""
+    """Representa os dados pessoais e de contato gravados na conta.
+
+    O DTO é só de leitura: a gravação continua em ``PUT /estudantes/me/perfil``.
+    Existe para que a tela preencha os dados pessoais a partir do banco ao
+    abrir o sistema.
+    """
 
     nome: str
     email: str
@@ -134,7 +179,12 @@ class DadosPessoaisSalvos(BaseModel):
 
 
 class CurriculoCompleto(BaseModel):
-    """Tudo o que o estudante já salvou, pronto para preencher as telas."""
+    """Reúne tudo o que o estudante já salvou, pronto para preencher as telas.
+
+    O DTO agrupa dados pessoais, cada seção do currículo e o modelo escolhido
+    (``None`` quando ainda não há). Existe para que o frontend carregue o
+    currículo inteiro do banco numa única chamada.
+    """
 
     dados_pessoais: DadosPessoaisSalvos
     formacoes: list[FormacaoItem] = []
@@ -148,33 +198,61 @@ class CurriculoCompleto(BaseModel):
 
 
 class CurriculoNaoEncontrado(Exception):
-    """A conta da sessão não existe mais ou foi excluída."""
+    """Sinaliza que a conta da sessão não existe mais ou foi excluída.
+
+    A exceção é traduzida pela API em não encontrado (404). Existe para não
+    devolver um currículo vazio para uma conta que deixou de existir.
+    """
 
 
 class DadosRepetidos(Exception):
-    """A lista enviada tem itens iguais onde o banco exige itens únicos."""
+    """Sinaliza itens repetidos onde o banco exige itens únicos.
+
+    Competências, idiomas, cursos e certificações não aceitam duplicatas por
+    estudante; a exceção é traduzida pela API em conflito (409). Existe para
+    explicar a recusa sem expor o erro de integridade do banco.
+    """
 
 
 class RepositorioCurriculoCompleto(ABC):
-    """Porta de leitura e gravação do currículo completo."""
+    """Define a porta de leitura e gravação do currículo completo.
+
+    Implementações leem todas as seções da conta e trocam uma seção inteira
+    numa transação. A porta existe para que o caso de uso não dependa do ORM.
+    """
 
     @abstractmethod
     async def ler(self, usuario_id: UUID) -> CurriculoCompleto | None:
-        """Devolve o currículo salvo ou ``None`` se a conta não existir."""
+        """Lê o currículo salvo do estudante.
+
+        Devolve ``None`` quando a conta não existe ou foi excluída. Existe para
+        o caso de uso decidir como tratar a ausência da conta.
+        """
 
     @abstractmethod
     async def substituir(
         self,
         usuario_id: UUID,
-        secao: SecaoCurriculo,
+        secao: SecaoSubstituivel,
         entidades: list,
         curriculo_lattes: str | None = None,
     ) -> None:
-        """Troca, numa transação, os itens da seção pelos itens recebidos."""
+        """Troca, numa transação, os itens da seção pelas entidades recebidas.
+
+        Os itens atuais são removidos e os novos gravados juntos; se algo
+        falhar, nada muda. Na seção de formações também grava o Lattes. Lança
+        ``DadosRepetidos`` em violação de unicidade. Existe para que salvar de
+        novo uma etapa substitua os itens em vez de duplicá-los.
+        """
 
     @abstractmethod
     async def salvar_modelo(self, usuario_id: UUID, modelo: ModeloCurriculo) -> None:
-        """Guarda o modelo visual escolhido para o currículo."""
+        """Guarda o modelo visual escolhido para o currículo.
+
+        Cria o currículo do estudante na primeira vez e só atualiza o modelo
+        nas seguintes. Existe para que o modelo escolhido sobreviva entre
+        sessões e dispositivos.
+        """
 
 
 class GerenciarCurriculoCompleto:
@@ -188,10 +266,19 @@ class GerenciarCurriculoCompleto:
     """
 
     def __init__(self, repositorio: RepositorioCurriculoCompleto) -> None:
+        """Recebe a porta de persistência do currículo completo.
+
+        A dependência é injetada pela composição, o que permite usar um double
+        em testes. Existe para manter os casos de uso independentes do ORM.
+        """
         self._repositorio = repositorio
 
     async def consultar(self, usuario_id: UUID) -> CurriculoCompleto:
-        """Devolve o currículo salvo da conta da sessão."""
+        """Devolve o currículo salvo da conta da sessão.
+
+        Lança ``CurriculoNaoEncontrado`` quando a conta não existe mais. Existe
+        para que o frontend preencha as telas a partir do banco.
+        """
         curriculo = await self._repositorio.ler(usuario_id)
         if curriculo is None:
             raise CurriculoNaoEncontrado("Conta não encontrada.")
@@ -200,27 +287,39 @@ class GerenciarCurriculoCompleto:
     async def substituir_secao(
         self,
         usuario_id: UUID,
-        secao: SecaoCurriculo,
+        secao: SecaoSubstituivel,
         itens: list[BaseModel],
         curriculo_lattes: str | None = None,
     ) -> None:
         """Valida os itens no domínio e troca a seção salva por eles.
 
-        Lança ``RegraDeDominioViolada`` quando algum item não respeita as regras.
+        Converte cada item na entidade da seção (que valida e normaliza) antes
+        de qualquer gravação, então um item inválido impede a troca inteira.
+        Lança ``RegraDeDominioViolada`` quando algum item não respeita as
+        regras. Existe para salvar uma etapa do currículo sem duplicar itens.
         """
         dono = UsuarioId(usuario_id)
         entidades = [_para_entidade(secao, dono, item) for item in itens]
         await self._repositorio.substituir(usuario_id, secao, entidades, curriculo_lattes)
 
     async def salvar_modelo(self, usuario_id: UUID, modelo: ModeloCurriculo) -> None:
-        """Guarda o modelo visual escolhido."""
+        """Guarda o modelo visual escolhido para o currículo do estudante.
+
+        Delega ao repositório, que cria ou atualiza o currículo. Existe para
+        que a escolha feita na tela de modelos seja persistida.
+        """
         await self._repositorio.salvar_modelo(usuario_id, modelo)
 
 
-def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
-    """Cria a entidade de domínio da seção, que valida e normaliza o item."""
+def _para_entidade(secao: SecaoSubstituivel, dono: UsuarioId, item: BaseModel):
+    """Cria a entidade de domínio correspondente a um item da seção.
+
+    Gera uma identidade nova e chama o construtor (ou fábrica) da entidade, que
+    valida e normaliza os dados; experiências também recusam datas futuras.
+    Existe para que toda gravação passe pelas regras do domínio.
+    """
     match secao:
-        case SecaoCurriculo.FORMACOES:
+        case SecaoSubstituivel.FORMACOES:
             return FormacaoAcademica(
                 id=FormacaoAcademicaId(uuid4()),
                 usuario_id=dono,
@@ -230,7 +329,7 @@ def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
                 periodo=Periodo(item.data_inicio, item.data_fim),
                 status=item.status,
             )
-        case SecaoCurriculo.EXPERIENCIAS:
+        case SecaoSubstituivel.EXPERIENCIAS:
             return ExperienciaProfissional.criar_para_gravacao(
                 id=ExperienciaProfissionalId(uuid4()),
                 usuario_id=dono,
@@ -240,7 +339,7 @@ def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
                 periodo=Periodo(item.data_inicio, item.data_fim),
                 hoje=date.today(),
             )
-        case SecaoCurriculo.PROJETOS:
+        case SecaoSubstituivel.PROJETOS:
             return ProjetoAcademico(
                 id=ProjetoAcademicoId(uuid4()),
                 usuario_id=dono,
@@ -248,7 +347,7 @@ def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
                 descricao=item.descricao,
                 tecnologias=item.tecnologias,
             )
-        case SecaoCurriculo.COMPETENCIAS:
+        case SecaoSubstituivel.COMPETENCIAS:
             return Competencia(
                 id=CompetenciaId(uuid4()),
                 usuario_id=dono,
@@ -256,9 +355,9 @@ def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
                 descricao=item.descricao,
                 nivel=item.nivel,
             )
-        case SecaoCurriculo.IDIOMAS:
+        case SecaoSubstituivel.IDIOMAS:
             return Idioma(id=IdiomaId(uuid4()), usuario_id=dono, idioma=item.idioma, nivel=item.nivel)
-        case SecaoCurriculo.CURSOS:
+        case SecaoSubstituivel.CURSOS:
             return Curso(
                 id=CursoId(uuid4()),
                 usuario_id=dono,
@@ -266,7 +365,7 @@ def _para_entidade(secao: SecaoCurriculo, dono: UsuarioId, item: BaseModel):
                 instituicao=item.instituicao,
                 carga_horaria=item.carga_horaria,
             )
-        case SecaoCurriculo.CERTIFICACOES:
+        case SecaoSubstituivel.CERTIFICACOES:
             return Certificacao(
                 id=CertificacaoId(uuid4()),
                 usuario_id=dono,

@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -300,6 +301,40 @@ export function App() {
     envioCadastro.current = null;
   }
 
+  /**
+   * Abre uma nova tentativa de envio cancelável, cancelando a anterior.
+   *
+   * O sinal devolvido acompanha a requisição; navegar, sair ou trocar de conta
+   * o cancela, e quem chamou não deve avançar depois disso. Existe para que
+   * uma resposta atrasada não mude de tela nem restaure dados de outra sessão.
+   */
+  function iniciarCadastro(): AbortController {
+    cancelarCadastro();
+    const controle = new AbortController();
+    envioCadastro.current = controle;
+    return controle;
+  }
+
+  /**
+   * Salva uma etapa no banco e só avança se o envio não foi cancelado.
+   *
+   * Cria a tentativa cancelável, espera a gravação e verifica o sinal antes de
+   * navegar; falhas sobem para quem chamou (a página mostra o erro). Existe
+   * para as etapas cujas páginas exibem o próprio erro de gravação.
+   */
+  async function salvarComCancelamento(
+    salvar: (signal: AbortSignal) => Promise<void> | undefined,
+    destino: RotaAtiva,
+  ): Promise<void> {
+    const controle = iniciarCadastro();
+    try {
+      await salvar(controle.signal);
+      if (!controle.signal.aborted) navegar(destino);
+    } finally {
+      if (envioCadastro.current === controle) envioCadastro.current = null;
+    }
+  }
+
   const [intencaoAcesso, setIntencaoAcesso] = useState<
     "criar-curriculo" | "criar-conta" | "login" | null
   >(() => {
@@ -469,8 +504,8 @@ export function App() {
   >(null);
   const carregandoCurriculo = Boolean(
     usuarioLogado &&
-      clienteCurriculo &&
-      curriculoCarregadoDe !== usuarioLogado.email,
+    clienteCurriculo &&
+    curriculoCarregadoDe !== usuarioLogado.email,
   );
   const [erroSalvamento, setErroSalvamento] = useState<string | null>(null);
   // Currículo pronto = o estudante chegou a escolher e salvar o modelo.
@@ -500,7 +535,29 @@ export function App() {
     };
   });
 
-  /** Troca o estado das telas pelo currículo lido do banco. */
+  // Callbacks estáveis: os formulários os usam em efeitos, e uma função nova a
+  // cada render faria o efeito rodar sem parar. Também atualizam `ultimos`
+  // na hora, para o salvamento disparado no mesmo clique ler a lista nova.
+  const alterarFormacoes = useCallback((lista: ValoresFormacaoAcademica[]) => {
+    ultimos.current.formacoes = lista;
+    setFormacoes(lista);
+  }, []);
+  const alterarCompetencias = useCallback((habilidades: Habilidades) => {
+    ultimos.current.competencias = habilidades;
+    setCompetencias(habilidades);
+  }, []);
+  const alterarProjetos = useCallback((lista: ValoresProjetoAcademico[]) => {
+    ultimos.current.projetos = lista;
+    setProjetos(lista);
+  }, []);
+
+  /**
+   * Troca o estado das telas pelo currículo lido do banco.
+   *
+   * Seções vazias viram `undefined` para os formulários abrirem com seus
+   * valores iniciais; também marca se o currículo está pronto e usa o nome
+   * salvo no cabeçalho. Existe para o banco ser a fonte do que a tela mostra.
+   */
   function aplicarCurriculo(c: CurriculoDasTelas): void {
     const ouNada = <T,>(lista: T[]) => (lista.length > 0 ? lista : undefined);
     setDadosPessoais(c.dadosPessoais);
@@ -536,7 +593,12 @@ export function App() {
     }
   }
 
-  /** Esquece o estudante deste navegador (sessão encerrada ou expirada). */
+  /**
+   * Esquece o estudante deste navegador quando a sessão acaba.
+   *
+   * Limpa o usuário do estado e do `sessionStorage`. Existe para que uma
+   * sessão expirada (401) leve o estudante a entrar de novo.
+   */
   function esquecerUsuario(): void {
     setUsuarioLogado(null);
     try {
@@ -585,19 +647,21 @@ export function App() {
    * digitados, e vê o motivo no aviso do rodapé. Sem API configurada, só avança.
    */
   async function salvarEAvancar(
-    salvar: () => Promise<void>,
+    salvar: (signal: AbortSignal) => Promise<void>,
     destino: RotaAtiva,
   ): Promise<void> {
     if (!clienteCurriculo) {
       navegar(destino);
       return;
     }
+    const controle = iniciarCadastro();
     setSalvando(true);
     setErroSalvamento(null);
     try {
-      await salvar();
-      navegar(destino);
+      await salvar(controle.signal);
+      if (!controle.signal.aborted) navegar(destino);
     } catch (erro: unknown) {
+      if (controle.signal.aborted) return;
       if (erro instanceof FalhaCurriculoNoBanco && erro.status === 401) {
         esquecerUsuario();
       }
@@ -605,6 +669,7 @@ export function App() {
         erro instanceof Error ? erro.message : "Não foi possível salvar agora.",
       );
     } finally {
+      if (envioCadastro.current === controle) envioCadastro.current = null;
       setSalvando(false);
     }
   }
@@ -616,9 +681,12 @@ export function App() {
       ? {
           async cadastrar() {
             try {
-              await clienteCurriculo.salvarFormacoes(ultimos.current.formacoes ?? []);
+              await clienteCurriculo.salvarFormacoes(
+                ultimos.current.formacoes ?? [],
+              );
             } catch (erro: unknown) {
-              const status = erro instanceof FalhaCurriculoNoBanco ? erro.status : null;
+              const status =
+                erro instanceof FalhaCurriculoNoBanco ? erro.status : null;
               throw new FalhaFormacaoAcademica(
                 status === null
                   ? "rede"
@@ -631,13 +699,27 @@ export function App() {
         }
       : undefined;
 
-  /** Mostra a página com o aviso de falha ao salvar, quando houver. */
+  /**
+   * Mostra a página com o aviso de gravação no rodapé, quando houver.
+   *
+   * Exibe "Salvando no servidor..." durante a gravação e, em falha, o motivo
+   * com um botão para fechar. Existe para as etapas cujas páginas não mostram
+   * o erro de gravação sozinhas.
+   */
   function comAviso(pagina: ReactElement): ReactElement {
     return (
       <>
         {pagina}
         {salvando && (
-          <div role="status" style={{ ...ESTILO_AVISO_FALHA, background: "#1a1a1a", color: "#f3f3f3", border: "1px solid rgb(255 255 255 / 15%)" }}>
+          <div
+            role="status"
+            style={{
+              ...ESTILO_AVISO_FALHA,
+              background: "#1a1a1a",
+              color: "#f3f3f3",
+              border: "1px solid rgb(255 255 255 / 15%)",
+            }}
+          >
             Salvando no servidor...
           </div>
         )}
@@ -646,7 +728,15 @@ export function App() {
             <span style={{ flex: 1 }}>{erroSalvamento}</span>
             <button
               onClick={() => setErroSalvamento(null)}
-              style={{ background: "none", border: "1px solid currentColor", borderRadius: "0.5rem", color: "inherit", cursor: "pointer", padding: "0.35rem 0.75rem", font: "inherit" }}
+              style={{
+                background: "none",
+                border: "1px solid currentColor",
+                borderRadius: "0.5rem",
+                color: "inherit",
+                cursor: "pointer",
+                padding: "0.35rem 0.75rem",
+                font: "inherit",
+              }}
               type="button"
             >
               Fechar
@@ -820,10 +910,7 @@ export function App() {
   if (rotaAtiva === "formacao-academica") {
     return (
       <PaginaFormacaoAcademica
-        aoAlterarFormacoes={(lista) => {
-          ultimos.current.formacoes = lista;
-          setFormacoes(lista);
-        }}
+        aoAlterarFormacoes={alterarFormacoes}
         cliente={clienteFormacaoAcademicaHttp}
         formacoesIniciais={formacoes}
         onAvancar={() => navegar("experiencias-profissionais")}
@@ -841,8 +928,11 @@ export function App() {
         onSalvar={async (listaExperiencias) => {
           setExperiencias(listaExperiencias);
           // Falha aqui sobe para o formulário, que mostra o motivo e não avança.
-          await clienteCurriculo?.salvarExperiencias(listaExperiencias);
-          navegar("cursos-certificacoes");
+          await salvarComCancelamento(
+            (signal) =>
+              clienteCurriculo?.salvarExperiencias(listaExperiencias, signal),
+            "cursos-certificacoes",
+          );
         }}
         onVoltar={() => navegar("formacao-academica")}
         onVoltarInicio={voltarAoInicio}
@@ -853,14 +943,8 @@ export function App() {
   if (rotaAtiva === "cursos-certificacoes" || rotaAtiva === "cursos-idiomas") {
     return comAviso(
       <PaginaCursosCertificacoes
-        aoAlterarCertificacoes={(lista) => {
-          ultimos.current.certificacoes = lista;
-          setCertificacoes(lista);
-        }}
-        aoAlterarCursos={(lista) => {
-          ultimos.current.cursos = lista;
-          setCursos(lista);
-        }}
+        aoAlterarCertificacoes={setCertificacoes}
+        aoAlterarCursos={setCursos}
         certificacoesIniciais={certificacoes}
         cursosIniciais={cursos}
         onAvancar={async (cursosValidados, certificacoesValidadas) => {
@@ -868,9 +952,14 @@ export function App() {
           // a página mostra o erro e não avança.
           setCursos(cursosValidados);
           setCertificacoes(certificacoesValidadas);
-          await clienteCurriculo?.salvarCursos(cursosValidados);
-          await clienteCurriculo?.salvarCertificacoes(certificacoesValidadas);
-          navegar("idiomas");
+          await salvarComCancelamento(async (signal) => {
+            await clienteCurriculo?.salvarCursos(cursosValidados, signal);
+            if (signal.aborted) return;
+            await clienteCurriculo?.salvarCertificacoes(
+              certificacoesValidadas,
+              signal,
+            );
+          }, "idiomas");
         }}
         onVoltar={() => navegar("experiencias-profissionais")}
         onVoltarInicio={voltarAoInicio}
@@ -885,13 +974,13 @@ export function App() {
         onAvancar={async (idiomasValidados) => {
           // Substitui a seção inteira no banco; falhas aparecem na página.
           setIdiomas(idiomasValidados);
-          await clienteCurriculo?.salvarIdiomas(idiomasValidados);
-          navegar("competencias");
+          await salvarComCancelamento(
+            (signal) =>
+              clienteCurriculo?.salvarIdiomas(idiomasValidados, signal),
+            "competencias",
+          );
         }}
-        onSalvar={(lista) => {
-          ultimos.current.idiomas = lista;
-          setIdiomas(lista);
-        }}
+        onSalvar={setIdiomas}
         onVoltar={() => navegar("cursos-certificacoes")}
         onVoltarInicio={voltarAoInicio}
       />,
@@ -904,17 +993,18 @@ export function App() {
         competenciasIniciais={competencias}
         onAvancar={() =>
           void salvarEAvancar(
-            () =>
+            (signal) =>
               clienteCurriculo!.salvarCompetencias(
-                ultimos.current.competencias ?? { hardSkills: [], softSkills: [] },
+                ultimos.current.competencias ?? {
+                  hardSkills: [],
+                  softSkills: [],
+                },
+                signal,
               ),
             "projetos-academicos",
           )
         }
-        onSalvar={(habilidades) => {
-          ultimos.current.competencias = habilidades;
-          setCompetencias(habilidades);
-        }}
+        onSalvar={alterarCompetencias}
         onVoltar={() => navegar("idiomas")}
         onVoltarInicio={voltarAoInicio}
       />,
@@ -924,13 +1014,14 @@ export function App() {
   if (rotaAtiva === "projetos-academicos") {
     return comAviso(
       <PaginaCadastroProjetosAcademicos
-        aoAlterarProjetos={(lista) => {
-          ultimos.current.projetos = lista;
-          setProjetos(lista);
-        }}
+        aoAlterarProjetos={alterarProjetos}
         onAvancar={() =>
           void salvarEAvancar(
-            () => clienteCurriculo!.salvarProjetos(ultimos.current.projetos ?? []),
+            (signal) =>
+              clienteCurriculo!.salvarProjetos(
+                ultimos.current.projetos ?? [],
+                signal,
+              ),
             "selecionar-modelo",
           )
         }
@@ -946,9 +1037,9 @@ export function App() {
       <PaginaSelecaoModeloCurriculo
         aoConfirmar={(novoModelo) => {
           setModelo(novoModelo);
-          void salvarEAvancar(async () => {
-            await clienteCurriculo!.salvarModelo(novoModelo);
-            setCurriculoPronto(true);
+          void salvarEAvancar(async (signal) => {
+            await clienteCurriculo!.salvarModelo(novoModelo, signal);
+            if (!signal.aborted) setCurriculoPronto(true);
           }, "validacao-curriculo");
         }}
         modeloInicial={modelo}
@@ -963,7 +1054,7 @@ export function App() {
           cursos,
           certificacoes,
         }}
-      />
+      />,
     );
   }
 
@@ -1139,12 +1230,12 @@ export function App() {
   if (rotaAtiva === "meu-perfil") {
     const possuiCurriculo = Boolean(
       (formacoes && formacoes.length > 0) ||
-        (experiencias && experiencias.length > 0) ||
-        (projetos && projetos.length > 0) ||
-        (cursos && cursos.length > 0) ||
-        (idiomas && idiomas.length > 0) ||
-        competencias?.hardSkills?.length ||
-        competencias?.softSkills?.length,
+      (experiencias && experiencias.length > 0) ||
+      (projetos && projetos.length > 0) ||
+      (cursos && cursos.length > 0) ||
+      (idiomas && idiomas.length > 0) ||
+      competencias?.hardSkills?.length ||
+      competencias?.softSkills?.length,
     );
     const dadosDoPerfil = {
       ...dadosPessoais,

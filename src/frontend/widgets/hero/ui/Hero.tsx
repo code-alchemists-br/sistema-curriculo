@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import imagemHero from "../../../shared/assets/images/imagem_hero.webp";
 import "./Hero.css";
 
+/** Define a ação principal, os textos e a ação secundária opcional da abertura. */
 export interface HeroProps {
   /** Ação do botão principal (o nome vem da época em que só criava currículo). */
   onCriarCurriculo?: () => void;
@@ -119,9 +120,7 @@ export function Hero({
     <section className="hero-section" aria-labelledby="hero-title">
       <div className="hero-section__container">
         <div className="hero-section__content">
-          {sobretitulo && (
-            <p className="hero-section__selo">{sobretitulo}</p>
-          )}
+          {sobretitulo && <p className="hero-section__selo">{sobretitulo}</p>}
 
           <h1 id="hero-title" className="hero-section__title">
             {titulo}

@@ -194,9 +194,12 @@ export async function verificarSessaoAtiva(
 ): Promise<boolean> {
   if (urlDaApi === undefined || urlDaApi.trim() === "") return true;
   try {
-    const resposta = await fetch(`${urlDaApi.replace(/\/$/, "")}/sessao/atual`, {
-      credentials: "include",
-    });
+    const resposta = await fetch(
+      `${urlDaApi.replace(/\/$/, "")}/sessao/atual`,
+      {
+        credentials: "include",
+      },
+    );
     return resposta.status !== 401;
   } catch {
     return true;

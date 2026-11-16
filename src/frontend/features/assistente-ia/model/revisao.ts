@@ -17,16 +17,23 @@ export interface MemoriaRevisao {
  *   aprovar, mesmo que o estudante edite o campo.
  * - nao-revisado: ainda não passou pela IA (não bloqueia: a IA é opcional).
  */
-export function estadoDoTexto(memoria: MemoriaRevisao, texto: string): EstadoTextoIa {
+export function estadoDoTexto(
+  memoria: MemoriaRevisao,
+  texto: string,
+): EstadoTextoIa {
   if (memoria.iaIndisponivel) return "ia-indisponivel";
-  if (memoria.aprovadoPara !== undefined && memoria.aprovadoPara === texto) return "aprovado";
+  if (memoria.aprovadoPara !== undefined && memoria.aprovadoPara === texto)
+    return "aprovado";
   if (memoria.revisao && !memoria.revisao.podeManterTexto) return "invalido";
   if (memoria.revisao && memoria.revisadoPara === texto) return "aprovado";
   return "nao-revisado";
 }
 
 /** Guarda o resultado de uma revisão do texto atual. */
-export function registrarRevisao(texto: string, revisao: RevisaoTexto): MemoriaRevisao {
+export function registrarRevisao(
+  texto: string,
+  revisao: RevisaoTexto,
+): MemoriaRevisao {
   return {
     revisao,
     revisadoPara: texto,
@@ -36,6 +43,11 @@ export function registrarRevisao(texto: string, revisao: RevisaoTexto): MemoriaR
 }
 
 /** Registra que o estudante usou uma sugestão; modelos de texto inválido ainda pedem revisão. */
-export function registrarSugestaoUsada(memoria: MemoriaRevisao, sugestao: string): MemoriaRevisao {
-  return memoria.revisao?.podeManterTexto ? { ...memoria, aprovadoPara: sugestao } : memoria;
+export function registrarSugestaoUsada(
+  memoria: MemoriaRevisao,
+  sugestao: string,
+): MemoriaRevisao {
+  return memoria.revisao?.podeManterTexto
+    ? { ...memoria, aprovadoPara: sugestao }
+    : memoria;
 }

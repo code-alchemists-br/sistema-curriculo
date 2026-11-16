@@ -31,9 +31,21 @@ export interface PaginaMeuPerfilProps {
 /** Formatos em que o currículo pode ser baixado. */
 export type FormatoDownload = "pdf" | "docx";
 
-const OPCOES_FORMATO: ReadonlyArray<{ formato: FormatoDownload; rotulo: string; dica: string }> = [
-  { formato: "pdf", rotulo: "PDF", dica: "Igual ao que você vê, pronto para enviar" },
-  { formato: "docx", rotulo: "Word", dica: "Para editar no Word ou Google Docs" },
+const OPCOES_FORMATO: ReadonlyArray<{
+  formato: FormatoDownload;
+  rotulo: string;
+  dica: string;
+}> = [
+  {
+    formato: "pdf",
+    rotulo: "PDF",
+    dica: "Igual ao que você vê, pronto para enviar",
+  },
+  {
+    formato: "docx",
+    rotulo: "Word",
+    dica: "Para editar no Word ou Google Docs",
+  },
 ];
 
 /** Iniciais do nome para o avatar (ex.: "Ana Teste Fluxo" → "AF"). */
@@ -86,9 +98,12 @@ export function PaginaMeuPerfil({
   // Fecha o menu de formatos ao clicar fora dele ou apertar Esc.
   useEffect(() => {
     if (!menuAberto) return;
+    /** Fecha o menu quando o clique acontece fora dele. */
     function aoClicarFora(evento: MouseEvent): void {
-      if (!menuRef.current?.contains(evento.target as Node)) setMenuAberto(false);
+      if (!menuRef.current?.contains(evento.target as Node))
+        setMenuAberto(false);
     }
+    /** Fecha o menu ao apertar Esc, como esperado em menus acessíveis. */
     function aoApertarTecla(evento: KeyboardEvent): void {
       if (evento.key === "Escape") setMenuAberto(false);
     }
@@ -233,7 +248,10 @@ export function PaginaMeuPerfil({
               <Dado rotulo="Telefone" valor={contato?.telefones.join(" · ")} />
               <Dado rotulo="Endereço" valor={contato?.endereco} />
               <Dado rotulo="LinkedIn" valor={contato?.linkedin} />
-              <Dado rotulo="Currículo Lattes" valor={contato?.curriculo_lattes} />
+              <Dado
+                rotulo="Currículo Lattes"
+                valor={contato?.curriculo_lattes}
+              />
             </dl>
 
             <h3 className="pagina-meu-perfil__subtitulo">Seu currículo</h3>

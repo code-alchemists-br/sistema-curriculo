@@ -1,4 +1,7 @@
-export { criarClienteAssistenteIa, FalhaAssistenteIa } from "./api/cliente-assistente-ia";
+export {
+  criarClienteAssistenteIa,
+  FalhaAssistenteIa,
+} from "./api/cliente-assistente-ia";
 export type { ClienteAssistenteIa } from "./api/cliente-assistente-ia";
 export type { InformacaoPerfil, ModeloSugerido } from "./model/tipos";
 export { useRevisoesIa } from "./model/useRevisoesIa";

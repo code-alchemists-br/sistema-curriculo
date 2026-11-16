@@ -61,12 +61,32 @@ describe("montarPreviaCurriculo", () => {
     );
     expect(previa.formacoes).toHaveLength(1);
     expect(previa.formacoes[0].instituicao).toBe("FATEC");
+    expect(previa.formacoes[0].nivel).toBe("Tecnólogo");
+    expect(previa.formacoes[0].status).toBe("Concluído");
     expect(previa.experiencias).toHaveLength(1);
     expect(previa.experiencias[0].fim).toBeNull();
     expect(previa.competencias).toHaveLength(3);
     expect(previa.idiomas).toHaveLength(1);
     expect(previa.idiomas[0].nivel).toBe("Avançado");
     expect(previa.documentos).toHaveLength(2);
+  });
+
+  it("mostra o status interrompido e mantém níveis desconhecidos como vieram", () => {
+    const previa = montarPreviaCurriculo({
+      formacoes: [
+        {
+          instituicao: "USP",
+          curso: "Física",
+          nivel: "outro-nivel" as never,
+          status: "interrompido",
+          dataInicio: "2020-02-01",
+          dataFim: "",
+        },
+      ],
+    });
+
+    expect(previa.formacoes[0].nivel).toBe("outro-nivel");
+    expect(previa.formacoes[0].status).toBe("Interrompido");
   });
 
   it("atribui valores seguros por padrão quando os dados estão vazios ou parciais", () => {

@@ -41,7 +41,8 @@ export function PaginaCadastroProjetosAcademicos({
   const [progresso, setProgresso] = useState(0);
   const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
   const revisoes = useRevisoesIa(clienteIa);
-  const pergunta = "O que o projeto faz, qual foi a sua parte e qual foi o resultado?";
+  const pergunta =
+    "O que o projeto faz, qual foi a sua parte e qual foi o resultado?";
 
   function handleAvancar(): void {
     if (onAvancar) {
@@ -96,7 +97,11 @@ export function PaginaCadastroProjetosAcademicos({
               })),
             )
           }
-          renderizarAssistenteDescricao={({ indice, projeto, aplicarDescricao }) => (
+          renderizarAssistenteDescricao={({
+            indice,
+            projeto,
+            aplicarDescricao,
+          }) => (
             <PainelRevisaoIa
               aoAplicarTexto={aplicarDescricao}
               aoMudarMemoria={(memoria) => revisoes.atualizar(indice, memoria)}

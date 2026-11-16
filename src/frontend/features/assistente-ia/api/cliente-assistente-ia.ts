@@ -30,8 +30,16 @@ export function criarClienteAssistenteIa(
 ): ClienteAssistenteIa {
   const base = (urlDaApi ?? "").replace(/\/$/, "");
 
+  /**
+   * Envia um POST JSON ao assistente e devolve o corpo da resposta.
+   *
+   * Exige `VITE_API_URL`, inclui o cookie de sessão e traduz falha de rede,
+   * sessão ausente (401) e erros da API em `FalhaAssistenteIa`. Existe para
+   * que revisão e recomendação compartilhem o mesmo tratamento de erros.
+   */
   async function postar(caminho: string, corpo: unknown): Promise<any> {
-    if (!base) throw new FalhaAssistenteIa("Defina VITE_API_URL para usar a IA.");
+    if (!base)
+      throw new FalhaAssistenteIa("Defina VITE_API_URL para usar a IA.");
     let resposta: Response;
     try {
       resposta = await fetch(`${base}${caminho}`, {
@@ -43,7 +51,8 @@ export function criarClienteAssistenteIa(
     } catch {
       throw new FalhaAssistenteIa("Não foi possível falar com o servidor.");
     }
-    if (resposta.status === 401) throw new FalhaAssistenteIa("Entre na sua conta para usar a IA.");
+    if (resposta.status === 401)
+      throw new FalhaAssistenteIa("Entre na sua conta para usar a IA.");
     let dados: any = null;
     try {
       dados = await resposta.json();
@@ -52,7 +61,9 @@ export function criarClienteAssistenteIa(
     }
     if (!resposta.ok) {
       throw new FalhaAssistenteIa(
-        typeof dados?.detail === "string" ? dados.detail : `A IA respondeu com erro ${resposta.status}.`,
+        typeof dados?.detail === "string"
+          ? dados.detail
+          : `A IA respondeu com erro ${resposta.status}.`,
       );
     }
     return dados;
@@ -60,8 +71,16 @@ export function criarClienteAssistenteIa(
 
   return {
     async revisar({ campo, texto, pergunta, contexto }) {
-      const dados = await postar("/assistente/revisoes", { campo, texto, pergunta, contexto: contexto ?? {} });
-      if (!Array.isArray(dados?.sugestoes) || typeof dados?.situacao !== "string") {
+      const dados = await postar("/assistente/revisoes", {
+        campo,
+        texto,
+        pergunta,
+        contexto: contexto ?? {},
+      });
+      if (
+        !Array.isArray(dados?.sugestoes) ||
+        typeof dados?.situacao !== "string"
+      ) {
         throw new FalhaAssistenteIa("A revisão voltou num formato inesperado.");
       }
       return {
@@ -73,14 +92,19 @@ export function criarClienteAssistenteIa(
     },
 
     async recomendarModelo(perfil) {
-      const dados = await postar("/assistente/recomendacao-modelo", { extras: perfil.slice(0, 10) });
+      const dados = await postar("/assistente/recomendacao-modelo", {
+        extras: perfil.slice(0, 10),
+      });
       if (typeof dados?.modelo !== "string") {
-        throw new FalhaAssistenteIa("A recomendação voltou num formato inesperado.");
+        throw new FalhaAssistenteIa(
+          "A recomendação voltou num formato inesperado.",
+        );
       }
       return {
         modelo: dados.modelo,
         motivo: String(dados.motivo ?? ""),
-        alternativa: typeof dados.alternativa === "string" ? dados.alternativa : null,
+        alternativa:
+          typeof dados.alternativa === "string" ? dados.alternativa : null,
       };
     },
   };

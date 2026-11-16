@@ -62,7 +62,7 @@ class ContratoCredenciaisSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
         """
         cookie = resposta.cookie_sessao()
         atributos = {
-            "path": "/", "max-age": "0" if removido else "28800",
+            "path": "/", "max-age": "0" if removido else "3600",
             "secure": True, "httponly": True, "samesite": "lax", "domain": "",
         }
         for atributo, esperado in atributos.items():
@@ -195,7 +195,7 @@ class ContratoCredenciaisSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
             criada = linha["criada_em"].replace(tzinfo=timezone.utc)
             expira = linha["expira_em"].replace(tzinfo=timezone.utc)
             self.assertEqual(criada, INSTANTE_T)
-            self.assertEqual(expira - criada, timedelta(hours=8))
+            self.assertEqual(expira - criada, timedelta(minutes=60))
         await self._consultar_proprio(token)
 
     async def test_H02_login_recusado_uniforme(self) -> None:
@@ -241,16 +241,19 @@ class ContratoCredenciaisSessaoIntegracaoTestCase(unittest.IsolatedAsyncioTestCa
                 await self._assert_intacto(antes)
 
     async def test_H04_uso_proprio_sem_prolongar_sessao(self) -> None:
-        """H04 consulta A em T e T+1h usando cookie emitido pelo login real.
+        """H04 consulta A em T e T+30min usando cookie emitido pelo login real.
 
         Verifica proxy e DTO público e compara todas as colunas persistidas
-        para provar identidade própria e ausência de renovação por atividade.
+        para provar identidade própria e ausência de renovação por atividade,
+        dentro da validade de 60 minutos da sessão.
         """
         token = await self._login()
         antes = await self.banco.snapshot()
-        for horas in (0, 1):
-            with self.subTest(operacao=f"consulta T+{horas}h", identidade="A"):
-                await self._consultar_proprio(token, instante=INSTANTE_T + timedelta(hours=horas))
+        for minutos in (0, 30):
+            with self.subTest(operacao=f"consulta T+{minutos}min", identidade="A"):
+                await self._consultar_proprio(
+                    token, instante=INSTANTE_T + timedelta(minutes=minutos)
+                )
                 await self._assert_intacto(antes)
 
     async def test_H05_somente_cookie_autentica(self) -> None:

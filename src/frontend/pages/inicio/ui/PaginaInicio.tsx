@@ -6,6 +6,7 @@ import { Destaques } from "../../../widgets/destaques";
 import { Hero } from "../../../widgets/hero";
 import "./PaginaInicio.css";
 
+/** Define as ações de navegação e o estado do estudante usados pela página inicial. */
 export interface PaginaInicioProps {
   onNavegarCadastro?: () => void;
   onNavegarLogin?: () => void;
@@ -32,7 +33,6 @@ export interface PaginaInicioProps {
  * - Qual finalidade atende: depois de montar o currículo, o próximo passo do
  *   estudante é se candidatar, então as vagas ganham o destaque principal.
  */
-
 export function PaginaInicio({
   onNavegarCadastro,
   onNavegarLogin,
@@ -47,7 +47,9 @@ export function PaginaInicio({
   temCurriculoPronto,
   onLogout,
 }: PaginaInicioProps) {
-  const focoEmVagas = Boolean(usuarioLogado && temCurriculoPronto && onNavegarVagas);
+  const focoEmVagas = Boolean(
+    usuarioLogado && temCurriculoPronto && onNavegarVagas,
+  );
   const textoBotaoHero =
     usuarioLogado && temProgressoCurriculo
       ? "CONTINUAR CURRÍCULO"

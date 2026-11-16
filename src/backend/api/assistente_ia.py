@@ -1,4 +1,9 @@
-"""Rotas do assistente de IA: revisão de um campo e recomendação de modelo."""
+"""Expõe as rotas do assistente de IA: revisão de um campo e recomendação de modelo.
+
+O módulo converte as requisições em entradas dos casos de uso e traduz as
+falhas em respostas HTTP. Ele existe para separar o transporte das regras da
+revisão e da recomendação.
+"""
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -18,7 +23,12 @@ from backend.application.revisao_texto import (
 
 
 class RevisaoRequisicao(BaseModel):
-    """Campo, pergunta exibida, texto do estudante e dados já preenchidos do item."""
+    """Representa o JSON aceito para revisar um campo do formulário.
+
+    Traz o campo, o texto do estudante, a pergunta exibida e dados já
+    preenchidos do item (como cargo e empresa), com limites de tamanho para
+    conter o custo da chamada à IA. Existe para validar a entrada na fronteira.
+    """
 
     campo: CampoRevisavel
     texto: str = Field(max_length=2000, examples=["eu fazia umas api la no estagio kkk"])
@@ -33,14 +43,23 @@ class RevisaoRequisicao(BaseModel):
 
 
 class InformacaoRequisicao(BaseModel):
-    """Dado que não fica no banco, como a carreira desejada ou o objetivo."""
+    """Representa um dado extra que não fica no banco, como o objetivo do currículo.
+
+    O par pergunta/resposta tem limites de tamanho e é convertido em
+    ``InformacaoPerfil``. Existe para que a tela acrescente contexto à
+    recomendação sem gravá-lo no perfil.
+    """
 
     pergunta: str = Field(max_length=200, examples=["Carreira desejada"])
     resposta: str = Field(max_length=2000, examples=["Desenvolvimento Back-end (Júnior)"])
 
 
 class RecomendacaoRequisicao(BaseModel):
-    """Dados extras somados ao perfil salvo na hora de recomendar o modelo."""
+    """Representa o JSON aceito para recomendar o modelo de currículo.
+
+    Contém até dez dados extras somados ao perfil salvo. Existe para validar a
+    entrada da recomendação na fronteira HTTP.
+    """
 
     extras: list[InformacaoRequisicao] = Field(default_factory=list, max_length=10)
 
@@ -55,7 +74,12 @@ def criar_router(
     revisar_texto: RevisarTexto | None,
     recomendar_modelo: RecomendarModeloCurriculo | None,
 ) -> APIRouter:
-    """Cria as rotas protegidas por sessão do assistente de IA."""
+    """Cria as rotas do assistente de IA, protegidas pela sessão.
+
+    Registra ``POST /assistente/revisoes`` e ``POST /assistente/recomendacao-modelo``;
+    sem caso de uso injetado, a rota responde indisponível (503). Existe para
+    que a composição ligue o assistente sem que o router conheça o provedor.
+    """
     router = APIRouter(prefix="/assistente")
 
     @router.post(
@@ -65,7 +89,11 @@ def criar_router(
         responses=_RESPOSTAS,
     )
     async def revisar(corpo: RevisaoRequisicao) -> RevisaoTexto:
-        """Não grava nada: o frontend salva o texto aprovado no cadastro do item."""
+        """Revisa o texto enviado e devolve veredito, motivo e sugestões.
+
+        Não grava nada: o frontend salva o texto aprovado no cadastro do item.
+        Falha do provedor vira 503. Existe para a revisão automática ao avançar.
+        """
         if revisar_texto is None:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Revisão indisponível.")
         try:
@@ -82,7 +110,12 @@ def criar_router(
         responses={**_RESPOSTAS, 422: {"description": "Perfil ainda vazio."}},
     )
     async def recomendar(corpo: RecomendacaoRequisicao, request: Request) -> RecomendacaoModelo:
-        """Lê o perfil do estudante logado e devolve um dos modelos do sistema."""
+        """Recomenda um modelo para o estudante da sessão.
+
+        Usa o usuário autenticado pelo middleware, responde 422 quando o perfil
+        está vazio e 503 quando a IA falha. Existe para a recomendação exibida
+        na seleção de modelo.
+        """
         if recomendar_modelo is None:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Recomendação indisponível.")
         extras = [InformacaoPerfil(e.pergunta, e.resposta) for e in corpo.extras]

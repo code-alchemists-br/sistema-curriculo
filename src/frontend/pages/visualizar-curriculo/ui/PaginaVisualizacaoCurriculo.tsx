@@ -123,7 +123,8 @@ export function PaginaVisualizacaoCurriculo({
               Visualização do currículo
             </h1>
             <p>
-              Modelo selecionado: <strong>{ROTULOS_MODELO_CURRICULO[modelo]}</strong>
+              Modelo selecionado:{" "}
+              <strong>{ROTULOS_MODELO_CURRICULO[modelo]}</strong>
             </p>
           </div>
           <div className="pagina-visualizacao-curriculo__acoes">
