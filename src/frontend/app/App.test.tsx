@@ -232,6 +232,41 @@ describe("App", () => {
   });
 
   it("permite visualizar o curriculo renderizado no modelo ativo e baixar PDF", async () => {
+    sessionStorage.setItem(
+      "liminal_curriculo_rascunho",
+      JSON.stringify({
+        dadosPessoais: {
+          nomeCompleto: "Ana Carolina Silva",
+          email: "ana@fatec.sp.gov.br",
+          enderecoCompleto: "Av. Tiradentes, 615",
+          telefones: ["(11) 98888-7777"],
+        },
+        formacoes: [
+          {
+            instituicao: "FATEC",
+            curso: "ADS",
+            nivel: "tecnologo",
+            status: "em_andamento",
+            dataInicio: "2023-02-01",
+            dataFim: "2026-12-01",
+          },
+        ],
+        experiencias: [
+          {
+            empresa: "Empresa Teste",
+            cargo: "Estagiária",
+            descricao: "Desenvolvimento frontend.",
+            inicio: "2024-01-01",
+            fim: "",
+            empregoAtual: true,
+          },
+        ],
+        competencias: {
+          hardSkills: ["TypeScript"],
+          softSkills: ["Comunicação"],
+        },
+      }),
+    );
     window.history.replaceState({}, "", "/?etapa=visualizar-curriculo");
 
     const user = userEvent.setup();
@@ -246,6 +281,7 @@ describe("App", () => {
     const btnBaixar = screen.getByRole("button", {
       name: "Baixar PDF",
     });
+    expect(btnBaixar).toBeEnabled();
     await user.click(btnBaixar);
 
     const btnVoltar = screen.getByRole("button", {
@@ -258,6 +294,28 @@ describe("App", () => {
         name: "Valide os dados do currículo",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("bloqueia os botões de download ao acessar a visualização diretamente pela URL com currículo vazio", async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.history.replaceState({}, "", "/?etapa=visualizar-curriculo");
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Visualização do currículo",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Baixar PDF" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Baixar Word \(DOCX\)/i }),
+    ).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Currículo incompleto: preencha e valide os dados obrigatórios/i,
+    );
   });
 
   it("permite navegar diretamente para corrigir uma etapa pendente a partir da tela de validação", async () => {

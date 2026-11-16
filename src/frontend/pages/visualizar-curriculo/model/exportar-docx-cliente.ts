@@ -767,7 +767,6 @@ export async function exportarPreviaParaDocx({
       corTextoHex: "1F2937",
       corSubtextoHex: "475569",
       maiusculoTitulo: false,
-      usarTracoQuandoAtual: true,
       ordem: [
         "formacao",
         "experiencia",

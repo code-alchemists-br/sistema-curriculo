@@ -234,15 +234,21 @@
     transform 0.1s ease;
 }
 
-.pagina-visualizacao-curriculo__btn-exportar-word:hover {
+.pagina-visualizacao-curriculo__btn-exportar-word:hover:not(:disabled) {
   background-color: #222226;
   border-color: rgba(255, 255, 255, 0.32);
   color: #ffffff;
   transform: translateY(-1px);
 }
 
-.pagina-visualizacao-curriculo__btn-exportar-word:active {
+.pagina-visualizacao-curriculo__btn-exportar-word:active:not(:disabled) {
   transform: scale(0.99);
+}
+
+.pagina-visualizacao-curriculo__btn-exportar-word:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .pagina-visualizacao-curriculo__btn-exportar-word:focus-visible {

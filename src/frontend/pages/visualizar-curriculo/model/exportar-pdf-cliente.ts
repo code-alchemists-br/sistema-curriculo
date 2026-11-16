@@ -35,14 +35,10 @@ export function formatarDataPdf(data?: string | null): string {
 export function formatarPeriodoPdf(
   inicio: string,
   fim: string | null,
-  usarTracoQuandoAtual = false,
+  _usarTracoQuandoAtual = false,
 ): string {
   const iniFormatado = formatarDataPdf(inicio);
-  const fimFormatado = fim
-    ? formatarDataPdf(fim)
-    : usarTracoQuandoAtual
-      ? "—"
-      : "Atual";
+  const fimFormatado = fim ? formatarDataPdf(fim) : "Atual";
   return `${iniFormatado} — ${fimFormatado}`;
 }
 
@@ -151,8 +147,12 @@ function renderizarModeloClassico(doc: jsPDF, previa: PreviaCurriculo): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(17, 24, 39); // #111827
-  doc.text(nome, LARGURA_PAGINA / 2, y, { align: "center" });
-  y += 6;
+  const linhasNome = doc.splitTextToSize(nome, larguraUtil);
+  for (const linhaNome of linhasNome) {
+    verificarQuebra(6);
+    doc.text(linhaNome, LARGURA_PAGINA / 2, y, { align: "center" });
+    y += 6;
+  }
 
   const contatos = obterItensContato(previa).join(" • ");
   if (contatos) {
@@ -364,8 +364,12 @@ function renderizarModeloCompacto(doc: jsPDF, previa: PreviaCurriculo): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(17);
   doc.setTextColor(31, 41, 55); // #1f2937
-  doc.text(nome, margemX, y);
-  y += 5;
+  const linhasNome = doc.splitTextToSize(nome, larguraUtil);
+  for (const linhaNome of linhasNome) {
+    verificarQuebra(5);
+    doc.text(linhaNome, margemX, y);
+    y += 5;
+  }
 
   const contatos = obterItensContato(previa, true).join(" • ");
   if (contatos) {
@@ -564,15 +568,23 @@ function renderizarModeloAtsSimples(doc: jsPDF, previa: PreviaCurriculo): void {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(57, 123, 209); // #397bd1
-  doc.text(nome, margemX, y);
-  y += 5.5;
+  const linhasNome = doc.splitTextToSize(nome, larguraUtil);
+  for (const linhaNome of linhasNome) {
+    verificarQuebra(5.5);
+    doc.text(linhaNome, margemX, y);
+    y += 5.5;
+  }
 
   if (previa.titulo_versao) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(41, 67, 93); // #29435d
-    doc.text(previa.titulo_versao, margemX, y);
-    y += 5;
+    const linhasVersao = doc.splitTextToSize(previa.titulo_versao, larguraUtil);
+    for (const linhaVersao of linhasVersao) {
+      verificarQuebra(5);
+      doc.text(linhaVersao, margemX, y);
+      y += 5;
+    }
   }
 
   const contatos = obterItensContato(previa).join("   ");
@@ -1071,19 +1083,29 @@ function renderizarModeloModerno(doc: jsPDF, previa: PreviaCurriculo): void {
   let yCabecalho = 24;
 
   // Cabeçalho largo no topo (Nome em maiúsculas grande + titulo_versao)
+  const larguraCabecalho = LARGURA_PAGINA - margemX * 2;
   const nome = (previa.estudante?.nome || "Currículo").trim().toUpperCase();
   doc.setFont("helvetica", "bold");
   doc.setFontSize(23);
   doc.setTextColor(22, 24, 29); // #16181d
-  doc.text(nome, margemX, yCabecalho);
-  yCabecalho += 6.5;
+  const linhasNome = doc.splitTextToSize(nome, larguraCabecalho);
+  for (const linhaNome of linhasNome) {
+    doc.text(linhaNome, margemX, yCabecalho);
+    yCabecalho += 7.5;
+  }
 
   if (previa.titulo_versao) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(94, 102, 114); // #5e6672
-    doc.text(previa.titulo_versao, margemX, yCabecalho);
-    yCabecalho += 5.5;
+    const linhasVersao = doc.splitTextToSize(
+      previa.titulo_versao,
+      larguraCabecalho,
+    );
+    for (const linhaVersao of linhasVersao) {
+      doc.text(linhaVersao, margemX, yCabecalho);
+      yCabecalho += 5;
+    }
   }
 
   yCabecalho += 2;
@@ -1386,23 +1408,32 @@ function renderizarModeloAcademico(doc: jsPDF, previa: PreviaCurriculo): void {
 
   // Bloco esquerdo do cabeçalho (Nome em #146384 + titulo_versao em #63707a)
   const xTextoCabecalho = margemX + 4.5;
+  const larguraColunaEsquerdaCabecalho = larguraUtil * 0.58;
   let yEsquerda = yTopoCabecalho + 5;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
   doc.setTextColor(20, 99, 132); // #146384
-  doc.text(
+  const linhasNome = doc.splitTextToSize(
     (previa.estudante?.nome || "Currículo").trim(),
-    xTextoCabecalho,
-    yEsquerda,
+    larguraColunaEsquerdaCabecalho,
   );
-  yEsquerda += 5.5;
+  for (const linhaNome of linhasNome) {
+    doc.text(linhaNome, xTextoCabecalho, yEsquerda);
+    yEsquerda += 6;
+  }
 
   if (previa.titulo_versao) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(99, 112, 122); // #63707a
-    doc.text(previa.titulo_versao, xTextoCabecalho, yEsquerda);
-    yEsquerda += 5;
+    const linhasVersao = doc.splitTextToSize(
+      previa.titulo_versao,
+      larguraColunaEsquerdaCabecalho,
+    );
+    for (const linhaVersao of linhasVersao) {
+      doc.text(linhaVersao, xTextoCabecalho, yEsquerda);
+      yEsquerda += 4.5;
+    }
   }
 
   // Bloco direito do cabeçalho (Contatos empilhados alinhados à direita)
@@ -1639,7 +1670,23 @@ function renderizarModeloPrimeiroEmprego(
     ? doc.splitTextToSize(contatos, larguraTextoBanner)
     : [];
 
-  const alturaBanner = 26 + linhasContato.length * 4;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(19);
+  const linhasNomeBanner = doc.splitTextToSize(
+    (previa.estudante?.nome || "Currículo").trim(),
+    larguraTextoBanner,
+  );
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  const linhasVersaoBanner = previa.titulo_versao
+    ? doc.splitTextToSize(previa.titulo_versao, larguraTextoBanner)
+    : [];
+
+  const alturaBanner =
+    15 +
+    linhasNomeBanner.length * 6 +
+    linhasVersaoBanner.length * 4.5 +
+    linhasContato.length * 4;
   const yTopoBanner = 18;
 
   // Faixa de cabeçalho roxa #5a3db5
@@ -1666,15 +1713,19 @@ function renderizarModeloPrimeiroEmprego(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(19);
   doc.setTextColor(255, 255, 255);
-  doc.text((previa.estudante?.nome || "Currículo").trim(), xBanner, yBanner);
-  yBanner += 5.2;
+  for (const linhaNome of linhasNomeBanner) {
+    doc.text(linhaNome, xBanner, yBanner);
+    yBanner += 6;
+  }
 
-  if (previa.titulo_versao) {
+  if (linhasVersaoBanner.length > 0) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(255, 255, 255);
-    doc.text(previa.titulo_versao, xBanner, yBanner);
-    yBanner += 5;
+    for (const linhaVersao of linhasVersaoBanner) {
+      doc.text(linhaVersao, xBanner, yBanner);
+      yBanner += 4.5;
+    }
   }
 
   if (linhasContato.length > 0) {

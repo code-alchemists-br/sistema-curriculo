@@ -26,6 +26,23 @@ export interface DadosParaMontagemPrevia {
   modelo?: ModeloApresentacaoCurriculo;
 }
 
+const ROTULOS_NIVEL_FORMACAO: Readonly<Record<string, string>> = {
+  ensino_fundamental: "Ensino fundamental",
+  ensino_medio: "Ensino médio",
+  tecnico: "Técnico",
+  tecnologo: "Tecnólogo",
+  graduacao: "Graduação",
+  especializacao: "Especialização",
+  mestrado: "Mestrado",
+  doutorado: "Doutorado",
+};
+
+const ROTULOS_STATUS_FORMACAO: Readonly<Record<string, string>> = {
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  interrompido: "Interrompido",
+};
+
 /** Garante que datas inseridas pelo usuário tenham formato ISO seguro para Intl.DateTimeFormat. */
 function normalizarData(data?: string | null): string {
   if (!data || typeof data !== "string") return "2024-01-01";
@@ -82,18 +99,27 @@ export function montarPreviaCurriculo(
         curriculo_lattes: lattesFinal,
       },
     },
-    formacoes: formacoes.map((formacao, index) => ({
-      id: `formacao-${index + 1}`,
-      instituicao: formacao.instituicao || "Instituição de ensino",
-      curso: formacao.curso || "Curso superior",
-      nivel: formacao.nivel || "Graduação",
-      status: formacao.status === "concluido" ? "Concluído" : "Em andamento",
-      inicio: normalizarData(formacao.dataInicio),
-      fim:
-        formacao.status === "concluido" && formacao.dataFim
-          ? normalizarData(formacao.dataFim)
-          : null,
-    })),
+    formacoes: formacoes.map((formacao, index) => {
+      const nivelFormatado =
+        (formacao.nivel && ROTULOS_NIVEL_FORMACAO[formacao.nivel]) ||
+        formacao.nivel ||
+        "Graduação";
+      const statusFormatado =
+        (formacao.status && ROTULOS_STATUS_FORMACAO[formacao.status]) ||
+        "Em andamento";
+      return {
+        id: `formacao-${index + 1}`,
+        instituicao: formacao.instituicao || "Instituição de ensino",
+        curso: formacao.curso?.trim() || nivelFormatado || "Curso superior",
+        nivel: nivelFormatado,
+        status: statusFormatado,
+        inicio: normalizarData(formacao.dataInicio),
+        fim:
+          formacao.dataFim && formacao.dataFim.trim().length > 0
+            ? normalizarData(formacao.dataFim)
+            : null,
+      };
+    }),
     experiencias: experiencias.map((exp, index) => ({
       id: `experiencia-${index + 1}`,
       empresa: exp.empresa || "Empresa",

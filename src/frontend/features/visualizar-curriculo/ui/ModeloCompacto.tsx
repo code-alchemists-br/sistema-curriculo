@@ -186,7 +186,7 @@ function Secao({
 
 /** Formata o período sem alterar as datas recebidas da API. */
 function formatarPeriodo(inicio: string, fim: string | null): string {
-  return `${formatarData(inicio)} — ${fim ? formatarData(fim) : "—"}`;
+  return `${formatarData(inicio)} — ${fim ? formatarData(fim) : "Atual"}`;
 }
 
 /** Converte uma data ISO da API para uma forma legível em pt-BR. */

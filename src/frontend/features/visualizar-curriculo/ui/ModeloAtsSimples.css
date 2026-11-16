@@ -2,6 +2,7 @@
   --ats-azul: #397bd1;
   --ats-texto: #29435d;
   box-sizing: border-box;
+  overflow: hidden;
   max-width: 52rem;
   margin: 0 auto;
   padding: clamp(1.5rem, 5vw, 3.5rem);
@@ -9,6 +10,19 @@
   background: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
   line-height: 1.5;
+}
+
+.modelo-ats-simples h1,
+.modelo-ats-simples h2,
+.modelo-ats-simples h3,
+.modelo-ats-simples p,
+.modelo-ats-simples li,
+.modelo-ats-simples span,
+.modelo-ats-simples strong,
+.modelo-ats-simples a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .modelo-ats-simples__cabecalho {
@@ -63,6 +77,7 @@
 
 .modelo-ats-simples__lista {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 

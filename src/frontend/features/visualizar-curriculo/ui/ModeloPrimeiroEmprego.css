@@ -2,6 +2,7 @@
   --primeiro-emprego-destaque: #5a3db5;
   --primeiro-emprego-fundo: #f6f4ff;
   box-sizing: border-box;
+  overflow: hidden;
   max-width: 52rem;
   margin: 0 auto;
   padding: clamp(1.5rem, 5vw, 3.5rem);
@@ -9,6 +10,19 @@
   background: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
   line-height: 1.5;
+}
+
+.modelo-primeiro-emprego h1,
+.modelo-primeiro-emprego h2,
+.modelo-primeiro-emprego h3,
+.modelo-primeiro-emprego p,
+.modelo-primeiro-emprego li,
+.modelo-primeiro-emprego span,
+.modelo-primeiro-emprego strong,
+.modelo-primeiro-emprego a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .modelo-primeiro-emprego__cabecalho {
@@ -71,6 +85,7 @@
 
 .modelo-primeiro-emprego__lista {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
 }
 

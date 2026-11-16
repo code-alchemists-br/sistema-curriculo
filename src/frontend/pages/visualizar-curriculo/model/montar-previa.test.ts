@@ -61,12 +61,43 @@ describe("montarPreviaCurriculo", () => {
     );
     expect(previa.formacoes).toHaveLength(1);
     expect(previa.formacoes[0].instituicao).toBe("FATEC");
+    expect(previa.formacoes[0].nivel).toBe("Tecnólogo");
+    expect(previa.formacoes[0].status).toBe("Concluído");
     expect(previa.experiencias).toHaveLength(1);
     expect(previa.experiencias[0].fim).toBeNull();
     expect(previa.competencias).toHaveLength(3);
     expect(previa.idiomas).toHaveLength(1);
     expect(previa.idiomas[0].nivel).toBe("Avançado");
     expect(previa.documentos).toHaveLength(2);
+  });
+
+  it("preserva a previsão de conclusão e formata o nível corretamente em formações em andamento", () => {
+    const previa = montarPreviaCurriculo({
+      formacoes: [
+        {
+          instituicao: "USP",
+          curso: "Ciência da Computação",
+          nivel: "graduacao",
+          status: "em_andamento",
+          dataInicio: "2023-02-01",
+          dataFim: "2026-12-15",
+        },
+        {
+          instituicao: "ETEC",
+          curso: "Desenvolvimento de Sistemas",
+          nivel: "tecnico",
+          status: "em_andamento",
+          dataInicio: "2024-02-01",
+          dataFim: "",
+        },
+      ],
+    });
+
+    expect(previa.formacoes[0].nivel).toBe("Graduação");
+    expect(previa.formacoes[0].status).toBe("Em andamento");
+    expect(previa.formacoes[0].fim).toBe("2026-12-15");
+    expect(previa.formacoes[1].nivel).toBe("Técnico");
+    expect(previa.formacoes[1].fim).toBeNull();
   });
 
   it("atribui valores seguros por padrão quando os dados estão vazios ou parciais", () => {
