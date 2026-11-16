@@ -102,12 +102,15 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  min-height: 32px;
   margin-bottom: 2rem;
+  gap: 1rem;
 }
 
 .layout-cadastro__btn-voltar-inicio {
   display: inline-flex;
   align-items: center;
+  gap: 0.65rem;
   background: none;
   background-color: transparent;
   border: none;
@@ -124,11 +127,23 @@
     transform 0.2s ease;
 }
 
+.layout-cadastro__btn-voltar-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
 .layout-cadastro__btn-voltar-inicio:hover {
   color: #ff8533;
   background: none;
   background-color: transparent;
-  transform: translateX(-2px);
+}
+
+.layout-cadastro__btn-voltar-inicio:hover .layout-cadastro__btn-voltar-icone {
+  transform: translateX(-3px);
 }
 
 .layout-cadastro__btn-voltar-inicio:focus-visible {
@@ -137,12 +152,82 @@
   border-radius: 4px;
 }
 
+.layout-cadastro__btn-voltar-texto-curto {
+  display: none;
+}
+
+.layout-cadastro__topo-direita {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 32px;
+}
+
+.layout-cadastro__status-salvo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 400;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.22);
+  padding: 3px 9px;
+  border-radius: 9999px;
+  letter-spacing: 0.01em;
+  user-select: none;
+  box-sizing: border-box;
+  animation: animacaoStatusSalvoEntrada 0.35s var(--anim-curva-suave) both;
+}
+
+.layout-cadastro__status-salvo--saindo {
+  animation: animacaoStatusSalvoSaida 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.layout-cadastro__status-salvo-icone {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+@keyframes animacaoStatusSalvoEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes animacaoStatusSalvoSaida {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-cadastro__status-salvo,
+  .layout-cadastro__status-salvo--saindo {
+    animation: none;
+  }
+}
+
 .layout-cadastro__indicador-etapa {
   font-family: "Poppins", sans-serif;
   font-size: 0.85rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.55);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 /* Barra de progresso horizontal segmentada */
@@ -193,8 +278,9 @@
 }
 
 .btn-voltar {
-  height: 52px;
-  padding: 0 2rem;
+  min-height: 52px;
+  height: auto;
+  padding: 0.85rem 1.75rem;
   background-color: #171717;
   color: #f5f5f5;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -202,6 +288,7 @@
   font-family: "Poppins", sans-serif;
   font-size: 1rem;
   font-weight: 500;
+  line-height: 1.35;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -228,6 +315,14 @@
 .botoes-navegacao .pagina-cursos-certificacoes__btn-proximo,
 .botoes-navegacao .pagina-idiomas__btn-proximo {
   flex: 1;
+  min-height: 52px;
+  height: auto;
+  padding: 0.85rem 1.5rem;
+  line-height: 1.35;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   margin-top: 0 !important;
 }
 
@@ -299,16 +394,16 @@
 
   .layout-cadastro__card {
     height: auto;
-    min-height: 160px;
-    border-radius: 26px;
-    padding: 1.75rem 1.25rem 1.5rem;
+    min-height: 140px;
+    border-radius: 20px;
+    padding: 1.5rem 1.25rem;
     justify-content: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
 
   .layout-cadastro__titulo {
-    font-size: clamp(1.25rem, 5vw, 1.65rem);
+    font-size: clamp(1.2rem, 4vw, 1.5rem);
     max-width: 90%;
     margin: 0;
     line-height: 1.2;
@@ -338,5 +433,80 @@
     margin-top: 0.25rem;
     margin-bottom: 2rem;
     gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-cadastro__visual {
+    padding: 0.75rem 1rem 0 1rem;
+  }
+
+  .layout-cadastro__card {
+    min-height: unset;
+    border-radius: 14px;
+    padding: 0.75rem 1.15rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .layout-cadastro__titulo {
+    display: none;
+  }
+
+  .layout-cadastro__subtitulo {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #ffffff;
+    text-align: left;
+    margin: 0;
+  }
+
+  .layout-cadastro__conteudo {
+    padding: 1rem 1rem 3rem 1rem;
+  }
+
+  .layout-cadastro__progresso {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout-cadastro__btn-voltar-texto-completo {
+    display: none;
+  }
+
+  .layout-cadastro__btn-voltar-texto-curto {
+    display: inline;
+  }
+
+  .layout-cadastro__topo {
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .layout-cadastro__topo-direita {
+    gap: 0.5rem;
+  }
+
+  .botoes-navegacao {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .botoes-navegacao .btn-voltar,
+  .botoes-navegacao .btn-proximo,
+  .botoes-navegacao .pagina-cursos-certificacoes__btn-proximo,
+  .botoes-navegacao .pagina-idiomas__btn-proximo {
+    width: 100%;
+    min-width: 100%;
+    min-height: 52px;
+    height: auto;
+    padding: 0.95rem 1.25rem;
+    line-height: 1.35;
+    flex: none;
   }
 }

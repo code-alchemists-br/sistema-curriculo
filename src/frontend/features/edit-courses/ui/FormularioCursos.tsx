@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import {
+  LIMITES_CURSO,
   criarCursoVazio,
   cursoEstaVazio,
   normalizarCurso,
@@ -265,6 +266,7 @@ export function FormularioCursos({
                 }
                 aria-invalid={errosCurso?.nome !== undefined ? true : undefined}
                 id={`${prefixo}-nome`}
+                maxLength={LIMITES_CURSO.nome}
                 onChange={(e) => atualizarCurso(indice, "nome", e.target.value)}
                 placeholder="Ex.: Formação React, Node.js do Zero..."
                 type="text"
@@ -294,6 +296,7 @@ export function FormularioCursos({
                   errosCurso?.instituicao !== undefined ? true : undefined
                 }
                 id={`${prefixo}-instituicao`}
+                maxLength={LIMITES_CURSO.instituicao}
                 onChange={(e) =>
                   atualizarCurso(indice, "instituicao", e.target.value)
                 }
@@ -323,6 +326,7 @@ export function FormularioCursos({
                 }
                 id={`${prefixo}-carga`}
                 inputMode="numeric"
+                maxLength={LIMITES_CURSO.cargaHoraria}
                 onChange={(e) =>
                   atualizarCurso(indice, "cargaHoraria", e.target.value)
                 }

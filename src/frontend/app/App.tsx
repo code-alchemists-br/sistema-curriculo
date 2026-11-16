@@ -20,7 +20,10 @@ import type { Idioma } from "../features/edit-languages";
 import type { ValoresDadosPessoais } from "../features/edit-personal-data";
 import type { Experiencia } from "../features/edit-professional-experience";
 import type { Habilidades } from "../features/edit-skills";
-import type { CurriculoParaValidacao } from "../features/validate-curriculum";
+import {
+  validarCurriculo,
+  type CurriculoParaValidacao,
+} from "../features/validate-curriculum";
 import { PaginaAcessoEstudante } from "../pages/acesso-estudante";
 import { PaginaCompetencias } from "../pages/competencias";
 import { PaginaCursosCertificacoes } from "../pages/cursos-certificacoes";
@@ -450,7 +453,7 @@ export function App() {
     setIdiomas(undefined);
     setCompetencias(undefined);
     setProjetos(undefined);
-    setModelo("classico");
+    setModelo(undefined);
     if (typeof window !== "undefined") {
       try {
         sessionStorage.removeItem("liminal_usuario_sessao");
@@ -494,9 +497,13 @@ export function App() {
   const [projetos, setProjetos] = useState<
     ValoresProjetoAcademico[] | undefined
   >(() => carregarRascunho()?.projetos);
-  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo>(
-    () => carregarRascunho()?.modelo ?? "classico",
+  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo | undefined>(
+    () => carregarRascunho()?.modelo,
   );
+  const modeloAtivo: ModeloApresentacaoCurriculo = modelo ?? "classico";
+  const [origemSelecaoModelo, setOrigemSelecaoModelo] = useState<
+    "wizard" | "visualizacao"
+  >("wizard");
   const [autoBaixarPdf, setAutoBaixarPdf] = useState(false);
   // E-mail cujo currículo já veio do banco; enquanto for outro, está carregando.
   const [curriculoCarregadoDe, setCurriculoCarregadoDe] = useState<
@@ -1015,7 +1022,8 @@ export function App() {
     return comAviso(
       <PaginaCadastroProjetosAcademicos
         aoAlterarProjetos={alterarProjetos}
-        onAvancar={() =>
+        onAvancar={() => {
+          setOrigemSelecaoModelo("wizard");
           void salvarEAvancar(
             (signal) =>
               clienteCurriculo!.salvarProjetos(
@@ -1023,8 +1031,8 @@ export function App() {
                 signal,
               ),
             "selecionar-modelo",
-          )
-        }
+          );
+        }}
         onVoltar={() => navegar("competencias")}
         onVoltarInicio={voltarAoInicio}
         projetosIniciais={projetos}
@@ -1033,18 +1041,37 @@ export function App() {
   }
 
   if (rotaAtiva === "selecionar-modelo") {
+    const veioDeVisualizacao = origemSelecaoModelo === "visualizacao";
+
     return comAviso(
       <PaginaSelecaoModeloCurriculo
+        aoAlterarModeloInstantaneo={(novoModelo) => {
+          setModelo(novoModelo);
+        }}
         aoConfirmar={(novoModelo) => {
           setModelo(novoModelo);
-          void salvarEAvancar(async (signal) => {
-            await clienteCurriculo!.salvarModelo(novoModelo, signal);
-            if (!signal.aborted) setCurriculoPronto(true);
-          }, "validacao-curriculo");
+          if (veioDeVisualizacao) setOrigemSelecaoModelo("wizard");
+          void salvarEAvancar(
+            async (signal) => {
+              await clienteCurriculo!.salvarModelo(novoModelo, signal);
+              if (!signal.aborted) setCurriculoPronto(true);
+            },
+            veioDeVisualizacao ? "visualizar-curriculo" : "validacao-curriculo",
+          );
         }}
         modeloInicial={modelo}
-        onVoltar={() => navegar("projetos-academicos")}
-        onVoltarInicio={voltarAoInicio}
+        onVoltar={() => {
+          if (veioDeVisualizacao) {
+            setOrigemSelecaoModelo("wizard");
+            navegar("visualizar-curriculo");
+          } else {
+            navegar("projetos-academicos");
+          }
+        }}
+        onVoltarInicio={() => {
+          setOrigemSelecaoModelo("wizard");
+          voltarAoInicio();
+        }}
         perfilEstudante={{
           experiencias,
           formacoes,
@@ -1064,8 +1091,23 @@ export function App() {
         dados={dadosValidacao}
         onCorrigirSecao={(secaoId) => navegar(secaoId)}
         onExportarPdf={() => {
-          setAutoBaixarPdf(true);
-          navegar("visualizar-curriculo");
+          const previaCalculada = montarPreviaCurriculo({
+            dadosPessoais,
+            formacoes,
+            experiencias,
+            cursos,
+            certificacoes,
+            idiomas,
+            competencias,
+            projetos,
+            modelo: modeloAtivo,
+          });
+          const nomeEstudante =
+            dadosPessoais?.nomeCompleto?.trim() || "Estudante";
+          void exportarElementoParaPdf({
+            previa: previaCalculada,
+            nomeArquivo: `Curriculo - ${nomeEstudante}`,
+          });
         }}
         onExportarDocx={() => {
           const previaCalculada = montarPreviaCurriculo({
@@ -1077,7 +1119,7 @@ export function App() {
             idiomas,
             competencias,
             projetos,
-            modelo,
+            modelo: modeloAtivo,
           });
           const nomeEstudante =
             dadosPessoais?.nomeCompleto?.trim() || "Estudante";
@@ -1087,13 +1129,17 @@ export function App() {
           });
         }}
         onVisualizarPreview={() => navegar("visualizar-curriculo")}
-        onVoltar={() => navegar("selecionar-modelo")}
+        onVoltar={() => {
+          setOrigemSelecaoModelo("wizard");
+          navegar("selecionar-modelo");
+        }}
         onVoltarInicio={voltarAoInicio}
       />
     );
   }
 
   if (rotaAtiva === "visualizar-curriculo") {
+    const resultadoValidacao = validarCurriculo(dadosValidacao);
     const previaCalculada = montarPreviaCurriculo({
       dadosPessoais,
       formacoes,
@@ -1103,14 +1149,25 @@ export function App() {
       idiomas,
       competencias,
       projetos,
-      modelo,
+      modelo: modeloAtivo,
     });
 
-    return (
+    return comAviso(
       <PaginaVisualizacaoCurriculo
-        aoAlterarModelo={() => navegar("selecionar-modelo")}
+        aoAlterarModelo={() => {
+          setOrigemSelecaoModelo("visualizacao");
+          navegar("selecionar-modelo");
+        }}
+        aoTrocarModelo={(novoModelo) => {
+          setModelo(novoModelo);
+          // Grava a troca no banco; se falhar, o aviso do rodapé mostra o motivo.
+          void salvarEAvancar(
+            (signal) => clienteCurriculo!.salvarModelo(novoModelo, signal),
+            "visualizar-curriculo",
+          );
+        }}
         autoBaixar={autoBaixarPdf}
-        modelo={modelo}
+        modelo={modeloAtivo}
         onExportarPdf={() => {
           setAutoBaixarPdf(false);
         }}
@@ -1122,8 +1179,9 @@ export function App() {
           setAutoBaixarPdf(false);
           voltarAoInicio();
         }}
+        podeExportar={resultadoValidacao.podeExportarPdf}
         previa={previaCalculada}
-      />
+      />,
     );
   }
 
@@ -1252,20 +1310,20 @@ export function App() {
       idiomas,
       competencias,
       projetos,
-      modelo,
+      modelo: modeloAtivo,
     });
     const nomeArquivo = `Curriculo - ${dadosDoPerfil.nomeCompleto}`;
 
     return (
       <PaginaMeuPerfil
-        modelo={modelo}
+        modelo={modeloAtivo}
         onEditarCurriculo={() =>
           navegar(possuiCurriculo ? "validacao-curriculo" : "dados-pessoais")
         }
         onEditarPerfil={() => navegar("dados-pessoais")}
-        aoBaixarCurriculo={(formato, folha) =>
+        aoBaixarCurriculo={(formato) =>
           formato === "pdf"
-            ? exportarElementoParaPdf({ elemento: folha, nomeArquivo })
+            ? exportarElementoParaPdf({ previa: previaDoPerfil, nomeArquivo })
             : exportarPreviaParaDocx({ previa: previaDoPerfil, nomeArquivo })
         }
         onVoltarInicio={voltarAoInicio}

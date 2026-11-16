@@ -5,6 +5,13 @@ import type {
   ProjetoAcademicoEntrada,
 } from "../api/cliente-projetos-academicos";
 
+/** Limites de caracteres para os campos de projeto acadêmico. */
+export const LIMITES_PROJETO_ACADEMICO = {
+  titulo: 100,
+  tecnologias: 200,
+  descricao: 1500,
+} as const;
+
 /** Representa os valores locais que o estudante informa para cadastrar um projeto. */
 export type ValoresProjetoAcademico = ProjetoAcademicoEntrada;
 
@@ -14,7 +21,7 @@ export type ErrosProjetoAcademico = Partial<
 >;
 
 /**
- * Valida presença mínima para orientar o preenchimento antes do envio.
+ * Valida presença mínima e limites para orientar o preenchimento antes do envio.
  *
  * A função exige título, descrição e tecnologias utilizadas para garantir
  * informações suficientes sobre a participação e competências aplicadas no projeto.
@@ -24,12 +31,25 @@ export function validarProjetoAcademico(
 ): ErrosProjetoAcademico {
   const erros: ErrosProjetoAcademico = {};
 
-  if (valores.titulo.trim() === "")
+  if (valores.titulo.trim() === "") {
     erros.titulo = "Informe o título do projeto.";
-  if (valores.descricao.trim() === "")
+  } else if (valores.titulo.length > LIMITES_PROJETO_ACADEMICO.titulo) {
+    erros.titulo = `O título deve ter no máximo ${LIMITES_PROJETO_ACADEMICO.titulo} caracteres.`;
+  }
+
+  if (valores.descricao.trim() === "") {
     erros.descricao = "Descreva o objetivo ou sua contribuição no projeto.";
-  if (valores.tecnologias.trim() === "")
+  } else if (valores.descricao.length > LIMITES_PROJETO_ACADEMICO.descricao) {
+    erros.descricao = `A descrição deve ter no máximo ${LIMITES_PROJETO_ACADEMICO.descricao} caracteres.`;
+  }
+
+  if (valores.tecnologias.trim() === "") {
     erros.tecnologias = "Informe as tecnologias utilizadas no projeto.";
+  } else if (
+    valores.tecnologias.length > LIMITES_PROJETO_ACADEMICO.tecnologias
+  ) {
+    erros.tecnologias = `As tecnologias devem ter no máximo ${LIMITES_PROJETO_ACADEMICO.tecnologias} caracteres.`;
+  }
 
   return erros;
 }

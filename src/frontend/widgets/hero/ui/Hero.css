@@ -304,13 +304,20 @@
   }
 
   .hero-section__title {
-    font-size: 2.75rem;
+    font-size: clamp(2.1rem, 7.5vw, 2.75rem);
   }
 
   .hero-section__subtitle {
-    font-size: 1.125rem;
+    font-size: 1.05rem;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .interactive-button {
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .hero-section__visual {

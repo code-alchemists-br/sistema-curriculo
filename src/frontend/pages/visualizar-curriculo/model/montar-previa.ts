@@ -33,7 +33,7 @@ export interface DadosParaMontagemPrevia {
  * troca pelo texto que o recrutador deve ler. Valores desconhecidos aparecem
  * como vieram.
  */
-const ROTULOS_NIVEL_FORMACAO: Record<string, string> = {
+const ROTULOS_NIVEL_FORMACAO: Readonly<Record<string, string>> = {
   ensino_fundamental: "Ensino fundamental",
   ensino_medio: "Ensino médio",
   tecnico: "Técnico",
@@ -44,7 +44,7 @@ const ROTULOS_NIVEL_FORMACAO: Record<string, string> = {
   doutorado: "Doutorado",
 };
 
-const ROTULOS_STATUS_FORMACAO: Record<string, string> = {
+const ROTULOS_STATUS_FORMACAO: Readonly<Record<string, string>> = {
   em_andamento: "Em andamento",
   concluido: "Concluído",
   interrompido: "Interrompido",
@@ -106,20 +106,27 @@ export function montarPreviaCurriculo(
         curriculo_lattes: lattesFinal,
       },
     },
-    formacoes: formacoes.map((formacao, index) => ({
-      id: `formacao-${index + 1}`,
-      instituicao: formacao.instituicao || "Instituição de ensino",
-      curso: formacao.curso || "Curso superior",
-      nivel: formacao.nivel
-        ? (ROTULOS_NIVEL_FORMACAO[formacao.nivel] ?? formacao.nivel)
-        : "Graduação",
-      status: ROTULOS_STATUS_FORMACAO[formacao.status] ?? "Em andamento",
-      inicio: normalizarData(formacao.dataInicio),
-      fim:
-        formacao.status === "concluido" && formacao.dataFim
-          ? normalizarData(formacao.dataFim)
-          : null,
-    })),
+    formacoes: formacoes.map((formacao, index) => {
+      const nivelFormatado =
+        (formacao.nivel && ROTULOS_NIVEL_FORMACAO[formacao.nivel]) ||
+        formacao.nivel ||
+        "Graduação";
+      const statusFormatado =
+        (formacao.status && ROTULOS_STATUS_FORMACAO[formacao.status]) ||
+        "Em andamento";
+      return {
+        id: `formacao-${index + 1}`,
+        instituicao: formacao.instituicao || "Instituição de ensino",
+        curso: formacao.curso?.trim() || nivelFormatado || "Curso superior",
+        nivel: nivelFormatado,
+        status: statusFormatado,
+        inicio: normalizarData(formacao.dataInicio),
+        fim:
+          formacao.dataFim && formacao.dataFim.trim().length > 0
+            ? normalizarData(formacao.dataFim)
+            : null,
+      };
+    }),
     experiencias: experiencias.map((exp, index) => ({
       id: `experiencia-${index + 1}`,
       empresa: exp.empresa || "Empresa",

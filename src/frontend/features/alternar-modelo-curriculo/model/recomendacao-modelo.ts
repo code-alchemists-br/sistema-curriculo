@@ -82,6 +82,31 @@ export function obterModeloRecomendadoPorObjetivo(
 }
 
 /**
+ * Retorna o objetivo correspondente a um modelo de apresentação específico,
+ * mantendo o seletor de objetivo sincronizado com o modelo ativo.
+ */
+export function obterObjetivoPorModelo(
+  modelo: ModeloApresentacaoCurriculo,
+): ObjetivoCurriculo {
+  switch (modelo) {
+    case "ats-simples":
+      return "ats-simples";
+    case "classico":
+      return "administrativo-corporativo";
+    case "compacto":
+      return "compacto";
+    case "moderno":
+      return "tecnologia";
+    case "criativo":
+      return "criativo-design";
+    case "academico":
+      return "academico-pesquisador";
+    case "primeiro-emprego":
+      return "primeiro-emprego";
+  }
+}
+
+/**
  * Produz uma recomendação textual alinhada ao objetivo e modelo escolhidos.
  *
  * - O que faz: Relaciona a categoria informada a um modelo oficial do catálogo.

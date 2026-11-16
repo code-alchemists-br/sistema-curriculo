@@ -6,6 +6,7 @@ import {
   type ClienteProjetosAcademicos,
 } from "../api/cliente-projetos-academicos";
 import {
+  LIMITES_PROJETO_ACADEMICO,
   traduzirFalhaCadastroProjeto,
   validarListaProjetosAcademicos,
   validarProjetoAcademico,
@@ -340,6 +341,7 @@ export function FormularioCadastroProjetoAcademico({
                   erro={errosItem.titulo}
                   id={`${prefixo}-titulo`}
                   label="Título do projeto"
+                  maxLength={LIMITES_PROJETO_ACADEMICO.titulo}
                   obrigatorio
                   onChange={(valor) => atualizarCampo(indice, "titulo", valor)}
                   placeholder="Ex.: Sistema de Gestão Acadêmica"
@@ -347,8 +349,10 @@ export function FormularioCadastroProjetoAcademico({
                 />
                 <CampoTexto
                   erro={errosItem.descricao}
+                  exibirContador
                   id={`${prefixo}-descricao`}
                   label="Descrição"
+                  maxLength={LIMITES_PROJETO_ACADEMICO.descricao}
                   multiline
                   obrigatorio
                   onChange={(valor) =>
@@ -367,6 +371,7 @@ export function FormularioCadastroProjetoAcademico({
                   erro={errosItem.tecnologias}
                   id={`${prefixo}-tecnologias`}
                   label="Tecnologias utilizadas"
+                  maxLength={LIMITES_PROJETO_ACADEMICO.tecnologias}
                   obrigatorio
                   onChange={(valor) =>
                     atualizarCampo(indice, "tecnologias", valor)
@@ -470,6 +475,8 @@ interface CampoTextoProps {
   onChange: (valor: string) => void;
   placeholder?: string;
   value: string;
+  maxLength?: number;
+  exibirContador?: boolean;
 }
 
 /**
@@ -488,12 +495,22 @@ function CampoTexto({
   onChange,
   placeholder,
   value,
+  maxLength,
+  exibirContador = false,
 }: CampoTextoProps) {
   const idErro = `${id}-erro`;
   const atributosDeAcesso = {
     "aria-describedby": erro === undefined ? undefined : idErro,
     "aria-invalid": erro === undefined ? undefined : true,
   };
+
+  const tamanhoAtual = value.length;
+  let classeContador = "formulario-projeto__contador-caracteres";
+  if (maxLength && tamanhoAtual >= maxLength) {
+    classeContador += " formulario-projeto__contador-caracteres--limite";
+  } else if (maxLength && tamanhoAtual >= maxLength * 0.8) {
+    classeContador += " formulario-projeto__contador-caracteres--alerta";
+  }
 
   return (
     <div className="field">
@@ -507,6 +524,7 @@ function CampoTexto({
         <textarea
           {...atributosDeAcesso}
           id={id}
+          maxLength={maxLength}
           onChange={(evento) => onChange(evento.target.value)}
           placeholder={placeholder}
           required={obrigatorio}
@@ -517,12 +535,18 @@ function CampoTexto({
         <input
           {...atributosDeAcesso}
           id={id}
+          maxLength={maxLength}
           onChange={(evento) => onChange(evento.target.value)}
           placeholder={placeholder}
           required={obrigatorio}
           type="text"
           value={value}
         />
+      )}
+      {exibirContador && maxLength !== undefined && (
+        <span className={classeContador} aria-live="polite">
+          {tamanhoAtual}/{maxLength} caracteres
+        </span>
       )}
       {erro !== undefined && (
         <p className="field__error" id={idErro}>

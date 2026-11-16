@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   criarClienteAssistenteIa,
@@ -9,6 +9,7 @@ import {
   AlternadorModeloCurriculo,
   inferirObjetivoDoPerfil,
   obterModeloRecomendadoPorObjetivo,
+  obterObjetivoPorModelo,
   obterRecomendacaoModelo,
   OPCOES_OBJETIVO_CURRICULO,
   resumirPerfilParaIa,
@@ -35,6 +36,8 @@ export interface PaginaSelecaoModeloCurriculoProps {
   modeloInicial?: ModeloApresentacaoCurriculo;
   /** Ação que a composição da rota usa para associar o modelo ao currículo. */
   aoConfirmar: (modelo: ModeloApresentacaoCurriculo) => void;
+  /** Notifica imediatamente a seleção de um modelo para persistência de estado. */
+  aoAlterarModeloInstantaneo?: (modelo: ModeloApresentacaoCurriculo) => void;
   /** Ação para retornar à etapa anterior. */
   onVoltar?: () => void;
   /** Ação opcional para retornar à página inicial / hero. */
@@ -51,8 +54,9 @@ export interface PaginaSelecaoModeloCurriculoProps {
  * - Qual finalidade atende: Permite que a rota de criação associe um modelo válido à versão de currículo sem duplicar o seletor já existente na feature.
  */
 export function PaginaSelecaoModeloCurriculo({
-  modeloInicial = "classico",
+  modeloInicial,
   aoConfirmar,
+  aoAlterarModeloInstantaneo,
   onVoltar,
   onVoltarInicio,
   perfilEstudante,
@@ -67,16 +71,28 @@ export function PaginaSelecaoModeloCurriculo({
     [objetivoInferido],
   );
 
-  const [objetivo, setObjetivo] = useState<ObjetivoCurriculo>(() =>
-    perfilEstudante ? objetivoInferido : "outro",
-  );
+  const [objetivo, setObjetivo] = useState<ObjetivoCurriculo>(() => {
+    if (modeloInicial) {
+      return obterObjetivoPorModelo(modeloInicial);
+    }
+    return perfilEstudante ? objetivoInferido : "outro";
+  });
   const [modeloSelecionado, setModeloSelecionado] =
     useState<ModeloApresentacaoCurriculo>(() => {
-      if (modeloInicial && modeloInicial !== "classico") {
+      if (modeloInicial) {
         return modeloInicial;
       }
-      return perfilEstudante ? modeloInferido : modeloInicial;
+      return perfilEstudante ? modeloInferido : "classico";
     });
+
+  // Sem modelo salvo, avisa a composição do modelo sugerido logo ao abrir,
+  // para a prévia e o estado da rota já usarem a mesma escolha da tela.
+  useEffect(() => {
+    if (!modeloInicial) {
+      aoAlterarModeloInstantaneo?.(modeloSelecionado);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const clienteIa = useMemo(() => criarClienteAssistenteIa(), []);
   const perfilParaIa = useMemo(
@@ -104,11 +120,13 @@ export function PaginaSelecaoModeloCurriculo({
     setIaAutomatica(false);
     const modeloSugerido = obterModeloRecomendadoPorObjetivo(novoObjetivo);
     setModeloSelecionado(modeloSugerido);
+    aoAlterarModeloInstantaneo?.(modeloSugerido);
   }
 
   function aoRecomendarComIa(modelo: ModeloSugerido): void {
     setModeloIa(modelo);
     setModeloSelecionado(modelo);
+    aoAlterarModeloInstantaneo?.(modelo);
   }
 
   return (
@@ -172,7 +190,11 @@ export function PaginaSelecaoModeloCurriculo({
         <AlternadorModeloCurriculo
           modeloRecomendado={modeloRecomendado}
           modeloSelecionado={modeloSelecionado}
-          onSelecionarModelo={setModeloSelecionado}
+          onSelecionarModelo={(novo) => {
+            setModeloSelecionado(novo);
+            setObjetivo(obterObjetivoPorModelo(novo));
+            aoAlterarModeloInstantaneo?.(novo);
+          }}
         />
 
         <div className="botoes-navegacao">

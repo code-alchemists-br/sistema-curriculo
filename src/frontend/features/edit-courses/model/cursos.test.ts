@@ -55,6 +55,20 @@ describe("validarCurso", () => {
       "Informe uma carga horária válida (em horas).",
     );
   });
+
+  it("reporta campos que excedem os limites máximos permitidos", () => {
+    const erros = validarCurso({
+      nome: "a".repeat(201),
+      instituicao: "b".repeat(201),
+      cargaHoraria: "10001",
+    });
+
+    expect(erros.nome).toBe("Informe no máximo 200 caracteres.");
+    expect(erros.instituicao).toBe("Informe no máximo 200 caracteres.");
+    expect(erros.cargaHoraria).toBe(
+      "Informe uma carga horária válida (em horas).",
+    );
+  });
 });
 
 describe("validarListaCursos", () => {

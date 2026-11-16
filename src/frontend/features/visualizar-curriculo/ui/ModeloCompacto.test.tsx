@@ -74,7 +74,9 @@ describe("ModeloCompacto", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("ana.silva@fatec.sp.gov.br")).toBeInTheDocument();
     expect(screen.getByText("FATEC-SP")).toBeInTheDocument();
+    expect(screen.getByText("01/02/2023 — Atual")).toBeInTheDocument();
     expect(screen.getByText("Empresa Exemplo")).toBeInTheDocument();
+    expect(screen.getByText("15/01/2024 — Atual")).toBeInTheDocument();
     expect(screen.getByText("Sistema Currículo")).toBeInTheDocument();
     expect(screen.getByText("TypeScript — Intermediário")).toBeInTheDocument();
     expect(screen.getByText("Inglês — Avançado")).toBeInTheDocument();

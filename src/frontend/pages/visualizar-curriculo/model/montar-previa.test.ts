@@ -89,6 +89,35 @@ describe("montarPreviaCurriculo", () => {
     expect(previa.formacoes[0].status).toBe("Interrompido");
   });
 
+  it("preserva a previsão de conclusão e formata o nível corretamente em formações em andamento", () => {
+    const previa = montarPreviaCurriculo({
+      formacoes: [
+        {
+          instituicao: "USP",
+          curso: "Ciência da Computação",
+          nivel: "graduacao",
+          status: "em_andamento",
+          dataInicio: "2023-02-01",
+          dataFim: "2026-12-15",
+        },
+        {
+          instituicao: "ETEC",
+          curso: "Desenvolvimento de Sistemas",
+          nivel: "tecnico",
+          status: "em_andamento",
+          dataInicio: "2024-02-01",
+          dataFim: "",
+        },
+      ],
+    });
+
+    expect(previa.formacoes[0].nivel).toBe("Graduação");
+    expect(previa.formacoes[0].status).toBe("Em andamento");
+    expect(previa.formacoes[0].fim).toBe("2026-12-15");
+    expect(previa.formacoes[1].nivel).toBe("Técnico");
+    expect(previa.formacoes[1].fim).toBeNull();
+  });
+
   it("atribui valores seguros por padrão quando os dados estão vazios ou parciais", () => {
     const previa = montarPreviaCurriculo({});
 

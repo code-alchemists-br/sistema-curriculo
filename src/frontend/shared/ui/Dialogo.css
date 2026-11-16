@@ -69,3 +69,13 @@
   flex-direction: column;
   gap: 1rem;
 }
+
+@media (max-width: 480px) {
+  .dialogo-overlay {
+    padding: 1rem;
+  }
+
+  .dialogo {
+    padding: 1.25rem;
+  }
+}

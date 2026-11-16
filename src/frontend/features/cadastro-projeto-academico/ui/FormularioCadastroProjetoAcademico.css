@@ -36,6 +36,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   margin-bottom: 1.25rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -229,7 +231,9 @@
 
 .formulario-projeto-academico .btn-proximo {
   width: 100%;
-  height: 52px;
+  min-height: 52px;
+  height: auto;
+  padding: 0.85rem 1.5rem;
   background-color: #e5e5e5;
   color: #000000;
   border: none;
@@ -237,6 +241,11 @@
   font-family: "Poppins", sans-serif;
   font-size: 1rem;
   font-weight: 500;
+  line-height: 1.35;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   cursor: pointer;
   transition: background-color 0.2s ease;
   margin-top: 1rem;
@@ -317,4 +326,24 @@
   background-color: rgba(250, 204, 21, 0.12);
   color: #fde68a;
   border: 1px solid rgba(250, 204, 21, 0.35);
+}
+
+.formulario-projeto__contador-caracteres {
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 0.35rem;
+  font-family: "Poppins", sans-serif;
+  transition: color 0.2s ease;
+}
+
+.formulario-projeto__contador-caracteres--alerta {
+  color: #ffaa00;
+  font-weight: 500;
+}
+
+.formulario-projeto__contador-caracteres--limite {
+  color: #ff6a00;
+  font-weight: 600;
 }

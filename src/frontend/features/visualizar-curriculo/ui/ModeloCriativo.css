@@ -11,6 +11,19 @@
   box-shadow: 0 0.125rem 0.75rem rgb(15 23 42 / 15%);
 }
 
+.modelo-criativo h1,
+.modelo-criativo h2,
+.modelo-criativo h3,
+.modelo-criativo p,
+.modelo-criativo li,
+.modelo-criativo span,
+.modelo-criativo strong,
+.modelo-criativo a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .modelo-criativo__lateral {
   padding: 3rem 1.75rem;
   color: #ffffff;

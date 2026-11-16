@@ -3,6 +3,7 @@
   --moderno-secundario: #5e6672;
   --moderno-linha: #d5d9df;
   box-sizing: border-box;
+  overflow: hidden;
   min-height: 52rem;
   padding: clamp(2rem, 6vw, 4.5rem);
   color: var(--moderno-texto);
@@ -11,18 +12,31 @@
   box-shadow: 0 0.125rem 0.75rem rgb(15 23 42 / 15%);
 }
 
+.modelo-moderno h1,
+.modelo-moderno h2,
+.modelo-moderno h3,
+.modelo-moderno p,
+.modelo-moderno li,
+.modelo-moderno span,
+.modelo-moderno strong,
+.modelo-moderno a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .modelo-moderno__cabecalho {
   padding-bottom: 1.75rem;
   border-bottom: 0.15rem solid var(--moderno-linha);
 }
 
 .modelo-moderno__cabecalho h1 {
-  max-width: 14ch;
+  max-width: 100%;
   margin: 0;
   font-size: clamp(2rem, 5vw, 3.25rem);
   font-weight: 800;
   letter-spacing: 0.04em;
-  line-height: 0.95;
+  line-height: 1.08;
   text-transform: uppercase;
 }
 
