@@ -387,6 +387,7 @@ export function App() {
   function aoFazerLogout(): void {
     setUsuarioLogado(null);
     setCurriculoCarregadoDe(null);
+    setCurriculoPronto(false);
     limparRascunho();
     setDadosPessoais(undefined);
     setFormacoes(undefined);
@@ -454,6 +455,8 @@ export function App() {
       curriculoCarregadoDe !== usuarioLogado.email,
   );
   const [erroSalvamento, setErroSalvamento] = useState<string | null>(null);
+  // Currículo pronto = o estudante chegou a escolher e salvar o modelo.
+  const [curriculoPronto, setCurriculoPronto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   // Valores mais recentes de cada seção. Algumas etapas chamam "salvar" e
   // "avançar" no mesmo clique, antes de o estado do React atualizar; por isso
@@ -495,6 +498,24 @@ export function App() {
         : undefined,
     );
     if (c.modelo) setModelo(c.modelo);
+    setCurriculoPronto(c.modelo !== null);
+    // O login só devolve o e-mail; o nome de verdade vem do banco.
+    const nome = c.dadosPessoais.nomeCompleto.trim();
+    if (nome) {
+      setUsuarioLogado((atual) => {
+        if (!atual || atual.nome === nome) return atual;
+        const atualizado = { ...atual, nome };
+        try {
+          sessionStorage.setItem(
+            "liminal_usuario_sessao",
+            JSON.stringify(atualizado),
+          );
+        } catch {
+          // Ignora erro em ambientes sem suporte a sessionStorage
+        }
+        return atualizado;
+      });
+    }
   }
 
   /** Esquece o estudante deste navegador (sessão encerrada ou expirada). */
@@ -903,10 +924,10 @@ export function App() {
       <PaginaSelecaoModeloCurriculo
         aoConfirmar={(novoModelo) => {
           setModelo(novoModelo);
-          void salvarEAvancar(
-            () => clienteCurriculo!.salvarModelo(novoModelo),
-            "validacao-curriculo",
-          );
+          void salvarEAvancar(async () => {
+            await clienteCurriculo!.salvarModelo(novoModelo);
+            setCurriculoPronto(true);
+          }, "validacao-curriculo");
         }}
         modeloInicial={modelo}
         onVoltar={() => navegar("projetos-academicos")}
@@ -1149,6 +1170,7 @@ export function App() {
       }
       onNavegarTermosDeUso={() => abrirDocumentoPublico("termos-de-uso")}
       usuarioLogado={usuarioLogado}
+      temCurriculoPronto={curriculoPronto}
       temProgressoCurriculo={Boolean(
         dadosPessoais?.nomeCompleto ||
         (formacoes && formacoes.length > 0) ||

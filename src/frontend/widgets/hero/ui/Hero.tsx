@@ -4,13 +4,34 @@ import imagemHero from "../../../shared/assets/images/imagem_hero.webp";
 import "./Hero.css";
 
 export interface HeroProps {
+  /** Ação do botão principal (o nome vem da época em que só criava currículo). */
   onCriarCurriculo?: () => void;
   textoBotao?: string;
+  /** Selo curto acima do título, ex.: "Seu currículo está pronto". */
+  sobretitulo?: string;
+  titulo?: string;
+  subtitulo?: string;
+  /** Botão secundário ao lado do principal. */
+  acaoSecundaria?: { texto: string; aoClicar: () => void };
 }
 
+/**
+ * Seção de abertura da página inicial.
+ *
+ * - O que faz: mostra título, texto de apoio, o botão principal com efeito de
+ *   luz e, opcionalmente, um selo e um botão secundário.
+ * - Como faz: os textos têm padrões para quem ainda vai criar o currículo e
+ *   podem ser trocados por props pela página.
+ * - Qual finalidade atende: a mesma abertura serve para convidar a criar o
+ *   currículo ou, para quem já tem um, levar direto às vagas.
+ */
 export function Hero({
   onCriarCurriculo,
   textoBotao = "CRIAR CURRÍCULO",
+  sobretitulo,
+  titulo = "O currículo que abre portas",
+  subtitulo = "Você já aprendeu muita coisa na faculdade. A LIMINAL ajuda você a organizar seus projetos, cursos e habilidades em um currículo limpo, bonito e que os recrutadores realmente leem.",
+  acaoSecundaria,
 }: HeroProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const lightEffectRef = useRef<HTMLDivElement | null>(null);
@@ -98,15 +119,15 @@ export function Hero({
     <section className="hero-section" aria-labelledby="hero-title">
       <div className="hero-section__container">
         <div className="hero-section__content">
+          {sobretitulo && (
+            <p className="hero-section__selo">{sobretitulo}</p>
+          )}
+
           <h1 id="hero-title" className="hero-section__title">
-            O currículo que abre portas
+            {titulo}
           </h1>
 
-          <p className="hero-section__subtitle">
-            Você já aprendeu muita coisa na faculdade. A LIMINAL ajuda você a
-            organizar seus projetos, cursos e habilidades em um currículo limpo,
-            bonito e que os recrutadores realmente leem.
-          </p>
+          <p className="hero-section__subtitle">{subtitulo}</p>
 
           <div className="hero-section__actions">
             <div className="button-wrapper">
@@ -165,6 +186,15 @@ export function Hero({
                 </svg>
               </button>
             </div>
+            {acaoSecundaria && (
+              <button
+                className="hero-section__acao-secundaria"
+                onClick={acaoSecundaria.aoClicar}
+                type="button"
+              >
+                {acaoSecundaria.texto}
+              </button>
+            )}
           </div>
         </div>
       </div>
