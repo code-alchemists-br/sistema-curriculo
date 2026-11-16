@@ -55,7 +55,7 @@ export function PainelRevisaoIa({
         id={`${id}-status`}
       >
         {estado === "aprovado"
-          ? revisao?.situacao === "melhorado" && memoria.revisadoPara === texto
+          ? revisao?.sugestoes.length && memoria.revisadoPara === texto
             ? "✓ Texto aprovado pela IA. As sugestões abaixo são opcionais."
             : "✓ Texto aprovado pela IA."
           : estado === "invalido"

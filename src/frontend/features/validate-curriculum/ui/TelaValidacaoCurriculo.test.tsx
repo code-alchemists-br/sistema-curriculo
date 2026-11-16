@@ -104,4 +104,37 @@ describe("TelaValidacaoCurriculo", () => {
     await user.click(btnCorrigir);
     expect(onCorrigirSecao).toHaveBeenCalledWith("formacao-academica");
   });
+
+  it("leva cada seção válida ao seu formulário pelo atalho Editar", async () => {
+    const user = userEvent.setup();
+    const onCorrigirSecao = vi.fn();
+
+    render(
+      <TelaValidacaoCurriculo
+        dados={dadosFicticios}
+        onVisualizarPreview={vi.fn()}
+        onCorrigirSecao={onCorrigirSecao}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Editar Dados pessoais" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Editar Formação acadêmica" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Editar Experiências profissionais" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Editar Competências" }),
+    );
+
+    expect(onCorrigirSecao.mock.calls.map(([secao]) => secao)).toEqual([
+      "dados-pessoais",
+      "formacao-academica",
+      "experiencias-profissionais",
+      "competencias",
+    ]);
+  });
 });

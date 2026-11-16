@@ -51,6 +51,55 @@ describe("useRevisoesIa", () => {
     });
   });
 
+  it("para uma vez também quando o texto é válido, para mostrar a aprovação", async () => {
+    const { cliente } = clienteFalso(revisao("valido"));
+    const { result } = renderHook(() => useRevisoesIa(cliente));
+
+    let pendencias = {};
+    await act(async () => {
+      pendencias = await result.current.revisarAntesDeSalvar([
+        item("Criei uma API em Python para controlar o estoque da loja."),
+      ]);
+    });
+
+    expect(pendencias).toEqual({
+      0: expect.objectContaining({
+        tipo: "aviso",
+        mensagem: expect.stringMatching(/aprovado/),
+      }),
+    });
+  });
+
+  it("revisa os textos em paralelo, sem esperar um terminar para mandar o outro", async () => {
+    let liberar: () => void = () => {};
+    const espera = new Promise<void>((resolver) => {
+      liberar = resolver;
+    });
+    const revisar = vi.fn(async () => {
+      await espera;
+      return revisao("valido");
+    });
+    const cliente: ClienteAssistenteIa = {
+      revisar,
+      recomendarModelo: vi.fn(),
+    };
+    const { result } = renderHook(() => useRevisoesIa(cliente));
+
+    let andamento: Promise<unknown> = Promise.resolve();
+    act(() => {
+      andamento = result.current.revisarAntesDeSalvar([
+        item("Primeiro texto"),
+        item("Segundo texto"),
+      ]);
+    });
+
+    expect(revisar).toHaveBeenCalledTimes(2);
+    liberar();
+    await act(async () => {
+      await andamento;
+    });
+  });
+
   it("no segundo clique segue com o texto já aprovado sem chamar a IA de novo", async () => {
     const { cliente, revisar } = clienteFalso(revisao("melhorado"));
     const { result } = renderHook(() => useRevisoesIa(cliente));

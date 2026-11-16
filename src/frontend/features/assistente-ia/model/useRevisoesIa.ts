@@ -35,11 +35,14 @@ const MEMORIA_VAZIA: MemoriaRevisao = { iaIndisponivel: false };
  * revisa automaticamente os textos ainda não aprovados quando o estudante
  * tenta avançar.
  *
- * `revisarAntesDeSalvar` devolve, por índice, a pendência que impede salvar:
+ * `revisarAntesDeSalvar` envia ao mesmo tempo (em paralelo) todos os textos
+ * que ainda precisam de revisão, para o estudante esperar uma só resposta da
+ * IA em vez de uma por item. Devolve, por índice, a pendência que impede
+ * salvar:
  * - texto inválido (tipo "erro"): precisa ser reescrito;
- * - texto que acabou de receber sugestões de melhoria (tipo "aviso"): para
- *   uma vez, para o estudante ver as sugestões; no próximo clique ele segue
- *   com o próprio texto.
+ * - texto aceito, válido ou melhorável (tipo "aviso"): para uma vez, para o
+ *   estudante ver que a IA aprovou e conferir as sugestões; no próximo clique
+ *   ele segue com o próprio texto, sem nova chamada à IA.
  * Se a IA falhar, o item segue sem bloqueio (a IA é opcional).
  */
 export function useRevisoesIa(cliente: ClienteAssistenteIa) {
@@ -62,37 +65,37 @@ export function useRevisoesIa(cliente: ClienteAssistenteIa) {
       itens: TextoParaRevisar[],
     ): Promise<Record<number, PendenciaRevisao>> => {
       const bloqueios: Record<number, PendenciaRevisao> = {};
-      for (const [indice, item] of itens.entries()) {
-        const texto = item.texto.trim();
-        if (!texto) continue;
-        const memoria = atual.current[indice] ?? MEMORIA_VAZIA;
-        const estado = estadoDoTexto(memoria, item.texto);
-        if (estado === "aprovado" || estado === "ia-indisponivel") continue;
-        try {
-          const revisao = await cliente.revisar({
-            campo: item.campo,
-            texto: item.texto,
-            pergunta: item.pergunta,
-            contexto: item.contexto,
-          });
-          atualizar(indice, registrarRevisao(item.texto, revisao));
-          if (revisao.situacao === "invalido") {
-            bloqueios[indice] = {
-              tipo: "erro",
-              mensagem:
-                "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.",
-            };
-          } else if (revisao.situacao === "melhorado") {
-            bloqueios[indice] = {
-              tipo: "aviso",
-              mensagem:
-                "Texto aprovado. Veja as sugestões da IA ou clique em Próximo de novo para manter o seu.",
-            };
+      await Promise.all(
+        itens.map(async (item, indice) => {
+          if (!item.texto.trim()) return;
+          const memoria = atual.current[indice] ?? MEMORIA_VAZIA;
+          const estado = estadoDoTexto(memoria, item.texto);
+          if (estado === "aprovado" || estado === "ia-indisponivel") return;
+          try {
+            const revisao = await cliente.revisar({
+              campo: item.campo,
+              texto: item.texto,
+              pergunta: item.pergunta,
+              contexto: item.contexto,
+            });
+            atualizar(indice, registrarRevisao(item.texto, revisao));
+            bloqueios[indice] =
+              revisao.situacao === "invalido"
+                ? {
+                    tipo: "erro",
+                    mensagem:
+                      "A IA marcou este texto como inválido. Reescreva ou use um modelo sugerido.",
+                  }
+                : {
+                    tipo: "aviso",
+                    mensagem:
+                      "Texto aprovado pela IA. Veja as sugestões, se quiser, e clique em Próximo de novo para continuar.",
+                  };
+          } catch {
+            atualizar(indice, { ...memoria, iaIndisponivel: true });
           }
-        } catch {
-          atualizar(indice, { ...memoria, iaIndisponivel: true });
-        }
-      }
+        }),
+      );
       return bloqueios;
     },
     [cliente, atualizar],

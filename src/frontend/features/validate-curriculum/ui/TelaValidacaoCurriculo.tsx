@@ -19,8 +19,10 @@ export interface TelaValidacaoCurriculoProps {
 /**
  * Apresenta a revisão final das seções obrigatórias antes da prévia ou do PDF.
  * Calcula a validação a partir do estado recebido, exibe pendências e somente
- * dispara as ações finais quando o resultado permite. A tela existe para ser
- * encaixada no Wizard sem duplicar regras de validação em cada etapa.
+ * dispara as ações finais quando o resultado permite. Cada seção tem um atalho
+ * ("Editar" ou "Corrigir") que chama `onCorrigirSecao` para abrir o formulário
+ * dela. A tela existe para ser encaixada no Wizard sem duplicar regras de
+ * validação em cada etapa.
  */
 export function TelaValidacaoCurriculo({
   dados,
@@ -89,14 +91,14 @@ export function TelaValidacaoCurriculo({
                 <span className={`status-badge status-badge--${secao.status}`}>
                   {textoStatus(secao.status)}
                 </span>
-                {secao.status !== "valida" && onCorrigirSecao && (
+                {onCorrigirSecao && (
                   <button
                     type="button"
                     className="tela-validacao-curriculo__btn-corrigir"
                     onClick={() => onCorrigirSecao(secao.id)}
-                    aria-label={`Corrigir ${secao.titulo}`}
+                    aria-label={`${acaoDaSecao(secao.status)} ${secao.titulo}`}
                   >
-                    Corrigir →
+                    {acaoDaSecao(secao.status)} →
                   </button>
                 )}
               </div>
@@ -238,6 +240,17 @@ export function TelaValidacaoCurriculo({
       </div>
     </div>
   );
+}
+
+/**
+ * Define o texto do atalho que leva ao formulário da seção.
+ *
+ * Seção válida recebe "Editar" e seção com pendência recebe "Corrigir". Toda
+ * seção ganha o atalho para o estudante poder ajustar qualquer parte do
+ * currículo direto da tela de validação, sem voltar etapa por etapa.
+ */
+function acaoDaSecao(status: "valida" | "pendente" | "erro"): string {
+  return status === "valida" ? "Editar" : "Corrigir";
 }
 
 /** Traduz o status técnico da validação para uma mensagem de interface. */
