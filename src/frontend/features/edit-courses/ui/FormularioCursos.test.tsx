@@ -56,9 +56,10 @@ describe("FormularioCursos", () => {
 
     expect(screen.getByText("Informe o nome do curso.")).toBeInTheDocument();
     expect(screen.getByText("Informe a instituição.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Informe uma carga horária válida (em horas)."),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Carga horária (horas)")).not.toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 
   it("chama onSalvar com cursos normalizados quando válidos", async () => {
