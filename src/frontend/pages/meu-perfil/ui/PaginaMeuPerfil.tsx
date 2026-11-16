@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import type { PreviaCurriculo } from "../../../entities/curriculo";
 import {
   CurriculoNoModelo,
@@ -16,7 +18,23 @@ export interface PaginaMeuPerfilProps {
   onEditarPerfil: () => void;
   onEditarCurriculo: () => void;
   onVoltarInicio: () => void;
+  /**
+   * Gera e baixa o currículo no formato escolhido. O PDF é feito a partir da
+   * folha mostrada na página; o Word, a partir dos dados da prévia.
+   */
+  aoBaixarCurriculo?: (
+    formato: FormatoDownload,
+    folha: HTMLElement,
+  ) => Promise<void> | void;
 }
+
+/** Formatos em que o currículo pode ser baixado. */
+export type FormatoDownload = "pdf" | "docx";
+
+const OPCOES_FORMATO: ReadonlyArray<{ formato: FormatoDownload; rotulo: string; dica: string }> = [
+  { formato: "pdf", rotulo: "PDF", dica: "Igual ao que você vê, pronto para enviar" },
+  { formato: "docx", rotulo: "Word", dica: "Para editar no Word ou Google Docs" },
+];
 
 /** Iniciais do nome para o avatar (ex.: "Ana Teste Fluxo" → "AF"). */
 function iniciais(nome: string): string {
@@ -43,7 +61,8 @@ function Dado({ rotulo, valor }: { rotulo: string; valor?: string | null }) {
  *
  * - O que faz: à esquerda, os dados pessoais e um resumo do que já foi
  *   preenchido; à direita, o currículo no modelo escolhido; no topo, os botões
- *   para editar o perfil ou o currículo.
+ *   para editar o perfil ou o currículo e para baixar o currículo em PDF
+ *   ou Word, escolhendo o formato num menu.
  * - Como faz: lê tudo da mesma prévia usada na visualização do currículo, sem
  *   chamadas HTTP e sem campos editáveis; as edições são delegadas por callback.
  * - Qual finalidade atende: dá ao estudante um lugar para conferir os próprios
@@ -56,7 +75,48 @@ export function PaginaMeuPerfil({
   onEditarPerfil,
   onEditarCurriculo,
   onVoltarInicio,
+  aoBaixarCurriculo,
 }: PaginaMeuPerfilProps) {
+  const folhaRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [baixando, setBaixando] = useState<FormatoDownload | null>(null);
+  const [erroDownload, setErroDownload] = useState<string | null>(null);
+
+  // Fecha o menu de formatos ao clicar fora dele ou apertar Esc.
+  useEffect(() => {
+    if (!menuAberto) return;
+    function aoClicarFora(evento: MouseEvent): void {
+      if (!menuRef.current?.contains(evento.target as Node)) setMenuAberto(false);
+    }
+    function aoApertarTecla(evento: KeyboardEvent): void {
+      if (evento.key === "Escape") setMenuAberto(false);
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    document.addEventListener("keydown", aoApertarTecla);
+    return () => {
+      document.removeEventListener("mousedown", aoClicarFora);
+      document.removeEventListener("keydown", aoApertarTecla);
+    };
+  }, [menuAberto]);
+
+  /** Baixa o currículo no formato escolhido, avisando se a geração falhar. */
+  async function baixarCurriculo(formato: FormatoDownload): Promise<void> {
+    setMenuAberto(false);
+    if (!aoBaixarCurriculo || !folhaRef.current || baixando) return;
+    setBaixando(formato);
+    setErroDownload(null);
+    try {
+      await aoBaixarCurriculo(formato, folhaRef.current);
+    } catch {
+      setErroDownload(
+        `Não foi possível gerar o arquivo ${formato === "pdf" ? "PDF" : "Word"}. Tente novamente.`,
+      );
+    } finally {
+      setBaixando(null);
+    }
+  }
+
   const { estudante } = previa;
   const contato = estudante.contato;
   const formacaoPrincipal = previa.formacoes[0];
@@ -92,14 +152,62 @@ export function PaginaMeuPerfil({
               Editar perfil
             </button>
             <button
-              className="pagina-meu-perfil__btn-primario"
+              className={
+                possuiCurriculo && aoBaixarCurriculo
+                  ? "pagina-meu-perfil__btn-secundario"
+                  : "pagina-meu-perfil__btn-primario"
+              }
               onClick={onEditarCurriculo}
               type="button"
             >
               {possuiCurriculo ? "Editar currículo" : "Criar currículo"}
             </button>
+            {possuiCurriculo && aoBaixarCurriculo && (
+              <div className="pagina-meu-perfil__download" ref={menuRef}>
+                <button
+                  aria-controls="menu-formato-curriculo"
+                  aria-expanded={menuAberto}
+                  aria-haspopup="menu"
+                  className="pagina-meu-perfil__btn-primario"
+                  disabled={baixando !== null}
+                  onClick={() => setMenuAberto((aberto) => !aberto)}
+                  type="button"
+                >
+                  {baixando
+                    ? `Gerando ${baixando === "pdf" ? "PDF" : "Word"}...`
+                    : "Baixar currículo ▾"}
+                </button>
+                {menuAberto && (
+                  <div
+                    aria-label="Formato do arquivo"
+                    className="pagina-meu-perfil__menu-formato"
+                    id="menu-formato-curriculo"
+                    role="menu"
+                  >
+                    {OPCOES_FORMATO.map((opcao) => (
+                      <button
+                        className="pagina-meu-perfil__opcao-formato"
+                        key={opcao.formato}
+                        onClick={() => void baixarCurriculo(opcao.formato)}
+                        role="menuitem"
+                        type="button"
+                      >
+                        <strong>{opcao.rotulo}</strong>
+                        <span>{opcao.dica}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </header>
+
+        {erroDownload && (
+          <p className="pagina-meu-perfil__erro" role="alert">
+            {erroDownload}
+          </p>
+        )}
 
         <div className="pagina-meu-perfil__grade">
           <aside
@@ -148,7 +256,10 @@ export function PaginaMeuPerfil({
             className="pagina-meu-perfil__moldura"
           >
             {possuiCurriculo ? (
-              <CurriculoNoModelo modelo={modelo} previa={previa} />
+              // Só a folha é exportada, sem a moldura escura da página.
+              <div ref={folhaRef}>
+                <CurriculoNoModelo modelo={modelo} previa={previa} />
+              </div>
             ) : (
               <div className="pagina-meu-perfil__vazio">
                 <p>Você ainda não montou seu currículo.</p>

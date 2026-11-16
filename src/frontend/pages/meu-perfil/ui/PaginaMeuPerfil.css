@@ -265,3 +265,76 @@
     width: 100%;
   }
 }
+
+.pagina-meu-perfil__btn-primario:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.pagina-meu-perfil__erro {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgb(239 68 68 / 35%);
+  border-radius: 8px;
+  background: rgb(239 68 68 / 12%);
+  color: #fca5a5;
+}
+
+.pagina-meu-perfil__download {
+  position: relative;
+}
+
+.pagina-meu-perfil__menu-formato {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 16rem;
+  padding: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.75rem;
+  background: #161616;
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 45%);
+}
+
+.pagina-meu-perfil__opcao-formato {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.8rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #f3f3f3;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.pagina-meu-perfil__opcao-formato:hover,
+.pagina-meu-perfil__opcao-formato:focus-visible {
+  background: rgb(255 106 0 / 14%);
+  outline: none;
+}
+
+.pagina-meu-perfil__opcao-formato strong {
+  font-size: 0.95rem;
+}
+
+.pagina-meu-perfil__opcao-formato span {
+  color: #a3a3a3;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 40rem) {
+  .pagina-meu-perfil__download {
+    width: 100%;
+  }
+
+  .pagina-meu-perfil__menu-formato {
+    left: 0;
+    right: 0;
+    min-width: 0;
+  }
+}

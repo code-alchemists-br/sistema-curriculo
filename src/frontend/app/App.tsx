@@ -39,6 +39,7 @@ import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
 import {
   PaginaVisualizacaoCurriculo,
   montarPreviaCurriculo,
+  exportarElementoParaPdf,
   exportarPreviaParaDocx,
 } from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
@@ -1130,6 +1131,18 @@ export function App() {
         dadosPessoais?.nomeCompleto || usuarioLogado?.nome || "Estudante",
       email: dadosPessoais?.email || usuarioLogado?.email || "",
     } as ValoresDadosPessoais;
+    const previaDoPerfil = montarPreviaCurriculo({
+      dadosPessoais: dadosDoPerfil,
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+      modelo,
+    });
+    const nomeArquivo = `Curriculo - ${dadosDoPerfil.nomeCompleto}`;
 
     return (
       <PaginaMeuPerfil
@@ -1138,19 +1151,14 @@ export function App() {
           navegar(possuiCurriculo ? "validacao-curriculo" : "dados-pessoais")
         }
         onEditarPerfil={() => navegar("dados-pessoais")}
+        aoBaixarCurriculo={(formato, folha) =>
+          formato === "pdf"
+            ? exportarElementoParaPdf({ elemento: folha, nomeArquivo })
+            : exportarPreviaParaDocx({ previa: previaDoPerfil, nomeArquivo })
+        }
         onVoltarInicio={voltarAoInicio}
         possuiCurriculo={possuiCurriculo}
-        previa={montarPreviaCurriculo({
-          dadosPessoais: dadosDoPerfil,
-          formacoes,
-          experiencias,
-          cursos,
-          certificacoes,
-          idiomas,
-          competencias,
-          projetos,
-          modelo,
-        })}
+        previa={previaDoPerfil}
       />
     );
   }
