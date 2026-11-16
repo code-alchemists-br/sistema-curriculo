@@ -1,5 +1,5 @@
 // Proveniência: decision-analysis prompts/frontend/20260921-120136-tela-cadastro-projetos-academicos-v001.md#v001
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -265,5 +265,36 @@ describe("FormularioCadastroProjetoAcademico", () => {
 
     expect(cliente.cadastrar).toHaveBeenCalledTimes(2);
     expect(aoAvancar).toHaveBeenCalledTimes(1);
+  });
+
+  it("aplica classes de alerta progressivo no contador de caracteres da descrição do projeto", () => {
+    const cliente: ClienteProjetosAcademicos = {
+      cadastrar: vi.fn().mockResolvedValue(undefined),
+    };
+    render(<FormularioCadastroProjetoAcademico cliente={cliente} />);
+
+    const campoDescricao = screen.getByLabelText("Descrição");
+    const contador = screen.getByText(/0\/1500 caracteres/i);
+
+    expect(contador).not.toHaveClass(
+      "formulario-projeto__contador-caracteres--alerta",
+    );
+    expect(contador).not.toHaveClass(
+      "formulario-projeto__contador-caracteres--limite",
+    );
+
+    // 80% de 1500 = 1200
+    fireEvent.change(campoDescricao, { target: { value: "a".repeat(1250) } });
+    expect(contador).toHaveClass(
+      "formulario-projeto__contador-caracteres--alerta",
+    );
+    expect(screen.getByText("1250/1500 caracteres")).toBeInTheDocument();
+
+    // 100% de 1500 = 1500
+    fireEvent.change(campoDescricao, { target: { value: "b".repeat(1500) } });
+    expect(contador).toHaveClass(
+      "formulario-projeto__contador-caracteres--limite",
+    );
+    expect(screen.getByText("1500/1500 caracteres")).toBeInTheDocument();
   });
 });

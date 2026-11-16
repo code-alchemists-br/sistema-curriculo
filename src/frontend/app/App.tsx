@@ -29,6 +29,7 @@ import {
   PaginaVisualizacaoCurriculo,
   montarPreviaCurriculo,
   exportarPreviaParaDocx,
+  exportarElementoParaPdf,
 } from "../pages/visualizar-curriculo";
 import { PaginaVagasGrupo2 } from "../pages/vagas";
 import type { UsuarioAutenticado } from "../widgets/cabecalho-publico";
@@ -421,7 +422,7 @@ export function App() {
     setIdiomas(undefined);
     setCompetencias(undefined);
     setProjetos(undefined);
-    setModelo("classico");
+    setModelo(undefined);
     if (typeof window !== "undefined") {
       try {
         sessionStorage.removeItem("liminal_usuario_sessao");
@@ -465,9 +466,13 @@ export function App() {
   const [projetos, setProjetos] = useState<
     ValoresProjetoAcademico[] | undefined
   >(() => carregarRascunho()?.projetos);
-  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo>(
-    () => carregarRascunho()?.modelo ?? "classico",
+  const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo | undefined>(
+    () => carregarRascunho()?.modelo,
   );
+  const modeloAtivo: ModeloApresentacaoCurriculo = modelo ?? "classico";
+  const [origemSelecaoModelo, setOrigemSelecaoModelo] = useState<
+    "wizard" | "visualizacao"
+  >("wizard");
   const [autoBaixarPdf, setAutoBaixarPdf] = useState(false);
 
   useEffect(() => {
@@ -736,6 +741,7 @@ export function App() {
               }
             }
           }
+          setOrigemSelecaoModelo("wizard");
           navegar("selecionar-modelo");
         }}
         onVoltar={() => navegar("competencias")}
@@ -746,15 +752,35 @@ export function App() {
   }
 
   if (rotaAtiva === "selecionar-modelo") {
+    const veioDeVisualizacao = origemSelecaoModelo === "visualizacao";
+
     return (
       <PaginaSelecaoModeloCurriculo
+        aoAlterarModeloInstantaneo={(novoModelo) => {
+          setModelo(novoModelo);
+        }}
         aoConfirmar={(novoModelo) => {
           setModelo(novoModelo);
-          navegar("validacao-curriculo");
+          if (veioDeVisualizacao) {
+            setOrigemSelecaoModelo("wizard");
+            navegar("visualizar-curriculo");
+          } else {
+            navegar("validacao-curriculo");
+          }
         }}
         modeloInicial={modelo}
-        onVoltar={() => navegar("projetos-academicos")}
-        onVoltarInicio={voltarAoInicio}
+        onVoltar={() => {
+          if (veioDeVisualizacao) {
+            setOrigemSelecaoModelo("wizard");
+            navegar("visualizar-curriculo");
+          } else {
+            navegar("projetos-academicos");
+          }
+        }}
+        onVoltarInicio={() => {
+          setOrigemSelecaoModelo("wizard");
+          voltarAoInicio();
+        }}
         perfilEstudante={{
           experiencias,
           formacoes,
@@ -771,8 +797,23 @@ export function App() {
         dados={dadosValidacao}
         onCorrigirSecao={(secaoId) => navegar(secaoId)}
         onExportarPdf={() => {
-          setAutoBaixarPdf(true);
-          navegar("visualizar-curriculo");
+          const previaCalculada = montarPreviaCurriculo({
+            dadosPessoais,
+            formacoes,
+            experiencias,
+            cursos,
+            certificacoes,
+            idiomas,
+            competencias,
+            projetos,
+            modelo: modeloAtivo,
+          });
+          const nomeEstudante =
+            dadosPessoais?.nomeCompleto?.trim() || "Estudante";
+          void exportarElementoParaPdf({
+            previa: previaCalculada,
+            nomeArquivo: `Curriculo - ${nomeEstudante}`,
+          });
         }}
         onExportarDocx={() => {
           const previaCalculada = montarPreviaCurriculo({
@@ -784,7 +825,7 @@ export function App() {
             idiomas,
             competencias,
             projetos,
-            modelo,
+            modelo: modeloAtivo,
           });
           const nomeEstudante =
             dadosPessoais?.nomeCompleto?.trim() || "Estudante";
@@ -794,7 +835,10 @@ export function App() {
           });
         }}
         onVisualizarPreview={() => navegar("visualizar-curriculo")}
-        onVoltar={() => navegar("selecionar-modelo")}
+        onVoltar={() => {
+          setOrigemSelecaoModelo("wizard");
+          navegar("selecionar-modelo");
+        }}
         onVoltarInicio={voltarAoInicio}
       />
     );
@@ -810,14 +854,20 @@ export function App() {
       idiomas,
       competencias,
       projetos,
-      modelo,
+      modelo: modeloAtivo,
     });
 
     return (
       <PaginaVisualizacaoCurriculo
-        aoAlterarModelo={() => navegar("selecionar-modelo")}
+        aoAlterarModelo={() => {
+          setOrigemSelecaoModelo("visualizacao");
+          navegar("selecionar-modelo");
+        }}
+        aoTrocarModelo={(novoModelo) => {
+          setModelo(novoModelo);
+        }}
         autoBaixar={autoBaixarPdf}
-        modelo={modelo}
+        modelo={modeloAtivo}
         onExportarPdf={() => {
           setAutoBaixarPdf(false);
         }}

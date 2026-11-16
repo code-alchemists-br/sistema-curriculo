@@ -6,6 +6,7 @@ import {
 } from "../api/cliente-dados-pessoais";
 import "./FormularioDadosPessoais.css";
 import {
+  LIMITES_DADOS_PESSOAIS,
   criarStudent,
   criarValoresIniciais,
   traduzirFalhaDadosPessoais,
@@ -208,6 +209,7 @@ export function FormularioDadosPessoais({
         erro={erros.nomeCompleto}
         id="nome-completo"
         label="Nome Completo"
+        maxLength={LIMITES_DADOS_PESSOAIS.nomeCompleto}
         onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
         placeholder="Ex.: Carlos Eduardo da Silva"
         required
@@ -219,6 +221,7 @@ export function FormularioDadosPessoais({
         erro={erros.email}
         id="email"
         label="E-mail"
+        maxLength={LIMITES_DADOS_PESSOAIS.email}
         onChange={(valor) => atualizarCampo("email", valor)}
         placeholder="seu.email@exemplo.com"
         required
@@ -262,6 +265,7 @@ export function FormularioDadosPessoais({
                   aria-invalid={erro === undefined ? undefined : true}
                   autoComplete="tel"
                   id={id}
+                  maxLength={LIMITES_DADOS_PESSOAIS.telefone}
                   onChange={(evento) =>
                     atualizarTelefone(
                       indice,
@@ -298,6 +302,7 @@ export function FormularioDadosPessoais({
         erro={erros.enderecoCompleto}
         id="endereco-completo"
         label="Endereço"
+        maxLength={LIMITES_DADOS_PESSOAIS.enderecoCompleto}
         onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
         placeholder="Cidade, Estado (ou endereço completo)..."
         value={valores.enderecoCompleto}
@@ -307,6 +312,7 @@ export function FormularioDadosPessoais({
       <CampoTexto
         id="linkedin"
         label="Linkedin"
+        maxLength={LIMITES_DADOS_PESSOAIS.linkedIn}
         onChange={(valor) => atualizarCampo("linkedIn", valor)}
         placeholder="https://linkedin.com/in/seuperfil"
         type="url"
@@ -353,6 +359,7 @@ interface CampoTextoProps {
   erro?: string;
   id: string;
   label: string;
+  maxLength?: number;
   onChange: (valor: string) => void;
   placeholder?: string;
   required?: boolean;
@@ -366,6 +373,7 @@ function CampoTexto({
   erro,
   id,
   label,
+  maxLength,
   onChange,
   placeholder,
   required = false,
@@ -402,6 +410,7 @@ function CampoTexto({
         aria-describedby={ariaDescribedBy}
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
+        maxLength={maxLength}
         onChange={(evento) => onChange(evento.target.value)}
         placeholder={placeholder}
         required={required}

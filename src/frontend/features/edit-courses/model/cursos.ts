@@ -1,3 +1,11 @@
+/** Limites de tamanho e carga para os campos de curso. */
+export const LIMITES_CURSO = {
+  nome: 200,
+  instituicao: 200,
+  cargaHoraria: 5,
+  cargaHorariaMaxima: 10000,
+} as const;
+
 /** Representa um curso ou certificação informado pelo estudante. */
 export interface Curso {
   nome: string;
@@ -22,7 +30,7 @@ export function criarCursoVazio(): Curso {
 }
 
 /**
- * Valida os campos de um único curso.
+ * Valida os campos de um único curso e seus limites de caracteres.
  *
  * A função verifica presença dos campos obrigatórios e um formato numérico
  * decimal inteiro entre 1 e 10000 para a carga opcional. Ela oferece feedback imediato
@@ -41,8 +49,8 @@ export function validarCurso(curso: Curso): ErrosCurso {
 
   for (const campo of ["nome", "instituicao"] as const) {
     const texto = curso[campo].trim();
-    if (Array.from(texto).length > 200) {
-      erros[campo] = "Informe no máximo 200 caracteres.";
+    if (Array.from(texto).length > LIMITES_CURSO[campo]) {
+      erros[campo] = `Informe no máximo ${LIMITES_CURSO[campo]} caracteres.`;
     } else if (/\p{C}/u.test(texto.replace(/[\n\t\x0d]/g, ""))) {
       erros[campo] = "Remova os caracteres de controle inválidos.";
     }
@@ -55,7 +63,7 @@ export function validarCurso(curso: Curso): ErrosCurso {
     (!/^[0-9]+$/.test(textoCarga) ||
       !Number.isInteger(carga) ||
       carga < 1 ||
-      carga > 10000)
+      carga > LIMITES_CURSO.cargaHorariaMaxima)
   ) {
     erros.cargaHoraria = "Informe uma carga horária válida (em horas).";
   }

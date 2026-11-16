@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import gradienteCadastro from "../../../assets/images/gradiente_cadastro.webp";
 import "./LayoutCadastroCurriculo.css";
@@ -14,6 +14,10 @@ export interface LayoutCadastroCurriculoProps {
   progressoEtapaAtual?: number;
   /** Ação opcional para retornar à página inicial / hero */
   onVoltarInicio?: () => void;
+  /** Controla a visibilidade do indicador de rascunho persistido (padrão: true) */
+  exibirStatusSalvo?: boolean;
+  /** Texto personalizado para a indicação de rascunho salvo (padrão: 'Rascunho salvo') */
+  textoStatusSalvo?: string;
   /** Conteúdo do formulário a ser exibido no lado direito */
   children: ReactNode;
 }
@@ -24,23 +28,115 @@ export interface LayoutCadastroCurriculoProps {
  * Divide a tela entre o painel visual com gradiente alaranjado (40%) e
  * o painel de formulário com barra de progresso segmentada (60%).
  */
+const CHAVE_RASCUNHO = "liminal_curriculo_rascunho";
+
+function verificarRascunhoExistente(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw =
+      localStorage.getItem(CHAVE_RASCUNHO) ||
+      sessionStorage.getItem(CHAVE_RASCUNHO);
+    if (!raw) return false;
+    const obj = JSON.parse(raw);
+    return Object.values(obj).some((v) => {
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === "object" && v !== null) {
+        return Object.values(v).some(
+          (val) => typeof val === "string" && val.trim().length > 0,
+        );
+      }
+      return Boolean(v);
+    });
+  } catch {
+    return false;
+  }
+}
+
 export function LayoutCadastroCurriculo({
   subtitulo,
   etapaAtual = 1,
   totalEtapas = 9,
   progressoEtapaAtual = 0,
   onVoltarInicio,
+  exibirStatusSalvo = true,
+  textoStatusSalvo,
   children,
 }: LayoutCadastroCurriculoProps) {
   const conteudoRef = useRef<HTMLElement | null>(null);
   const formularioRef = useRef<HTMLDivElement | null>(null);
+  const timerOcultacaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRemocaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [statusAtivo, setStatusAtivo] = useState<string | null>(() => {
+    if (textoStatusSalvo) return textoStatusSalvo;
+    if (verificarRascunhoExistente()) {
+      return "Rascunho restaurado";
+    }
+    return null;
+  });
+  const [desvanecendo, setDesvanecendo] = useState(false);
+
+  const limparTimers = () => {
+    if (timerOcultacaoRef.current) clearTimeout(timerOcultacaoRef.current);
+    if (timerRemocaoRef.current) clearTimeout(timerRemocaoRef.current);
+  };
+
+  // Se iniciou com "Rascunho restaurado" (ao recarregar com dados), inicia fade-out suave
+  useEffect(() => {
+    if (statusAtivo === "Rascunho restaurado") {
+      timerOcultacaoRef.current = setTimeout(() => {
+        setDesvanecendo(true);
+        timerRemocaoRef.current = setTimeout(() => {
+          setStatusAtivo(null);
+          setDesvanecendo(false);
+        }, 600);
+      }, 3500);
+    }
+    return () => {
+      limparTimers();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Monitora digitação nos campos do formulário para exibir "Rascunho salvo" temporariamente com fade-out suave
+  useEffect(() => {
+    const el = formularioRef.current;
+    if (!el) return;
+
+    function aoDigitar() {
+      limparTimers();
+      setDesvanecendo(false);
+      setStatusAtivo("Rascunho salvo");
+
+      timerOcultacaoRef.current = setTimeout(() => {
+        setDesvanecendo(true);
+        timerRemocaoRef.current = setTimeout(() => {
+          setStatusAtivo(null);
+          setDesvanecendo(false);
+        }, 600);
+      }, 2500);
+    }
+
+    el.addEventListener("input", aoDigitar);
+    return () => {
+      el.removeEventListener("input", aoDigitar);
+    };
+  }, [etapaAtual]);
 
   useEffect(() => {
     if (conteudoRef.current) {
       conteudoRef.current.scrollTop = 0;
     }
     if (formularioRef.current) {
-      formularioRef.current.focus();
+      const tituloH1 = formularioRef.current.querySelector<HTMLElement>("h1");
+      if (tituloH1) {
+        if (!tituloH1.hasAttribute("tabindex")) {
+          tituloH1.setAttribute("tabindex", "-1");
+        }
+        tituloH1.focus({ preventScroll: true });
+      } else {
+        formularioRef.current.focus({ preventScroll: true });
+      }
     }
   }, [etapaAtual]);
 
@@ -92,11 +188,58 @@ export function LayoutCadastroCurriculo({
               onClick={lidarVoltarInicio}
               aria-label="Voltar para a página inicial"
             >
-              ← Voltar ao início
+              <span
+                className="layout-cadastro__btn-voltar-icone"
+                aria-hidden="true"
+              >
+                ←
+              </span>
+              <span className="layout-cadastro__btn-voltar-texto-completo">
+                Voltar ao início
+              </span>
+              <span className="layout-cadastro__btn-voltar-texto-curto">
+                Início
+              </span>
             </button>
-            <span className="layout-cadastro__indicador-etapa">
-              Etapa {etapaAtual} de {totalEtapas}
-            </span>
+
+            <div className="layout-cadastro__topo-direita">
+              {exibirStatusSalvo && (statusAtivo || textoStatusSalvo) && (
+                <span
+                  className={`layout-cadastro__status-salvo ${
+                    desvanecendo ? "layout-cadastro__status-salvo--saindo" : ""
+                  }`}
+                  aria-label="Status do rascunho"
+                >
+                  <svg
+                    className="layout-cadastro__status-salvo-icone"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="8"
+                      cy="8"
+                      r="6.5"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M5 8.2L7 10.2L11 6.2"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span>{textoStatusSalvo || statusAtivo}</span>
+                </span>
+              )}
+
+              <span className="layout-cadastro__indicador-etapa">
+                Etapa {etapaAtual} de {totalEtapas}
+              </span>
+            </div>
           </div>
 
           {/* Barra de progresso segmentada */}

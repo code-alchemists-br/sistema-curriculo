@@ -23,6 +23,25 @@ describe("validarDadosPessoais", () => {
       },
     });
   });
+
+  it("rejeita campos que excedem os limites máximos de caracteres", () => {
+    const erros = validarDadosPessoais({
+      nomeCompleto: "a".repeat(101),
+      email: `${"b".repeat(95)}@teste.com`,
+      enderecoCompleto: "c".repeat(151),
+      telefones: ["(11) 99999-9999"],
+      linkedIn: "",
+      curriculoLattes: "",
+    });
+
+    expect(erros.nomeCompleto).toBe(
+      "O nome deve ter no máximo 100 caracteres.",
+    );
+    expect(erros.email).toBe("O e-mail deve ter no máximo 100 caracteres.");
+    expect(erros.enderecoCompleto).toBe(
+      "O endereço deve ter no máximo 150 caracteres.",
+    );
+  });
 });
 
 describe("criarStudent", () => {

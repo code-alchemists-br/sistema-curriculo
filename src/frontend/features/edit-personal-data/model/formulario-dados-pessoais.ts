@@ -1,6 +1,16 @@
 import type { Student } from "../../../entities/student";
 import type { CodigoFalhaDadosPessoais } from "../api/cliente-dados-pessoais";
 
+/** Limites de caracteres para os campos de dados pessoais. */
+export const LIMITES_DADOS_PESSOAIS = {
+  nomeCompleto: 100,
+  email: 100,
+  enderecoCompleto: 150,
+  telefone: 15,
+  linkedIn: 150,
+  curriculoLattes: 150,
+} as const;
+
 /** Representa os valores controlados pelo formulário antes da normalização. */
 export interface ValoresDadosPessoais {
   nomeCompleto: string;
@@ -45,10 +55,23 @@ export function validarDadosPessoais(
 
   if (valores.nomeCompleto.trim() === "") {
     erros.nomeCompleto = "Informe seu nome completo.";
+  } else if (
+    valores.nomeCompleto.length > LIMITES_DADOS_PESSOAIS.nomeCompleto
+  ) {
+    erros.nomeCompleto = `O nome deve ter no máximo ${LIMITES_DADOS_PESSOAIS.nomeCompleto} caracteres.`;
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valores.email.trim())) {
     erros.email = "Informe um e-mail válido.";
+  } else if (valores.email.length > LIMITES_DADOS_PESSOAIS.email) {
+    erros.email = `O e-mail deve ter no máximo ${LIMITES_DADOS_PESSOAIS.email} caracteres.`;
+  }
+
+  if (
+    valores.enderecoCompleto &&
+    valores.enderecoCompleto.length > LIMITES_DADOS_PESSOAIS.enderecoCompleto
+  ) {
+    erros.enderecoCompleto = `O endereço deve ter no máximo ${LIMITES_DADOS_PESSOAIS.enderecoCompleto} caracteres.`;
   }
 
   const errosDeTelefone: Record<number, string> = {};
