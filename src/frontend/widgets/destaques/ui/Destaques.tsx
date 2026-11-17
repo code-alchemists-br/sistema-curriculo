@@ -30,27 +30,30 @@ const METRICAS_PADRAO: MetricaItem[] = [
   },
 ];
 
+function obterVisibilidadeInicial(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const suportaObserver = typeof window.IntersectionObserver === "function";
+  const prefereReducaoMovimento =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return !suportaObserver || prefereReducaoMovimento;
+}
+
 export function Destaques() {
-  const [visivel, setVisivel] = useState(false);
+  const [visivel, setVisivel] = useState(obterVisibilidadeInicial);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const prefereReducaoMovimento =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const suportaObserver =
-      typeof window !== "undefined" &&
-      typeof window.IntersectionObserver === "function";
-
-    if (!suportaObserver || prefereReducaoMovimento) {
-      setVisivel(true);
+    if (visivel) {
       return;
     }
 
     const elemento = containerRef.current;
-    if (!elemento) return;
+    if (!elemento) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -71,7 +74,7 @@ export function Destaques() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [visivel]);
 
   return (
     <section
