@@ -182,146 +182,143 @@ export function FormularioEdicaoPerfil({
       noValidate
       onSubmit={enviarFormulario}
     >
-        <div className="formulario-edicao-perfil__linha-dupla">
-          <CampoTexto
-            erro={erros.nomeCompleto}
-            id="perfil-nome-completo"
-            label="Nome completo"
-            onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
-            placeholder="Ex.: Ana Carolina Souza"
-            required
-            value={valores.nomeCompleto}
-          />
-          <CampoTexto
-            erro={erros.email}
-            id="perfil-email"
-            label="E-mail"
-            onChange={(valor) => atualizarCampo("email", valor)}
-            placeholder="seu.email@exemplo.com"
-            required
-            type="email"
-            value={valores.email}
-          />
+      <div className="formulario-edicao-perfil__linha-dupla">
+        <CampoTexto
+          erro={erros.nomeCompleto}
+          id="perfil-nome-completo"
+          label="Nome completo"
+          onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
+          placeholder="Ex.: Ana Carolina Souza"
+          required
+          value={valores.nomeCompleto}
+        />
+        <CampoTexto
+          erro={erros.email}
+          id="perfil-email"
+          label="E-mail"
+          onChange={(valor) => atualizarCampo("email", valor)}
+          placeholder="seu.email@exemplo.com"
+          required
+          type="email"
+          value={valores.email}
+        />
+      </div>
+
+      <CampoTexto
+        erro={erros.enderecoCompleto}
+        id="perfil-endereco-completo"
+        label="Endereço completo"
+        onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
+        placeholder="Ex.: Rua das Flores, 123 — São Paulo, SP"
+        required
+        value={valores.enderecoCompleto}
+      />
+
+      <div className="formulario-edicao-perfil__telefones field">
+        <div className="formulario-edicao-perfil__cabecalho-telefones">
+          <span className="formulario-edicao-perfil__titulo-campo">
+            Telefones de contato
+          </span>
+          <button
+            className="formulario-edicao-perfil__adicionar-telefone"
+            onClick={adicionarTelefone}
+            type="button"
+          >
+            + Adicionar telefone
+          </button>
         </div>
 
-        <CampoTexto
-          erro={erros.enderecoCompleto}
-          id="perfil-endereco-completo"
-          label="Endereço completo"
-          onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
-          placeholder="Ex.: Rua das Flores, 123 — São Paulo, SP"
-          required
-          value={valores.enderecoCompleto}
-        />
+        <div className="formulario-edicao-perfil__lista-telefones">
+          {valores.telefones.map((telefone, indice) => {
+            const id = `perfil-telefone-${indice}`;
+            const erro = erros.telefones?.[indice];
+            const idErro = `${id}-erro`;
 
-        <div className="formulario-edicao-perfil__telefones field">
-          <div className="formulario-edicao-perfil__cabecalho-telefones">
-            <span className="formulario-edicao-perfil__titulo-campo">
-              Telefones de contato
-            </span>
-            <button
-              className="formulario-edicao-perfil__adicionar-telefone"
-              onClick={adicionarTelefone}
-              type="button"
-            >
-              + Adicionar telefone
-            </button>
-          </div>
-
-          <div className="formulario-edicao-perfil__lista-telefones">
-            {valores.telefones.map((telefone, indice) => {
-              const id = `perfil-telefone-${indice}`;
-              const erro = erros.telefones?.[indice];
-              const idErro = `${id}-erro`;
-
-              return (
-                <div
-                  className="formulario-edicao-perfil__item-telefone"
-                  key={id}
-                >
-                  <div className="formulario-edicao-perfil__item-telefone-topo">
-                    <label htmlFor={id}>Telefone {indice + 1}</label>
-                    {valores.telefones.length > 1 && (
-                      <button
-                        aria-label={`Remover Telefone ${indice + 1}`}
-                        className="formulario-edicao-perfil__remover-telefone"
-                        onClick={() => removerTelefone(indice)}
-                        type="button"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    aria-describedby={erro === undefined ? undefined : idErro}
-                    aria-invalid={erro === undefined ? undefined : true}
-                    autoComplete="tel"
-                    id={id}
-                    onChange={(evento) =>
-                      atualizarTelefone(
-                        indice,
-                        formatarTelefone(evento.target.value),
-                      )
-                    }
-                    placeholder="(11) 91234-5678"
-                    required
-                    type="tel"
-                    value={telefone}
-                  />
-                  {erro !== undefined && (
-                    <p className="field__error" id={idErro}>
-                      {erro}
-                    </p>
+            return (
+              <div className="formulario-edicao-perfil__item-telefone" key={id}>
+                <div className="formulario-edicao-perfil__item-telefone-topo">
+                  <label htmlFor={id}>Telefone {indice + 1}</label>
+                  {valores.telefones.length > 1 && (
+                    <button
+                      aria-label={`Remover Telefone ${indice + 1}`}
+                      className="formulario-edicao-perfil__remover-telefone"
+                      onClick={() => removerTelefone(indice)}
+                      type="button"
+                    >
+                      Remover
+                    </button>
                   )}
                 </div>
-              );
-            })}
-          </div>
+                <input
+                  aria-describedby={erro === undefined ? undefined : idErro}
+                  aria-invalid={erro === undefined ? undefined : true}
+                  autoComplete="tel"
+                  id={id}
+                  onChange={(evento) =>
+                    atualizarTelefone(
+                      indice,
+                      formatarTelefone(evento.target.value),
+                    )
+                  }
+                  placeholder="(11) 91234-5678"
+                  required
+                  type="tel"
+                  value={telefone}
+                />
+                {erro !== undefined && (
+                  <p className="field__error" id={idErro}>
+                    {erro}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="formulario-edicao-perfil__secao-links">
-          <span className="formulario-edicao-perfil__subtitulo-secao">
-            Links profissionais e acadêmicos
-          </span>
-          <div className="formulario-edicao-perfil__linha-dupla">
-            <CampoTexto
-              erro={erros.linkedIn}
-              id="perfil-linkedin"
-              label="LinkedIn"
-              onChange={(valor) => atualizarCampo("linkedIn", valor)}
-              placeholder="https://linkedin.com/in/seuperfil"
-              type="url"
-              value={valores.linkedIn}
-            />
-            <CampoTexto
-              erro={erros.curriculoLattes}
-              id="perfil-curriculo-lattes"
-              label="Currículo Lattes"
-              onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
-              placeholder="http://lattes.cnpq.br/0000000000000000"
-              type="url"
-              value={valores.curriculoLattes}
-            />
-          </div>
+      <div className="formulario-edicao-perfil__secao-links">
+        <span className="formulario-edicao-perfil__subtitulo-secao">
+          Links profissionais e acadêmicos
+        </span>
+        <div className="formulario-edicao-perfil__linha-dupla">
+          <CampoTexto
+            erro={erros.linkedIn}
+            id="perfil-linkedin"
+            label="LinkedIn"
+            onChange={(valor) => atualizarCampo("linkedIn", valor)}
+            placeholder="https://linkedin.com/in/seuperfil"
+            type="url"
+            value={valores.linkedIn}
+          />
+          <CampoTexto
+            erro={erros.curriculoLattes}
+            id="perfil-curriculo-lattes"
+            label="Currículo Lattes"
+            onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
+            placeholder="http://lattes.cnpq.br/0000000000000000"
+            type="url"
+            value={valores.curriculoLattes}
+          />
         </div>
+      </div>
 
-        {mensagem !== null && (
-          <p
-            className="form-message"
-            role={mensagem.includes("sucesso") ? "status" : "alert"}
-          >
-            {mensagem}
-          </p>
-        )}
-
-        <button
-          className="formulario-edicao-perfil__salvar"
-          disabled={enviando}
-          type="submit"
+      {mensagem !== null && (
+        <p
+          className="form-message"
+          role={mensagem.includes("sucesso") ? "status" : "alert"}
         >
-          {enviando ? "Salvando alterações..." : "Salvar alterações"}
-        </button>
-      </form>
+          {mensagem}
+        </p>
+      )}
+
+      <button
+        className="formulario-edicao-perfil__salvar"
+        disabled={enviando}
+        type="submit"
+      >
+        {enviando ? "Salvando alterações..." : "Salvar alterações"}
+      </button>
+    </form>
   );
 }
 
