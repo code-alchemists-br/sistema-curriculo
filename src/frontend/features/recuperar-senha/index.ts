@@ -2,6 +2,10 @@ export {
   criarClienteRecuperacaoSenhaIndisponivel,
   FalhaRecuperacaoSenha,
 } from "./api/cliente-recuperacao-senha";
+export {
+  criarClienteRecuperacaoSenhaDemonstracao,
+  criarClienteRecuperacaoSenhaHttp,
+} from "./api/cliente-recuperacao-senha-http";
 export type {
   ClienteRecuperacaoSenha,
   CodigoFalhaRecuperacaoSenha,

@@ -5,211 +5,395 @@
 
 .painel-curriculos-perfil__cabecalho {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 1.5rem;
-}
-
-.painel-curriculos-perfil__sobretitulo,
-.painel-curriculos-perfil__modelo {
-  margin: 0;
-  color: #ff8a3d;
-  font-family: "Poppins", sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.painel-curriculos-perfil h2,
-.painel-curriculos-perfil h3,
-.painel-curriculos-perfil p {
-  font-family: "Poppins", sans-serif;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
 }
 
 .painel-curriculos-perfil h2 {
-  margin: 0.35rem 0 0;
+  margin: 0;
   color: #ffffff;
-  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
-.painel-curriculos-perfil__cabecalho > div > p:last-child {
-  max-width: 43rem;
-  margin: 0.65rem 0 0;
-  color: #a3a3a3;
-  font-size: 0.95rem;
-  line-height: 1.55;
-}
-
-.painel-curriculos-perfil__criar,
-.painel-curriculos-perfil__editar,
-.painel-curriculos-perfil__acoes-edicao button {
-  min-height: 2.75rem;
-  border: 1px solid transparent;
-  border-radius: 0.6rem;
-  padding: 0.7rem 1rem;
-  font-family: "Poppins", sans-serif;
+.painel-curriculos-perfil__cabecalho > div > p {
+  max-width: 36rem;
+  margin: 0.45rem 0 0;
+  color: #94a3b8;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
+  line-height: 1.5;
 }
 
-.painel-curriculos-perfil__criar,
-.painel-curriculos-perfil__acoes-edicao button[type="submit"] {
-  background: #f3f3f3;
-  color: #111111;
-}
-
-.painel-curriculos-perfil__criar:hover,
-.painel-curriculos-perfil__acoes-edicao button[type="submit"]:hover:not(:disabled) {
-  background: #ffffff;
-}
-
-.painel-curriculos-perfil__lista {
-  display: grid;
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.painel-curriculos-perfil__item {
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 0.9rem;
-  background: #171717;
-}
-
+/* Cartão Estruturado em Fluxo Vertical */
 .painel-curriculos-perfil__cartao {
-  display: grid;
-  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr);
-  gap: 1.25rem;
-  padding: 1.25rem;
-}
-
-.painel-curriculos-perfil__dados-versao {
-  display: grid;
-  align-content: start;
-  gap: 0.75rem;
-}
-
-.painel-curriculos-perfil__dados-versao h3 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 1.1rem;
-}
-
-.painel-curriculos-perfil__dados-versao dl {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-  margin: 0;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.9rem;
+  background: #17171b;
+  transition: border-color 0.2s ease;
 }
 
-.painel-curriculos-perfil__dados-versao dl div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.painel-curriculos-perfil__dados-versao dt {
-  color: #a3a3a3;
-  font-family: "Poppins", sans-serif;
-  font-size: 0.78rem;
-}
-
-.painel-curriculos-perfil__dados-versao dd {
-  margin: 0;
-  color: #ededed;
-  font-family: "Poppins", sans-serif;
-  font-size: 0.88rem;
-}
-
-.painel-curriculos-perfil__editar {
-  justify-self: start;
-  background: transparent;
+.painel-curriculos-perfil__cartao:hover {
   border-color: rgb(255 255 255 / 20%);
-  color: #ffffff;
 }
 
-.painel-curriculos-perfil__editar:hover {
-  border-color: #ff6a00;
-  color: #ffb27a;
+.painel-curriculos-perfil__cabecalho-cartao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.painel-curriculos-perfil__titulo-curriculo {
+  margin: 0;
+  color: #ffffff;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.painel-curriculos-perfil__modelo-ativo {
+  margin: 0;
+  color: #94a3b8;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.85rem;
+}
+
+.painel-curriculos-perfil__modelo-ativo strong {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid rgb(255 106 0 / 28%);
+  border-radius: 9999px;
+  background: rgb(255 106 0 / 10%);
+  color: #ff9b5c;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.painel-curriculos-perfil__indicador-salvando {
+  margin-left: 0.45rem;
+  color: #ff9b5c;
+  font-size: 0.78rem;
+  font-style: italic;
 }
 
 .painel-curriculos-perfil__frame-modelo {
-  align-self: start;
   overflow: hidden;
-  border-radius: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0.75rem;
+  background: #111114;
 }
 
-/* A tela reutiliza a mesma miniatura da seleção de modelos. */
 .painel-curriculos-perfil__frame-modelo .miniatura-modelo {
-  min-height: 9rem;
+  min-height: 9.5rem;
+  animation: animacaoEntradaFadeIn 0.35s var(--anim-curva-suave) both;
 }
 
-.painel-curriculos-perfil__formulario {
+.painel-curriculos-perfil__controles {
   display: grid;
   gap: 1.25rem;
-  padding: 1.25rem;
 }
 
 .painel-curriculos-perfil__campo {
   display: grid;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .painel-curriculos-perfil__campo label {
-  color: #ededed;
-  font-family: "Poppins", sans-serif;
-  font-size: 0.9rem;
+  color: #e2e8f0;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.painel-curriculos-perfil__campo input,
+/* Select com seta SVG personalizada, nunca colada à direita */
 .painel-curriculos-perfil__campo select {
+  appearance: none;
+  -webkit-appearance: none;
   width: 100%;
   min-height: 2.9rem;
-  border: 1px solid rgb(255 255 255 / 16%);
+  border: 1px solid rgb(255 255 255 / 14%);
   border-radius: 0.6rem;
-  padding: 0.65rem 0.8rem;
-  background: #0f0f0f;
+  padding: 0.65rem 2.85rem 0.65rem 0.95rem;
+  background-color: #111114;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ff9b5c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.15rem center;
+  background-size: 1.05rem;
   color: #ffffff;
-  font-family: "Poppins", sans-serif;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    outline 0.2s ease;
 }
 
-.painel-curriculos-perfil__campo input:focus,
 .painel-curriculos-perfil__campo select:focus {
   border-color: #ff6a00;
-  outline: 2px solid rgb(255 106 0 / 30%);
+  outline: 2px solid rgb(255 106 0 / 28%);
   outline-offset: 1px;
 }
 
-.painel-curriculos-perfil__acoes-edicao {
+.painel-curriculos-perfil__campo select:focus-visible {
+  border-color: #ff6a00;
+  outline: 2px solid #ff9b5c;
+  outline-offset: 2px;
+}
+
+/* Grupo de Ações: Baixar currículo */
+.painel-curriculos-perfil__acoes {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.painel-curriculos-perfil__acoes-edicao button[type="button"] {
-  background: transparent;
-  border-color: rgb(255 255 255 / 20%);
+.painel-curriculos-perfil__download-container {
+  position: relative;
+  width: 100%;
+}
+
+.painel-curriculos-perfil__btn-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.65rem 1.4rem;
+  background: #ff6a00;
   color: #ffffff;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.painel-curriculos-perfil__btn-download:hover:not(:disabled) {
+  background: #ff7a1a;
+  transform: translateY(-1px);
+}
+
+.painel-curriculos-perfil__btn-download:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+}
+
+.painel-curriculos-perfil__menu-download {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.75rem;
+  background: #17171b;
+  box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 50%);
+  transform-origin: top center;
+  animation: animacaoEntradaScaleUp 0.22s var(--anim-curva-suave) both;
+}
+
+.painel-curriculos-perfil__opcao-download {
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.painel-curriculos-perfil__opcao-download:hover {
+  background: rgb(255 106 0 / 12%);
+  color: #ff9b5c;
+}
+
+.painel-curriculos-perfil__opcao-download strong {
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.painel-curriculos-perfil__opcao-download span {
+  color: #94a3b8;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.76rem;
+}
+
+.painel-curriculos-perfil__vazio {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed rgb(255 255 255 / 15%);
+  border-radius: 0.9rem;
+  background: #17171b;
+}
+
+.painel-curriculos-perfil__vazio h3 {
+  margin: 0;
+  color: #ffffff;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.painel-curriculos-perfil__vazio p {
+  max-width: 28rem;
+  margin: 0;
+  color: #94a3b8;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.painel-curriculos-perfil__btn-criar {
+  min-height: 2.75rem;
+  margin-top: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.65rem 1.4rem;
+  background: #ff6a00;
+  color: #ffffff;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.painel-curriculos-perfil__btn-criar:hover {
+  background: #ff7a1a;
+  transform: translateY(-1px);
 }
 
 .painel-curriculos-perfil__mensagem,
-.painel-curriculos-perfil__estado,
-.painel-curriculos-perfil__vazio {
+.painel-curriculos-perfil__estado {
   margin: 0;
-  border: 1px solid rgb(255 255 255 / 12%);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
+  background: #17171b;
   color: #d4d4d4;
-  font-family: "Poppins", sans-serif;
-}
-
-.painel-curriculos-perfil__mensagem[role="status"] {
-  border-color: rgb(74 222 128 / 40%);
-  background: rgb(34 197 94 / 12%);
-  color: #86efac;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.9rem;
 }
 
 .painel-curriculos-perfil__mensagem[role="alert"],
@@ -217,35 +401,4 @@
   border-color: rgb(248 113 113 / 40%);
   background: rgb(239 68 68 / 12%);
   color: #fca5a5;
-}
-
-.painel-curriculos-perfil__vazio h3,
-.painel-curriculos-perfil__vazio p {
-  margin: 0;
-}
-
-.painel-curriculos-perfil__vazio p {
-  margin-top: 0.4rem;
-  color: #a3a3a3;
-}
-
-@media (max-width: 40rem) {
-  .painel-curriculos-perfil__cabecalho,
-  .painel-curriculos-perfil__cartao {
-    grid-template-columns: 1fr;
-  }
-
-  .painel-curriculos-perfil__cabecalho {
-    display: grid;
-    align-items: stretch;
-  }
-
-  .painel-curriculos-perfil__criar,
-  .painel-curriculos-perfil__editar {
-    width: 100%;
-  }
-
-  .painel-curriculos-perfil__frame-modelo .miniatura-modelo {
-    min-height: 7rem;
-  }
 }

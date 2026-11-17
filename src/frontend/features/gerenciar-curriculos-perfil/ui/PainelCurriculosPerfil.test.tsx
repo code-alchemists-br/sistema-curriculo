@@ -8,23 +8,16 @@ import { PainelCurriculosPerfil } from "./PainelCurriculosPerfil";
 
 afterEach(cleanup);
 
-/** Cria um double com duas versões para os testes de comportamento do painel. */
-function criarClienteDeSucesso(): ClienteVersoesCurriculo {
+/** Cria um double com um currículo para os testes de alteração de modelo. */
+function criarClienteComCurriculo(): ClienteVersoesCurriculo {
   return {
     listar: vi.fn().mockResolvedValue([
       {
         id: "curriculo-1",
-        tituloVersao: "Currículo para estágio",
+        tituloVersao: "Currículo de Ricardo Silveira",
         modelo: "primeiro-emprego",
         visibilidade: "privado",
         totalItens: 8,
-      },
-      {
-        id: "curriculo-2",
-        tituloVersao: "Currículo para vagas de tecnologia",
-        modelo: "moderno",
-        visibilidade: "publico",
-        totalItens: 12,
       },
     ]),
     atualizar: vi
@@ -39,31 +32,79 @@ function criarClienteDeSucesso(): ClienteVersoesCurriculo {
   };
 }
 
-/** Renderiza uma miniatura simples para isolar o comportamento do painel. */
-function renderizarMiniatura() {
-  return <div aria-hidden="true" />;
+/** Cria um double sem currículo cadastrado. */
+function criarClienteSemCurriculo(): ClienteVersoesCurriculo {
+  return {
+    listar: vi.fn().mockResolvedValue([]),
+    atualizar: vi.fn(),
+  };
+}
+
+/** Renderiza uma miniatura simples com identificador do modelo para validar preview dinâmico. */
+function renderizarMiniatura(modelo: string) {
+  return <div data-testid={`miniatura-${modelo}`}>{modelo}</div>;
 }
 
 describe("PainelCurriculosPerfil", () => {
-  it("lista versões com o título e o modelo, sem expor dados técnicos", async () => {
+  it("exibe estado vazio e botão de criar currículo quando não há currículo cadastrado", async () => {
+    const onCriarCurriculo = vi.fn();
+
     render(
       <PainelCurriculosPerfil
-        cliente={criarClienteDeSucesso()}
+        cliente={criarClienteSemCurriculo()}
+        onCriarCurriculo={onCriarCurriculo}
         renderizarMiniatura={renderizarMiniatura}
       />,
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Currículo para estágio" }),
+      await screen.findByRole("heading", {
+        name: "Nenhum currículo cadastrado",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Modelo: Primeiro emprego")).toBeInTheDocument();
-    expect(screen.queryByText(/itens incluídos/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Pública")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/você ainda não criou um currículo/i),
+    ).toBeInTheDocument();
+
+    const botaoCriar = screen.getByRole("button", {
+      name: "Criar meu currículo",
+    });
+    expect(botaoCriar).toBeInTheDocument();
+
+    const usuario = userEvent.setup();
+    await usuario.click(botaoCriar);
+    expect(onCriarCurriculo).toHaveBeenCalledTimes(1);
   });
 
-  it("altera os metadados de uma versão sem modificar as demais", async () => {
+  it("exibe o currículo com o modelo ativo e miniatura correspondente", async () => {
+    render(
+      <PainelCurriculosPerfil
+        cliente={criarClienteComCurriculo()}
+        renderizarMiniatura={renderizarMiniatura}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Currículo de Ricardo Silveira",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Modelo ativo:/i)).toHaveTextContent(
+      "Primeiro emprego",
+    );
+    expect(
+      screen.getByRole("combobox", {
+        name: /selecione o modelo de apresentação:/i,
+      }),
+    ).toHaveValue("primeiro-emprego");
+    expect(
+      screen.getByTestId("miniatura-primeiro-emprego"),
+    ).toBeInTheDocument();
+  });
+
+  it("salva automaticamente ao selecionar um novo modelo, atualizando a miniatura", async () => {
     const usuario = userEvent.setup();
-    const cliente = criarClienteDeSucesso();
+    const cliente = criarClienteComCurriculo();
 
     render(
       <PainelCurriculosPerfil
@@ -72,54 +113,86 @@ describe("PainelCurriculosPerfil", () => {
       />,
     );
 
-    await screen.findByText("Currículo para estágio");
-    await usuario.click(
-      screen.getByRole("button", {
-        name: "Editar versão Currículo para estágio",
-      }),
-    );
-    await usuario.clear(screen.getByLabelText("Título da versão"));
-    await usuario.type(
-      screen.getByLabelText("Título da versão"),
-      "Currículo para trainee",
-    );
-    await usuario.selectOptions(screen.getByLabelText("Modelo"), "moderno");
-    await usuario.click(screen.getByRole("button", { name: "Salvar versão" }));
+    await screen.findByRole("heading", {
+      name: "Currículo de Ricardo Silveira",
+    });
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Versão atualizada com sucesso.",
+    const seletor = screen.getByLabelText(
+      "Selecione o modelo de apresentação:",
     );
+    await usuario.selectOptions(seletor, "moderno");
+
     expect(cliente.atualizar).toHaveBeenCalledWith("curriculo-1", {
-      tituloVersao: "Currículo para trainee",
+      tituloVersao: "Currículo de Ricardo Silveira",
       modelo: "moderno",
       visibilidade: "privado",
     });
-    expect(
-      screen.getByRole("heading", { name: "Currículo para trainee" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Currículo para vagas de tecnologia",
-      }),
-    ).toBeInTheDocument();
+
+    expect(screen.getByTestId("miniatura-moderno")).toBeInTheDocument();
+    expect(screen.getByText(/Modelo ativo:/i)).toHaveTextContent("Moderno");
   });
 
-  it("permite iniciar a criação de uma nova versão", async () => {
+  it("exibe mensagem de alerta amigável quando a atualização do modelo falha", async () => {
     const usuario = userEvent.setup();
-    const onCriarNovaVersao = vi.fn();
+    const cliente: ClienteVersoesCurriculo = {
+      listar: vi.fn().mockResolvedValue([
+        {
+          id: "curriculo-1",
+          tituloVersao: "Currículo de Ricardo Silveira",
+          modelo: "primeiro-emprego",
+          visibilidade: "privado",
+          totalItens: 8,
+        },
+      ]),
+      atualizar: vi.fn().mockRejectedValue(new Error("Erro de conexão")),
+    };
 
     render(
       <PainelCurriculosPerfil
-        cliente={criarClienteDeSucesso()}
-        onCriarNovaVersao={onCriarNovaVersao}
+        cliente={cliente}
         renderizarMiniatura={renderizarMiniatura}
       />,
     );
 
-    await usuario.click(
-      await screen.findByRole("button", { name: "Criar nova versão" }),
+    await screen.findByRole("heading", {
+      name: "Currículo de Ricardo Silveira",
+    });
+
+    const seletor = screen.getByLabelText(
+      "Selecione o modelo de apresentação:",
+    );
+    await usuario.selectOptions(seletor, "criativo");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível salvar o novo modelo no momento. Tente novamente mais tarde.",
+    );
+  });
+
+  it("permite abrir o menu de download e acionar a exportação em PDF diretamente", async () => {
+    const usuario = userEvent.setup();
+    const aoBaixarCurriculo = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <PainelCurriculosPerfil
+        aoBaixarCurriculo={aoBaixarCurriculo}
+        cliente={criarClienteComCurriculo()}
+        renderizarMiniatura={renderizarMiniatura}
+      />,
     );
 
-    expect(onCriarNovaVersao).toHaveBeenCalledTimes(1);
+    await screen.findByRole("heading", {
+      name: "Currículo de Ricardo Silveira",
+    });
+
+    const botaoDownload = screen.getByRole("button", {
+      name: "Baixar currículo ▾",
+    });
+    await usuario.click(botaoDownload);
+
+    const opcaoPdf = screen.getByRole("menuitem", { name: /PDF/i });
+    expect(opcaoPdf).toBeInTheDocument();
+
+    await usuario.click(opcaoPdf);
+    expect(aoBaixarCurriculo).toHaveBeenCalledWith("pdf");
   });
 });

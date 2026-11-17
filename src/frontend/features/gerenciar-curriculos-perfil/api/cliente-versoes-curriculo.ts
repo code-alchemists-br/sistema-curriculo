@@ -5,9 +5,7 @@ import type {
 
 /** Enumera falhas que podem ser explicadas no painel de versões. */
 export type CodigoFalhaVersaoCurriculo =
-  | "indisponivel"
-  | "nao-encontrado"
-  | "resposta-invalida";
+  "indisponivel" | "nao-encontrado" | "resposta-invalida";
 
 /**
  * Representa uma falha conhecida ao consultar ou alterar uma versão de currículo.

@@ -38,6 +38,10 @@ import { PaginaDadosPessoais } from "../pages/personal-data";
 import { PaginaPoliticaDePrivacidade } from "../pages/politica-de-privacidade";
 import { PaginaCadastroProjetosAcademicos } from "../pages/projetos-academicos";
 import { PaginaRecuperacaoSenha } from "../pages/recuperar-senha";
+import {
+  criarClienteRecuperacaoSenhaDemonstracao,
+  criarClienteRecuperacaoSenhaHttp,
+} from "../features/recuperar-senha";
 import { PaginaSelecaoModeloCurriculo } from "../pages/selecionar-modelo-curriculo";
 import { PaginaTermosDeUso } from "../pages/termos-de-uso";
 import { PaginaValidacaoCurriculo } from "../pages/validacao-curriculo";
@@ -63,7 +67,7 @@ import {
   FalhaPerfilEstudante,
   type ClientePerfilEstudante,
 } from "../features/edit-profile";
-import { criarClienteVersoesCurriculoDemonstracao } from "../features/gerenciar-curriculos-perfil";
+import type { ClienteVersoesCurriculo } from "../features/gerenciar-curriculos-perfil";
 import { criarClienteVagasResiliente } from "./servicos-resilientes";
 import {
   criarClienteCurriculoNoBanco,
@@ -89,6 +93,10 @@ const clienteAcessoBase = apiBaseUrl
 // Sem "modo demonstração" quando a API cai: o estudante precisa saber que não
 // entrou de verdade, senão nada do que preencher será salvo.
 const clienteAcessoHttp = clienteAcessoBase;
+
+const clienteRecuperacaoSenhaBase = apiBaseUrl
+  ? criarClienteRecuperacaoSenhaHttp(apiBaseUrl)
+  : criarClienteRecuperacaoSenhaDemonstracao();
 
 // Dados pessoais vão direto para PUT /estudantes/me/perfil (substitui, não duplica).
 const clienteDadosPessoaisHttp = apiBaseUrl
@@ -120,22 +128,22 @@ const ESTILO_AVISO_FALHA: CSSProperties = {
   boxShadow: "0 1rem 2.5rem rgb(0 0 0 / 45%)",
 };
 
-const clienteVersoesCurriculoDemo = criarClienteVersoesCurriculoDemonstracao();
-
 /**
- * Mantém o salvamento do perfil na sessão enquanto não há identidade autenticada
- * suficiente para acionar o endpoint real de perfil.
+ * Mantém o salvamento do perfil na sessão e sincroniza com o endpoint de
+ * dados pessoais quando a API estiver configurada.
  *
  * A atualização é confirmada pela própria composição do App após o formulário
- * validar os dados. A exclusão continua indisponível para não simular uma ação
- * irreversível que não pode ser persistida nesta camada.
+ * validar os dados.
  */
 const clientePerfilDaSessao: ClientePerfilEstudante = {
-  async atualizar() {
-    return undefined;
-  },
-  async excluir() {
-    throw new FalhaPerfilEstudante("indisponivel");
+  async atualizar(dados) {
+    if (clienteDadosPessoaisHttp) {
+      try {
+        await clienteDadosPessoaisHttp.salvar(dados);
+      } catch {
+        // Preserva o salvamento na sessão local quando o backend não responde
+      }
+    }
   },
 };
 
@@ -209,6 +217,7 @@ interface RascunhoCurriculo {
   competencias?: Habilidades;
   projetos?: ValoresProjetoAcademico[];
   modelo?: ModeloApresentacaoCurriculo;
+  tituloVersao?: string;
 }
 
 const CHAVE_RASCUNHO_CURRICULO = "liminal_curriculo_rascunho";
@@ -479,6 +488,7 @@ export function App() {
     setCompetencias(undefined);
     setProjetos(undefined);
     setModelo(undefined);
+    setTituloVersao(undefined);
     if (typeof window !== "undefined") {
       try {
         sessionStorage.removeItem("liminal_usuario_sessao");
@@ -524,6 +534,9 @@ export function App() {
   >(() => carregarRascunho()?.projetos);
   const [modelo, setModelo] = useState<ModeloApresentacaoCurriculo | undefined>(
     () => carregarRascunho()?.modelo,
+  );
+  const [tituloVersao, setTituloVersao] = useState<string | undefined>(
+    () => carregarRascunho()?.tituloVersao,
   );
   const modeloAtivo: ModeloApresentacaoCurriculo = modelo ?? "classico";
   const [origemSelecaoModelo, setOrigemSelecaoModelo] = useState<
@@ -790,6 +803,7 @@ export function App() {
       competencias,
       projetos,
       modelo,
+      tituloVersao,
     });
   }, [
     dadosPessoais,
@@ -801,6 +815,7 @@ export function App() {
     competencias,
     projetos,
     modelo,
+    tituloVersao,
   ]);
 
   /**
@@ -915,7 +930,13 @@ export function App() {
       status: formacoes && formacoes.length > 0 ? "preenchida" : "pulada",
     },
     experienciasProfissionais: {
-      status: experiencias && experiencias.length > 0 ? "preenchida" : "pulada",
+      status:
+        (experiencias && experiencias.length > 0) ||
+        (experiencias !== undefined && (formacoes?.length ?? 0) > 0) ||
+        modelo === "primeiro-emprego" ||
+        modelo === "academico"
+          ? "preenchida"
+          : "pulada",
     },
     competencias: competencias ?? {
       hardSkills: [],
@@ -1327,6 +1348,7 @@ export function App() {
   if (rotaAtiva === "recuperar-senha") {
     return (
       <PaginaRecuperacaoSenha
+        cliente={clienteRecuperacaoSenhaBase}
         onVoltarInicio={voltarAoInicio}
         onVoltarLogin={() => abrirAcesso("acesso", "login")}
       />
@@ -1343,17 +1365,109 @@ export function App() {
     );
   }
 
+  const possuiCurriculo = Boolean(
+    curriculoPronto ||
+    (formacoes && formacoes.length > 0) ||
+    (experiencias && experiencias.length > 0) ||
+    (projetos && projetos.length > 0) ||
+    (cursos && cursos.length > 0) ||
+    (certificacoes && certificacoes.length > 0) ||
+    (idiomas && idiomas.length > 0) ||
+    competencias?.hardSkills?.length ||
+    competencias?.softSkills?.length,
+  );
+
   if (rotaAtiva === "configuracoes-perfil") {
+    const nomeDoPerfil =
+      dadosPessoais?.nomeCompleto?.trim() || usuarioLogado?.nome || "Estudante";
+    const totalItensCurriculo =
+      (formacoes?.length ?? 0) +
+      (experiencias?.length ?? 0) +
+      (projetos?.length ?? 0) +
+      (cursos?.length ?? 0) +
+      (certificacoes?.length ?? 0) +
+      (idiomas?.length ?? 0) +
+      (competencias?.hardSkills?.length ?? 0) +
+      (competencias?.softSkills?.length ?? 0);
+
+    const clienteCurriculosDaSessao: ClienteVersoesCurriculo = {
+      async listar() {
+        if (!possuiCurriculo) {
+          return [];
+        }
+        return [
+          {
+            id: "curriculo-principal",
+            tituloVersao:
+              tituloVersao?.trim() || `Currículo de ${nomeDoPerfil}`,
+            modelo: modeloAtivo,
+            visibilidade: "privado",
+            totalItens: totalItensCurriculo,
+          },
+        ];
+      },
+      async atualizar(_id, dados) {
+        setModelo(dados.modelo);
+        if (clienteCurriculo) {
+          try {
+            await clienteCurriculo.salvarModelo(dados.modelo);
+            setCurriculoPronto(true);
+          } catch {
+            // Mantém atualização na sessão local quando o backend não responde
+          }
+        }
+        return {
+          id: "curriculo-principal",
+          tituloVersao: tituloVersao?.trim() || `Currículo de ${nomeDoPerfil}`,
+          modelo: dados.modelo,
+          visibilidade: dados.visibilidade,
+          totalItens: totalItensCurriculo,
+        };
+      },
+    };
+
+    const dadosDoPerfil = {
+      ...dadosPessoais,
+      nomeCompleto: nomeDoPerfil,
+      email: dadosPessoais?.email || usuarioLogado?.email || "",
+    } as ValoresDadosPessoais;
+    const previaDoPerfil = montarPreviaCurriculo({
+      dadosPessoais: dadosDoPerfil,
+      formacoes,
+      experiencias,
+      cursos,
+      certificacoes,
+      idiomas,
+      competencias,
+      projetos,
+      modelo: modeloAtivo,
+    });
+    const nomeArquivo = `Curriculo - ${dadosDoPerfil.nomeCompleto}`;
+
     return (
       <PaginaConfiguracoesPerfil
+        aoBaixarCurriculo={
+          possuiCurriculo
+            ? (formato) =>
+                formato === "pdf"
+                  ? exportarElementoParaPdf({
+                      previa: previaDoPerfil,
+                      nomeArquivo,
+                    })
+                  : exportarPreviaParaDocx({
+                      previa: previaDoPerfil,
+                      nomeArquivo,
+                    })
+            : undefined
+        }
         cliente={clientePerfilDaSessao}
-        clienteCurriculos={clienteVersoesCurriculoDemo}
+        clienteCurriculos={clienteCurriculosDaSessao}
         onCriarNovaVersao={() => navegar("dados-pessoais")}
         onPerfilAtualizado={sincronizarPerfilAtualizado}
         onVoltar={() => navegar("meu-perfil")}
+        onVoltarInicio={voltarAoInicio}
         valoresIniciais={{
-          nomeCompleto:
-            dadosPessoais?.nomeCompleto || usuarioLogado?.nome || "Estudante",
+          nomeCompleto: nomeDoPerfil,
           enderecoCompleto: dadosPessoais?.enderecoCompleto || "",
           telefones: dadosPessoais?.telefones || [""],
           email: dadosPessoais?.email || usuarioLogado?.email || "",
@@ -1365,15 +1479,6 @@ export function App() {
   }
 
   if (rotaAtiva === "meu-perfil") {
-    const possuiCurriculo = Boolean(
-      (formacoes && formacoes.length > 0) ||
-      (experiencias && experiencias.length > 0) ||
-      (projetos && projetos.length > 0) ||
-      (cursos && cursos.length > 0) ||
-      (idiomas && idiomas.length > 0) ||
-      competencias?.hardSkills?.length ||
-      competencias?.softSkills?.length,
-    );
     const dadosDoPerfil = {
       ...dadosPessoais,
       nomeCompleto:

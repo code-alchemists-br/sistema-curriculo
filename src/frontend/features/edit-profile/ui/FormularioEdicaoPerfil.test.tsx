@@ -171,7 +171,7 @@ describe("FormularioEdicaoPerfil", () => {
     );
   });
 
-  it("exige confirmação no modal antes de chamar o double de exclusão", async () => {
+  it("permite adicionar, formatar e remover um telefone adicional antes de salvar", async () => {
     const usuario = userEvent.setup();
     const cliente = criarClienteDeSucesso();
 
@@ -183,36 +183,17 @@ describe("FormularioEdicaoPerfil", () => {
     );
 
     await usuario.click(
-      screen.getByRole("button", { name: "Excluir minha conta" }),
+      screen.getByRole("button", { name: "+ Adicionar telefone" }),
     );
 
-    const botoesExcluir = screen.getAllByRole("button", {
-      name: "Excluir minha conta",
-    });
-    await usuario.click(botoesExcluir[1]);
-
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Sua conta foi excluída com sucesso.",
-    );
-    expect(cliente.excluir).toHaveBeenCalledTimes(1);
-  });
-
-  it("não chama o double de exclusão quando o estudante cancela o modal", async () => {
-    const usuario = userEvent.setup();
-    const cliente = criarClienteDeSucesso();
-
-    render(
-      <FormularioEdicaoPerfil
-        cliente={cliente}
-        valoresIniciais={studentExistente}
-      />,
-    );
+    const segundoTelefone = screen.getByLabelText("Telefone 2");
+    await usuario.type(segundoTelefone, "11988887777");
+    expect(segundoTelefone).toHaveValue("(11) 98888-7777");
 
     await usuario.click(
-      screen.getByRole("button", { name: "Excluir minha conta" }),
+      screen.getByRole("button", { name: "Remover Telefone 2" }),
     );
-    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(cliente.excluir).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Telefone 2")).not.toBeInTheDocument();
   });
 });

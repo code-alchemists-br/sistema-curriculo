@@ -13,7 +13,7 @@ const clientePerfil: ClientePerfilEstudante = {
   excluir: vi.fn().mockRejectedValue(new Error("indisponível")),
 };
 
-const clienteCurriculos: ClienteVersoesCurriculo = {
+const clienteCurriculosComDados: ClienteVersoesCurriculo = {
   listar: vi.fn().mockResolvedValue([
     {
       id: "versao-1",
@@ -26,12 +26,17 @@ const clienteCurriculos: ClienteVersoesCurriculo = {
   atualizar: vi.fn(),
 };
 
+const clienteCurriculosVazio: ClienteVersoesCurriculo = {
+  listar: vi.fn().mockResolvedValue([]),
+  atualizar: vi.fn(),
+};
+
 describe("PaginaConfiguracoesPerfil", () => {
-  it("reúne os dados pessoais e as versões de currículo em uma única tela", async () => {
+  it("reúne os dados pessoais e as opções de modelo do currículo na tela", async () => {
     render(
       <PaginaConfiguracoesPerfil
         cliente={clientePerfil}
-        clienteCurriculos={clienteCurriculos}
+        clienteCurriculos={clienteCurriculosComDados}
         valoresIniciais={{
           nomeCompleto: "Ana Silva",
           enderecoCompleto: "Rua das Flores, 20",
@@ -43,7 +48,7 @@ describe("PaginaConfiguracoesPerfil", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Seu perfil e seus currículos" }),
+      screen.getByRole("heading", { name: "Perfil e modelo do currículo" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Endereço completo")).toHaveValue(
       "Rua das Flores, 20",
@@ -51,29 +56,32 @@ describe("PaginaConfiguracoesPerfil", () => {
     expect(
       await screen.findByRole("heading", { name: "Currículo de estágio" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Modelo: Primeiro emprego")).toBeInTheDocument();
+    expect(screen.getByText(/Modelo ativo:/i)).toHaveTextContent(
+      "Primeiro emprego",
+    );
     expect(
       screen.getByRole("img", {
-        name: "Prévia estrutural do modelo Primeiro emprego",
+        name: "Prévia visual do modelo Primeiro emprego",
       }),
     ).toBeInTheDocument();
   });
 
-  it("direciona a pessoa para criar uma nova versão quando a ação é escolhida", async () => {
+  it("permite navegar para criação de currículo quando não há nenhum cadastrado", async () => {
     const usuario = userEvent.setup();
     const onCriarNovaVersao = vi.fn();
 
     render(
       <PaginaConfiguracoesPerfil
         cliente={clientePerfil}
-        clienteCurriculos={clienteCurriculos}
+        clienteCurriculos={clienteCurriculosVazio}
         onCriarNovaVersao={onCriarNovaVersao}
       />,
     );
 
-    await usuario.click(
-      await screen.findByRole("button", { name: "Criar nova versão" }),
-    );
+    const botaoCriar = await screen.findByRole("button", {
+      name: "Criar meu currículo",
+    });
+    await usuario.click(botaoCriar);
 
     expect(onCriarNovaVersao).toHaveBeenCalledTimes(1);
   });

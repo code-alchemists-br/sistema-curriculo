@@ -15,7 +15,16 @@
   flex-direction: column;
   align-items: center;
   gap: 2rem;
-  animation: animacaoEntradaFadeUp 1s var(--anim-curva-suave) both;
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.85s var(--anim-curva-suave),
+    transform 0.85s var(--anim-curva-suave);
+}
+
+.destaques-section--visivel .destaques-section__container {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .destaques-section__title {
@@ -54,6 +63,29 @@
   align-items: center;
   text-align: center;
   position: relative;
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s var(--anim-curva-suave),
+    transform 0.8s var(--anim-curva-suave);
+}
+
+.destaques-section--visivel .destaques-section__card:nth-child(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.15s;
+}
+
+.destaques-section--visivel .destaques-section__card:nth-child(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.3s;
+}
+
+.destaques-section--visivel .destaques-section__card:nth-child(3) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.45s;
 }
 
 .destaques-section__card:not(:last-child)::after {
@@ -101,16 +133,25 @@
   }
 
   .destaques-section__descricao {
-    font-size: 1.125rem;
+    font-size: 1rem;
   }
 
   .destaques-section__grid {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2.5rem;
     margin-top: 3.5rem;
   }
 
   .destaques-section__card:not(:last-child)::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .destaques-section__container,
+  .destaques-section__card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }

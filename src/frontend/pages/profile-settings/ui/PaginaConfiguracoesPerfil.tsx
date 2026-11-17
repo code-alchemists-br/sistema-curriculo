@@ -20,6 +20,8 @@ export interface PaginaConfiguracoesPerfilProps {
   onCriarNovaVersao?: () => void;
   onPerfilAtualizado?: (perfil: Student) => void;
   onVoltar?: () => void;
+  onVoltarInicio?: () => void;
+  aoBaixarCurriculo?: (formato: "pdf" | "docx") => Promise<void> | void;
 }
 
 const DADOS_FICTICIOS: Student = {
@@ -43,6 +45,8 @@ export function PaginaConfiguracoesPerfil({
   onCriarNovaVersao,
   onPerfilAtualizado,
   onVoltar,
+  onVoltarInicio,
+  aoBaixarCurriculo,
 }: PaginaConfiguracoesPerfilProps) {
   return (
     <main className="pagina-configuracoes-perfil">
@@ -50,34 +54,55 @@ export function PaginaConfiguracoesPerfil({
         aria-labelledby="titulo-configuracoes-perfil"
         className="pagina-configuracoes-perfil__conteudo"
       >
-        {onVoltar && (
-          <button
-            aria-label="Voltar para a página inicial"
-            className="pagina-configuracoes-perfil__voltar"
-            onClick={onVoltar}
-            type="button"
+        {(onVoltar || onVoltarInicio) && (
+          <nav
+            aria-label="Navegação de retorno"
+            className="pagina-configuracoes-perfil__topo"
           >
-            ← Voltar para o início
-          </button>
+            {onVoltar && (
+              <button
+                aria-label="Voltar para o perfil"
+                className="pagina-configuracoes-perfil__voltar"
+                onClick={onVoltar}
+                type="button"
+              >
+                ← Voltar ao perfil
+              </button>
+            )}
+            {onVoltarInicio && (
+              <button
+                aria-label="Voltar para a página inicial"
+                className="pagina-configuracoes-perfil__btn-inicio"
+                onClick={onVoltarInicio}
+                type="button"
+              >
+                Início
+              </button>
+            )}
+          </nav>
         )}
+
         <header className="pagina-configuracoes-perfil__cabecalho">
-          <p>Configurações</p>
-          <h1 id="titulo-configuracoes-perfil">Seu perfil e seus currículos</h1>
+          <p className="pagina-configuracoes-perfil__sobretitulo">
+            Configurações da conta
+          </p>
+          <h1 id="titulo-configuracoes-perfil">Perfil e modelo do currículo</h1>
           <span>
-            Mantenha seus dados de contato atualizados e organize as versões de
-            currículo que você já criou.
+            Atualize seus dados cadastrais e gerencie o modelo de apresentação
+            do seu currículo.
           </span>
         </header>
+
         <div className="pagina-configuracoes-perfil__grade">
           <section
             aria-labelledby="titulo-dados-perfil"
             className="pagina-configuracoes-perfil__painel"
           >
             <header className="pagina-configuracoes-perfil__cabecalho-painel">
-              <p>Dados do perfil</p>
               <h2 id="titulo-dados-perfil">Informações pessoais</h2>
               <span>
-                Atualize endereço, telefone, e-mail e links profissionais.
+                Estes dados identificam seu perfil na plataforma e no cabeçalho
+                do currículo.
               </span>
             </header>
             <FormularioEdicaoPerfil
@@ -86,8 +111,10 @@ export function PaginaConfiguracoesPerfil({
               valoresIniciais={valoresIniciais}
             />
           </section>
+
           <div className="pagina-configuracoes-perfil__painel pagina-configuracoes-perfil__painel--versoes">
             <PainelCurriculosPerfil
+              aoBaixarCurriculo={aoBaixarCurriculo}
               cliente={clienteCurriculos}
               onCriarNovaVersao={onCriarNovaVersao}
               renderizarMiniatura={(modelo) => (

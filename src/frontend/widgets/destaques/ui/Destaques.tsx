@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import "./Destaques.css";
 
 export interface MetricaItem {
@@ -29,10 +30,40 @@ const METRICAS_PADRAO: MetricaItem[] = [
 ];
 
 export function Destaques() {
+  const [visivel, setVisivel] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
+  const secaoRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const elemento = secaoRef.current;
+    if (!elemento || typeof IntersectionObserver === "undefined") return;
+
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (entrada.isIntersecting) {
+          setVisivel(true);
+          observador.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+
+    observador.observe(elemento);
+
+    return () => {
+      observador.disconnect();
+    };
+  }, []);
+
   return (
-    <section className="destaques-section" aria-labelledby="destaques-title">
+    <section
+      aria-labelledby="destaques-title"
+      className={`destaques-section ${visivel ? "destaques-section--visivel" : ""}`}
+      ref={secaoRef}
+    >
       <div className="destaques-section__container">
-        <h2 id="destaques-title" className="destaques-section__title">
+        <h2 className="destaques-section__title" id="destaques-title">
           <span className="destaques-section__title-destaque">
             CONSTRUÍMOS A PONTE ENTRE O SEU TALENTO E A SUA PRÓXIMA ENTREVISTA
             —{" "}
@@ -43,14 +74,14 @@ export function Destaques() {
         </h2>
 
         <div
+          aria-label="Principais métricas da plataforma"
           className="destaques-section__grid"
           role="list"
-          aria-label="Principais métricas da plataforma"
         >
           {METRICAS_PADRAO.map((item) => (
             <div
-              key={item.id}
               className="destaques-section__card"
+              key={item.id}
               role="listitem"
             >
               <div className="destaques-section__valor">{item.valor}</div>

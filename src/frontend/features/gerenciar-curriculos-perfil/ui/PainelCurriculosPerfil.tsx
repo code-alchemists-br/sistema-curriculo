@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   FalhaVersaoCurriculo,
@@ -7,42 +7,45 @@ import {
 import {
   obterRotuloModeloVersao,
   OPCOES_MODELO_VERSAO,
-  type EdicaoVersaoCurriculo,
   type ModeloVersaoCurriculo,
   type ResumoVersaoCurriculo,
 } from "../model/versao-curriculo-perfil";
 import "./PainelCurriculosPerfil.css";
 
-/** Define as dependências e ações disponíveis no painel de versões. */
+/** Define as dependências e ações disponíveis no painel de modelo do currículo. */
 export interface PainelCurriculosPerfilProps {
   cliente: ClienteVersoesCurriculo;
+  onCriarCurriculo?: () => void;
   onCriarNovaVersao?: () => void;
+  aoBaixarCurriculo?: (formato: "pdf" | "docx") => Promise<void> | void;
   renderizarMiniatura: (modelo: ModeloVersaoCurriculo) => ReactNode;
 }
 
 /** Representa os estados de carregamento que o painel pode comunicar. */
-type EstadoListaVersoes = "carregando" | "erro" | "sucesso";
+type EstadoPainel = "carregando" | "erro" | "sucesso";
 
 /**
- * Exibe e permite alterar os metadados das versões já existentes do currículo.
- *
- * O painel lista título e modelo, mantendo a alteração restrita aos campos que
- * fazem sentido para esta tela. Ele existe para centralizar a manutenção de
- * versões no perfil, sem duplicar o fluxo que altera as informações que compõem
- * cada currículo.
+ * Exibe o currículo cadastrado e salva automaticamente a alteração do modelo na seleção,
+ * disponibilizando a exportação imediata em PDF ou Word.
  */
 export function PainelCurriculosPerfil({
   cliente,
+  onCriarCurriculo,
   onCriarNovaVersao,
+  aoBaixarCurriculo,
   renderizarMiniatura,
 }: PainelCurriculosPerfilProps) {
-  const [estadoLista, setEstadoLista] =
-    useState<EstadoListaVersoes>("carregando");
+  const [estado, setEstado] = useState<EstadoPainel>("carregando");
   const [versoes, setVersoes] = useState<ResumoVersaoCurriculo[]>([]);
-  const [idEmEdicao, setIdEmEdicao] = useState<string | null>(null);
-  const [edicao, setEdicao] = useState<EdicaoVersaoCurriculo | null>(null);
+  const [modeloSelecionado, setModeloSelecionado] =
+    useState<ModeloVersaoCurriculo | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [mensagem, setMensagem] = useState<string | null>(null);
+  const [baixando, setBaixando] = useState<"pdf" | "docx" | null>(null);
+  const [erroSalvamento, setErroSalvamento] = useState<string | null>(null);
+  const [menuDownloadAberto, setMenuDownloadAberto] = useState(false);
+  const menuDownloadRef = useRef<HTMLDivElement | null>(null);
+
+  const acaoCriarCurriculo = onCriarCurriculo ?? onCriarNovaVersao;
 
   useEffect(() => {
     let componenteAtivo = true;
@@ -52,11 +55,14 @@ export function PainelCurriculosPerfil({
       .then((versoesCarregadas) => {
         if (!componenteAtivo) return;
         setVersoes(versoesCarregadas);
-        setEstadoLista("sucesso");
+        if (versoesCarregadas.length > 0) {
+          setModeloSelecionado(versoesCarregadas[0].modelo);
+        }
+        setEstado("sucesso");
       })
       .catch(() => {
         if (!componenteAtivo) return;
-        setEstadoLista("erro");
+        setEstado("erro");
       });
 
     return () => {
@@ -64,268 +70,241 @@ export function PainelCurriculosPerfil({
     };
   }, [cliente]);
 
-  /** Prepara uma versão para edição sem alterar a lista original antecipadamente. */
-  function iniciarEdicao(versao: ResumoVersaoCurriculo): void {
-    setIdEmEdicao(versao.id);
-    setEdicao({
-      tituloVersao: versao.tituloVersao,
-      modelo: versao.modelo,
-    });
-    setMensagem(null);
-  }
+  // Fecha o menu de download ao clicar fora ou apertar Esc
+  useEffect(() => {
+    if (!menuDownloadAberto) return;
 
-  /** Cancela a edição local sem descartar nenhuma versão já salva. */
-  function cancelarEdicao(): void {
-    setIdEmEdicao(null);
-    setEdicao(null);
-  }
-
-  /** Atualiza um único valor do formulário controlado de edição. */
-  function atualizarEdicao<Campo extends keyof EdicaoVersaoCurriculo>(
-    campo: Campo,
-    valor: EdicaoVersaoCurriculo[Campo],
-  ): void {
-    setEdicao((valoresAtuais) =>
-      valoresAtuais === null
-        ? valoresAtuais
-        : { ...valoresAtuais, [campo]: valor },
-    );
-  }
-
-  /**
-   * Salva título e modelo da versão que está aberta para edição.
-   *
-   * A lista só é substituída depois da resposta do cliente. Assim, uma falha não
-   * faz a pessoa perder a referência da versão que já estava exibida.
-   */
-  async function salvarEdicao(evento: FormEvent<HTMLFormElement>): Promise<void> {
-    evento.preventDefault();
-
-    if (idEmEdicao === null || edicao === null) return;
-
-    const versaoOriginal = versoes.find((versao) => versao.id === idEmEdicao);
-
-    if (versaoOriginal === undefined) {
-      setMensagem("Esta versão não está mais disponível. Atualize a página e tente novamente.");
-      return;
+    function aoClicarFora(evento: MouseEvent): void {
+      if (!menuDownloadRef.current?.contains(evento.target as Node)) {
+        setMenuDownloadAberto(false);
+      }
     }
 
-    if (edicao.tituloVersao.trim() === "") {
-      setMensagem("Informe um título para identificar esta versão.");
-      return;
+    function aoApertarTecla(evento: KeyboardEvent): void {
+      if (evento.key === "Escape") {
+        setMenuDownloadAberto(false);
+      }
     }
 
+    document.addEventListener("mousedown", aoClicarFora);
+    document.addEventListener("keydown", aoApertarTecla);
+    return () => {
+      document.removeEventListener("mousedown", aoClicarFora);
+      document.removeEventListener("keydown", aoApertarTecla);
+    };
+  }, [menuDownloadAberto]);
+
+  const curriculo = versoes[0];
+
+  async function aoMudarModelo(
+    novoModelo: ModeloVersaoCurriculo,
+  ): Promise<void> {
+    if (!curriculo || novoModelo === curriculo.modelo || salvando) return;
+
+    const modeloAnterior = curriculo.modelo;
+    setModeloSelecionado(novoModelo);
     setSalvando(true);
-    setMensagem(null);
+    setErroSalvamento(null);
 
     try {
-      const versaoAtualizada = await cliente.atualizar(idEmEdicao, {
-        ...edicao,
-        tituloVersao: edicao.tituloVersao.trim(),
-        visibilidade: versaoOriginal.visibilidade,
+      const versaoAtualizada = await cliente.atualizar(curriculo.id, {
+        tituloVersao: curriculo.tituloVersao,
+        modelo: novoModelo,
+        visibilidade: curriculo.visibilidade,
       });
-      setVersoes((versoesAtuais) =>
-        versoesAtuais.map((versao) =>
-          versao.id === versaoAtualizada.id ? versaoAtualizada : versao,
-        ),
-      );
-      setIdEmEdicao(null);
-      setEdicao(null);
-      setMensagem("Versão atualizada com sucesso.");
+      setVersoes([versaoAtualizada]);
+      setModeloSelecionado(versaoAtualizada.modelo);
     } catch (erro: unknown) {
-      setMensagem(obterMensagemFalha(erro));
+      setModeloSelecionado(modeloAnterior);
+      setErroSalvamento(obterMensagemFalha(erro));
     } finally {
       setSalvando(false);
     }
   }
 
+  async function executarDownload(formato: "pdf" | "docx"): Promise<void> {
+    setMenuDownloadAberto(false);
+    if (!aoBaixarCurriculo || baixando !== null) return;
+
+    setBaixando(formato);
+    setErroSalvamento(null);
+    try {
+      await aoBaixarCurriculo(formato);
+    } catch {
+      setErroSalvamento(
+        `Não foi possível gerar o arquivo ${formato === "pdf" ? "PDF" : "Word"}. Tente novamente.`,
+      );
+    } finally {
+      setBaixando(null);
+    }
+  }
+
   return (
     <section
-      aria-labelledby="titulo-versoes-curriculo"
+      aria-labelledby="titulo-modelo-curriculo"
       className="painel-curriculos-perfil"
     >
       <header className="painel-curriculos-perfil__cabecalho">
         <div>
-          <p className="painel-curriculos-perfil__sobretitulo">
-            Currículos salvos
-          </p>
-          <h2 id="titulo-versoes-curriculo">Gerencie suas versões</h2>
+          <h2 id="titulo-modelo-curriculo">Modelo do currículo</h2>
           <p>
-            Consulte as versões que você criou, identifique o modelo usado e
-            altere o título ou o modelo quando precisar.
+            Altere o modelo visual de apresentação do seu currículo salvo quando
+            desejar e exporte os arquivos diretamente.
           </p>
         </div>
-        {onCriarNovaVersao && (
-          <button
-            className="painel-curriculos-perfil__criar"
-            onClick={onCriarNovaVersao}
-            type="button"
-          >
-            Criar nova versão
-          </button>
-        )}
       </header>
 
-      {mensagem !== null && (
-        <p
-          className="painel-curriculos-perfil__mensagem"
-          role={mensagem.includes("sucesso") ? "status" : "alert"}
-        >
-          {mensagem}
+      {erroSalvamento !== null && (
+        <p className="painel-curriculos-perfil__mensagem" role="alert">
+          {erroSalvamento}
         </p>
       )}
 
-      {estadoLista === "carregando" && (
+      {estado === "carregando" && (
         <p className="painel-curriculos-perfil__estado" role="status">
-          Carregando suas versões de currículo...
+          Carregando informações do currículo...
         </p>
       )}
 
-      {estadoLista === "erro" && (
+      {estado === "erro" && (
         <p className="painel-curriculos-perfil__estado" role="alert">
-          Não foi possível carregar seus currículos agora. Tente novamente mais
+          Não foi possível carregar o currículo agora. Tente novamente mais
           tarde.
         </p>
       )}
 
-      {estadoLista === "sucesso" && versoes.length === 0 && (
+      {estado === "sucesso" && versoes.length === 0 && (
         <div className="painel-curriculos-perfil__vazio">
-          <h3>Nenhuma versão criada ainda</h3>
-          <p>Quando você finalizar um currículo, ele aparecerá neste espaço.</p>
+          <h3>Nenhum currículo cadastrado</h3>
+          <p>
+            Você ainda não criou um currículo. Monte suas informações
+            profissionais para poder escolher e alterar o modelo de
+            apresentação.
+          </p>
+          {acaoCriarCurriculo && (
+            <button
+              className="painel-curriculos-perfil__btn-criar"
+              onClick={acaoCriarCurriculo}
+              type="button"
+            >
+              Criar meu currículo
+            </button>
+          )}
         </div>
       )}
 
-      {estadoLista === "sucesso" && versoes.length > 0 && (
-        <ul className="painel-curriculos-perfil__lista">
-          {versoes.map((versao) => (
-            <li className="painel-curriculos-perfil__item" key={versao.id}>
-              {idEmEdicao === versao.id && edicao !== null ? (
-                <form
-                  aria-label={`Editar ${versao.tituloVersao}`}
-                  className="painel-curriculos-perfil__formulario"
-                  onSubmit={salvarEdicao}
-                >
-                  <CampoEdicao
-                    id={`titulo-${versao.id}`}
-                    label="Título da versão"
-                    onChange={(valor) => atualizarEdicao("tituloVersao", valor)}
-                    value={edicao.tituloVersao}
-                  />
-                  <div className="painel-curriculos-perfil__campo">
-                    <label htmlFor={`modelo-${versao.id}`}>Modelo</label>
-                    <select
-                      id={`modelo-${versao.id}`}
-                      onChange={(evento) =>
-                        atualizarEdicao(
-                          "modelo",
-                          evento.target.value as ModeloVersaoCurriculo,
-                        )
-                      }
-                      value={edicao.modelo}
-                    >
-                      {OPCOES_MODELO_VERSAO.map((opcao) => (
-                        <option key={opcao.valor} value={opcao.valor}>
-                          {opcao.rotulo}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="painel-curriculos-perfil__acoes-edicao">
-                    <button disabled={salvando} type="submit">
-                      {salvando ? "Salvando..." : "Salvar versão"}
-                    </button>
-                    <button
-                      disabled={salvando}
-                      onClick={cancelarEdicao}
-                      type="button"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <CartaoVersao
-                  onEditar={() => iniciarEdicao(versao)}
-                  renderizarMiniatura={renderizarMiniatura}
-                  versao={versao}
-                />
+      {estado === "sucesso" && curriculo && modeloSelecionado && (
+        <article className="painel-curriculos-perfil__cartao">
+          <div className="painel-curriculos-perfil__cabecalho-cartao">
+            <h3 className="painel-curriculos-perfil__titulo-curriculo">
+              {curriculo.tituloVersao}
+            </h3>
+            <p className="painel-curriculos-perfil__modelo-ativo">
+              Modelo ativo:{" "}
+              <strong>{obterRotuloModeloVersao(curriculo.modelo)}</strong>
+              {salvando && (
+                <span className="painel-curriculos-perfil__indicador-salvando">
+                  Salvando...
+                </span>
               )}
-            </li>
-          ))}
-        </ul>
+            </p>
+          </div>
+
+          <div
+            aria-label={`Prévia visual do modelo ${obterRotuloModeloVersao(modeloSelecionado)}`}
+            className="painel-curriculos-perfil__frame-modelo"
+            key={modeloSelecionado}
+            role="img"
+          >
+            {renderizarMiniatura(modeloSelecionado)}
+          </div>
+
+          <div className="painel-curriculos-perfil__controles">
+            <div className="painel-curriculos-perfil__campo">
+              <label htmlFor={`seletor-modelo-${curriculo.id}`}>
+                Selecione o modelo de apresentação:
+              </label>
+              <select
+                disabled={salvando || baixando !== null}
+                id={`seletor-modelo-${curriculo.id}`}
+                onChange={(evento) =>
+                  void aoMudarModelo(
+                    evento.target.value as ModeloVersaoCurriculo,
+                  )
+                }
+                value={modeloSelecionado}
+              >
+                {OPCOES_MODELO_VERSAO.map((opcao) => (
+                  <option key={opcao.valor} value={opcao.valor}>
+                    {opcao.rotulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {aoBaixarCurriculo && (
+              <div className="painel-curriculos-perfil__acoes">
+                <div
+                  className="painel-curriculos-perfil__download-container"
+                  ref={menuDownloadRef}
+                >
+                  <button
+                    aria-controls="menu-download-modelo"
+                    aria-expanded={menuDownloadAberto}
+                    aria-haspopup="menu"
+                    className="painel-curriculos-perfil__btn-download"
+                    disabled={salvando || baixando !== null}
+                    onClick={() => setMenuDownloadAberto((aberto) => !aberto)}
+                    type="button"
+                  >
+                    {baixando !== null
+                      ? `Gerando ${baixando === "pdf" ? "PDF" : "Word"}...`
+                      : "Baixar currículo ▾"}
+                  </button>
+
+                  {menuDownloadAberto && (
+                    <div
+                      className="painel-curriculos-perfil__menu-download"
+                      id="menu-download-modelo"
+                      role="menu"
+                    >
+                      <button
+                        className="painel-curriculos-perfil__opcao-download"
+                        onClick={() => executarDownload("pdf")}
+                        role="menuitem"
+                        type="button"
+                      >
+                        <strong>PDF</strong>
+                        <span>Pronto para enviar ou imprimir</span>
+                      </button>
+                      <button
+                        className="painel-curriculos-perfil__opcao-download"
+                        onClick={() => executarDownload("docx")}
+                        role="menuitem"
+                        type="button"
+                      >
+                        <strong>Word (.docx)</strong>
+                        <span>Editável no Word ou Docs</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </article>
       )}
     </section>
   );
 }
 
-/** Exibe os metadados de uma versão e uma miniatura estrutural do seu modelo. */
-function CartaoVersao({
-  onEditar,
-  renderizarMiniatura,
-  versao,
-}: {
-  onEditar: () => void;
-  renderizarMiniatura: (modelo: ModeloVersaoCurriculo) => ReactNode;
-  versao: ResumoVersaoCurriculo;
-}) {
-  const rotuloModelo = obterRotuloModeloVersao(versao.modelo);
-
-  return (
-    <article className="painel-curriculos-perfil__cartao">
-      <div
-        aria-label={`Prévia estrutural do modelo ${rotuloModelo}`}
-        className="painel-curriculos-perfil__frame-modelo"
-        role="img"
-      >
-        {renderizarMiniatura(versao.modelo)}
-      </div>
-      <div className="painel-curriculos-perfil__dados-versao">
-        <p className="painel-curriculos-perfil__modelo">Modelo: {rotuloModelo}</p>
-        <h3>{versao.tituloVersao}</h3>
-        <button
-          aria-label={`Editar versão ${versao.tituloVersao}`}
-          className="painel-curriculos-perfil__editar"
-          onClick={onEditar}
-          type="button"
-        >
-          Editar versão
-        </button>
-      </div>
-    </article>
-  );
-}
-
-/** Renderiza um campo simples do formulário de edição de versão. */
-function CampoEdicao({
-  id,
-  label,
-  onChange,
-  value,
-}: {
-  id: string;
-  label: string;
-  onChange: (valor: string) => void;
-  value: string;
-}) {
-  return (
-    <div className="painel-curriculos-perfil__campo">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        onChange={(evento) => onChange(evento.target.value)}
-        required
-        type="text"
-        value={value}
-      />
-    </div>
-  );
-}
-
-/** Traduz as falhas do cliente sem expor detalhes de implementação. */
 function obterMensagemFalha(erro: unknown): string {
-  if (erro instanceof FalhaVersaoCurriculo && erro.codigo === "nao-encontrado") {
-    return "Esta versão não está mais disponível. Atualize a página e tente novamente.";
+  if (
+    erro instanceof FalhaVersaoCurriculo &&
+    erro.codigo === "nao-encontrado"
+  ) {
+    return "O currículo não foi localizado. Atualize a página e tente novamente.";
   }
 
-  return "Não foi possível salvar esta versão no momento. Tente novamente mais tarde.";
+  return "Não foi possível salvar o novo modelo no momento. Tente novamente mais tarde.";
 }

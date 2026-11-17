@@ -55,9 +55,7 @@ export interface AtualizacaoVersaoCurriculo extends EdicaoVersaoCurriculo {
 }
 
 /** Retorna o rótulo legível do modelo associado a uma versão. */
-export function obterRotuloModeloVersao(
-  modelo: ModeloVersaoCurriculo,
-): string {
+export function obterRotuloModeloVersao(modelo: ModeloVersaoCurriculo): string {
   return (
     OPCOES_MODELO_VERSAO.find((opcao) => opcao.valor === modelo)?.rotulo ??
     "Modelo não identificado"

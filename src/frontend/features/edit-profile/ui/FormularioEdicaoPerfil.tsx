@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 
-import { ModalConfirmacao } from "../../../shared";
 import {
   FalhaPerfilEstudante,
   type ClientePerfilEstudante,
@@ -16,6 +15,22 @@ import {
 import type { Student } from "../../../entities/student";
 import "./FormularioEdicaoPerfil.css";
 
+/** Aplica máscara em formato brasileiro (11) 91234-5678 ou (11) 3333-4444. */
+function formatarTelefone(valor: string): string {
+  const digitos = valor.replace(/\D/g, "").slice(0, 11);
+
+  if (digitos.length <= 2) {
+    return digitos.length > 0 ? `(${digitos}` : "";
+  }
+  if (digitos.length <= 6) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+  }
+  if (digitos.length <= 10) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  }
+  return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7, 11)}`;
+}
+
 /** Define o cliente e os dados iniciais usados pela tela de configurações. */
 export interface FormularioEdicaoPerfilProps {
   cliente: ClientePerfilEstudante;
@@ -24,10 +39,9 @@ export interface FormularioEdicaoPerfilProps {
 }
 
 /**
- * Renderiza e controla o formulário de edição e exclusão do perfil.
+ * Renderiza e controla o formulário de edição do perfil do estudante.
  *
- * O componente mantém os valores no estado local, valida antes de salvar, e
- * exige confirmação explícita via modal para excluir a conta. Ele existe para
+ * O componente mantém os valores no estado local e valida antes de salvar. Ele existe para
  * oferecer manutenção do perfil sem acoplar a interface a HTTP ou ao backend.
  */
 export function FormularioEdicaoPerfil({
@@ -35,14 +49,16 @@ export function FormularioEdicaoPerfil({
   valoresIniciais,
   onPerfilAtualizado,
 }: FormularioEdicaoPerfilProps) {
-  const [valores, setValores] = useState<ValoresPerfilEstudante>(() =>
-    criarValoresDeStudent(valoresIniciais),
-  );
+  const [valores, setValores] = useState<ValoresPerfilEstudante>(() => {
+    const dadosIniciais = criarValoresDeStudent(valoresIniciais);
+    return {
+      ...dadosIniciais,
+      telefones: dadosIniciais.telefones.map((tel) => formatarTelefone(tel)),
+    };
+  });
   const [erros, setErros] = useState<ErrosPerfilEstudante>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [excluindo, setExcluindo] = useState(false);
-  const [modalAberto, setModalAberto] = useState(false);
 
   /** Atualiza um campo simples e remove o feedback anterior daquele campo. */
   function atualizarCampo(
@@ -85,6 +101,44 @@ export function FormularioEdicaoPerfil({
     }));
   }
 
+  /** Remove um telefone adicional e reindexa os erros remanescentes. */
+  function removerTelefone(indiceRemover: number): void {
+    if (valores.telefones.length <= 1) return;
+
+    setValores((atuais) => ({
+      ...atuais,
+      telefones: atuais.telefones.filter(
+        (_, indice) => indice !== indiceRemover,
+      ),
+    }));
+
+    setErros((atuais) => {
+      if (!atuais.telefones) return atuais;
+
+      const novosErrosDeTelefone: Record<number, string> = {};
+      let novoIndice = 0;
+      Object.keys(atuais.telefones).forEach((chave) => {
+        const indiceAtual = Number(chave);
+        if (indiceAtual !== indiceRemover) {
+          const erro = atuais.telefones?.[indiceAtual];
+          if (erro) {
+            novosErrosDeTelefone[novoIndice] = erro;
+          }
+          novoIndice++;
+        }
+      });
+
+      return {
+        ...atuais,
+        telefones:
+          Object.keys(novosErrosDeTelefone).length === 0
+            ? undefined
+            : novosErrosDeTelefone,
+      };
+    });
+    setMensagem(null);
+  }
+
   /**
    * Valida e salva as alterações do perfil usando o cliente injetado.
    *
@@ -122,59 +176,58 @@ export function FormularioEdicaoPerfil({
     }
   }
 
-  /**
-   * Confirma a exclusão da conta após o modal ter sido aceito pelo estudante.
-   *
-   * A função fecha o modal, entra em estado de carregamento e chama o cliente.
-   * Ela existe para garantir que a exclusão só aconteça após confirmação
-   * explícita e para comunicar o resultado de forma clara.
-   */
-  async function confirmarExclusao(): Promise<void> {
-    setModalAberto(false);
-    setExcluindo(true);
-    setMensagem(null);
-
-    try {
-      await cliente.excluir();
-      setMensagem("Sua conta foi excluída com sucesso.");
-    } catch (erro: unknown) {
-      const codigo =
-        erro instanceof FalhaPerfilEstudante
-          ? erro.codigo
-          : "resposta-invalida";
-      setMensagem(traduzirFalhaPerfil(codigo));
-    } finally {
-      setExcluindo(false);
-    }
-  }
-
   return (
-    <>
-      <form
-        className="formulario-edicao-perfil"
-        noValidate
-        onSubmit={enviarFormulario}
-      >
-        <CampoTexto
-          erro={erros.nomeCompleto}
-          id="perfil-nome-completo"
-          label="Nome completo"
-          onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
-          required
-          value={valores.nomeCompleto}
-        />
+    <form
+      className="formulario-edicao-perfil"
+      noValidate
+      onSubmit={enviarFormulario}
+    >
+        <div className="formulario-edicao-perfil__linha-dupla">
+          <CampoTexto
+            erro={erros.nomeCompleto}
+            id="perfil-nome-completo"
+            label="Nome completo"
+            onChange={(valor) => atualizarCampo("nomeCompleto", valor)}
+            placeholder="Ex.: Ana Carolina Souza"
+            required
+            value={valores.nomeCompleto}
+          />
+          <CampoTexto
+            erro={erros.email}
+            id="perfil-email"
+            label="E-mail"
+            onChange={(valor) => atualizarCampo("email", valor)}
+            placeholder="seu.email@exemplo.com"
+            required
+            type="email"
+            value={valores.email}
+          />
+        </div>
+
         <CampoTexto
           erro={erros.enderecoCompleto}
           id="perfil-endereco-completo"
           label="Endereço completo"
           onChange={(valor) => atualizarCampo("enderecoCompleto", valor)}
+          placeholder="Ex.: Rua das Flores, 123 — São Paulo, SP"
           required
           value={valores.enderecoCompleto}
         />
+
         <div className="formulario-edicao-perfil__telefones field">
-          <span className="formulario-edicao-perfil__titulo-campo">
-            Telefones
-          </span>
+          <div className="formulario-edicao-perfil__cabecalho-telefones">
+            <span className="formulario-edicao-perfil__titulo-campo">
+              Telefones de contato
+            </span>
+            <button
+              className="formulario-edicao-perfil__adicionar-telefone"
+              onClick={adicionarTelefone}
+              type="button"
+            >
+              + Adicionar telefone
+            </button>
+          </div>
+
           <div className="formulario-edicao-perfil__lista-telefones">
             {valores.telefones.map((telefone, indice) => {
               const id = `perfil-telefone-${indice}`;
@@ -186,15 +239,31 @@ export function FormularioEdicaoPerfil({
                   className="formulario-edicao-perfil__item-telefone"
                   key={id}
                 >
-                  <label htmlFor={id}>Telefone {indice + 1}</label>
+                  <div className="formulario-edicao-perfil__item-telefone-topo">
+                    <label htmlFor={id}>Telefone {indice + 1}</label>
+                    {valores.telefones.length > 1 && (
+                      <button
+                        aria-label={`Remover Telefone ${indice + 1}`}
+                        className="formulario-edicao-perfil__remover-telefone"
+                        onClick={() => removerTelefone(indice)}
+                        type="button"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
                   <input
                     aria-describedby={erro === undefined ? undefined : idErro}
                     aria-invalid={erro === undefined ? undefined : true}
                     autoComplete="tel"
                     id={id}
                     onChange={(evento) =>
-                      atualizarTelefone(indice, evento.target.value)
+                      atualizarTelefone(
+                        indice,
+                        formatarTelefone(evento.target.value),
+                      )
                     }
+                    placeholder="(11) 91234-5678"
                     required
                     type="tel"
                     value={telefone}
@@ -208,41 +277,34 @@ export function FormularioEdicaoPerfil({
               );
             })}
           </div>
-          <button
-            className="formulario-edicao-perfil__adicionar-telefone"
-            onClick={adicionarTelefone}
-            type="button"
-          >
-            + Adicionar telefone
-          </button>
         </div>
-        <CampoTexto
-          erro={erros.email}
-          id="perfil-email"
-          label="E-mail"
-          onChange={(valor) => atualizarCampo("email", valor)}
-          required
-          type="email"
-          value={valores.email}
-        />
-        <CampoTexto
-          ajuda="Informe o endereço público do seu perfil profissional, se possuir um."
-          erro={erros.linkedIn}
-          id="perfil-linkedin"
-          label="LinkedIn (opcional)"
-          onChange={(valor) => atualizarCampo("linkedIn", valor)}
-          type="url"
-          value={valores.linkedIn}
-        />
-        <CampoTexto
-          ajuda="Informe o link público na Plataforma Lattes do CNPq, se possuir um."
-          erro={erros.curriculoLattes}
-          id="perfil-curriculo-lattes"
-          label="Currículo Lattes (opcional)"
-          onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
-          type="url"
-          value={valores.curriculoLattes}
-        />
+
+        <div className="formulario-edicao-perfil__secao-links">
+          <span className="formulario-edicao-perfil__subtitulo-secao">
+            Links profissionais e acadêmicos
+          </span>
+          <div className="formulario-edicao-perfil__linha-dupla">
+            <CampoTexto
+              erro={erros.linkedIn}
+              id="perfil-linkedin"
+              label="LinkedIn"
+              onChange={(valor) => atualizarCampo("linkedIn", valor)}
+              placeholder="https://linkedin.com/in/seuperfil"
+              type="url"
+              value={valores.linkedIn}
+            />
+            <CampoTexto
+              erro={erros.curriculoLattes}
+              id="perfil-curriculo-lattes"
+              label="Currículo Lattes"
+              onChange={(valor) => atualizarCampo("curriculoLattes", valor)}
+              placeholder="http://lattes.cnpq.br/0000000000000000"
+              type="url"
+              value={valores.curriculoLattes}
+            />
+          </div>
+        </div>
+
         {mensagem !== null && (
           <p
             className="form-message"
@@ -251,93 +313,56 @@ export function FormularioEdicaoPerfil({
             {mensagem}
           </p>
         )}
+
         <button
           className="formulario-edicao-perfil__salvar"
-          disabled={enviando || excluindo}
+          disabled={enviando}
           type="submit"
         >
           {enviando ? "Salvando alterações..." : "Salvar alterações"}
         </button>
       </form>
-      <button
-        className="formulario-edicao-perfil__excluir"
-        disabled={enviando || excluindo}
-        onClick={() => setModalAberto(true)}
-        type="button"
-      >
-        {excluindo ? "Excluindo conta..." : "Excluir minha conta"}
-      </button>
-      <ModalConfirmacao
-        aberto={modalAberto}
-        descricao="Todos os seus dados e currículos serão perdidos permanentemente. Esta ação não pode ser desfeita."
-        onCancelar={() => setModalAberto(false)}
-        onConfirmar={confirmarExclusao}
-        textoBotaoCancelar="Cancelar"
-        textoBotaoConfirmar="Excluir minha conta"
-        tomConfirmacao="perigoso"
-        titulo="Tem certeza que deseja excluir sua conta?"
-      />
-    </>
   );
 }
 
 /** Define os valores de um campo textual do formulário. */
 interface CampoTextoProps {
-  ajuda?: string;
   erro?: string;
   id: string;
   label: string;
   onChange: (valor: string) => void;
+  placeholder?: string;
   required?: boolean;
   type?: "email" | "text" | "url";
   value: string;
 }
 
 /**
- * Renderiza um campo com rótulo, tooltip explicativo opcional e erro associado.
+ * Renderiza um campo textual com rótulo e erro associado.
  *
- * O componente usa controles HTML nativos, um título exibido ao passar o mouse
- * e descrição acessível para leitores de tela. Ele existe para manter a
- * semântica e a apresentação dos campos consistentes dentro desta feature.
+ * O componente usa controles HTML nativos e descrição acessível para leitores de tela.
  */
 function CampoTexto({
-  ajuda,
   erro,
   id,
   label,
   onChange,
+  placeholder,
   required = false,
   type = "text",
   value,
 }: CampoTextoProps) {
   const idErro = `${id}-erro`;
-  const idAjuda = `${id}-ajuda`;
 
   return (
     <div className="field">
-      <label htmlFor={id}>
-        {label}
-        {ajuda !== undefined && (
-          <span
-            aria-describedby={idAjuda}
-            aria-label={`Ajuda: ${ajuda}`}
-            title={ajuda}
-          >
-            {" "}
-            ?
-          </span>
-        )}
-      </label>
-      {ajuda !== undefined && (
-        <span hidden id={idAjuda}>
-          {ajuda}
-        </span>
-      )}
+      <label htmlFor={id}>{label}</label>
       <input
         aria-describedby={erro === undefined ? undefined : idErro}
         aria-invalid={erro === undefined ? undefined : true}
         id={id}
         onChange={(evento) => onChange(evento.target.value)}
+        placeholder={placeholder}
         required={required}
         type={type}
         value={value}
