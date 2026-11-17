@@ -3,15 +3,37 @@
 import json
 import unittest
 import urllib.error
+from datetime import date
+from uuid import UUID
 
 from backend.application.consulta_vagas import (
+    ErroIntegracaoVagas,
     RespostaInvalidaVagas,
     TimeoutIntegracaoVagas,
+    VagaRecomendadaDto,
+)
+from backend.application.curriculo_completo import (
+    CertificacaoItem,
+    CompetenciaItem,
+    CurriculoCompleto,
+    CursoItem,
+    DadosPessoaisSalvos,
+    ExperienciaItem,
+    FormacaoItem,
+    IdiomaItem,
+    ProjetoItem,
 )
 from backend.application.ports import VagaExternaDto
+from backend.domain.itens_perfil import (
+    CategoriaCompetencia,
+    NivelFormacaoAcademica,
+    StatusFormacaoAcademica,
+)
 from backend.infrastructure.integrations.cliente_vagas_grupo2 import (
     ClienteApiVagasGrupo2Http,
+    mapear_match_cvmatch_para_dto,
     mapear_vaga_grupo2_para_dto,
+    montar_payload_match_cvmatch,
 )
 
 
@@ -248,3 +270,248 @@ class ClienteApiVagasGrupo2HttpTestCase(unittest.IsolatedAsyncioTestCase):
 
         with self.assertRaises(RespostaInvalidaVagas):
             await cliente.buscar_vagas(termo="Fullstack")
+
+
+class IntegracaoCvmatchClienteHttpTestCase(unittest.IsolatedAsyncioTestCase):
+    """Testa a projeção de currículo, o mapeamento de matches e o POST /matches.
+
+    Usa executores de transporte em memória para validar o payload enviado ao
+    cvmatch, o parsing completo de MatchesResponse e a tradução de falhas HTTP.
+    Existe para garantir aderência ao contrato autoritativo do cvmatch.
+    """
+
+    def _curriculo_completo(
+        self, curriculo_id: UUID | None = None
+    ) -> CurriculoCompleto:
+        """Constrói um CurriculoCompleto sintético para exercitar a projeção.
+
+        Preenche todas as seções, incluindo cursos, certificações e dados
+        pessoais, que devem ser omitidos na projeção enviada ao cvmatch. Existe
+        para evitar repetição de massa nos cenários do contrato.
+        """
+        return CurriculoCompleto(
+            curriculo_id=curriculo_id,
+            dados_pessoais=DadosPessoaisSalvos(
+                nome="Estudante Teste",
+                email="estudante@example.test",
+                cidade="São Paulo",
+            ),
+            formacoes=[
+                FormacaoItem(
+                    instituicao="FATEC-SP",
+                    curso="ADS",
+                    nivel=NivelFormacaoAcademica.TECNOLOGO,
+                    status=StatusFormacaoAcademica.EM_ANDAMENTO,
+                    data_inicio=date(2024, 2, 1),
+                    data_fim=None,
+                )
+            ],
+            experiencias=[
+                ExperienciaItem(
+                    empresa="Empresa Exemplo",
+                    cargo="Estagiário",
+                    descricao="APIs REST em Python.",
+                    data_inicio=date(2025, 1, 1),
+                    data_fim=None,
+                )
+            ],
+            projetos=[
+                ProjetoItem(
+                    titulo="Sistema de Apoio",
+                    descricao="Plataforma acadêmica.",
+                    tecnologias="Python, FastAPI",
+                )
+            ],
+            competencias=[
+                CompetenciaItem(
+                    categoria=CategoriaCompetencia.TECNICA,
+                    descricao="Python",
+                    nivel="intermediario",
+                )
+            ],
+            idiomas=[IdiomaItem(idioma="Inglês", nivel="B2")],
+            cursos=[CursoItem(nome="Curso Extra", instituicao="Inst", carga_horaria=20)],
+            certificacoes=[
+                CertificacaoItem(nome="Cert", organizacao_emissora="Org")
+            ],
+        )
+
+    def test_montar_payload_match_cvmatch_projeta_apenas_campos_autorizados(
+        self,
+    ) -> None:
+        """Confirma que o payload enviado ao cvmatch respeita o schema estrito.
+
+        Verifica o uso do curriculo_id persistido quando presente, a geração de
+        UUID válido quando ausente e a omissão de dados pessoais, cursos,
+        certificações e categoria de competência. Existe para prevenir 422 por
+        ``extra="forbid"`` no cvmatch.
+        """
+        id_persistido = UUID("550e8400-e29b-41d4-a716-446655440000")
+        payload = montar_payload_match_cvmatch(
+            self._curriculo_completo(curriculo_id=id_persistido)
+        )
+
+        self.assertEqual(
+            set(payload.keys()),
+            {
+                "curriculo_id",
+                "formacoes",
+                "experiencias",
+                "projetos",
+                "competencias",
+                "idiomas",
+            },
+        )
+        self.assertEqual(payload["curriculo_id"], str(id_persistido))
+        self.assertEqual(
+            payload["formacoes"],
+            [
+                {
+                    "instituicao": "FATEC-SP",
+                    "curso": "ADS",
+                    "nivel": "tecnologo",
+                    "status": "em_andamento",
+                    "inicio": "2024-02-01",
+                    "fim": None,
+                }
+            ],
+        )
+        self.assertEqual(
+            payload["competencias"],
+            [{"descricao": "Python", "nivel": "intermediario"}],
+        )
+
+        payload_sem_id = montar_payload_match_cvmatch(
+            self._curriculo_completo(curriculo_id=None)
+        )
+        self.assertEqual(str(UUID(payload_sem_id["curriculo_id"])), payload_sem_id["curriculo_id"])
+
+    def test_mapear_match_cvmatch_para_dto_converte_campos_completos_e_inativos(
+        self,
+    ) -> None:
+        """Confirma a conversão de MatchesResponse com campos opcionais e elegibilidade.
+
+        Submete um item completo de match incluindo eligibility=False e verifica
+        formatação de localização, salário, skills e requisitos faltantes. Existe
+        para assegurar fidelidade dos dados exibidos ao estudante.
+        """
+        dto = mapear_match_cvmatch_para_dto(
+            {
+                "rank": 1,
+                "job": {
+                    "id": 42,
+                    "company": "Tech Corp",
+                    "title": "Estágio Python",
+                    "description": "Desenvolvimento backend.",
+                    "keywords": ["API", "Backend"],
+                    "location": {
+                        "city": "São Paulo",
+                        "state": "SP",
+                        "country": "Brasil",
+                        "raw": "São Paulo, SP",
+                    },
+                    "work_arrangement": "REMOTE",
+                    "seniority_level": "INTERN",
+                    "skills": ["Python", "SQL"],
+                    "salary": {"min": 2000, "max": 2800},
+                    "currency": "BRL",
+                    "job_url": "https://vagas.exemplo/42",
+                    "publication_date": "2026-11-01T10:00:00Z",
+                },
+                "score": 87.5,
+                "eligibility": False,
+                "matched_skills": ["Python"],
+                "missing_requirements": ["SQL"],
+                "embedding_model": "intfloat/multilingual-e5-small",
+                "algorithm_version": "1.0.0",
+            }
+        )
+
+        self.assertIsInstance(dto, VagaRecomendadaDto)
+        self.assertEqual(dto.id, "42")
+        self.assertEqual(dto.localizacao, "São Paulo - SP")
+        self.assertEqual(dto.modalidade, "REMOTE")
+        self.assertEqual(dto.nivel_senioridade, "INTERN")
+        self.assertEqual(dto.salario, "R$ 2.000 – R$ 2.800")
+        self.assertFalse(dto.elegivel)
+        self.assertEqual(dto.pontuacao_compatibilidade, 87.5)
+        self.assertEqual(dto.requisitos_atendidos, ("Python",))
+        self.assertEqual(dto.requisitos_faltantes, ("SQL",))
+
+    async def test_buscar_vagas_por_curriculo_envia_post_matches_e_trata_erros(
+        self,
+    ) -> None:
+        """Confirma chamada POST /matches?limit=... e tradução de HTTP 429/504/inválido.
+
+        Usa transportes falsos em memória para verificar a URL montada, o corpo
+        enviado e as exceções da Application. Existe para blindar o cliente HTTP.
+        """
+        chamadas: list[tuple[str, dict[str, object], float]] = []
+
+        def executor_sucesso(url: str, corpo: bytes, timeout: float) -> bytes:
+            chamadas.append((url, json.loads(corpo.decode("utf-8")), timeout))
+            return json.dumps(
+                {
+                    "matches": [
+                        {
+                            "rank": 1,
+                            "job": {
+                                "id": 7,
+                                "company": None,
+                                "title": "Dev Júnior",
+                                "description": None,
+                                "keywords": None,
+                                "location": None,
+                                "work_arrangement": None,
+                                "seniority_level": None,
+                                "skills": None,
+                                "salary": None,
+                                "currency": None,
+                                "job_url": None,
+                                "publication_date": None,
+                            },
+                            "score": 75.0,
+                            "eligibility": True,
+                            "matched_skills": [],
+                            "missing_requirements": [],
+                            "embedding_model": "e5",
+                            "algorithm_version": "1.0",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+        cliente = ClienteApiVagasGrupo2Http(
+            url_base="http://127.0.0.1:8001/",
+            timeout_segundos=3.5,
+            executor_post_http=executor_sucesso,
+        )
+        resultado = await cliente.buscar_vagas_por_curriculo(
+            self._curriculo_completo(), limit=15
+        )
+
+        self.assertEqual(len(chamadas), 1)
+        self.assertEqual(chamadas[0][0], "http://127.0.0.1:8001/matches?limit=15")
+        self.assertEqual(chamadas[0][2], 3.5)
+        self.assertIn("curriculo_id", chamadas[0][1])
+        self.assertEqual(len(resultado), 1)
+        self.assertEqual(resultado[0].empresa, "Empresa confidencial")
+        self.assertTrue(resultado[0].elegivel)
+
+        def executor_429(url: str, corpo: bytes, timeout: float) -> bytes:
+            raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+
+        cliente_429 = ClienteApiVagasGrupo2Http(
+            url_base="http://127.0.0.1:8001", executor_post_http=executor_429
+        )
+        with self.assertRaises(ErroIntegracaoVagas):
+            await cliente_429.buscar_vagas_por_curriculo(self._curriculo_completo())
+
+        def executor_timeout(url: str, corpo: bytes, timeout: float) -> bytes:
+            raise TimeoutError("timed out")
+
+        cliente_timeout = ClienteApiVagasGrupo2Http(
+            url_base="http://127.0.0.1:8001", executor_post_http=executor_timeout
+        )
+        with self.assertRaises(TimeoutIntegracaoVagas):
+            await cliente_timeout.buscar_vagas_por_curriculo(self._curriculo_completo())

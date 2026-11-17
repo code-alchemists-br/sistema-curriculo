@@ -77,6 +77,51 @@ export function CabecalhoPublico({
       role="menu"
       aria-label="Opções rápidas"
     >
+      {!usuarioLogado && (
+        <>
+          {/* Visível só em telas estreitas, onde o botão "Criar conta" sai da barra. */}
+          <button
+            type="button"
+            role="menuitem"
+            className="cabecalho-publico__menu-item cabecalho-publico__menu-item--somente-mobile"
+            onClick={() => acionarOpcaoMenu(onNavegarCadastro)}
+          >
+            <svg
+              className="cabecalho-publico__menu-item-icone"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <circle
+                cx="8.5"
+                cy="6.5"
+                r="3.25"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M2.5 16.5C3.3 13.6 5.6 12 8.5 12C9.6 12 10.6 12.2 11.5 12.7"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M15.5 11.5V17.5M12.5 14.5H18.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>Criar conta</span>
+          </button>
+          <div
+            className="cabecalho-publico__menu-divisor cabecalho-publico__menu-item--somente-mobile"
+            role="separator"
+          />
+        </>
+      )}
+
       <button
         type="button"
         role="menuitem"

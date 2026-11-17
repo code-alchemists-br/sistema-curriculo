@@ -1,9 +1,12 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Destaques } from "./Destaques";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("Destaques", () => {
   it("renderiza o título da seção de métricas com destaque e fechamento", () => {
@@ -28,5 +31,45 @@ describe("Destaques", () => {
 
     expect(screen.getByText("2 formatos")).toBeInTheDocument();
     expect(screen.getByText(/Prontos para envio:/i)).toBeInTheDocument();
+  });
+
+  it("ativa a classe de visibilidade imediatamente quando IntersectionObserver não está disponível", () => {
+    const { container } = render(<Destaques />);
+    const section = container.querySelector(".destaques-section");
+    expect(section).toHaveClass("destaques-section--visivel");
+  });
+
+  it("dispara a classe de visibilidade quando a seção intercepta a viewport via IntersectionObserver", () => {
+    let callbackCapturado: (
+      entries: Partial<IntersectionObserverEntry>[],
+    ) => void = () => {};
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+
+    class MockIntersectionObserver {
+      constructor(cb: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+        callbackCapturado = cb;
+      }
+      observe = observeMock;
+      disconnect = disconnectMock;
+      unobserve = vi.fn();
+    }
+
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const { container } = render(<Destaques />);
+    const section = container.querySelector(".destaques-section");
+
+    // Inicialmente não visível até interceptar
+    expect(section).not.toHaveClass("destaques-section--visivel");
+    expect(observeMock).toHaveBeenCalled();
+
+    // Simula a seção cruzando a viewport
+    act(() => {
+      callbackCapturado([{ isIntersecting: true }]);
+    });
+
+    expect(section).toHaveClass("destaques-section--visivel");
+    expect(disconnectMock).toHaveBeenCalled();
   });
 });

@@ -232,6 +232,9 @@ precisar delas; os exemplos locais não devem ser reutilizados em produção.
 | `LOG_LEVEL` | Backend | Não | Nível de log. Padrão `INFO`; aceita `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL`. |
 | `LOG_ACTOR_HMAC_KEY` | Backend | Não | Chave de pelo menos 32 bytes para gerar referências estáveis de atores nos logs. Sem ela, o processo usa uma chave aleatória temporária. |
 | `DATABASE_URL` | Backend e Alembic | Não para iniciar a API; sim para executar migrations | URL de um PostgreSQL local. Sem ela, `/ready` retorna HTTP 503. |
+| `GRUPO2_API_URL` | Backend | Para recomendar vagas via `cvmatch` | URL base do serviço `cvmatch` (ex.: `http://127.0.0.1:8001` ou `http://host.docker.internal:8000`). Sem ela (ou sem banco), `GET /vagas` retorna HTTP 503. |
+| `GRUPO2_API_TIMEOUT_MS` | Backend | Não | Tempo limite em milissegundos para chamadas ao `cvmatch`; padrão `5000`. |
+| `GRUPO2_DEFAULT_LIMIT` | Backend | Não | Quantidade padrão de vagas recomendadas solicitada ao `cvmatch` (`1` a `100`); padrão `10`. |
 | `VITE_API_URL` | Frontend | Sim para chamadas à API | URL base pública da API, por exemplo `http://127.0.0.1:8000`. O Vite disponibiliza variáveis `VITE_*` no código do navegador; nunca coloque senhas, tokens ou outras credenciais nelas. |
 | `CORS_ALLOWED_ORIGINS` | Backend | Não | Lista de origens separadas por vírgula autorizadas a chamar a API pelo navegador. Sem configuração, permite somente `http://127.0.0.1:5173` e `http://localhost:5173` para o Vite local. |
 | `PASSWORD_RESET_SMTP_HOST` | Backend | Para envio de recuperação | Host SMTP TLS. Sem este valor, a solicitação de recuperação responde HTTP 503. |

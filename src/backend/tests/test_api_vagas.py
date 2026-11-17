@@ -23,6 +23,7 @@ from backend.application.consulta_vagas import (
     ErroIntegracaoVagas,
     RespostaInvalidaVagas,
     TimeoutIntegracaoVagas,
+    VagaRecomendadaDto,
 )
 from backend.application.ports import VagaExternaDto
 
@@ -337,3 +338,56 @@ class ApiVagasTestCase(unittest.IsolatedAsyncioTestCase):
         operacao_get = schema["paths"]["/vagas"]["get"]
         self.assertIn("Vagas", operacao_get["tags"])
         self.assertEqual(operacao_get["summary"], "Listar Vagas")
+
+    async def test_serializa_vaga_recomendada_e_encaminha_limit_e_usuario(
+        self,
+    ) -> None:
+        """Confirma exposição dos metadados de matching e repasse de limit/usuario_id.
+
+        Usa um stub retornando ``VagaRecomendadaDto`` (inclusive com
+        ``elegivel=False``) e verifica o DTO de resposta e a entrada recebida.
+        Existe para assegurar o contrato enriquecido entre backend e frontend.
+        """
+        executor = ConsultaVagasStub(
+            resultado=[
+                VagaRecomendadaDto(
+                    id="99",
+                    titulo="Dev Python",
+                    empresa="Acme",
+                    descricao="APIs",
+                    requisitos=("Python",),
+                    localizacao="São Paulo - SP",
+                    modalidade="REMOTE",
+                    url_candidatura="https://vagas.exemplo/99",
+                    ranque=1,
+                    pontuacao_compatibilidade=88.5,
+                    elegivel=False,
+                    nivel_senioridade="JUNIOR",
+                    salario="R$ 4.000",
+                    moeda="BRL",
+                    palavras_chave=("FastAPI",),
+                    data_publicacao="2026-11-01T00:00:00Z",
+                    requisitos_atendidos=("Python",),
+                    requisitos_faltantes=("Docker",),
+                )
+            ]
+        )
+        listar_vagas = _rota(criar_router(executor))
+
+        resposta = await listar_vagas(
+            request=_request(ID_USUARIO),
+            termo="",
+            localizacao=None,
+            modalidade=None,
+            limit=25,
+        )
+
+        self.assertEqual(executor.entradas[0].usuario_id, ID_USUARIO)
+        self.assertEqual(executor.entradas[0].limit, 25)
+        self.assertEqual(resposta.total, 1)
+        item = resposta.vagas[0]
+        self.assertEqual(item.ranque, 1)
+        self.assertEqual(item.pontuacao_compatibilidade, 88.5)
+        self.assertFalse(item.elegivel)
+        self.assertEqual(item.requisitos_atendidos, ["Python"])
+        self.assertEqual(item.requisitos_faltantes, ["Docker"])

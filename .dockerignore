@@ -1,0 +1,17 @@
+.git
+.github
+.ruff_cache
+.env
+.env.*
+!.env.example
+docs
+prompts
+scripts
+nix
+flake.nix
+flake.lock
+src/frontend/node_modules
+src/frontend/dist
+**/__pycache__
+**/*.pyc
+*.log

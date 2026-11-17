@@ -89,6 +89,36 @@ describe("CabecalhoPublico", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("oferece Criar conta no menu para visitantes (substitui o botão oculto em telas estreitas)", async () => {
+    const onCadastro = vi.fn();
+    const user = userEvent.setup();
+
+    render(<CabecalhoPublico onNavegarCadastro={onCadastro} />);
+
+    await user.click(
+      screen.getByRole("button", { name: /Menu de navegação e perfil/i }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /Criar conta/i }));
+    expect(onCadastro).toHaveBeenCalledTimes(1);
+  });
+
+  it("não oferece Criar conta no menu quando autenticado", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CabecalhoPublico
+        usuarioLogado={{ nome: "Ana Paula", email: "ana@fatec.sp.gov.br" }}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Menu de navegação e perfil/i }),
+    );
+    expect(
+      screen.queryByRole("menuitem", { name: /Criar conta/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("permite acionar logout atraves do menu quando autenticado", async () => {
     const onLogout = vi.fn();
     const user = userEvent.setup();

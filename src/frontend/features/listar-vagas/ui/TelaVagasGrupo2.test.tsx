@@ -188,4 +188,23 @@ describe("TelaVagasGrupo2", () => {
     expect(itens[1]).toHaveStyle({ animationDelay: "90ms" });
     expect(itens[2]).toHaveStyle({ animationDelay: "180ms" });
   });
+
+  it("exibe selo de vaga encerrada ou inativa quando elegivel for false", async () => {
+    const sugestaoInativa: SugestaoVaga = {
+      ...sugestao,
+      ranque: 2,
+      pontuacaoCompatibilidade: 65,
+      vaga: {
+        ...sugestao.vaga,
+        id: "vaga-inativa",
+        elegivel: false,
+      },
+    };
+
+    render(<TelaVagasGrupo2 cliente={criarCliente([sugestaoInativa])} />);
+
+    expect(
+      await screen.findByText("Vaga encerrada ou inativa"),
+    ).toBeInTheDocument();
+  });
 });

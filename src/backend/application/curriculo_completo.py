@@ -181,11 +181,14 @@ class DadosPessoaisSalvos(BaseModel):
 class CurriculoCompleto(BaseModel):
     """Reúne tudo o que o estudante já salvou, pronto para preencher as telas.
 
-    O DTO agrupa dados pessoais, cada seção do currículo e o modelo escolhido
+    O DTO agrupa dados pessoais, cada seção do currículo, o identificador da
+    versão principal quando existente (``curriculo_id``) e o modelo escolhido
     (``None`` quando ainda não há). Existe para que o frontend carregue o
-    currículo inteiro do banco numa única chamada.
+    currículo inteiro do banco numa única chamada e o backend encaminhe o
+    currículo ao matching sem consultas extras.
     """
 
+    curriculo_id: UUID | None = None
     dados_pessoais: DadosPessoaisSalvos
     formacoes: list[FormacaoItem] = []
     experiencias: list[ExperienciaItem] = []

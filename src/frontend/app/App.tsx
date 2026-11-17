@@ -61,14 +61,11 @@ import {
 import {
   criarClienteAcessoDemonstracao,
   criarClienteAcessoEstudante,
+  encerrarSessao,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
-import {
-  FalhaPerfilEstudante,
-  type ClientePerfilEstudante,
-} from "../features/edit-profile";
+import type { ClientePerfilEstudante } from "../features/edit-profile";
 import type { ClienteVersoesCurriculo } from "../features/gerenciar-curriculos-perfil";
-import { criarClienteVagasResiliente } from "./servicos-resilientes";
 import {
   criarClienteCurriculoNoBanco,
   FalhaCurriculoNoBanco,
@@ -78,11 +75,8 @@ import "../shared/styles/animations.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL;
 const clienteVagasDemo = criarClienteVagasDemonstracao();
-const clienteVagasBase = apiBaseUrl
-  ? criarClienteVagasHttp(apiBaseUrl)
-  : clienteVagasDemo;
 const clienteVagasHttp = apiBaseUrl
-  ? criarClienteVagasResiliente(clienteVagasBase, clienteVagasDemo)
+  ? criarClienteVagasHttp(apiBaseUrl)
   : clienteVagasDemo;
 
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();
@@ -474,6 +468,8 @@ export function App() {
   }
 
   function aoFazerLogout(): void {
+    // Revoga a sessão no servidor sem bloquear a saída da tela; falha de rede é absorvida.
+    void encerrarSessao(apiBaseUrl);
     cancelarCadastro();
     setUsuarioLogado(null);
     setCurriculoCarregadoDe(null);

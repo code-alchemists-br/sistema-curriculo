@@ -29,6 +29,7 @@ from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.cadastro_idioma import CadastrarIdioma
 from backend.application.cadastro_link_profissional import CadastrarLinkProfissional
+from backend.application.consulta_vagas import ConsultarVagas
 from backend.application.curriculo_completo import GerenciarCurriculoCompleto
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
@@ -46,7 +47,7 @@ from backend.application.selecao_itens_versao_curriculo import (
     DesselecionarItemVersaoCurriculo,
     SelecionarItemVersaoCurriculo,
 )
-from backend.application.sessoes import CriadorSessao
+from backend.application.sessoes import CriadorSessao, RevogadorSessao
 from backend.application.versao_curriculo import (
     AtualizarOrdemSecoesCurriculo,
     CriarVersaoCurriculo,
@@ -75,6 +76,9 @@ from backend.infrastructure.integrations.assistente_gemini import (
     RevisorTextoAusente,
     RevisorTextoGemini,
 )
+from backend.infrastructure.integrations.cliente_vagas_grupo2 import (
+    ClienteApiVagasGrupo2Http,
+)
 from backend.infrastructure.integrations.email_recuperacao_senha import (
     ConfiguracaoSmtpRecuperacao,
     EnviadorRecuperacaoSmtp,
@@ -83,6 +87,7 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
     AutenticadorSessaoSqlAlchemy,
     CriadorSessaoSqlAlchemy,
+    RevogadorSessaoSqlAlchemy,
 )
 
 # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
@@ -362,6 +367,18 @@ def _criar_criador_sessao(
     return CriadorSessaoSqlAlchemy(sessoes) if sessoes else None
 
 
+def _criar_revogador_sessao(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> RevogadorSessao | None:
+    """Compõe a revogação persistida de sessão quando há banco disponível.
+
+    A função entrega a fábrica de sessões ao adapter transacional ou devolve
+    ausência para a rota de logout responder indisponibilidade. Ela existe para
+    que o logout invalide o token no banco e não apenas apague o cookie.
+    """
+    return RevogadorSessaoSqlAlchemy(sessoes) if sessoes else None
+
+
 def _criar_autenticador_sessao(
     sessoes: async_sessionmaker[AsyncSession] | None,
 ) -> AutenticadorSessao:
@@ -519,6 +536,7 @@ _acessar_estudante = _criar_acessar_estudante(
     _derivador_senha,
 )
 _criador_sessao = _criar_criador_sessao(_sessoes_persistencia)
+_revogador_sessao = _criar_revogador_sessao(_sessoes_persistencia)
 _autenticador_sessao = _criar_autenticador_sessao(_sessoes_persistencia)
 _configuracao_cookie_sessao = _criar_configuracao_cookie_sessao(
     os.environ.get("SESSION_COOKIE_SECURE")
@@ -545,10 +563,53 @@ _recomendar_modelo_curriculo = (
     if _sessoes_persistencia is not None
     else None
 )
+def _criar_consultar_vagas(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+    url_base: str | None,
+    timeout_ms_texto: str | None,
+    limite_padrao_texto: str | None,
+) -> ConsultarVagas | None:
+    """Compõe o caso de uso de vagas conectado ao cvmatch quando configurado.
+
+    Lê a URL base do serviço do Grupo 2 e, quando presente junto com a fábrica
+    de sessões do banco, converte timeout e limite padrão com limites seguros e
+    injeta o cliente HTTP e o repositório de currículo completo; na ausência da
+    URL ou do banco devolve ``None`` para a rota responder 503. Existe para
+    habilitar a integração real por ambiente sem alterar camadas internas.
+    """
+    url_limpa = (url_base or "").strip()
+    if not url_limpa or sessoes is None:
+        return None
+    try:
+        timeout_ms = int(timeout_ms_texto) if timeout_ms_texto else 5000
+    except ValueError:
+        timeout_ms = 5000
+    try:
+        limite_padrao = int(limite_padrao_texto) if limite_padrao_texto else 10
+    except ValueError:
+        limite_padrao = 10
+    timeout_segundos = max(timeout_ms, 100) / 1000.0
+    limite_padrao = min(max(limite_padrao, 1), 100)
+    return ConsultarVagas(
+        buscador_curriculo=ClienteApiVagasGrupo2Http(
+            url_base=url_limpa,
+            timeout_segundos=timeout_segundos,
+        ),
+        leitor_curriculo=RepositorioCurriculoCompletoSqlAlchemy(sessoes),
+        limite_padrao=limite_padrao,
+    )
+
+
 _gerenciar_curriculo_completo = (
     GerenciarCurriculoCompleto(RepositorioCurriculoCompletoSqlAlchemy(_sessoes_persistencia))
     if _sessoes_persistencia is not None
     else None
+)
+_consultar_vagas = _criar_consultar_vagas(
+    _sessoes_persistencia,
+    os.environ.get("GRUPO2_API_URL"),
+    os.environ.get("GRUPO2_API_TIMEOUT_MS"),
+    os.environ.get("GRUPO2_DEFAULT_LIMIT"),
 )
 
 
@@ -706,10 +767,12 @@ app = create_app(
     ),
     acessar_estudante=_acessar_estudante,
     criador_sessao=_criador_sessao,
+    revogador_sessao=_revogador_sessao,
     derivador_senha=_derivador_senha,
     autenticador_sessao=_autenticador_sessao,
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
     listar_associacoes_curriculo_vaga=_listar_associacoes_curriculo_vaga,
+    consultar_vagas=_consultar_vagas,
     verificador_persistencia=_verificador_persistencia,
     cadastrar_link_profissional=_cadastrar_link_profissional,
     revisar_texto=_revisar_texto,

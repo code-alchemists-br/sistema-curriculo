@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+
 import "./Destaques.css";
 
 export interface MetricaItem {
@@ -29,41 +30,59 @@ const METRICAS_PADRAO: MetricaItem[] = [
   },
 ];
 
+function obterVisibilidadeInicial(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const suportaObserver = typeof window.IntersectionObserver === "function";
+  const prefereReducaoMovimento =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return !suportaObserver || prefereReducaoMovimento;
+}
+
 export function Destaques() {
-  const [visivel, setVisivel] = useState(
-    () => typeof IntersectionObserver === "undefined",
-  );
-  const secaoRef = useRef<HTMLElement | null>(null);
+  const [visivel, setVisivel] = useState(obterVisibilidadeInicial);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const elemento = secaoRef.current;
-    if (!elemento || typeof IntersectionObserver === "undefined") return;
+    if (visivel) {
+      return;
+    }
 
-    const observador = new IntersectionObserver(
-      ([entrada]) => {
-        if (entrada.isIntersecting) {
+    const elemento = containerRef.current;
+    if (!elemento) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
           setVisivel(true);
-          observador.disconnect();
+          observer.disconnect();
         }
       },
-      { threshold: 0.15 },
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -60px 0px",
+      },
     );
 
-    observador.observe(elemento);
+    observer.observe(elemento);
 
     return () => {
-      observador.disconnect();
+      observer.disconnect();
     };
-  }, []);
+  }, [visivel]);
 
   return (
     <section
+      className={`destaques-section ${visivel ? "destaques-section--visivel" : ""}`.trim()}
       aria-labelledby="destaques-title"
-      className={`destaques-section ${visivel ? "destaques-section--visivel" : ""}`}
-      ref={secaoRef}
     >
-      <div className="destaques-section__container">
-        <h2 className="destaques-section__title" id="destaques-title">
+      <div ref={containerRef} className="destaques-section__container">
+        <h2 id="destaques-title" className="destaques-section__title">
           <span className="destaques-section__title-destaque">
             CONSTRUÍMOS A PONTE ENTRE O SEU TALENTO E A SUA PRÓXIMA ENTREVISTA
             —{" "}

@@ -72,4 +72,76 @@ describe("criarClienteVagasHttp", () => {
       new FalhaVagasGrupo2("indisponivel"),
     );
   });
+
+  it("mapeia metadados enriquecidos do cvmatch e trata 429 como indisponivel", async () => {
+    const dadosEnriquecidos = {
+      termo: "",
+      total: 1,
+      vagas: [
+        {
+          id: "42",
+          titulo: "Engenheiro de Dados Júnior",
+          empresa: "Data Co",
+          descricao: "Pipelines Python.",
+          requisitos: ["Python", "SQL"],
+          localizacao: "",
+          modalidade: "HYBRID",
+          url_candidatura: "",
+          ranque: 1,
+          pontuacao_compatibilidade: 91.5,
+          elegivel: false,
+          nivel_senioridade: "SPECIALIST",
+          salario: "R$ 5.000",
+          moeda: "BRL",
+          palavras_chave: ["ETL"],
+          data_publicacao: "2026-11-01T10:00:00Z",
+          requisitos_atendidos: ["Python"],
+          requisitos_faltantes: ["SQL"],
+        },
+      ],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(dadosEnriquecidos), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const cliente = criarClienteVagasHttp("http://127.0.0.1:8000");
+    const sugestoes = await cliente.listarSugestoes({ termo: "" });
+
+    expect(sugestoes).toEqual([
+      {
+        curriculoId: "curriculo-ativo",
+        ranque: 1,
+        pontuacaoCompatibilidade: 91.5,
+        vaga: {
+          id: "42",
+          titulo: "Engenheiro de Dados Júnior",
+          empresa: "Data Co",
+          descricao: "Pipelines Python.",
+          requisitos: ["Python", "SQL"],
+          localizacao: null,
+          modalidade: "Híbrido",
+          urlCandidatura: null,
+          nivelSenioridade: "Especialista",
+          salario: "R$ 5.000",
+          moeda: "BRL",
+          palavrasChave: ["ETL"],
+          dataPublicacao: "01/11/2026",
+          elegivel: false,
+          requisitosAtendidos: ["Python"],
+          requisitosFaltantes: ["SQL"],
+        },
+      },
+    ]);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(null, { status: 429 }),
+    );
+    await expect(cliente.listarSugestoes({ termo: "" })).rejects.toThrow(
+      new FalhaVagasGrupo2("indisponivel"),
+    );
+  });
 });

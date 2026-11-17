@@ -13,6 +13,9 @@ export interface Vaga {
   moeda?: string | null;
   palavrasChave?: string[];
   dataPublicacao?: string | null;
+  elegivel?: boolean;
+  requisitosAtendidos?: string[];
+  requisitosFaltantes?: string[];
 }
 
 /** Vincula uma sugestão de vaga ao currículo consultado na integração. */

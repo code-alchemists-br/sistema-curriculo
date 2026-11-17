@@ -2,6 +2,7 @@
 
 import unittest
 from typing import Any
+from uuid import UUID
 
 from backend.application.consulta_vagas import (
     ConsultarVagas,
@@ -9,6 +10,13 @@ from backend.application.consulta_vagas import (
     ErroIntegracaoVagas,
     RespostaInvalidaVagas,
     TimeoutIntegracaoVagas,
+    VagaRecomendadaDto,
+)
+from backend.application.curriculo_completo import (
+    CurriculoCompleto,
+    DadosPessoaisSalvos,
+    RepositorioCurriculoCompleto,
+    SecaoSubstituivel,
 )
 from backend.application.ports import VagaExternaDto
 from backend.tests.doubles.api_vagas_grupo2 import (
@@ -152,3 +160,145 @@ class ConsultarVagasTestCase(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(contexto.exception.termo, "Backend")
         self.assertEqual(contexto.exception.filtros, {"modalidade": "Remoto"})
+
+
+class _LeitorCurriculoFalso(RepositorioCurriculoCompleto):
+    """Simula a leitura de currículo completo em memória para testar o caso de uso.
+
+    Retorna o objeto configurado sem acessar SQLAlchemy e implementa os métodos
+    de escrita como no-op. Existe para isolar ``ConsultarVagas`` por currículo.
+    """
+
+    def __init__(self, curriculo: CurriculoCompleto | None) -> None:
+        """Armazena o currículo a devolver e registra os IDs consultados.
+
+        Permite validar que o caso de uso consulta exatamente o ``usuario_id``
+        autenticado. Existe para manter testes determinísticos em memória.
+        """
+        self.curriculo = curriculo
+        self.consultas: list[UUID] = []
+
+    async def ler(self, usuario_id: UUID) -> CurriculoCompleto | None:
+        """Registra a consulta e devolve o currículo simulado.
+
+        Não abre transações nem banco. Existe para satisfazer a porta de leitura.
+        """
+        self.consultas.append(usuario_id)
+        return self.curriculo
+
+    async def substituir(
+        self,
+        usuario_id: UUID,
+        secao: SecaoSubstituivel,
+        entidades: list,
+        curriculo_lattes: str | None = None,
+    ) -> None:
+        """Mantém compatibilidade com a interface abstrata sem uso na busca.
+
+        Não realiza operações neste dublê. Existe apenas para cumprir a ABC.
+        """
+
+    async def salvar_modelo(self, usuario_id: UUID, modelo: Any) -> None:
+        """Mantém compatibilidade com a interface abstrata sem uso na busca.
+
+        Não realiza operações neste dublê. Existe apenas para cumprir a ABC.
+        """
+
+
+class _BuscadorCurriculoFalso:
+    """Registra currículo e limite recebidos pelo motor de matching simulado.
+
+    Devolve DTOs pré-configurados sem rede. Existe para testar a orquestração
+    entre leitura do currículo e chamada ao cvmatch.
+    """
+
+    def __init__(self, resultado: list[VagaRecomendadaDto]) -> None:
+        """Guarda os DTOs de retorno e prepara o log de chamadas.
+
+        Permite inspecionar o limite aplicado pelo caso de uso. Existe para
+        assegurar testes sem efeitos colaterais.
+        """
+        self.resultado = resultado
+        self.chamadas: list[tuple[CurriculoCompleto, int]] = []
+
+    async def buscar_vagas_por_curriculo(
+        self, curriculo: CurriculoCompleto, limit: int = 10
+    ) -> list[VagaRecomendadaDto]:
+        """Registra currículo e limite e retorna os DTOs simulados.
+
+        Simula a porta ``BuscadorVagasPorCurriculo`` em memória. Existe para
+        validar limites padrão e explícitos em ``ConsultarVagas``.
+        """
+        self.chamadas.append((curriculo, limit))
+        return self.resultado
+
+
+class ConsultarVagasPorCurriculoTestCase(unittest.IsolatedAsyncioTestCase):
+    """Verifica a orquestração de ``ConsultarVagas`` no modo baseado em currículo.
+
+    Valida leitura por ``usuario_id``, aplicação de limite padrão e explícito e
+    comportamento quando a conta não possui currículo salvo. Existe para
+    garantir o fluxo principal de integração com o cvmatch.
+    """
+
+    async def test_le_curriculo_do_usuario_e_respeita_limite_padrao_e_explicito(
+        self,
+    ) -> None:
+        """Confirma leitura do currículo e envio do limite ao buscador por currículo.
+
+        Testa chamada sem limite (usando ``limite_padrao=15``) e com ``limit=5``.
+        Existe para assegurar o repasse correto dos parâmetros de matching.
+        """
+        usuario_id = UUID("10000000-0000-4000-8000-000000000001")
+        curriculo = CurriculoCompleto(
+            dados_pessoais=DadosPessoaisSalvos(nome="Ana", email="ana@example.test")
+        )
+        vaga = VagaRecomendadaDto(
+            id="1",
+            titulo="Estágio Python",
+            empresa="Tech",
+            descricao="Backend",
+            requisitos=("Python",),
+            localizacao="São Paulo - SP",
+            modalidade="REMOTE",
+            url_candidatura="https://vagas.exemplo/1",
+            ranque=1,
+            pontuacao_compatibilidade=91.0,
+            elegivel=True,
+        )
+        leitor = _LeitorCurriculoFalso(curriculo)
+        buscador = _BuscadorCurriculoFalso([vaga])
+        caso = ConsultarVagas(
+            buscador_curriculo=buscador,
+            leitor_curriculo=leitor,
+            limite_padrao=15,
+        )
+
+        resultado_padrao = await caso.executar(
+            ConsultarVagasEntrada(usuario_id=usuario_id)
+        )
+        resultado_limitado = await caso.executar(
+            ConsultarVagasEntrada(usuario_id=usuario_id, limit=5)
+        )
+
+        self.assertEqual(resultado_padrao, [vaga])
+        self.assertEqual(resultado_limitado, [vaga])
+        self.assertEqual(leitor.consultas, [usuario_id, usuario_id])
+        self.assertEqual(buscador.chamadas, [(curriculo, 15), (curriculo, 5)])
+
+    async def test_retorna_vazio_quando_conta_nao_tem_curriculo(self) -> None:
+        """Confirma retorno vazio quando o repositório devolve None.
+
+        Evita chamar o motor externo para conta inexistente. Existe para manter
+        degradação segura sem erro inesperado.
+        """
+        leitor = _LeitorCurriculoFalso(None)
+        buscador = _BuscadorCurriculoFalso([])
+        caso = ConsultarVagas(buscador_curriculo=buscador, leitor_curriculo=leitor)
+
+        resultado = await caso.executar(
+            ConsultarVagasEntrada(usuario_id=UUID(int=2))
+        )
+
+        self.assertEqual(resultado, [])
+        self.assertEqual(buscador.chamadas, [])

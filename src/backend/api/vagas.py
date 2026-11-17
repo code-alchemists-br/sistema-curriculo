@@ -8,11 +8,12 @@ segura em situações de erro de integração sem vazar detalhes internos ao cli
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Protocol
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializeAsAny
 
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
 from backend.application.consulta_vagas import (
@@ -20,6 +21,7 @@ from backend.application.consulta_vagas import (
     ErroIntegracaoVagas,
     RespostaInvalidaVagas,
     TimeoutIntegracaoVagas,
+    VagaRecomendadaDto,
 )
 from backend.application.ports import VagaExternaDto
 
@@ -43,6 +45,27 @@ class VagaResposta(BaseModel):
     url_candidatura: str | None = None
 
 
+class VagaRecomendadaResposta(VagaResposta):
+    """Estende ``VagaResposta`` com metadados de compatibilidade retornados pelo cvmatch.
+
+    O DTO preserva integralmente os oito campos básicos da vaga e acrescenta
+    ranque, pontuação, elegibilidade ativa, senioridade, faixa salarial,
+    palavras-chave, data de publicação e requisitos atendidos/faltantes. Ele
+    existe para enriquecer a tela de recomendações sem alterar ``VagaResposta``.
+    """
+
+    ranque: int | None = None
+    pontuacao_compatibilidade: float | None = None
+    elegivel: bool | None = None
+    nivel_senioridade: str | None = None
+    salario: str | None = None
+    moeda: str | None = None
+    palavras_chave: list[str] = []
+    data_publicacao: str | None = None
+    requisitos_atendidos: list[str] = []
+    requisitos_faltantes: list[str] = []
+
+
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
 class ResultadoBuscaVagasResposta(BaseModel):
     """Representa o resultado consolidado da pesquisa de vagas na interface HTTP.
@@ -55,7 +78,7 @@ class ResultadoBuscaVagasResposta(BaseModel):
     termo: str
     filtros: dict[str, Any]
     total: int
-    vagas: list[VagaResposta]
+    vagas: list[SerializeAsAny[VagaResposta]]
 
 
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
@@ -67,13 +90,58 @@ class ConsultaVagasExecutor(Protocol):
     e testes unitários isolados de transporte sem depender de implementação concreta.
     """
 
-    async def executar(self, entrada: ConsultarVagasEntrada) -> list[VagaExternaDto]:
+    async def executar(
+        self, entrada: ConsultarVagasEntrada
+    ) -> Sequence[VagaExternaDto | VagaRecomendadaDto]:
         """Executa a pesquisa de vagas a partir dos parâmetros informados.
 
         O método orquestra a obtenção de vagas na camada interna e devolve a lista
         de DTOs correspondente. Ele existe para separar a fronteira HTTP da orquestração.
         """
         ...
+
+
+def _converter_vaga_para_resposta(
+    vaga: VagaExternaDto | VagaRecomendadaDto,
+) -> VagaResposta:
+    """Converte um DTO da Application no modelo público HTTP adequado.
+
+    Preserva a estrutura enxuta de oito campos para ``VagaExternaDto`` e
+    projeta os metadados adicionais de matching quando recebe
+    ``VagaRecomendadaDto``. Existe para manter compatibilidade estrita com o
+    contrato legado e ao mesmo tempo expor os dados do cvmatch.
+    """
+    if isinstance(vaga, VagaRecomendadaDto):
+        return VagaRecomendadaResposta(
+            id=vaga.id,
+            titulo=vaga.titulo,
+            empresa=vaga.empresa,
+            descricao=vaga.descricao,
+            requisitos=list(vaga.requisitos),
+            localizacao=vaga.localizacao,
+            modalidade=vaga.modalidade,
+            url_candidatura=vaga.url_candidatura,
+            ranque=vaga.ranque,
+            pontuacao_compatibilidade=vaga.pontuacao_compatibilidade,
+            elegivel=vaga.elegivel,
+            nivel_senioridade=vaga.nivel_senioridade,
+            salario=vaga.salario,
+            moeda=vaga.moeda,
+            palavras_chave=list(vaga.palavras_chave),
+            data_publicacao=vaga.data_publicacao,
+            requisitos_atendidos=list(vaga.requisitos_atendidos),
+            requisitos_faltantes=list(vaga.requisitos_faltantes),
+        )
+    return VagaResposta(
+        id=vaga.id,
+        titulo=vaga.titulo,
+        empresa=vaga.empresa,
+        descricao=vaga.descricao,
+        requisitos=list(vaga.requisitos),
+        localizacao=vaga.localizacao,
+        modalidade=vaga.modalidade,
+        url_candidatura=vaga.url_candidatura,
+    )
 
 
 # Proveniência: decision-analysis prompts/backend/20261018-095612-expor-busca-vagas-api-v001.md#v001
@@ -108,14 +176,21 @@ def criar_router(
             default=None,
             description="Filtro opcional por modalidade de trabalho (ex: REMOTO, HIBRIDO, PRESENCIAL).",
         ),
+        limit: int | None = Query(
+            default=None,
+            ge=1,
+            le=100,
+            description="Quantidade máxima de vagas recomendadas (entre 1 e 100).",
+        ),
     ) -> ResultadoBuscaVagasResposta:
         """Realiza a consulta de oportunidades de vagas para o estudante autenticado.
 
         O handler valida a sessão do usuário, compõe a entrada da aplicação com o
-        termo e os filtros recebidos, invoca o executor e formata a resposta. Em caso
-        de lista vazia, retorna 200 OK preservando os filtros; em caso de falha externa,
-        retorna erros HTTP controlados (504/502) sem vazar detalhes técnicos internos.
-        Ele existe para expor o serviço de busca de vagas com integridade e segurança.
+        termo, filtros, identidade e limite recebidos, invoca o executor e formata
+        a resposta. Em caso de lista vazia, retorna 200 OK preservando os filtros;
+        em caso de falha externa, retorna erros HTTP controlados (504/502) sem
+        vazar detalhes técnicos internos. Ele existe para expor o serviço de
+        busca de vagas com integridade e segurança.
         """
         if consultar_vagas is None:
             raise HTTPException(
@@ -136,7 +211,13 @@ def criar_router(
         if modalidade is not None:
             filtros["modalidade"] = modalidade
 
-        entrada = ConsultarVagasEntrada(termo=termo, filtros=filtros)
+        limite = limit if isinstance(limit, int) else None
+        entrada = ConsultarVagasEntrada(
+            termo=termo,
+            filtros=filtros,
+            usuario_id=usuario_id,
+            limit=limite,
+        )
 
         try:
             vagas_externas = await consultar_vagas.executar(entrada)
@@ -152,17 +233,7 @@ def criar_router(
             ) from erro
 
         vagas_resposta = [
-            VagaResposta(
-                id=vaga.id,
-                titulo=vaga.titulo,
-                empresa=vaga.empresa,
-                descricao=vaga.descricao,
-                requisitos=list(vaga.requisitos),
-                localizacao=vaga.localizacao,
-                modalidade=vaga.modalidade,
-                url_candidatura=vaga.url_candidatura,
-            )
-            for vaga in vagas_externas
+            _converter_vaga_para_resposta(vaga) for vaga in vagas_externas
         ]
 
         return ResultadoBuscaVagasResposta(
