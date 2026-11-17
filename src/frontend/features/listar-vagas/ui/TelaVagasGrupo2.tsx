@@ -201,7 +201,9 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
   const varianteAvatar = obterVarianteAvatar(nomeEmpresa);
   const inicialEmpresa = obterInicialEmpresa(nomeEmpresa);
 
+  const vagaInativa = vaga.elegivel === false;
   const possuiClassificacao =
+    vagaInativa ||
     Boolean(vaga.nivelSenioridade) ||
     vaga.modalidade !== null ||
     Boolean(
@@ -211,7 +213,13 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
     );
 
   return (
-    <article className="vagas-grupo2__card">
+    <article
+      className={
+        vagaInativa
+          ? "vagas-grupo2__card vagas-grupo2__card--inativa"
+          : "vagas-grupo2__card"
+      }
+    >
       <div className="vagas-grupo2__corpo-card">
         {(sugestao.ranque !== undefined ||
           sugestao.pontuacaoCompatibilidade !== undefined) && (
@@ -263,6 +271,11 @@ function CartaoVaga({ sugestao }: { sugestao: SugestaoVaga }) {
             aria-label="Classificação da vaga"
             className="vagas-grupo2__metadados"
           >
+            {vagaInativa && (
+              <span className="vagas-grupo2__pill vagas-grupo2__pill--inativa">
+                Vaga encerrada ou inativa
+              </span>
+            )}
             {vaga.nivelSenioridade && (
               <span className="vagas-grupo2__pill vagas-grupo2__pill--roxo">
                 {vaga.nivelSenioridade}

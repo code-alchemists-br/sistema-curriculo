@@ -59,7 +59,6 @@ import {
   encerrarSessao,
 } from "../features/acesso-estudante";
 import { criarClienteDadosPessoaisHttp } from "../features/edit-personal-data";
-import { criarClienteVagasResiliente } from "./servicos-resilientes";
 import {
   criarClienteCurriculoNoBanco,
   FalhaCurriculoNoBanco,
@@ -69,11 +68,8 @@ import "../shared/styles/animations.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_URL;
 const clienteVagasDemo = criarClienteVagasDemonstracao();
-const clienteVagasBase = apiBaseUrl
-  ? criarClienteVagasHttp(apiBaseUrl)
-  : clienteVagasDemo;
 const clienteVagasHttp = apiBaseUrl
-  ? criarClienteVagasResiliente(clienteVagasBase, clienteVagasDemo)
+  ? criarClienteVagasHttp(apiBaseUrl)
   : clienteVagasDemo;
 
 const clienteDecisoesDemo = criarClienteDecisoesDemonstracao();

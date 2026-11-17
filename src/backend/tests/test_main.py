@@ -14,6 +14,7 @@ from backend.main import (
     _criar_cadastrar_curso,
     _criar_cadastrar_estudante,
     _criar_configuracao_cookie_sessao,
+    _criar_consultar_vagas,
     _criar_engine_persistencia,
     _obter_origens_cors,
 )
@@ -178,6 +179,28 @@ class ComposicaoAplicacaoTestCase(unittest.TestCase):
         configuracao_local = _criar_configuracao_cookie_sessao("false")
         self.assertFalse(configuracao_local.seguro)
         self.assertEqual(configuracao_local.nome, "sessao")
+
+    def test_composicao_de_vagas_depende_de_grupo2_api_url_e_sessoes(self) -> None:
+        """Compõe ``ConsultarVagas`` apenas quando há URL do Grupo 2 e sessões.
+
+        Verifica retorno ``None`` quando a URL ou o banco faltam e valida a
+        conversão de timeout e limite padrão quando ambos estão presentes.
+        Existe para garantir degradação controlada em 503 e leitura correta do .env.
+        """
+        sessoes = Mock()
+        self.assertIsNone(_criar_consultar_vagas(sessoes, None, None, None))
+        self.assertIsNone(_criar_consultar_vagas(sessoes, "   ", "5000", "10"))
+        self.assertIsNone(
+            _criar_consultar_vagas(None, "http://127.0.0.1:8001", "5000", "10")
+        )
+
+        executor = _criar_consultar_vagas(
+            sessoes, "http://127.0.0.1:8001", "3000", "20"
+        )
+        self.assertIsNotNone(executor)
+        assert executor is not None
+        self.assertEqual(executor._limite_padrao, 20)
+        self.assertEqual(executor._buscador_curriculo._timeout_segundos, 3.0)
 
 
 class CicloVidaAplicacaoTestCase(unittest.IsolatedAsyncioTestCase):

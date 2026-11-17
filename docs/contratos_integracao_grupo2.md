@@ -1,6 +1,6 @@
-# Contratos de integração — Grupo 1 e Grupo 2
+# Contratos de integração — Grupo 1 e Grupo 2 (Histórico da Proposta Inicial)
 
-**Status:** proposta para validação entre as equipes. Este documento descreve um contrato sugerido; não representa uma API já implementada ou confirmada pelo repositório.
+> **Status:** documento histórico da proposta inicial entre equipes. A especificação vigente e implementada está consolidada em [`contrato-integracao-grupo2.md`](contrato-integracao-grupo2.md), [`contrato-campos-obrigatorios-grupo2.md`](contrato-campos-obrigatorios-grupo2.md) e [`contrato-busca-vagas.md`](contrato-busca-vagas.md), tendo o contrato do `cvmatch` (`POST /matches`) como referência autoritativa.
 
 ## 1. Objetivo e responsabilidades
 

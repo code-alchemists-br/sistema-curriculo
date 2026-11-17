@@ -1,0 +1,159 @@
+# Overlay para provisionamento conjunto de sistema-curriculo + cvmatch (esw3_cvmatcher).
+# Execute a partir da raiz do sistema-curriculo:
+#   docker compose -f docker-compose.yml -f docker-compose.integracao.yml up -d --build
+# Para preparar os modelos locais do cvmatch antes de subir api/worker:
+#   docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-model-init
+#   docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-prepare-extraction
+#   docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-prepare-embeddings
+# Para smoke test leve sem baixar modelos ML (usa src.mock_api do cvmatch):
+#   GRUPO2_API_URL=http://cvmatch-mock:8001 docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile mock up -d --build db migrate backend frontend cvmatch-mock
+
+x-cvmatch-app: &cvmatch-app
+  image: cvmatcher-local:production
+  build:
+    context: ${CVMATCH_CONTEXT:-../..}
+    dockerfile: Dockerfile
+  environment: &cvmatch-env
+    DATABASE_URL: postgresql+psycopg://${CVMATCH_POSTGRES_USER:-cvmatch}:${CVMATCH_POSTGRES_PASSWORD:-cvmatch_dev_password}@cvmatch-postgres:5432/${CVMATCH_POSTGRES_DB:-cvmatch}
+    CVMATCHER_EXTRACTION_DIRECTORY: ${CVMATCHER_EXTRACTION_DIRECTORY:-/models/extraction}
+    CVMATCHER_EMBEDDING_CACHE: /models/huggingface
+    HF_HOME: /models/huggingface
+    HF_HUB_OFFLINE: "1"
+    TRANSFORMERS_OFFLINE: "1"
+    HF_HUB_DISABLE_TELEMETRY: "1"
+    OMP_NUM_THREADS: "1"
+    MKL_NUM_THREADS: "1"
+  volumes:
+    - cvmatch_model_cache:/models
+  init: true
+
+services:
+  cvmatch-postgres:
+    image: ${CVMATCHER_POSTGRES_IMAGE:-pgvector/pgvector@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8}
+    environment:
+      POSTGRES_USER: ${CVMATCH_POSTGRES_USER:-cvmatch}
+      POSTGRES_PASSWORD: ${CVMATCH_POSTGRES_PASSWORD:-cvmatch_dev_password}
+      POSTGRES_DB: ${CVMATCH_POSTGRES_DB:-cvmatch}
+    volumes:
+      - cvmatch_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  cvmatch-model-init:
+    <<: *cvmatch-app
+    profiles: [prepare]
+    user: "0:0"
+    command:
+      [
+        "python",
+        "-c",
+        "import os; os.makedirs('/models/huggingface', exist_ok=True); os.chown('/models', 10001, 10001); os.chown('/models/huggingface', 10001, 10001)",
+      ]
+
+  cvmatch-prepare-extraction:
+    <<: *cvmatch-app
+    profiles: [prepare]
+    environment:
+      <<: *cvmatch-env
+      HF_HUB_OFFLINE: "0"
+      TRANSFORMERS_OFFLINE: "0"
+    command:
+      [
+        "python",
+        "scripts/models/prepare_extraction.py",
+        "${CVMATCHER_EXTRACTION_DIRECTORY:-/models/extraction}",
+      ]
+
+  cvmatch-prepare-embeddings:
+    <<: *cvmatch-app
+    profiles: [prepare]
+    environment:
+      <<: *cvmatch-env
+      HF_HUB_OFFLINE: "0"
+      TRANSFORMERS_OFFLINE: "0"
+    command:
+      [
+        "python",
+        "scripts/models/prepare_embeddings.py",
+        "--cache-dir",
+        "/models/huggingface",
+        "--manifest",
+        "/models/embedding-provenance.json",
+      ]
+
+  cvmatch-migrate:
+    <<: *cvmatch-app
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    depends_on:
+      cvmatch-postgres:
+        condition: service_healthy
+
+  cvmatch-worker:
+    <<: *cvmatch-app
+    environment:
+      <<: *cvmatch-env
+      CVMATCHER_SOURCE_POLL_ON_START: ${CVMATCHER_SOURCE_POLL_ON_START:-1}
+      CVMATCHER_SOURCE_DAILY_AT: ${CVMATCHER_SOURCE_DAILY_AT:-08:00}
+      CVMATCHER_SOURCE_TIMEZONE: ${CVMATCHER_SOURCE_TIMEZONE:-America/Sao_Paulo}
+    command: ["python", "-m", "src.worker"]
+    depends_on:
+      cvmatch-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 120s
+
+  cvmatch-api:
+    <<: *cvmatch-app
+    depends_on:
+      cvmatch-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${CVMATCHER_API_PORT:-8001}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=30)",
+        ]
+      interval: 30s
+      timeout: 35s
+      start_period: 120s
+      retries: 5
+    restart: unless-stopped
+
+  cvmatch-mock:
+    profiles: [mock]
+    build:
+      context: ${CVMATCH_CONTEXT:-../..}
+      dockerfile: Dockerfile.mock
+    ports:
+      - "127.0.0.1:${CVMATCHER_MOCK_PORT:-8002}:8001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8001/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  backend:
+    environment:
+      GRUPO2_API_URL: ${GRUPO2_API_URL:-http://cvmatch-api:8000}
+
+volumes:
+  cvmatch_postgres_data:
+  cvmatch_model_cache:

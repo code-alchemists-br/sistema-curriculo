@@ -29,6 +29,7 @@ from backend.api.factory import create_app
 from backend.application.autenticacao_sessao import AutenticadorSessao
 from backend.application.cadastro_idioma import CadastrarIdioma
 from backend.application.cadastro_link_profissional import CadastrarLinkProfissional
+from backend.application.consulta_vagas import ConsultarVagas
 from backend.application.curriculo_completo import GerenciarCurriculoCompleto
 from backend.application.decisao_recomendacao import (
     ConsultarDecisoesRecomendacao,
@@ -74,6 +75,9 @@ from backend.infrastructure.integrations.assistente_gemini import (
     RecomendadorModeloGemini,
     RevisorTextoAusente,
     RevisorTextoGemini,
+)
+from backend.infrastructure.integrations.cliente_vagas_grupo2 import (
+    ClienteApiVagasGrupo2Http,
 )
 from backend.infrastructure.integrations.email_recuperacao_senha import (
     ConfiguracaoSmtpRecuperacao,
@@ -559,10 +563,53 @@ _recomendar_modelo_curriculo = (
     if _sessoes_persistencia is not None
     else None
 )
+def _criar_consultar_vagas(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+    url_base: str | None,
+    timeout_ms_texto: str | None,
+    limite_padrao_texto: str | None,
+) -> ConsultarVagas | None:
+    """Compõe o caso de uso de vagas conectado ao cvmatch quando configurado.
+
+    Lê a URL base do serviço do Grupo 2 e, quando presente junto com a fábrica
+    de sessões do banco, converte timeout e limite padrão com limites seguros e
+    injeta o cliente HTTP e o repositório de currículo completo; na ausência da
+    URL ou do banco devolve ``None`` para a rota responder 503. Existe para
+    habilitar a integração real por ambiente sem alterar camadas internas.
+    """
+    url_limpa = (url_base or "").strip()
+    if not url_limpa or sessoes is None:
+        return None
+    try:
+        timeout_ms = int(timeout_ms_texto) if timeout_ms_texto else 5000
+    except ValueError:
+        timeout_ms = 5000
+    try:
+        limite_padrao = int(limite_padrao_texto) if limite_padrao_texto else 10
+    except ValueError:
+        limite_padrao = 10
+    timeout_segundos = max(timeout_ms, 100) / 1000.0
+    limite_padrao = min(max(limite_padrao, 1), 100)
+    return ConsultarVagas(
+        buscador_curriculo=ClienteApiVagasGrupo2Http(
+            url_base=url_limpa,
+            timeout_segundos=timeout_segundos,
+        ),
+        leitor_curriculo=RepositorioCurriculoCompletoSqlAlchemy(sessoes),
+        limite_padrao=limite_padrao,
+    )
+
+
 _gerenciar_curriculo_completo = (
     GerenciarCurriculoCompleto(RepositorioCurriculoCompletoSqlAlchemy(_sessoes_persistencia))
     if _sessoes_persistencia is not None
     else None
+)
+_consultar_vagas = _criar_consultar_vagas(
+    _sessoes_persistencia,
+    os.environ.get("GRUPO2_API_URL"),
+    os.environ.get("GRUPO2_API_TIMEOUT_MS"),
+    os.environ.get("GRUPO2_DEFAULT_LIMIT"),
 )
 
 
@@ -725,6 +772,7 @@ app = create_app(
     autenticador_sessao=_autenticador_sessao,
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
     listar_associacoes_curriculo_vaga=_listar_associacoes_curriculo_vaga,
+    consultar_vagas=_consultar_vagas,
     verificador_persistencia=_verificador_persistencia,
     cadastrar_link_profissional=_cadastrar_link_profissional,
     revisar_texto=_revisar_texto,
