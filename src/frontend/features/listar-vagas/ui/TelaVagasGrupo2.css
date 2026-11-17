@@ -349,6 +349,16 @@
   color: #fed7aa;
 }
 
+.vagas-grupo2__pill--inativa {
+  background: rgba(239, 68, 68, 0.18);
+  border: none;
+  color: #fecaca;
+}
+
+.vagas-grupo2__card--inativa {
+  opacity: 0.82;
+}
+
 /* Descrição e Tags Compactas de Requisitos */
 .vagas-grupo2__descricao {
   font-size: 0.975rem;

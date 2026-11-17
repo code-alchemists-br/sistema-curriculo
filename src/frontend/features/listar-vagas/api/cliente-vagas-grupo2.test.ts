@@ -175,4 +175,35 @@ describe("criarClienteVagasGrupo2", () => {
       new FalhaVagasGrupo2("tempo-limite"),
     );
   });
+
+  it("evita duplicar raw na localizacao estruturada e preserva eligibility", () => {
+    const [item] = adaptarRespostaGrupo2({
+      matches: [
+        {
+          rank: 1,
+          score: 72,
+          eligibility: false,
+          matched_skills: ["Python"],
+          missing_requirements: ["Docker"],
+          job: {
+            id: "90",
+            title: "Estágio Backend",
+            description: "APIs",
+            location: {
+              city: "São Paulo",
+              state: "SP",
+              country: "Brasil",
+              raw: "São Paulo, SP",
+            },
+            job_url: "https://grupo2.exemplo.com/jobs/90",
+          },
+        },
+      ],
+    });
+
+    expect(item.vaga.localizacao).toBe("São Paulo - SP");
+    expect(item.vaga.elegivel).toBe(false);
+    expect(item.vaga.requisitosAtendidos).toEqual(["Python"]);
+    expect(item.vaga.requisitosFaltantes).toEqual(["Docker"]);
+  });
 });

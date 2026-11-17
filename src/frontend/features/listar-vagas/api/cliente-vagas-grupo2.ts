@@ -51,6 +51,9 @@ const respostaMatchesGrupo2Schema = z.object({
       rank: z.number().int().positive().optional(),
       job: jobMatchGrupo2Schema,
       score: z.number().min(0).optional(),
+      eligibility: z.boolean().optional(),
+      matched_skills: z.array(z.string()).optional(),
+      missing_requirements: z.array(z.string()).optional(),
       embedding_model: z.string().nullable().optional(),
       algorithm_version: z.string().nullable().optional(),
     }),
@@ -79,6 +82,8 @@ const TRADUCAO_SENIORIDADE: Record<string, string> = {
   PLENO: "Pleno",
   SENIOR: "Sênior",
   SR: "Sênior",
+  SPECIALIST: "Especialista",
+  COORDINATOR: "Coordenador",
   LEAD: "Líder Técnico",
 };
 
@@ -89,13 +94,27 @@ function limparValorOpcional(valor: unknown): string | null {
   return limpo;
 }
 
-function formatarModalidade(valor?: string | null): string | null {
+/**
+ * Traduz códigos de modalidade de trabalho do Grupo 2 para rótulos em português.
+ *
+ * **O que faz:** Normaliza valores como `REMOTE`, `HYBRID` e `ON_SITE`.
+ * **Como faz:** Limpa espaços e aplica um dicionário de tradução preservando valores desconhecidos.
+ * **Qual finalidade atende:** Garante apresentação uniforme nos cartões de vagas independentemente da origem HTTP.
+ */
+export function formatarModalidade(valor?: string | null): string | null {
   const limpo = limparValorOpcional(valor);
   if (!limpo) return null;
   return TRADUCAO_MODALIDADE[limpo.toUpperCase()] ?? limpo;
 }
 
-function formatarSenioridade(valor?: string | null): string | null {
+/**
+ * Traduz códigos de senioridade do Grupo 2 para rótulos em português.
+ *
+ * **O que faz:** Normaliza valores como `INTERN`, `JUNIOR`, `MID` e `SENIOR`.
+ * **Como faz:** Limpa espaços e aplica um dicionário de senioridade preservando valores livres.
+ * **Qual finalidade atende:** Padroniza as etiquetas de nível exibidas ao estudante.
+ */
+export function formatarSenioridade(valor?: string | null): string | null {
   const limpo = limparValorOpcional(valor);
   if (!limpo) return null;
   return TRADUCAO_SENIORIDADE[limpo.toUpperCase()] ?? limpo;
@@ -107,6 +126,24 @@ function formatarLocalizacao(
   if (!localizacao) return null;
   if (typeof localizacao === "string") {
     return limparValorOpcional(localizacao);
+  }
+  if (
+    "city" in localizacao ||
+    "state" in localizacao ||
+    "country" in localizacao
+  ) {
+    const cidade = limparValorOpcional(localizacao.city);
+    const estado = limparValorOpcional(localizacao.state);
+    const partes = [cidade, estado].filter(
+      (item): item is string => item !== null,
+    );
+    if (partes.length > 0) {
+      return partes.join(" - ");
+    }
+    return (
+      limparValorOpcional(localizacao.country) ??
+      limparValorOpcional(localizacao.raw)
+    );
   }
   const partes = Object.values(localizacao)
     .map((item) => limparValorOpcional(item))
@@ -164,7 +201,14 @@ function formatarSalario(
   return `${simbolo} ${formatarNumeroMonetario(menor)} – ${simbolo} ${formatarNumeroMonetario(maior)}`;
 }
 
-function formatarDataPublicacao(dataIso?: string | null): string | null {
+/**
+ * Formata datas ISO de publicação de vaga para o padrão brasileiro `DD/MM/AAAA`.
+ *
+ * **O que faz:** Converte uma data ISO recebida da API em texto legível.
+ * **Como faz:** Valida a string com `Date`, extrai dia, mês e ano em UTC e retorna `null` se inválida.
+ * **Qual finalidade atende:** Permite reutilização consistente entre o adaptador direto e o cliente HTTP do backend.
+ */
+export function formatarDataPublicacao(dataIso?: string | null): string | null {
   const limpa = limparValorOpcional(dataIso);
   if (!limpa) return null;
   const data = new Date(limpa);
@@ -296,6 +340,19 @@ export function adaptarRespostaGrupo2(resposta: unknown): SugestaoVaga[] {
           ...(moeda !== null ? { moeda } : {}),
           ...(palavrasChave.length > 0 ? { palavrasChave } : {}),
           ...(dataPublicacao !== null ? { dataPublicacao } : {}),
+          ...(match.eligibility !== undefined
+            ? { elegivel: match.eligibility }
+            : {}),
+          ...(match.matched_skills
+            ? { requisitosAtendidos: limparListaStrings(match.matched_skills) }
+            : {}),
+          ...(match.missing_requirements
+            ? {
+                requisitosFaltantes: limparListaStrings(
+                  match.missing_requirements,
+                ),
+              }
+            : {}),
         },
       };
     });
