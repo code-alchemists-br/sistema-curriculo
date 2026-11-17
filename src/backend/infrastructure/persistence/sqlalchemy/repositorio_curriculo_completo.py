@@ -99,6 +99,7 @@ class RepositorioCurriculoCompletoSqlAlchemy(RepositorioCurriculoCompleto):
                 select(CurriculoRegistro).where(CurriculoRegistro.usuario_id == usuario_id).limit(1)
             )
             return CurriculoCompleto(
+                curriculo_id=curriculo.id if curriculo else None,
                 dados_pessoais=DadosPessoaisSalvos(
                     nome=usuario.nome,
                     email=usuario.email,

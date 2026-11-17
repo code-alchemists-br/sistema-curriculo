@@ -22,6 +22,14 @@ from fastapi import FastAPI, Request
 
 from backend.api.factory import create_app
 from backend.application.consulta_vagas import ConsultarVagas, ErroIntegracaoVagas
+from backend.application.curriculo_completo import (
+    CompetenciaItem,
+    CurriculoCompleto,
+    DadosPessoaisSalvos,
+    RepositorioCurriculoCompleto,
+    SecaoSubstituivel,
+)
+from backend.domain.itens_perfil import CategoriaCompetencia
 from backend.infrastructure.integrations.cliente_vagas_grupo2 import (
     ClienteApiVagasGrupo2Http,
 )
@@ -347,3 +355,117 @@ class BuscaVagasSistemaApiTestCase(unittest.IsolatedAsyncioTestCase):
                 app = criar_app_busca_vagas(transporte, AutenticadorVagasFake())
                 self.verificar_resultado(await self.solicitar(termo, filtros, app=app, extras={"extra": "ignorado"}), termo, filtros)
                 self.verificar_chamadas(transporte, [termo], filtros)
+
+    async def test_A11_fluxo_cvmatch_post_matches_por_curriculo_autenticado(
+        self,
+    ) -> None:
+        """Prova o fluxo integrado GET /vagas -> leitor de currículo -> POST /matches.
+
+        Usa transporte POST em memória e repositório falso para verificar que a
+        rota autenticada envia a projeção estrita do currículo ao cvmatch e
+        devolve os campos enriquecidos, incluindo ``elegivel=False``. Existe
+        para certificar a integração completa sem egress de rede.
+        """
+
+        class _RepositorioIntegracao(RepositorioCurriculoCompleto):
+            async def ler(self, usuario_id: UUID) -> CurriculoCompleto | None:
+                """Devolve um currículo sintético para a conta autenticada.
+
+                Evita dependência de banco neste teste ASGI em memória. Existe
+                para exercitar a cadeia real até o cliente HTTP POST.
+                """
+                return CurriculoCompleto(
+                    curriculo_id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+                    dados_pessoais=DadosPessoaisSalvos(
+                        nome="Pessoa Teste", email="pessoa@example.test"
+                    ),
+                    competencias=[
+                        CompetenciaItem(
+                            categoria=CategoriaCompetencia.TECNICA,
+                            descricao="Python",
+                            nivel="avancado",
+                        )
+                    ],
+                )
+
+            async def substituir(
+                self,
+                usuario_id: UUID,
+                secao: SecaoSubstituivel,
+                entidades: list,
+                curriculo_lattes: str | None = None,
+            ) -> None:
+                """Implementação no-op para cumprir a interface do repositório.
+
+                Não utilizada na leitura de vagas. Existe apenas pela ABC.
+                """
+
+            async def salvar_modelo(self, usuario_id: UUID, modelo) -> None:
+                """Implementação no-op para cumprir a interface do repositório.
+
+                Não utilizada na leitura de vagas. Existe apenas pela ABC.
+                """
+
+        chamadas_post: list[tuple[str, dict]] = []
+
+        def transporte_post(url: str, corpo: bytes, timeout: float) -> bytes:
+            chamadas_post.append((url, __import__("json").loads(corpo.decode("utf-8"))))
+            return dumps(
+                {
+                    "matches": [
+                        {
+                            "rank": 1,
+                            "job": {
+                                "id": 10,
+                                "company": "Parceira Tech",
+                                "title": "Estágio Backend",
+                                "description": "Python e SQL",
+                                "keywords": ["API"],
+                                "location": {"city": "São Paulo", "state": "SP"},
+                                "work_arrangement": "HYBRID",
+                                "seniority_level": "INTERN",
+                                "skills": ["Python"],
+                                "salary": {"min": 2000, "max": 2500},
+                                "currency": "BRL",
+                                "job_url": "https://vagas.invalid/10",
+                                "publication_date": "2026-11-10T12:00:00Z",
+                            },
+                            "score": 92.5,
+                            "eligibility": False,
+                            "matched_skills": ["Python"],
+                            "missing_requirements": ["SQL"],
+                            "embedding_model": "e5",
+                            "algorithm_version": "1.0",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+        app = create_app(
+            autenticador_sessao=AutenticadorVagasFake(),
+            consultar_vagas=ConsultarVagas(
+                buscador_curriculo=ClienteApiVagasGrupo2Http(
+                    url_base="http://cvmatch.invalid",
+                    executor_post_http=transporte_post,
+                ),
+                leitor_curriculo=_RepositorioIntegracao(),
+            ),
+        )
+
+        resposta = await solicitar_asgi(
+            app, "GET", "/vagas", token=TOKEN_ACEITO, query="limit=5"
+        )
+
+        self.assertEqual(resposta.status, 200)
+        self.assertEqual(len(chamadas_post), 1)
+        self.assertEqual(chamadas_post[0][0], "http://cvmatch.invalid/matches?limit=5")
+        self.assertEqual(
+            chamadas_post[0][1]["competencias"],
+            [{"descricao": "Python", "nivel": "avancado"}],
+        )
+        corpo = resposta.json()
+        self.assertEqual(corpo["total"], 1)
+        self.assertEqual(corpo["vagas"][0]["ranque"], 1)
+        self.assertEqual(corpo["vagas"][0]["pontuacao_compatibilidade"], 92.5)
+        self.assertFalse(corpo["vagas"][0]["elegivel"])
+        self.assertEqual(corpo["vagas"][0]["salario"], "R$ 2.000 – R$ 2.500")
