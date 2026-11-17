@@ -365,9 +365,35 @@
   }
 }
 
+/* Itens do menu que só existem para compensar ações removidas da barra no mobile. */
+.cabecalho-publico__menu-item--somente-mobile {
+  display: none;
+}
+
+.cabecalho-publico__btn-login,
+.cabecalho-publico__btn-criar-conta,
+.cabecalho-publico__menu-trigger {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 @media (max-width: 480px) {
   .cabecalho-publico__container {
     padding: 1rem 1rem;
+  }
+
+  /* Logo + login + criar conta + menu somam ~385px; em 360px não cabem.
+     "Criar conta" vai para o menu; o CTA do Hero cobre a entrada de novos usuários. */
+  .cabecalho-publico__btn-criar-conta {
+    display: none;
+  }
+
+  .cabecalho-publico__menu-item.cabecalho-publico__menu-item--somente-mobile {
+    display: flex;
+  }
+
+  .cabecalho-publico__menu-divisor.cabecalho-publico__menu-item--somente-mobile {
+    display: block;
   }
 
   .cabecalho-publico__logo-btn {

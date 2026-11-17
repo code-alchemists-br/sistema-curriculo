@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import "./Destaques.css";
 
 export interface MetricaItem {
@@ -29,9 +31,54 @@ const METRICAS_PADRAO: MetricaItem[] = [
 ];
 
 export function Destaques() {
+  const [visivel, setVisivel] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const prefereReducaoMovimento =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const suportaObserver =
+      typeof window !== "undefined" &&
+      typeof window.IntersectionObserver === "function";
+
+    if (!suportaObserver || prefereReducaoMovimento) {
+      setVisivel(true);
+      return;
+    }
+
+    const elemento = containerRef.current;
+    if (!elemento) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setVisivel(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -60px 0px",
+      },
+    );
+
+    observer.observe(elemento);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <section className="destaques-section" aria-labelledby="destaques-title">
-      <div className="destaques-section__container">
+    <section
+      className={`destaques-section ${visivel ? "destaques-section--visivel" : ""}`.trim()}
+      aria-labelledby="destaques-title"
+    >
+      <div ref={containerRef} className="destaques-section__container">
         <h2 id="destaques-title" className="destaques-section__title">
           <span className="destaques-section__title-destaque">
             CONSTRUÍMOS A PONTE ENTRE O SEU TALENTO E A SUA PRÓXIMA ENTREVISTA
