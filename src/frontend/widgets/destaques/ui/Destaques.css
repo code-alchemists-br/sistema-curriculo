@@ -119,16 +119,25 @@
   }
 
   .destaques-section__descricao {
-    font-size: 1.125rem;
+    font-size: 1rem;
   }
 
   .destaques-section__grid {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2.5rem;
     margin-top: 3.5rem;
   }
 
   .destaques-section__card:not(:last-child)::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .destaques-section__container,
+  .destaques-section__card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }

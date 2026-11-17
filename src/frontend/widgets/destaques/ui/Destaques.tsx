@@ -93,14 +93,14 @@ export function Destaques() {
         </h2>
 
         <div
+          aria-label="Principais métricas da plataforma"
           className="destaques-section__grid"
           role="list"
-          aria-label="Principais métricas da plataforma"
         >
           {METRICAS_PADRAO.map((item) => (
             <div
-              key={item.id}
               className="destaques-section__card"
+              key={item.id}
               role="listitem"
             >
               <div className="destaques-section__valor">{item.valor}</div>

@@ -1,94 +1,160 @@
 .pagina-meu-perfil {
   min-height: 100vh;
-  padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1rem, 4vw, 3rem) 4rem;
-  background: #050505;
+  padding: 2.25rem 1.5rem 5rem;
+  background-color: #09090b;
   color: #f3f3f3;
   font-family: "Poppins", sans-serif;
+  box-sizing: border-box;
 }
 
 .pagina-meu-perfil__conteudo {
   width: min(100%, 84rem);
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.pagina-meu-perfil__cabecalho {
+/* 1. Barra Superior Estruturada */
+.pagina-meu-perfil__topo {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgb(255 255 255 / 12%);
+  width: 100%;
+  margin-bottom: 2.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
 }
 
 .pagina-meu-perfil__voltar {
-  margin-bottom: 1rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #a3a3a3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.5rem;
+  background-color: #17171a;
+  color: rgb(255 255 255 / 85%);
   cursor: pointer;
-  font: inherit;
-  font-size: 0.9rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.12s ease;
 }
 
 .pagina-meu-perfil__voltar:hover {
+  border-color: rgb(255 255 255 / 28%);
+  background-color: #222226;
   color: #ffffff;
+  transform: translateX(-2px);
+}
+
+/* 2. Cabeçalho Principal */
+.pagina-meu-perfil__cabecalho {
+  position: relative;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+  animation: animacaoEntradaFadeUp 0.85s var(--anim-curva-suave) both;
+}
+
+.pagina-meu-perfil__titulos {
+  display: flex;
+  flex-direction: column;
+  max-width: 44rem;
 }
 
 .pagina-meu-perfil__sobretitulo {
-  margin: 0;
+  margin: 0 0 0.5rem;
   color: #ff8a3d;
-  font-size: 0.82rem;
+  font-size: 0.825rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
 .pagina-meu-perfil__cabecalho h1 {
-  margin: 0.45rem 0 0;
+  margin: 0;
   color: #ffffff;
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: clamp(2rem, 4.2vw, 2.85rem);
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
 }
 
+.pagina-meu-perfil__subtitulo-cabecalho {
+  margin: 0.65rem 0 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* 3. Ações do Cabeçalho */
 .pagina-meu-perfil__acoes {
+  position: relative;
+  z-index: 60;
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
 .pagina-meu-perfil__btn-secundario,
 .pagina-meu-perfil__btn-primario {
-  min-height: 2.75rem;
-  padding: 0.6rem 1.1rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 0.65rem;
-  background: transparent;
-  color: #f3f3f3;
+  min-height: 3rem;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.625rem;
+  background-color: #17171a;
+  color: #f1f5f9;
   cursor: pointer;
-  font-family: inherit;
-  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.925rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
   transition:
     background-color 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
 }
 
 .pagina-meu-perfil__btn-secundario:hover {
-  border-color: #ff8a3d;
-  background: rgb(255 106 0 / 10%);
+  border-color: rgb(255 255 255 / 32%);
+  background-color: #222226;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .pagina-meu-perfil__btn-primario {
   border-color: #ff6a00;
-  background: #ff6a00;
+  background-color: #ff6a00;
   color: #ffffff;
 }
 
-.pagina-meu-perfil__btn-primario:hover {
-  background: #e65f00;
+.pagina-meu-perfil__btn-primario:hover:not(:disabled) {
+  border-color: #ff7a1a;
+  background-color: #ff7a1a;
+  transform: translateY(-1px);
+}
+
+.pagina-meu-perfil__btn-primario:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .pagina-meu-perfil__voltar:focus-visible,
@@ -98,20 +164,27 @@
   outline-offset: 2px;
 }
 
+/* 4. Grade Principal: Cartão Lateral + Palco do Documento */
 .pagina-meu-perfil__grade {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 23.5rem) minmax(0, 1fr);
   align-items: start;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .pagina-meu-perfil__cartao {
   position: sticky;
   top: 1.5rem;
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 12%);
+  padding: 1.75rem;
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 1rem;
-  background: #121212;
+  background: #121215;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 4%),
+    0 1rem 2.5rem rgb(0 0 0 / 35%);
+  animation: animacaoEntradaFadeUp 0.9s var(--anim-curva-suave) 0.08s both;
 }
 
 .pagina-meu-perfil__identidade {
@@ -119,6 +192,8 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  padding-bottom: 1.35rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
 }
 
 .pagina-meu-perfil__avatar {
@@ -127,65 +202,155 @@
   width: 3.5rem;
   height: 3.5rem;
   place-items: center;
+  border: 1px solid rgb(255 255 255 / 16%);
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffd27a, #ff6a00 60%, #b42318);
+  background: #222228;
   color: #ffffff;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.pagina-meu-perfil__identidade-texto {
+  min-width: 0;
 }
 
 .pagina-meu-perfil__identidade h2 {
   margin: 0;
   color: #ffffff;
-  font-size: 1.25rem;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.35rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .pagina-meu-perfil__identidade p {
-  margin: 0.25rem 0 0;
-  color: #a3a3a3;
+  margin: 0.3rem 0 0;
+  color: #94a3b8;
   font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .pagina-meu-perfil__dados {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.85rem;
   margin: 0 0 1.5rem;
 }
 
+.pagina-meu-perfil__dado {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 6%);
+  border-radius: 0.65rem;
+  background: #17171b;
+}
+
 .pagina-meu-perfil__dado dt {
-  color: #8a8a8a;
-  font-size: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .pagina-meu-perfil__dado dd {
-  margin: 0.2rem 0 0;
+  margin: 0.25rem 0 0;
   color: #f3f3f3;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.pagina-meu-perfil__secao-curriculo {
+  padding-top: 1.35rem;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.pagina-meu-perfil__cabecalho-resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.pagina-meu-perfil__info-modelo {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .pagina-meu-perfil__subtitulo {
   margin: 0;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgb(255 255 255 / 10%);
   color: #ffffff;
-  font-size: 1rem;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.05rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .pagina-meu-perfil__modelo {
-  margin: 0.4rem 0 1rem;
-  color: #a3a3a3;
-  font-size: 0.9rem;
+  margin: 0;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid rgb(255 106 0 / 28%);
+  border-radius: 9999px;
+  background: rgb(255 106 0 / 10%);
+  color: #cbd5e1;
+  font-size: 0.78rem;
 }
 
 .pagina-meu-perfil__modelo strong {
-  color: #ff8a3d;
+  color: #ff9b5c;
+  font-weight: 600;
+}
+
+.pagina-meu-perfil__btn-trocar-modelo {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid rgb(255 106 0 / 28%);
+  border-radius: 0.5rem;
+  background: rgb(255 106 0 / 8%);
+  color: #ff9b5c;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.pagina-meu-perfil__btn-trocar-modelo:hover {
+  border-color: #ff8a3d;
+  background: rgb(255 106 0 / 16%);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .pagina-meu-perfil__resumo {
@@ -199,47 +364,225 @@
 
 .pagina-meu-perfil__resumo li {
   display: grid;
-  gap: 0.1rem;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid rgb(255 255 255 / 8%);
+  gap: 0.15rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 7%);
   border-radius: 0.65rem;
-  background: #0b0b0b;
+  background: #17171b;
 }
 
 .pagina-meu-perfil__resumo strong {
   color: #ffffff;
-  font-size: 1.2rem;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
 .pagina-meu-perfil__resumo span {
-  color: #a3a3a3;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.pagina-meu-perfil__sem-resumo {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px dashed rgb(255 255 255 / 12%);
+  border-radius: 0.65rem;
+  background: #16161a;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* 5. Palco de Visualização do Currículo (Studio Stage) */
+.pagina-meu-perfil__moldura {
+  min-width: 0;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 1rem;
+  background: #111114;
+  box-shadow:
+    inset 0 1px 4px rgb(255 255 255 / 4%),
+    0 1rem 2.5rem rgb(0 0 0 / 50%);
+  overflow: hidden;
+  animation: animacaoEntradaFadeUp 0.9s var(--anim-curva-suave) 0.16s both;
+}
+
+.pagina-meu-perfil__palco-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.35rem;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+  background-color: #16161b;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.pagina-meu-perfil__palco-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.pagina-meu-perfil__palco-indicador {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #ff6a00;
+}
+
+.pagina-meu-perfil__palco-info {
+  color: #71717a;
   font-size: 0.78rem;
 }
 
-.pagina-meu-perfil__moldura {
-  min-width: 0;
-  padding: clamp(0.5rem, 1.5vw, 1rem);
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 1rem;
-  background: #121212;
-  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 35%);
-  overflow: hidden;
+.pagina-meu-perfil__palco-previa {
+  display: flex;
+  justify-content: center;
+  padding: clamp(1rem, 2.5vw, 2.25rem);
+  background: radial-gradient(
+    ellipse at 50% 15%,
+    #1c1c22 0%,
+    #121215 70%,
+    #0c0c0e 100%
+  );
+  box-sizing: border-box;
 }
 
+.pagina-meu-perfil__folha-a4 {
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+  border: 1px solid rgb(0 0 0 / 6%);
+  border-radius: 3px;
+  background-color: #ffffff;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 65%),
+    0 4px 14px rgb(0 0 0 / 40%);
+  box-sizing: border-box;
+  animation: animacaoEntradaScaleUp 0.75s var(--anim-curva-suave) 0.24s both;
+}
+
+/* 6. Estado Vazio */
 .pagina-meu-perfil__vazio {
   display: grid;
-  min-height: 20rem;
+  min-height: 26rem;
   place-content: center;
   justify-items: center;
-  gap: 1rem;
-  color: #a3a3a3;
+  gap: 1.25rem;
+  padding: 2.5rem 1.5rem;
   text-align: center;
 }
 
-.pagina-meu-perfil__vazio p {
-  margin: 0;
+.pagina-meu-perfil__vazio-icone {
+  display: grid;
+  width: 3.75rem;
+  height: 3.75rem;
+  place-items: center;
+  border: 1px solid rgb(255 106 0 / 28%);
+  border-radius: 1rem;
+  background: rgb(255 106 0 / 10%);
+  color: #ff8a3d;
 }
 
+.pagina-meu-perfil__vazio-icone svg {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+.pagina-meu-perfil__vazio-textos {
+  max-width: 28rem;
+}
+
+.pagina-meu-perfil__vazio-textos h3 {
+  margin: 0;
+  color: #ffffff;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.pagina-meu-perfil__vazio-textos p {
+  margin: 0.5rem 0 0;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* 7. Menu de Download e Alertas */
+.pagina-meu-perfil__erro {
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1.15rem;
+  border: 1px solid rgb(239 68 68 / 35%);
+  border-radius: 0.625rem;
+  background: rgb(239 68 68 / 12%);
+  color: #fca5a5;
+  font-size: 0.925rem;
+}
+
+.pagina-meu-perfil__download {
+  position: relative;
+  z-index: 70;
+}
+
+.pagina-meu-perfil__menu-formato {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 100;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 16.5rem;
+  padding: 0.45rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.75rem;
+  background: #16161b;
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 55%);
+  transform-origin: top right;
+  animation: animacaoEntradaScaleUp 0.22s var(--anim-curva-suave) both;
+}
+
+.pagina-meu-perfil__opcao-formato {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #f3f3f3;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.pagina-meu-perfil__opcao-formato:hover,
+.pagina-meu-perfil__opcao-formato:focus-visible {
+  background: rgb(255 106 0 / 14%);
+  outline: none;
+}
+
+.pagina-meu-perfil__opcao-formato strong {
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.pagina-meu-perfil__opcao-formato span {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* 8. Responsividade */
 @media (max-width: 64rem) {
   .pagina-meu-perfil__grade {
     grid-template-columns: minmax(0, 1fr);
@@ -251,6 +594,10 @@
 }
 
 @media (max-width: 40rem) {
+  .pagina-meu-perfil {
+    padding: 1.25rem 1rem 3.5rem;
+  }
+
   .pagina-meu-perfil__cabecalho {
     align-items: stretch;
     flex-direction: column;
@@ -258,76 +605,11 @@
 
   .pagina-meu-perfil__acoes {
     flex-direction: column;
+    width: 100%;
   }
 
   .pagina-meu-perfil__btn-secundario,
-  .pagina-meu-perfil__btn-primario {
-    width: 100%;
-  }
-}
-
-.pagina-meu-perfil__btn-primario:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.pagina-meu-perfil__erro {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgb(239 68 68 / 35%);
-  border-radius: 8px;
-  background: rgb(239 68 68 / 12%);
-  color: #fca5a5;
-}
-
-.pagina-meu-perfil__download {
-  position: relative;
-}
-
-.pagina-meu-perfil__menu-formato {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  z-index: 20;
-  display: grid;
-  gap: 0.25rem;
-  min-width: 16rem;
-  padding: 0.4rem;
-  border: 1px solid rgb(255 255 255 / 14%);
-  border-radius: 0.75rem;
-  background: #161616;
-  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 45%);
-}
-
-.pagina-meu-perfil__opcao-formato {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.65rem 0.8rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: #f3f3f3;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-}
-
-.pagina-meu-perfil__opcao-formato:hover,
-.pagina-meu-perfil__opcao-formato:focus-visible {
-  background: rgb(255 106 0 / 14%);
-  outline: none;
-}
-
-.pagina-meu-perfil__opcao-formato strong {
-  font-size: 0.95rem;
-}
-
-.pagina-meu-perfil__opcao-formato span {
-  color: #a3a3a3;
-  font-size: 0.8rem;
-}
-
-@media (max-width: 40rem) {
+  .pagina-meu-perfil__btn-primario,
   .pagina-meu-perfil__download {
     width: 100%;
   }
@@ -336,5 +618,13 @@
     left: 0;
     right: 0;
     min-width: 0;
+  }
+
+  .pagina-meu-perfil__palco-info {
+    display: none;
+  }
+
+  .pagina-meu-perfil__palco-previa {
+    padding: 0.75rem 0.5rem 1.5rem;
   }
 }

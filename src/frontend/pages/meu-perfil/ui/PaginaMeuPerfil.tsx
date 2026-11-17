@@ -135,28 +135,33 @@ export function PaginaMeuPerfil({
   const { estudante } = previa;
   const contato = estudante.contato;
   const formacaoPrincipal = previa.formacoes[0];
-  const resumo = [
-    { rotulo: "Experiências", total: previa.experiencias.length },
-    { rotulo: "Projetos", total: previa.projetos.length },
-    { rotulo: "Competências", total: previa.competencias.length },
-    { rotulo: "Idiomas", total: previa.idiomas.length },
-    { rotulo: "Cursos e certificações", total: previa.documentos.length },
-  ];
 
   return (
     <main className="pagina-meu-perfil">
       <div className="pagina-meu-perfil__conteudo">
+        <nav
+          aria-label="Navegação de retorno"
+          className="pagina-meu-perfil__topo"
+        >
+          <button
+            className="pagina-meu-perfil__voltar"
+            onClick={onVoltarInicio}
+            type="button"
+          >
+            ← Voltar ao início
+          </button>
+        </nav>
+
         <header className="pagina-meu-perfil__cabecalho">
-          <div>
-            <button
-              className="pagina-meu-perfil__voltar"
-              onClick={onVoltarInicio}
-              type="button"
-            >
-              ← Voltar ao início
-            </button>
-            <p className="pagina-meu-perfil__sobretitulo">Perfil</p>
+          <div className="pagina-meu-perfil__titulos">
+            <p className="pagina-meu-perfil__sobretitulo">
+              Perfil do estudante
+            </p>
             <h1 id="titulo-meu-perfil">Meu perfil</h1>
+            <p className="pagina-meu-perfil__subtitulo-cabecalho">
+              Confira seus dados de contato, visualize a pré-visualização em
+              tempo real e exporte seu currículo.
+            </p>
           </div>
           <div className="pagina-meu-perfil__acoes">
             <button
@@ -166,17 +171,19 @@ export function PaginaMeuPerfil({
             >
               Editar perfil
             </button>
-            <button
-              className={
-                possuiCurriculo && aoBaixarCurriculo
-                  ? "pagina-meu-perfil__btn-secundario"
-                  : "pagina-meu-perfil__btn-primario"
-              }
-              onClick={onEditarCurriculo}
-              type="button"
-            >
-              {possuiCurriculo ? "Editar currículo" : "Criar currículo"}
-            </button>
+            {possuiCurriculo && (
+              <button
+                className={
+                  aoBaixarCurriculo
+                    ? "pagina-meu-perfil__btn-secundario"
+                    : "pagina-meu-perfil__btn-primario"
+                }
+                onClick={onEditarCurriculo}
+                type="button"
+              >
+                Editar currículo
+              </button>
+            )}
             {possuiCurriculo && aoBaixarCurriculo && (
               <div className="pagina-meu-perfil__download" ref={menuRef}>
                 <button
@@ -233,7 +240,7 @@ export function PaginaMeuPerfil({
               <span aria-hidden="true" className="pagina-meu-perfil__avatar">
                 {iniciais(estudante.nome)}
               </span>
-              <div>
+              <div className="pagina-meu-perfil__identidade-texto">
                 <h2 id="titulo-dados-perfil">{estudante.nome}</h2>
                 {formacaoPrincipal && (
                   <p>
@@ -254,19 +261,29 @@ export function PaginaMeuPerfil({
               />
             </dl>
 
-            <h3 className="pagina-meu-perfil__subtitulo">Seu currículo</h3>
-            <p className="pagina-meu-perfil__modelo">
-              Modelo:{" "}
-              <strong>{ROTULOS_MODELO_CURRICULO[modelo] ?? modelo}</strong>
-            </p>
-            <ul className="pagina-meu-perfil__resumo">
-              {resumo.map((item) => (
-                <li key={item.rotulo}>
-                  <strong>{item.total}</strong>
-                  <span>{item.rotulo}</span>
-                </li>
-              ))}
-            </ul>
+            {possuiCurriculo && (
+              <div className="pagina-meu-perfil__secao-curriculo">
+                <div className="pagina-meu-perfil__cabecalho-resumo">
+                  <div className="pagina-meu-perfil__info-modelo">
+                    <h3 className="pagina-meu-perfil__subtitulo">
+                      Modelo do currículo
+                    </h3>
+                    <p className="pagina-meu-perfil__modelo">
+                      <strong>
+                        {ROTULOS_MODELO_CURRICULO[modelo] ?? modelo}
+                      </strong>
+                    </p>
+                  </div>
+                  <button
+                    className="pagina-meu-perfil__btn-trocar-modelo"
+                    onClick={onEditarPerfil}
+                    type="button"
+                  >
+                    Alterar modelo
+                  </button>
+                </div>
+              </div>
+            )}
           </aside>
 
           <section
@@ -274,13 +291,61 @@ export function PaginaMeuPerfil({
             className="pagina-meu-perfil__moldura"
           >
             {possuiCurriculo ? (
-              // Só a folha é exportada, sem a moldura escura da página.
-              <div ref={folhaRef}>
-                <CurriculoNoModelo modelo={modelo} previa={previa} />
-              </div>
+              <>
+                <div className="pagina-meu-perfil__palco-barra">
+                  <span className="pagina-meu-perfil__palco-tag">
+                    <span
+                      aria-hidden="true"
+                      className="pagina-meu-perfil__palco-indicador"
+                    />
+                    Pré-visualização do documento
+                  </span>
+                  <span className="pagina-meu-perfil__palco-info">
+                    Proporção A4 · Pronto para exportação
+                  </span>
+                </div>
+                <div className="pagina-meu-perfil__palco-previa">
+                  {/* Só a folha é exportada, sem a moldura escura da página. */}
+                  <div className="pagina-meu-perfil__folha-a4" ref={folhaRef}>
+                    <CurriculoNoModelo modelo={modelo} previa={previa} />
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="pagina-meu-perfil__vazio">
-                <p>Você ainda não montou seu currículo.</p>
+                <div
+                  aria-hidden="true"
+                  className="pagina-meu-perfil__vazio-icone"
+                >
+                  <svg
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.6"
+                    />
+                    <path
+                      d="M14 2V8H20M8 13H16M8 17H13"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.6"
+                    />
+                  </svg>
+                </div>
+                <div className="pagina-meu-perfil__vazio-textos">
+                  <h3>Você ainda não montou seu currículo.</h3>
+                  <p>
+                    Preencha suas experiências, formações e competências nas
+                    etapas guiadas para visualizar seu currículo formatado e
+                    exportá-lo em PDF ou Word.
+                  </p>
+                </div>
                 <button
                   className="pagina-meu-perfil__btn-primario"
                   onClick={onEditarCurriculo}

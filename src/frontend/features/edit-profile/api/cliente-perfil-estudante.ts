@@ -27,7 +27,7 @@ export class FalhaPerfilEstudante extends Error {
  */
 export interface ClientePerfilEstudante {
   atualizar(dados: Student): Promise<void>;
-  excluir(): Promise<void>;
+  excluir?(): Promise<void>;
 }
 
 /**
