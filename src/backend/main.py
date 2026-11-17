@@ -46,7 +46,7 @@ from backend.application.selecao_itens_versao_curriculo import (
     DesselecionarItemVersaoCurriculo,
     SelecionarItemVersaoCurriculo,
 )
-from backend.application.sessoes import CriadorSessao
+from backend.application.sessoes import CriadorSessao, RevogadorSessao
 from backend.application.versao_curriculo import (
     AtualizarOrdemSecoesCurriculo,
     CriarVersaoCurriculo,
@@ -83,6 +83,7 @@ from backend.infrastructure.persistence.sqlalchemy.acesso_estudante import (
     AcessarEstudanteSqlAlchemy,
     AutenticadorSessaoSqlAlchemy,
     CriadorSessaoSqlAlchemy,
+    RevogadorSessaoSqlAlchemy,
 )
 
 # Proveniência: decision-analysis prompts/revisao/20261105-203823-auditoria-impacto-cursos-certificacoes-v002.md#v002
@@ -362,6 +363,18 @@ def _criar_criador_sessao(
     return CriadorSessaoSqlAlchemy(sessoes) if sessoes else None
 
 
+def _criar_revogador_sessao(
+    sessoes: async_sessionmaker[AsyncSession] | None,
+) -> RevogadorSessao | None:
+    """Compõe a revogação persistida de sessão quando há banco disponível.
+
+    A função entrega a fábrica de sessões ao adapter transacional ou devolve
+    ausência para a rota de logout responder indisponibilidade. Ela existe para
+    que o logout invalide o token no banco e não apenas apague o cookie.
+    """
+    return RevogadorSessaoSqlAlchemy(sessoes) if sessoes else None
+
+
 def _criar_autenticador_sessao(
     sessoes: async_sessionmaker[AsyncSession] | None,
 ) -> AutenticadorSessao:
@@ -519,6 +532,7 @@ _acessar_estudante = _criar_acessar_estudante(
     _derivador_senha,
 )
 _criador_sessao = _criar_criador_sessao(_sessoes_persistencia)
+_revogador_sessao = _criar_revogador_sessao(_sessoes_persistencia)
 _autenticador_sessao = _criar_autenticador_sessao(_sessoes_persistencia)
 _configuracao_cookie_sessao = _criar_configuracao_cookie_sessao(
     os.environ.get("SESSION_COOKIE_SECURE")
@@ -706,6 +720,7 @@ app = create_app(
     ),
     acessar_estudante=_acessar_estudante,
     criador_sessao=_criador_sessao,
+    revogador_sessao=_revogador_sessao,
     derivador_senha=_derivador_senha,
     autenticador_sessao=_autenticador_sessao,
     # Proveniência: decision-analysis prompts/backend/20261102-181117-expor-listagem-associacoes-curriculo-vaga-v001.md#v001
