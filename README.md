@@ -88,3 +88,31 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 - **Frontend:** React 19, TypeScript, Vite, CSS
 - **Qualidade e DevOps:** Nix Flakes, GitHub Actions, Ruff, Vitest
 
+---
+
+## Guia de Execução Local
+
+### Pré-requisitos
+- Python 3.11+
+- Node.js 20+ e npm
+
+### 1. Frontend
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+Acesse no navegador: `http://localhost:5173`
+
+### 2. Backend
+```bash
+cd src/backend
+python -m venv .venv
+# Ativação no Windows:
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn api.main:app --reload
+```
+Documentação interativa da API (Swagger UI): `http://localhost:8000/docs`
+
+
