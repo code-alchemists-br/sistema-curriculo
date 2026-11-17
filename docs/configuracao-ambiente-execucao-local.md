@@ -88,9 +88,28 @@ Copie o template de exemplo para criar seu arquivo `.env` local:
 > ⚠️ **Atenção:** Nunca altere ou comite o arquivo `.env` para o Git. Ele contém credenciais e é automaticamente ignorado pelo `.gitignore`.
 
 ### Passo 3: Inicializar os Contêineres com Docker Compose
-Para compilar e subir todos os serviços em segundo plano:
+
+#### Apenas o `sistema-curriculo` (`db`, `migrate`, `backend`, `frontend`)
 ```bash
 docker compose up -d --build
+```
+
+#### Provisionamento conjunto (`sistema-curriculo` + `cvmatch`)
+Defina `CVMATCH_CONTEXT` apontando para o repositório `esw3_cvmatcher` quando ele não estiver em `../..` (por exemplo, `../esw3_cvmatcher`).
+
+1. Na primeira execução com os modelos reais do `cvmatch`, prepare o volume de modelos:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-model-init
+docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-prepare-extraction
+docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile prepare run --rm cvmatch-prepare-embeddings
+```
+2. Suba ambos os projetos integrados (`backend` conectado a `http://cvmatch-api:8000`):
+```bash
+docker compose -f docker-compose.yml -f docker-compose.integracao.yml up -d --build
+```
+3. Para um smoke test leve sem baixar modelos ML (usando `src.mock_api` do `cvmatch`):
+```bash
+GRUPO2_API_URL=http://cvmatch-mock:8001 docker compose -f docker-compose.yml -f docker-compose.integracao.yml --profile mock up -d --build db migrate backend frontend cvmatch-mock
 ```
 
 ### Passo 4: Verificar a Saúde dos Serviços (*Healthcheck*)
@@ -98,18 +117,17 @@ Aguarde alguns segundos e confira o status dos contêineres:
 ```bash
 docker compose ps
 ```
-Você deverá ver os serviços `app` e `db` com o status `healthy` ou `running (Up)`.
+Você deverá ver `db`, `backend` e `frontend` com status `healthy` (e `migrate` com `Exited (0)`). Na composição conjunta, também aparecem `cvmatch-postgres`, `cvmatch-migrate`, `cvmatch-worker` e `cvmatch-api` (porta `8001` no host).
 
-Para testar a resposta do servidor localmente pelo terminal:
+Para testar a prontidão do backend e o frontend localmente:
 ```bash
-curl http://localhost:3000/health
+curl http://127.0.0.1:8000/ready
+curl -I http://127.0.0.1:5173/
 ```
-Resposta esperada:
+Resposta esperada em `/ready`:
 ```json
 {
-  "status": "UP",
-  "banco_de_dados": "conectado",
-  "versao": "1.0.0"
+  "status": "ok"
 }
 ```
 
