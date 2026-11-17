@@ -40,7 +40,9 @@ describe("Destaques", () => {
   });
 
   it("dispara a classe de visibilidade quando a seção intercepta a viewport via IntersectionObserver", () => {
-    let callbackCapturado: (entries: Partial<IntersectionObserverEntry>[]) => void = () => {};
+    let callbackCapturado: (
+      entries: Partial<IntersectionObserverEntry>[],
+    ) => void = () => {};
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
 
