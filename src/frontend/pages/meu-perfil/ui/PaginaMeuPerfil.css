@@ -53,6 +53,8 @@
 
 /* 2. Cabeçalho Principal */
 .pagina-meu-perfil__cabecalho {
+  position: relative;
+  z-index: 50;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -102,6 +104,8 @@
 
 /* 3. Ações do Cabeçalho */
 .pagina-meu-perfil__acoes {
+  position: relative;
+  z-index: 60;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -162,6 +166,8 @@
 
 /* 4. Grade Principal: Cartão Lateral + Palco do Documento */
 .pagina-meu-perfil__grade {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 23.5rem) minmax(0, 1fr);
   align-items: start;
@@ -526,13 +532,14 @@
 
 .pagina-meu-perfil__download {
   position: relative;
+  z-index: 70;
 }
 
 .pagina-meu-perfil__menu-formato {
   position: absolute;
   top: calc(100% + 0.45rem);
   right: 0;
-  z-index: 20;
+  z-index: 100;
   display: grid;
   gap: 0.25rem;
   min-width: 16.5rem;
