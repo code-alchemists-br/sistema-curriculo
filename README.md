@@ -79,3 +79,12 @@ Facilitar a entrada dos estudantes no mercado de trabalho, tornando a construç�
 - **Cross-Cutting**: observabilidade: implementação e avaliação de logging e outras telemetrias de código, resiliência, segurança e autorização.
 
 - **QA arquitetural**: Controle da qualidade referente a todos que não são obseváveis pela execução do sistema como manutenibilidade etc.
+
+---
+
+## Tecnologias Utilizadas
+
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy (asyncio), Alembic, Google GenAI
+- **Frontend:** React 19, TypeScript, Vite, CSS
+- **Qualidade e DevOps:** Nix Flakes, GitHub Actions, Ruff, Vitest
+
